@@ -261,15 +261,15 @@ export const CastingRoom: React.FC<CastingRoomProps> = ({
                         )}
                       </div>
 
-                      <div className="w-full h-40 rounded-xl relative overflow-hidden shadow-inner mb-3 bg-black/40">
+                      <div className="relative w-full h-52 sm:h-56 rounded-2xl overflow-hidden shadow-inner mb-3 bg-black ring-1 ring-white/10">
                         <AvatarPhoto
                           id={av.id}
                           name={av.name}
                           gradient={av.placeholderGradient}
                           className="absolute inset-0 w-full h-full"
                         />
-                        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-2 py-1.5">
-                          <span className="text-xs text-white font-bold">{av.name}</span>
+                        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/25 to-transparent px-3 py-2.5">
+                          <span className="text-sm text-white font-black drop-shadow">{av.name}</span>
                         </div>
                       </div>
 
@@ -322,7 +322,7 @@ export const CastingRoom: React.FC<CastingRoomProps> = ({
                         )}
                       </div>
 
-                      <div className="w-full h-28 rounded-xl relative overflow-hidden shadow-inner mb-2 bg-black/40">
+                      <div className="relative w-full h-36 rounded-xl overflow-hidden shadow-inner mb-2 bg-black ring-1 ring-white/10">
                         <AvatarPhoto
                           id={av.id}
                           name={av.name}
