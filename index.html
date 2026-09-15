@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="منصة شاملة للإبداع بالذكاء الاصطناعي: محادثة متقدمة، توليد صور وفيديوهات، تصميم عروض تقديمية ورسوم بيانية، وتوليد نصوص صوتية احترافية" />
+    <meta name="keywords" content="ذكاء اصطناعي, تصميم, توليد محتوى, استوديو ناجي, Naje AI, إنشاء صور, تحليل نصوص, كتابة, مشاريع إبداعية" />
+    <meta name="author" content="استوديو ناجي" />
+    <meta name="robots" content="index, follow" />
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://naje-ai.qelvaai.com/" />
+    <meta property="og:title" content="Naje AI - المنصة الإبداعية للذكاء الاصطناعي" />
+    <meta property="og:description" content="منصة شاملة للإبداع بالذكاء الاصطناعي: محادثة متقدمة، توليد صور وفيديوهات، تصميم عروض تقديمية ورسوم بيانية، وتوليد نصوص صوتية احترافية" />
+    <meta property="og:image" content="/og-image.png" />
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content="https://naje-ai.qelvaai.com/" />
+    <meta property="twitter:title" content="Naje AI - المنصة الإبداعية للذكاء الاصطناعي" />
+    <meta property="twitter:description" content="منصة شاملة للإبداع بالذكاء الاصطناعي: محادثة متقدمة، توليد صور وفيديوهات، تصميم عروض تقديمية ورسوم بيانية، وتوليد نصوص صوتية احترافية" />
+    <meta property="twitter:image" content="/og-image.png" />
+
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png">
+    <link rel="apple-touch-icon" href="/logo-192.png">
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <link rel="canonical" href="https://naje-ai.qelvaai.com/" />
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#0d0f12" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    
+    <title>Naje AI - المنصة الإبداعية للذكاء الاصطناعي</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Schema.org markup for AI indexing -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "Naje AI - استوديو ناجي",
+      "url": "https://naje-ai.qelvaai.com/",
+      "description": "منصة متقدمة لتوليد المحتوى بالذكاء الاصطناعي، تقدم أدوات تصميم، وتوليد نصوص.",
+      "applicationCategory": "ProductivityApplication",
+      "operatingSystem": "All"
+    }
+    </script>
+  </head>
+  <body class="bg-gray-50 dark:bg-[#0f1115] text-gray-900 dark:text-gray-100 font-sans antialiased selection:bg-indigo-500/30">
+    <div id="root"></div>
+    <script>
+      // Self-heal: if the app root is still empty after 8s, a stale SW likely
+      // broke the load — unregister SWs, clear caches, reload once.
+      setTimeout(function () {
+        var root = document.getElementById('root');
+        if (root && root.childElementCount === 0 && !sessionStorage.getItem('naje_selfheal')) {
+          sessionStorage.setItem('naje_selfheal', '1');
+          if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(function (regs) {
+              regs.forEach(function (r) { r.unregister(); });
+            });
+          }
+          if (window.caches) { caches.keys().then(function (ks){ ks.forEach(function(k){ caches.delete(k); }); }); }
+          location.reload();
+        }
+      }, 8000);
+    </script>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

@@ -1,0 +1,30 @@
+node_modules/
+build/
+coverage/
+.DS_Store
+*.log
+.env*
+!.env.example
+
+# Preserve production artifacts for Cloud Run deployments
+!dist/
+!dist/**
+!server.cjs
+!server.js
+
+# Scratch and mutation scripts
+bun.lock
+patch_*.*
+fix_*.*
+update_*.*
+test.*
+test_*.*
+test-*.*
+scan.py
+scan_report.txt
+test.pptx
+output*.pdf
+output-*.pdf
+force_fix.*
+failed_json.json
+app/

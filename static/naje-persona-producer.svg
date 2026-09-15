@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
+  <defs>
+    <linearGradient id="najeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#818cf8"/>
+      <stop offset="100%" stop-color="#7c3aed"/>
+    </linearGradient>
+    <linearGradient id="najeGold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fcd34d"/>
+      <stop offset="100%" stop-color="#f59e0b"/>
+    </linearGradient>
+    <filter id="najeGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="0" dy="1.5" stdDeviation="1.8" flood-color="#4338ca" flood-opacity="0.55"/>
+    </filter>
+  </defs>
+  
+  <g filter="url(#najeGlow)">
+<g transform="translate(24,26)">
+    <rect x="-18" y="-2" width="36" height="18" rx="3" fill="url(#najeGrad)"/>
+    <path d="M-18,-2 L-12,-14 L-4,-14 L-10,-2 Z" fill="url(#najeGold)"/>
+    <path d="M-4,-2 L2,-14 L10,-14 L4,-2 Z" fill="url(#najeGold)"/>
+    <path d="M10,-2 L16,-11 L18,-9 L14,-2 Z" fill="url(#najeGold)"/>
+  </g>
+
+</g>
+</svg>

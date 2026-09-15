@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
+  <defs>
+    <linearGradient id="najeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#818cf8"/>
+      <stop offset="100%" stop-color="#7c3aed"/>
+    </linearGradient>
+    <linearGradient id="najeGold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fcd34d"/>
+      <stop offset="100%" stop-color="#f59e0b"/>
+    </linearGradient>
+    <filter id="najeGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="0" dy="1.5" stdDeviation="1.8" flood-color="#4338ca" flood-opacity="0.55"/>
+    </filter>
+  </defs>
+  <g filter="url(#najeGlow)">
+  
+  <g transform="translate(24,24)">
+    <circle r="17" fill="url(#najeGrad)"/>
+    <g stroke="#e0e7ff" stroke-width="1.6" fill="none" opacity="0.85">
+      <ellipse cx="0" cy="0" rx="7" ry="17"/>
+      <ellipse cx="0" cy="0" rx="14" ry="17" opacity="0.5"/>
+      <line x1="-17" y1="0" x2="17" y2="0"/>
+      <line x1="-15" y1="-9" x2="15" y2="-9"/>
+      <line x1="-15" y1="9" x2="15" y2="9"/>
+    </g>
+    <animateTransform attributeName="transform" type="rotate" from="0 24 24" to="360 24 24" dur="9s" repeatCount="indefinite"/>
+  </g>
+  </g>
+</svg>

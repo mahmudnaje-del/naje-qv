@@ -1,0 +1,6 @@
+{
+  "name": "Naje AI - المنصة الإبداعية للذكاء الاصطناعي",
+  "description": "منصة شاملة للإبداع بالذكاء الاصطناعي: محادثة متقدمة، توليد صور وفيديوهات، تصميم عروض تقديمية ورسوم بيانية، وتوليد نصوص صوتية احترافية",
+  "requestFramePermissions": ["camera", "microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

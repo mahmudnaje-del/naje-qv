@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <defs>
+    <linearGradient id="gV" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#A78BFA"/><stop offset="100%" stop-color="#8B5CF6"/></linearGradient>
+    <linearGradient id="gG" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#EBC85A"/><stop offset="100%" stop-color="#D4AF37"/></linearGradient>
+    <radialGradient id="bgG" cx="50%" cy="36%" r="70%"><stop offset="0%" stop-color="#181B26"/><stop offset="100%" stop-color="#0E0F13"/></radialGradient>
+  </defs>
+  <rect width="1200" height="630" fill="#0E0F13"/>
+  <ellipse cx="310" cy="315" rx="330" ry="290" fill="#181B26" opacity="0.5"/>
+  <g transform="translate(54, 63.65)">
+    <rect x="106.0" y="146.0" width="61.1" height="61.1" rx="13.4" fill="url(#gV)"/>
+    <rect x="106.0" y="220.8" width="61.1" height="61.1" rx="13.4" fill="url(#gV)"/>
+    <rect x="106.0" y="295.6" width="61.1" height="61.1" rx="13.4" fill="url(#gV)"/>
+    <rect x="344.9" y="146.0" width="61.1" height="61.1" rx="13.4" fill="url(#gV)"/>
+    <rect x="344.9" y="220.8" width="61.1" height="61.1" rx="13.4" fill="url(#gV)"/>
+    <rect x="344.9" y="295.6" width="61.1" height="61.1" rx="13.4" fill="url(#gV)"/>
+    <rect x="188.8" y="210.2" width="61.1" height="61.1" rx="13.4" fill="url(#gG)"/>
+    <rect x="262.1" y="243.8" width="61.1" height="61.1" rx="13.4" fill="url(#gG)"/>
+  </g>
+  <rect x="700" y="238" width="2" height="128" fill="#D4AF37" opacity="0.3"/>
+  <text x="1044" y="292" font-family="Arial, sans-serif" font-size="78" font-weight="700" fill="#F4F4F7" text-anchor="end">Naje AI</text>
+  <text x="1044" y="352" font-family="Arial, sans-serif" font-size="32" fill="#D4AF37" text-anchor="end" direction="rtl">نبدع لك في كل بكسل</text>
+</svg>

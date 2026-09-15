@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
+  <defs>
+    <linearGradient id="najeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#818cf8"/>
+      <stop offset="100%" stop-color="#7c3aed"/>
+    </linearGradient>
+    <linearGradient id="najeGold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fcd34d"/>
+      <stop offset="100%" stop-color="#f59e0b"/>
+    </linearGradient>
+    <filter id="najeGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="0" dy="1.5" stdDeviation="1.8" flood-color="#4338ca" flood-opacity="0.55"/>
+    </filter>
+  </defs>
+  <g filter="url(#najeGlow)">
+  
+  <g transform="translate(24,24)">
+    <path d="M-10,-16 C-10,-16 8,-10 8,0 C8,10 -10,16 -10,16" fill="none" stroke="url(#najeGrad)" stroke-width="3.5"/>
+    <path d="M10,-16 C10,-16 -8,-10 -8,0 C-8,10 10,16 10,16" fill="none" stroke="url(#najeGold)" stroke-width="3.5"/>
+    <circle cx="-9" cy="-13" r="2.5" fill="url(#najeGrad)"/><circle cx="9" cy="-13" r="2.5" fill="url(#najeGold)"/>
+    <circle cx="-8" cy="0" r="2.5" fill="url(#najeGrad)"><animate attributeName="r" values="2.5;3.5;2.5" dur="1.5s" repeatCount="indefinite"/></circle>
+    <circle cx="8" cy="0" r="2.5" fill="url(#najeGold)"><animate attributeName="r" values="2.5;3.5;2.5" dur="1.5s" begin="0.5s" repeatCount="indefinite"/></circle>
+    <circle cx="-9" cy="13" r="2.5" fill="url(#najeGrad)"/><circle cx="9" cy="13" r="2.5" fill="url(#najeGold)"/>
+  </g>
+  </g>
+</svg>

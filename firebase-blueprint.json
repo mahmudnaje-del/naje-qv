@@ -1,0 +1,146 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile and account balance information.",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string" },
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "balance": { "type": "number" },
+        "isAdmin": { "type": "boolean" },
+        "canAddAdmins": { "type": "boolean" },
+        "hasAcceptedTerms": { "type": "boolean" },
+        "hasCompletedOnboarding": { "type": "boolean" },
+        "updatedAt": { "type": "number" }
+      },
+      "required": ["email"]
+    },
+    "AdminAuditLog": {
+      "title": "AdminAuditLog",
+      "description": "Immutable log of admin activity and operational events.",
+      "type": "object",
+      "properties": {
+        "action": { "type": "string" },
+        "adminId": { "type": "string" },
+        "adminEmail": { "type": "string" },
+        "targetUserId": { "type": "string" },
+        "chatId": { "type": "string" },
+        "details": { "type": "object" },
+        "timestamp": { "type": "number" }
+      },
+      "required": ["action", "adminId", "timestamp"]
+    },
+    "Chat": {
+      "title": "Chat",
+      "description": "Chat session document.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "type": { "type": "string" },
+        "createdAt": { "type": "number" },
+        "updatedAt": { "type": "number" }
+      },
+      "required": ["ownerId"]
+    },
+    "FeedbackSignal": {
+      "title": "FeedbackSignal",
+      "description": "User rating, thumbs up/down, feedback reasons and notes.",
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string" },
+        "chatId": { "type": "string" },
+        "messageId": { "type": "string" },
+        "chatType": { "type": "string" },
+        "signal": { "type": "string" },
+        "reasons": { "type": "array" },
+        "note": { "type": "string" },
+        "templateId": { "type": "string" },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["ownerId", "signal", "createdAt"]
+    },
+    "AgentMission": {
+      "title": "AgentMission",
+      "description": "Autonomous Agent mission session and artifact store.",
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string" },
+        "projectId": { "type": "string" },
+        "title": { "type": "string" },
+        "userPrompt": { "type": "string" },
+        "status": { "type": "string" },
+        "estimatedPoints": { "type": "number" },
+        "consumedPoints": { "type": "number" },
+        "planSummary": { "type": "string" },
+        "steps": { "type": "array" },
+        "artifacts": { "type": "array" },
+        "brandContext": { "type": "object" },
+        "createdAt": { "type": "number" },
+        "updatedAt": { "type": "number" }
+      },
+      "required": ["ownerId", "title", "status", "createdAt"]
+    },
+    "PayPalOrder": {
+      "title": "PayPalOrder",
+      "description": "Order records for PayPal points packages purchases.",
+      "type": "object",
+      "properties": {
+        "order_id": { "type": "string" },
+        "user_id": { "type": "string" },
+        "points_requested": { "type": "number" },
+        "amount_usd": { "type": "number" },
+        "status": { "type": "string", "enum": ["created", "captured", "failed"] },
+        "created_at": { "type": "string" },
+        "captured_at": { "type": "string" }
+      },
+      "required": ["order_id", "user_id", "points_requested", "amount_usd", "status"]
+    },
+    "Transaction": {
+      "title": "Transaction",
+      "description": "Ledger of point credits and debits.",
+      "type": "object",
+      "properties": {
+        "user_id": { "type": "string" },
+        "type": { "type": "string", "enum": ["credit", "debit"] },
+        "amount": { "type": "number" },
+        "source": { "type": "string", "enum": ["redeem_code", "paypal", "admin_adjustment"] },
+        "order_id": { "type": "string" },
+        "timestamp": { "type": "string" }
+      },
+      "required": ["user_id", "type", "amount", "source"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Users collection holding account data."
+    },
+    "/admin_audit_log/{entryId}": {
+      "schema": "AdminAuditLog",
+      "description": "Audit trail for sensitive admin interactions."
+    },
+    "/chats/{chatId}": {
+      "schema": "Chat",
+      "description": "User chat records."
+    },
+    "/feedback_signals/{signalId}": {
+      "schema": "FeedbackSignal",
+      "description": "User feedback submissions and signals."
+    },
+    "/autonoma_missions/{missionId}": {
+      "schema": "AgentMission",
+      "description": "Naje Agent autonomous multi-modal missions."
+    },
+    "/paypal_orders/{orderId}": {
+      "schema": "PayPalOrder",
+      "description": "PayPal payment orders and fulfillment state."
+    },
+    "/transactions/{transactionId}": {
+      "schema": "Transaction",
+      "description": "User point balance transaction history."
+    }
+  }
+}

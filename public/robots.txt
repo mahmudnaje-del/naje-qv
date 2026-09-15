@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://naje-ai.qelvaai.com/sitemap.xml

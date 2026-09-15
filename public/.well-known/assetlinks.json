@@ -1,0 +1,14 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.qelvaai.naje_ai.twa",
+      "sha256_cert_fingerprints": [
+        "4F:D3:50:1E:F8:BA:91:6A:17:28:96:80:0A:90:B7:D7:23:8B:72:13:E9:2A:C1:DA:DF:E4:72:B2:DF:0E:47:5D"
+      ]
+    }
+  }
+]

@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
+  <defs>
+    <linearGradient id="najeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#818cf8"/>
+      <stop offset="100%" stop-color="#7c3aed"/>
+    </linearGradient>
+    <linearGradient id="najeGold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fcd34d"/>
+      <stop offset="100%" stop-color="#f59e0b"/>
+    </linearGradient>
+    <filter id="najeGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="0" dy="1.5" stdDeviation="1.8" flood-color="#4338ca" flood-opacity="0.55"/>
+    </filter>
+  </defs>
+  
+  <g filter="url(#najeGlow)">
+<g transform="translate(24,22)">
+    <animateTransform attributeName="transform" type="rotate" values="0;-8;8;-5;5;0" keyTimes="0;0.15;0.3;0.45;0.6;1" dur="2.4s" repeatCount="indefinite" additive="sum"/>
+    <path d="M0,-14 C6,-14 9,-9 9,-3 L9,4 L13,9 L-13,9 L-9,4 L-9,-3 C-9,-9 -6,-14 0,-14 Z" fill="url(#najeGrad)"/>
+    <circle cx="0" cy="14" r="3.5" fill="url(#najeGold)"/>
+  </g>
+
+</g>
+</svg>

@@ -1,0 +1,94 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function owns(res) { return signedIn() && (res.data.ownerId == request.auth.uid || res.data.userId == request.auth.uid); }
+    // Hardcoded bootstrap admin email (Production note: should move to custom claims or dedicated admins collection)
+    function isAdmin() {
+      return signedIn() && (
+        request.auth.token.email == 'mahmudnaje2009@gmail.com' ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true)
+      );
+    }
+
+    // Users: a user may read/update their own doc (preventing alteration of balance, admin, and account restriction fields).
+    // Admins can read/manage user profiles and all balance adjustments.
+    match /users/{uid} {
+      allow read: if signedIn() && (request.auth.uid == uid || isAdmin());
+      allow create: if signedIn() && request.auth.uid == uid
+                    && (!('isAdmin' in request.resource.data) || request.resource.data.isAdmin == false);
+      allow update: if signedIn() && (
+                      isAdmin() ||
+                      (request.auth.uid == uid
+                       && (!('balance' in request.resource.data) || request.resource.data.balance == resource.data.balance)
+                       && (!('isNegativeBalance' in request.resource.data) || request.resource.data.isNegativeBalance == resource.data.isNegativeBalance)
+                       && (!('isAdmin' in request.resource.data) || request.resource.data.isAdmin == resource.data.isAdmin)
+                       && (!('canAddAdmins' in request.resource.data) || request.resource.data.canAddAdmins == resource.data.canAddAdmins)
+                       && (!('isBlocked' in request.resource.data) || request.resource.data.isBlocked == resource.data.isBlocked)
+                       && (!('hasRecharged' in request.resource.data) || request.resource.data.hasRecharged == resource.data.hasRecharged))
+                    );
+      allow delete: if false;
+    }
+
+    // All owned collections: read/write only your own documents, or admin access.
+    match /chats/{id}           { allow read, write: if owns(resource) || (request.method == 'create' && request.resource.data.ownerId == request.auth.uid) || isAdmin(); }
+    match /messages/{id}        { allow read, write: if owns(resource) || (request.method == 'create' && request.resource.data.ownerId == request.auth.uid) || isAdmin(); }
+    match /projects/{id}        { allow read, write: if owns(resource) || (request.method == 'create' && request.resource.data.ownerId == request.auth.uid) || isAdmin(); }
+    match /projects/{projectId}/memory_items/{id} {
+      allow read, write: if signedIn() && (
+        isAdmin() ||
+        get(/databases/$(database)/documents/projects/$(projectId)).data.ownerId == request.auth.uid
+      );
+    }
+    match /generated_media/{id} { allow read, write: if owns(resource) || (request.method == 'create' && request.resource.data.ownerId == request.auth.uid) || isAdmin(); }
+    match /generation_jobs/{id} { allow read, write: if owns(resource) || (request.method == 'create' && request.resource.data.ownerId == request.auth.uid) || isAdmin(); }
+    match /notifications/{id}   { allow read, write: if owns(resource) || (request.method == 'create' && request.resource.data.ownerId == request.auth.uid) || isAdmin(); }
+    match /favorites/{id}       { allow read, write: if owns(resource) || (request.method == 'create' && (request.resource.data.ownerId == request.auth.uid || request.resource.data.userId == request.auth.uid)) || isAdmin(); }
+    match /autonoma_missions/{id} { allow read, write: if owns(resource) || (request.method == 'create' && request.resource.data.ownerId == request.auth.uid) || isAdmin(); }
+    match /edit_history/{id}    {
+      allow read, write: if owns(resource)
+        || (request.method == 'create' && (request.resource.data.ownerId == request.auth.uid || request.resource.data.userId == request.auth.uid))
+        || isAdmin();
+    }
+
+    // Feedback signals (Naje AI user feedback & thumbs up/down ratings)
+    match /feedback_signals/{id} {
+      allow create: if signedIn() && request.resource.data.ownerId == request.auth.uid;
+      allow read, delete: if signedIn() && (
+        isAdmin() || (resource != null && resource.data.ownerId == request.auth.uid)
+      );
+      allow update: if isAdmin();
+    }
+
+    // Admin & system collections
+    match /model_endpoints/{id}   { allow read, write: if isAdmin(); }
+    match /redeem_codes/{id}      { allow read, write: if isAdmin(); }
+    match /model_pricing/{id}     { allow read: if signedIn(); allow write: if isAdmin(); }
+    match /admin_audit_log/{id}   { allow read, write: if isAdmin(); }
+    match /creatively_designs/{id}{
+      allow read, write: if owns(resource)
+        || (request.method == 'create' && (request.resource.data.ownerId == request.auth.uid || request.resource.data.userId == request.auth.uid))
+        || isAdmin();
+    }
+    match /config/{id}            { allow read: if true; allow write: if isAdmin(); }
+    match /format_presets/{id}   { allow read: if true; allow write: if isAdmin(); }
+    match /skills/{id}            { allow read: if signedIn(); allow write: if isAdmin(); }
+    match /api_cost_log/{id}      { allow create: if false; allow read, update, delete: if isAdmin(); }
+    match /flagged_requests/{id}  { allow read, write: if isAdmin(); }
+    match /system_state/{id}      { allow read: if signedIn(); allow write: if isAdmin(); }
+    match /admin_balance_adjustments/{id} { allow read, write: if isAdmin(); }
+    match /paypal_orders/{id} {
+      allow read: if signedIn() && (
+        isAdmin() || (resource != null && resource.data.user_id == request.auth.uid)
+      );
+      allow write: if isAdmin();
+    }
+    match /transactions/{id} {
+      allow read: if signedIn() && (
+        isAdmin() || (resource != null && resource.data.user_id == request.auth.uid)
+      );
+      allow write: if isAdmin();
+    }
+  }
+}
