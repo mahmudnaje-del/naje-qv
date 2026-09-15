@@ -238,7 +238,7 @@ export const CastingRoom: React.FC<CastingRoomProps> = ({
                 return isCenter ? (
                   /* Center Detailed Card */
                   <div
-                    className={`w-[85vw] max-w-64 sm:w-72 p-4 rounded-2xl border transition-all text-right flex flex-col justify-between shadow-2xl ${
+                    className={`w-[82vw] max-w-[15.5rem] sm:w-64 p-3 sm:p-3.5 rounded-2xl border transition-all text-right flex flex-col justify-between shadow-2xl ${
                       isSelected
                         ? 'bg-gradient-to-b from-indigo-950/95 to-[#0d101a] border-indigo-500 shadow-indigo-500/30'
                         : 'bg-[#121622]/95 border-gray-700/80 hover:border-gray-500'
@@ -261,7 +261,7 @@ export const CastingRoom: React.FC<CastingRoomProps> = ({
                         )}
                       </div>
 
-                      <div className="relative w-full h-52 sm:h-56 rounded-2xl overflow-hidden shadow-inner mb-3 bg-black ring-1 ring-white/10">
+                      <div className="relative w-full aspect-[3/4] rounded-2xl overflow-hidden shadow-inner mb-2.5 bg-black ring-1 ring-white/10">
                         <AvatarPhoto
                           id={av.id}
                           name={av.name}
@@ -307,7 +307,7 @@ export const CastingRoom: React.FC<CastingRoomProps> = ({
                 ) : (
                   /* Side Stacked Card (Compact & Sleek) */
                   <div
-                    className={`w-48 sm:w-52 p-3 rounded-2xl border transition-all text-right flex flex-col justify-between shadow-xl ${
+                    className={`w-36 sm:w-40 p-2.5 rounded-2xl border transition-all text-right flex flex-col justify-between shadow-xl ${
                       isSelected
                         ? 'bg-gradient-to-b from-indigo-950/90 to-[#0e111a] border-indigo-500'
                         : 'bg-[#11141c]/90 border-gray-800/90 hover:border-gray-600'
@@ -322,7 +322,7 @@ export const CastingRoom: React.FC<CastingRoomProps> = ({
                         )}
                       </div>
 
-                      <div className="relative w-full h-36 rounded-xl overflow-hidden shadow-inner mb-2 bg-black ring-1 ring-white/10">
+                      <div className="relative w-full aspect-[3/4] rounded-xl overflow-hidden shadow-inner mb-2 bg-black ring-1 ring-white/10">
                         <AvatarPhoto
                           id={av.id}
                           name={av.name}

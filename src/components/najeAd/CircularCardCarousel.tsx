@@ -34,6 +34,7 @@ export function CircularCardCarousel<T>({
   const width = useViewportWidth();
   const draggingRef = useRef(false);
   const lockedRef = useRef(false);
+  const flippedRef = useRef(false);
 
   const wrapIndex = useCallback(
     (i: number) => {
@@ -43,40 +44,61 @@ export function CircularCardCarousel<T>({
     [total]
   );
 
+  const commitFlip = useCallback(
+    (direction: 1 | -1) => {
+      if (lockedRef.current || flippedRef.current) return;
+      lockedRef.current = true;
+      flippedRef.current = true;
+      onCenterIndexChange(wrapIndex(centerIndex + direction));
+      window.setTimeout(() => {
+        lockedRef.current = false;
+        draggingRef.current = false;
+        flippedRef.current = false;
+      }, 160);
+    },
+    [centerIndex, onCenterIndexChange, wrapIndex]
+  );
+
   if (total === 0) {
     return null;
   }
 
   const handleDragStart = () => {
     draggingRef.current = true;
+    flippedRef.current = false;
+  };
+
+  const maybeFlip = (offsetX: number, velocityX: number) => {
+    if (lockedRef.current || flippedRef.current) return;
+    const projected = offsetX + velocityX * 0.18;
+    const shouldFlip = Math.abs(offsetX) > 40 || Math.abs(velocityX) > 150 || Math.abs(projected) > 64;
+    if (!shouldFlip) return;
+    commitFlip(projected < 0 ? 1 : -1);
+  };
+
+  const handleDrag = (_: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+    if (Math.abs(info.offset.x) > 90) {
+      maybeFlip(info.offset.x, info.velocity.x);
+    }
   };
 
   const handleDragEnd = (_: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
-    if (lockedRef.current) return;
-    const offset = info.offset.x;
-    const velocity = info.velocity.x;
-    const shouldFlip = Math.abs(offset) > 36 || Math.abs(velocity) > 280;
-    if (!shouldFlip) {
-      draggingRef.current = false;
-      return;
+    if (!flippedRef.current) {
+      maybeFlip(info.offset.x, info.velocity.x);
     }
-    lockedRef.current = true;
-    const goingNext = offset + velocity * 0.18 < 0;
-    onCenterIndexChange(wrapIndex(centerIndex + (goingNext ? 1 : -1)));
-    window.setTimeout(() => {
-      lockedRef.current = false;
+    if (!flippedRef.current) {
       draggingRef.current = false;
-    }, 280);
+    }
   };
 
   const visibleWindowLimit = width < 480 ? 1 : 3;
   const actualWindow = Math.min(visibleWindowLimit, Math.floor((total - 1) / 2));
   const visibleOffsets = Array.from({ length: actualWindow * 2 + 1 }, (_, i) => i - actualWindow);
-  const step = width < 480 ? 72 : width < 640 ? 92 : 128;
+  const step = width < 480 ? 88 : width < 640 ? 112 : 152;
 
   return (
     <div
-      className="relative h-[430px] sm:h-[470px] w-full flex items-center justify-center select-none overflow-visible py-3 touch-pan-y"
+      className="relative h-[540px] sm:h-[580px] w-full flex items-center justify-center select-none overflow-visible py-2 touch-pan-x"
       dir="ltr"
       style={{ perspective: 1200 }}
     >
@@ -94,11 +116,11 @@ export function CircularCardCarousel<T>({
             key={isCenter ? `center-${getKey(item)}-${centerIndex}` : `${getKey(item)}-${offset}`}
             drag={isCenter ? 'x' : false}
             dragListener={isCenter}
-            dragElastic={0.18}
+            dragElastic={0.06}
             dragMomentum={false}
-            dragDirectionLock
-            dragConstraints={{ left: 0, right: 0 }}
+            dragConstraints={{ left: -220, right: 220 }}
             onDragStart={isCenter ? handleDragStart : undefined}
+            onDrag={isCenter ? handleDrag : undefined}
             onDragEnd={isCenter ? handleDragEnd : undefined}
             onClick={() => {
               if (draggingRef.current || lockedRef.current) return;
@@ -107,19 +129,20 @@ export function CircularCardCarousel<T>({
             }}
             animate={{
               x: offset * step,
-              scale: isCenter ? 1 : 1 - absOffset * 0.1,
-              opacity: absOffset > actualWindow ? 0 : 1 - absOffset * 0.18,
+              scale: isCenter ? 1 : 1 - absOffset * 0.12,
+              opacity: absOffset > actualWindow ? 0 : 1 - absOffset * 0.2,
               zIndex: 30 - absOffset,
-              rotateY: offset * -8,
+              rotateY: offset * -6,
             }}
-            transition={{ type: 'spring', stiffness: 380, damping: 34, mass: 0.7 }}
+            transition={{ type: 'spring', stiffness: 420, damping: 36, mass: 0.65 }}
             className={`absolute ${isCenter ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'} rounded-2xl ${
               selected ? 'ring-4 ring-indigo-500 shadow-2xl shadow-indigo-500/40' : 'hover:ring-2 hover:ring-indigo-400/50'
             }`}
             style={{
               transformStyle: 'preserve-3d',
               pointerEvents: absOffset > 1 ? 'none' : 'auto',
-              touchAction: isCenter ? 'pan-y' : 'auto',
+              touchAction: isCenter ? 'pan-x' : 'auto',
+              WebkitUserSelect: 'none',
             }}
           >
             {renderCard(item, isCenter)}

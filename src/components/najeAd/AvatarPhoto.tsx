@@ -33,7 +33,7 @@ export function AvatarPhoto({
     <img
       src={avatarPreviewSrc(id)}
       alt={name}
-      className={`object-cover object-[center_18%] ${className}`}
+      className={`object-cover object-top ${className}`}
       loading="lazy"
       draggable={false}
       onError={() => setFailed(true)}
