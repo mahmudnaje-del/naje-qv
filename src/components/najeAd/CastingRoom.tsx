@@ -14,6 +14,7 @@ import {
 import { AVATAR_REGISTRY, NajiAvatar } from '../../data/avatars/avatarRegistry';
 import { getRegionLabelAr } from '../../data/avatars/avatarRegionLabels';
 import { CircularCardCarousel } from './CircularCardCarousel';
+import { AvatarPhoto } from './AvatarPhoto';
 
 export interface CastingRoomProps {
   selectedAvatarId: string | null;
@@ -260,19 +261,16 @@ export const CastingRoom: React.FC<CastingRoomProps> = ({
                         )}
                       </div>
 
-                      {/* Large Gradient Avatar Portrait */}
-                      <div
-                        className="w-full h-28 rounded-xl flex flex-col items-center justify-center relative overflow-hidden shadow-inner mb-3"
-                        style={{
-                          background: `linear-gradient(135deg, ${av.placeholderGradient[0]}, ${av.placeholderGradient[1]})`
-                        }}
-                      >
-                        <div className="w-14 h-14 rounded-full bg-black/25 backdrop-blur-xs flex items-center justify-center font-black text-white text-xl border border-white/30 shadow-lg">
-                          {av.name.slice(0, 2)}
+                      <div className="w-full h-40 rounded-xl relative overflow-hidden shadow-inner mb-3 bg-black/40">
+                        <AvatarPhoto
+                          id={av.id}
+                          name={av.name}
+                          gradient={av.placeholderGradient}
+                          className="absolute inset-0 w-full h-full"
+                        />
+                        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-2 py-1.5">
+                          <span className="text-xs text-white font-bold">{av.name}</span>
                         </div>
-                        <span className="text-xs text-white font-bold mt-1.5 shadow-sm">
-                          {av.name}
-                        </span>
                       </div>
 
                       {/* Detailed Meta */}
@@ -324,15 +322,13 @@ export const CastingRoom: React.FC<CastingRoomProps> = ({
                         )}
                       </div>
 
-                      <div
-                        className="w-full h-20 rounded-xl flex items-center justify-center relative overflow-hidden shadow-inner mb-2"
-                        style={{
-                          background: `linear-gradient(135deg, ${av.placeholderGradient[0]}, ${av.placeholderGradient[1]})`
-                        }}
-                      >
-                        <span className="font-black text-white text-base">
-                          {av.name.slice(0, 2)}
-                        </span>
+                      <div className="w-full h-28 rounded-xl relative overflow-hidden shadow-inner mb-2 bg-black/40">
+                        <AvatarPhoto
+                          id={av.id}
+                          name={av.name}
+                          gradient={av.placeholderGradient}
+                          className="absolute inset-0 w-full h-full"
+                        />
                       </div>
 
                       <h4 className="font-bold text-white text-xs truncate">{av.name}</h4>

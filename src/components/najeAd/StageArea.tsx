@@ -20,6 +20,7 @@ import {
   Lock
 } from 'lucide-react';
 import { NajiAvatar } from '../../data/avatars/avatarRegistry';
+import { AvatarPhoto } from './AvatarPhoto';
 import { NajiLocation } from '../../data/locations/locationRegistry';
 import { AdDnaState, LIGHTING_PRESETS, CAMERA_PRESETS, FieldStatusMap } from '../../lib/adDnaEngine';
 import { CrewStatusBar } from './CrewStatusBar';
@@ -313,12 +314,12 @@ export const StageArea: React.FC<StageAreaProps> = ({
                 {avatar ? (
                   <div className="space-y-2">
                     <div className="flex items-center gap-3">
-                      <div 
-                        className="w-14 h-14 rounded-2xl flex items-center justify-center font-black text-white text-lg shadow-lg shrink-0 border border-white/20"
-                        style={{ background: `linear-gradient(135deg, ${avatar.placeholderGradient[0]}, ${avatar.placeholderGradient[1]})` }}
-                      >
-                        {avatar.name.slice(0, 2)}
-                      </div>
+                      <AvatarPhoto
+                        id={avatar.id}
+                        name={avatar.name}
+                        gradient={avatar.placeholderGradient}
+                        className="w-14 h-14 rounded-2xl shadow-lg shrink-0 border border-white/20"
+                      />
                       <div>
                         <h4 className="text-sm font-black text-white">{avatar.name} ({avatar.age} سنة)</h4>
                         <p className="text-[11px] text-gray-400 leading-snug">{avatar.visualRegion}</p>
