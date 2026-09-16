@@ -9,6 +9,7 @@ export interface CircularCarouselProps<T> {
   renderCard: (item: T, isCenter: boolean) => React.ReactNode;
   centerIndex: number;
   onCenterIndexChange: (newIndex: number) => void;
+  frameClassName?: string;
 }
 
 function useViewportWidth() {
@@ -29,6 +30,7 @@ export function CircularCardCarousel<T>({
   renderCard,
   centerIndex,
   onCenterIndexChange,
+  frameClassName = 'h-[540px] sm:h-[580px]',
 }: CircularCarouselProps<T>) {
   const total = items.length;
   const width = useViewportWidth();
@@ -98,7 +100,7 @@ export function CircularCardCarousel<T>({
 
   return (
     <div
-      className="relative h-[540px] sm:h-[580px] w-full flex items-center justify-center select-none overflow-visible py-2 touch-pan-x"
+      className={`relative ${frameClassName} w-full flex items-center justify-center select-none overflow-visible py-2 touch-pan-x`}
       dir="ltr"
       style={{ perspective: 1200 }}
     >

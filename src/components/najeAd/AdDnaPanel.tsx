@@ -25,6 +25,8 @@ import {
 } from '../../lib/adDnaEngine';
 import { AVATAR_REGISTRY } from '../../data/avatars/avatarRegistry';
 import { LOCATION_REGISTRY } from '../../data/locations/locationRegistry';
+import { AvatarPhoto } from './AvatarPhoto';
+import { LocationPhoto } from './LocationPhoto';
 
 export interface AdDnaPanelProps {
   dnaState: AdDnaState;
@@ -115,9 +117,17 @@ export const AdDnaPanel: React.FC<AdDnaPanelProps> = ({
 
         {avatar ? (
           <div className="p-3 rounded-xl bg-[#141722] border border-indigo-500/30 space-y-1.5">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-black text-white">{avatar.name} ({avatar.age} سنة)</span>
-              <span className="text-[10px] font-mono text-indigo-300">{avatar.id}</span>
+            <div className="flex items-center gap-2.5">
+              <AvatarPhoto
+                id={avatar.id}
+                name={avatar.name}
+                gradient={avatar.placeholderGradient}
+                className="w-10 h-12 rounded-lg shrink-0 border border-white/10"
+              />
+              <div className="flex-1 min-w-0 flex items-center justify-between gap-2">
+                <span className="text-xs font-black text-white truncate">{avatar.name} ({avatar.age} سنة)</span>
+                <span className="text-[10px] font-mono text-indigo-300 shrink-0">{avatar.id}</span>
+              </div>
             </div>
             
             {/* Locked Attributes Pill List */}
@@ -165,9 +175,17 @@ export const AdDnaPanel: React.FC<AdDnaPanelProps> = ({
 
         {location ? (
           <div className="p-3 rounded-xl bg-[#141722] border border-purple-500/30 space-y-1.5">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-black text-white">{location.name}</span>
-              <span className="text-[10px] font-mono text-purple-300">{location.id}</span>
+            <div className="flex items-center gap-2.5">
+              <LocationPhoto
+                id={location.id}
+                name={location.name}
+                gradient={location.placeholderGradient}
+                className="w-16 h-9 rounded-lg shrink-0 border border-white/10"
+              />
+              <div className="flex-1 min-w-0 flex items-center justify-between gap-2">
+                <span className="text-xs font-black text-white truncate">{location.name}</span>
+                <span className="text-[10px] font-mono text-purple-300 shrink-0">{location.id}</span>
+              </div>
             </div>
             <div className="flex flex-wrap gap-1 pt-1">
               <span className="text-[10px] px-2 py-0.5 rounded-md bg-gray-800/80 text-gray-300 border border-gray-700 flex items-center gap-1">

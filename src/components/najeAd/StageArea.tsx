@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { NajiAvatar } from '../../data/avatars/avatarRegistry';
 import { AvatarPhoto } from './AvatarPhoto';
+import { LocationPhoto } from './LocationPhoto';
 import { NajiLocation } from '../../data/locations/locationRegistry';
 import { AdDnaState, LIGHTING_PRESETS, CAMERA_PRESETS, FieldStatusMap } from '../../lib/adDnaEngine';
 import { CrewStatusBar } from './CrewStatusBar';
@@ -374,12 +375,12 @@ export const StageArea: React.FC<StageAreaProps> = ({
                 {location ? (
                   <div className="space-y-2">
                     <div className="flex items-center gap-3">
-                      <div 
-                        className="w-14 h-14 rounded-2xl flex items-center justify-center font-black text-white text-lg shadow-lg shrink-0 border border-white/20"
-                        style={{ background: `linear-gradient(135deg, ${location.placeholderGradient[0]}, ${location.placeholderGradient[1]})` }}
-                      >
-                        <MapPin className="w-6 h-6 text-white" />
-                      </div>
+                      <LocationPhoto
+                        id={location.id}
+                        name={location.name}
+                        gradient={location.placeholderGradient}
+                        className="w-20 h-14 rounded-2xl shadow-lg shrink-0 border border-white/20"
+                      />
                       <div>
                         <h4 className="text-sm font-black text-white">{location.name}</h4>
                         <p className="text-[11px] text-purple-300 font-medium">{location.category}</p>

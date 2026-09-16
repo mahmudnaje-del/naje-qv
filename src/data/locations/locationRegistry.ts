@@ -1,7 +1,6 @@
 /**
  * NAJI AD — Global Location Registry (150 entries)
- * Auto-derived from NAJI_Master_Brief.md Section 7. Placeholder visuals only —
- * no real generated preview images yet (deferred by design decision).
+ * Preview stills live at /public/locations/{id}.webp
  */
 
 export interface NajiLocation {

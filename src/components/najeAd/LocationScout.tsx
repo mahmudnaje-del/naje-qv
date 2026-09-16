@@ -5,16 +5,15 @@ import {
   Filter, 
   MapPin, 
   Sparkles, 
-  ArrowRight, 
   Check, 
   ChevronLeft, 
   ChevronRight,
-  Building,
   Compass
 } from 'lucide-react';
 import { LOCATION_REGISTRY, NajiLocation } from '../../data/locations/locationRegistry';
 import { getCategoryLabelAr } from '../../data/locations/locationCategoryLabels';
 import { CircularCardCarousel } from './CircularCardCarousel';
+import { LocationPhoto } from './LocationPhoto';
 
 export interface LocationScoutProps {
   selectedLocationId: string | null;
@@ -201,12 +200,13 @@ export const LocationScout: React.FC<LocationScoutProps> = ({
               onSelect={handleSelect}
               centerIndex={centerIndex}
               onCenterIndexChange={setCenterIndex}
+              frameClassName="h-[420px] sm:h-[460px]"
               renderCard={(loc, isCenter) => {
                 const isSelected = loc.id === selectedLocationId;
                 return isCenter ? (
                   /* Center Detailed Card */
                   <div
-                    className={`w-[85vw] max-w-64 sm:w-72 p-4 rounded-2xl border transition-all text-right flex flex-col justify-between shadow-2xl ${
+                    className={`w-[82vw] max-w-[17rem] sm:w-72 p-3 sm:p-3.5 rounded-2xl border transition-all text-right flex flex-col justify-between shadow-2xl ${
                       isSelected
                         ? 'bg-gradient-to-b from-purple-950/95 to-[#0d101a] border-purple-500 shadow-purple-500/30'
                         : 'bg-[#121622]/95 border-gray-700/80 hover:border-gray-500'
@@ -229,19 +229,16 @@ export const LocationScout: React.FC<LocationScoutProps> = ({
                         )}
                       </div>
 
-                      {/* Large Gradient Card Box */}
-                      <div
-                        className="w-full h-28 rounded-xl flex flex-col items-center justify-center relative overflow-hidden shadow-inner mb-3"
-                        style={{
-                          background: `linear-gradient(135deg, ${loc.placeholderGradient[0]}, ${loc.placeholderGradient[1]})`
-                        }}
-                      >
-                        <div className="w-12 h-12 rounded-xl bg-black/30 backdrop-blur-xs flex items-center justify-center border border-white/30 shadow-lg">
-                          <Building className="w-6 h-6 text-white" />
+                      <div className="relative w-full aspect-video rounded-2xl overflow-hidden shadow-inner mb-2.5 bg-black ring-1 ring-white/10">
+                        <LocationPhoto
+                          id={loc.id}
+                          name={loc.name}
+                          gradient={loc.placeholderGradient}
+                          className="absolute inset-0 w-full h-full"
+                        />
+                        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent px-3 py-2">
+                          <span className="text-sm text-white font-black drop-shadow">{loc.name}</span>
                         </div>
-                        <span className="text-xs text-white font-bold mt-1.5 shadow-sm">
-                          {getCategoryLabelAr(loc.category)}
-                        </span>
                       </div>
 
                       {/* Detailed Meta */}
@@ -272,7 +269,7 @@ export const LocationScout: React.FC<LocationScoutProps> = ({
                 ) : (
                   /* Side Stacked Card (Compact & Sleek) */
                   <div
-                    className={`w-48 sm:w-52 p-3 rounded-2xl border transition-all text-right flex flex-col justify-between shadow-xl ${
+                    className={`w-40 sm:w-44 p-2.5 rounded-2xl border transition-all text-right flex flex-col justify-between shadow-xl ${
                       isSelected
                         ? 'bg-gradient-to-b from-purple-950/90 to-[#0e111a] border-purple-500'
                         : 'bg-[#11141c]/90 border-gray-800/90 hover:border-gray-600'
@@ -287,13 +284,13 @@ export const LocationScout: React.FC<LocationScoutProps> = ({
                         )}
                       </div>
 
-                      <div
-                        className="w-full h-20 rounded-xl flex items-center justify-center relative overflow-hidden shadow-inner mb-2"
-                        style={{
-                          background: `linear-gradient(135deg, ${loc.placeholderGradient[0]}, ${loc.placeholderGradient[1]})`
-                        }}
-                      >
-                        <Building className="w-5 h-5 text-white/90" />
+                      <div className="relative w-full aspect-video rounded-xl overflow-hidden shadow-inner mb-2 bg-black ring-1 ring-white/10">
+                        <LocationPhoto
+                          id={loc.id}
+                          name={loc.name}
+                          gradient={loc.placeholderGradient}
+                          className="absolute inset-0 w-full h-full"
+                        />
                       </div>
 
                       <h4 className="font-bold text-white text-xs truncate">{loc.name}</h4>
