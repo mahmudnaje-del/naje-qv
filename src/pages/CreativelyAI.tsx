@@ -1037,16 +1037,22 @@ const handleProUnlockSubmit = async () => {};
           })
         });
 
-        if (!response.ok) {
-          const text = await response.text();
-          try {
-             const data = JSON.parse(text);
-             throw new Error(data.error || 'Server error generating asset');
-          } catch {
-             throw new Error(`Server error: ${response.status}`);
-          }
+        let data: any = {};
+        const text = await response.text();
+        try {
+          if (text) data = JSON.parse(text);
+        } catch {
+          // ignore parsing error
         }
-        const data = await response.json();
+
+        if (!response.ok) {
+          if (response.status === 402 || data?.error === 'feature_locked') {
+            setShowCreativelyPaywall(true);
+            setKitGenerationStatus('idle');
+            return;
+          }
+          throw new Error(data?.error || `خطأ في الخادم (${response.status})`);
+        }
 
         setKitGeneratedAssets(prev => ({
           ...prev,
@@ -1372,16 +1378,22 @@ const handleProUnlockSubmit = async () => {};
         }),
       });
 
-      if (!response.ok) {
-        const text = await response.text();
-        try {
-           const data = JSON.parse(text);
-           throw new Error(data.error || 'حدث خطأ أثناء التوليد');
-        } catch {
-           throw new Error(`Server error: ${response.status}`);
-        }
+      let data: any = {};
+      const text = await response.text();
+      try {
+        if (text) data = JSON.parse(text);
+      } catch {
+        // ignore parsing error
       }
-      const data = await response.json();
+
+      if (!response.ok) {
+        if (response.status === 402 || data?.error === 'feature_locked') {
+          setShowCreativelyPaywall(true);
+          setIsGenerating(false);
+          return;
+        }
+        throw new Error(data?.error || `خطأ في الخادم (${response.status})`);
+      }
 
       if (data.type === "concepts") {
         setConceptOptions(data.concepts);

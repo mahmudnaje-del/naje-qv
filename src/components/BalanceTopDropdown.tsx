@@ -226,7 +226,7 @@ export const BalanceTopDropdown: React.FC<BalanceTopDropdownProps> = ({ isCreati
                       <Sparkles className="w-3.5 h-3.5 text-amber-200" />
                     </span>
                     <span className="text-[10px] font-normal text-amber-100/90 truncate">
-                      باقات تبدأ من 5$ عبر PayPal
+                      باقات تبدأ من 5$ ببطاقة الائتمان أو PayPal
                     </span>
                   </div>
                 </div>

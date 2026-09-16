@@ -17,7 +17,19 @@ import {
   CheckCircle2,
   AlertCircle,
   RefreshCw,
+  CreditCard,
+  Lock,
+  Wallet,
+  Coins,
 } from 'lucide-react';
+import {
+  VisaBadge,
+  MastercardBadge,
+  MadaBadge,
+  AmexBadge,
+  PayPalBadge,
+  PaymentBrandIconsRow,
+} from '../components/PaymentBadges';
 
 declare global {
   interface Window {
@@ -174,13 +186,11 @@ export default function Store() {
         .Buttons({
           style: { layout: 'vertical', color: 'gold', shape: 'rect', label: 'paypal', height: 45 },
           createOrder: async () => {
-            setIsProcessing(true);
             setSuccessInfo(null);
             try {
               const token = await auth.currentUser?.getIdToken();
               if (!token) {
                 toast.error('يجب تسجيل الدخول أولاً لإتمام عملية الدفع');
-                setIsProcessing(false);
                 throw new Error('User not authenticated');
               }
               const res = await fetch('/api/paypal/create-order', {
@@ -191,16 +201,15 @@ export default function Store() {
               const data = await res.json();
               if (!res.ok || !data.order_id) {
                 toast.error(data.error || 'فشل في إنشاء طلب الدفع عبر PayPal');
-                setIsProcessing(false);
                 throw new Error(data.error || 'create_order_failed');
               }
               return data.order_id;
             } catch (err: any) {
-              setIsProcessing(false);
               throw err;
             }
           },
           onApprove: async (data: any) => {
+            setIsProcessing(true);
             try {
               const token = await auth.currentUser?.getIdToken();
               const res = await fetch('/api/paypal/capture-order', {
@@ -209,7 +218,6 @@ export default function Store() {
                 body: JSON.stringify({ order_id: data.orderID }),
               });
               const result = await res.json();
-              setIsProcessing(false);
               if (!res.ok) {
                 toast.error(result.error || 'حدث خطأ أثناء تأكيد عملية الدفع');
                 return;
@@ -220,15 +228,19 @@ export default function Store() {
               setSuccessInfo({ points: pointsAdded, newBalance: result.newBalance });
               toast.success(`تم شحن ${pointsAdded} نقطة إلى رصيدك بنجاح!`);
             } catch (err: any) {
-              setIsProcessing(false);
               toast.error(err.message || 'فشل في إتمام عملية الشحن');
+            } finally {
+              setIsProcessing(false);
             }
           },
-          onError: () => {
+          onError: (err: any) => {
             setIsProcessing(false);
-            toast.error('تعذرت عملية الدفع عبر PayPal. حاول مرة أخرى.');
+            console.error('PayPal button error:', err);
+            toast.error('تعذرت عملية الدفع عبر PayPal أو البطاقة. يرجى التحقق من البيانات والمحاولة مرة أخرى.');
           },
-          onCancel: () => setIsProcessing(false),
+          onCancel: () => {
+            setIsProcessing(false);
+          },
         })
         .render(buttonContainerRef.current)
         .catch((err: any) => console.error('Failed to render PayPal Buttons:', err));
@@ -371,57 +383,193 @@ export default function Store() {
 
       {/* Checkout panel */}
       <div className="bg-[#0b0c10] border border-amber-500/30 rounded-2xl p-6 sm:p-8 shadow-xl relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/5 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-0 w-64 h-64 bg-purple-600/5 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute top-0 right-0 w-72 h-72 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-0 w-72 h-72 bg-purple-600/10 rounded-full blur-3xl pointer-events-none" />
 
         <div className="relative z-10">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5 pb-5 border-b border-gray-800">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-5 border-b border-gray-800">
             <div>
-              <p className="text-xs text-gray-400 mb-1">إتمام الشراء لباقة</p>
-              <p className="text-base font-bold text-white">
-                {selectedContent?.name} — {selectedPackage?.points} نقطة مقابل{' '}
-                <span className="text-amber-400 font-mono">${selectedPackage?.usd.toFixed(2)}</span>
+              <p className="text-xs text-gray-400 mb-1">إتمام الشراء للباقة المحددة</p>
+              <p className="text-lg font-bold text-white flex items-center gap-2">
+                <span>{selectedContent?.name}</span>
+                <span className="text-gray-500">•</span>
+                <span className="text-amber-300 font-mono font-black">{selectedPackage?.points} نقطة</span>
+                <span className="text-gray-500">•</span>
+                <span className="text-amber-400 font-mono font-extrabold text-xl">${selectedPackage?.usd.toFixed(2)}</span>
               </p>
             </div>
-            <div className="flex items-center gap-1.5 text-xs text-amber-400/90 bg-amber-500/10 border border-amber-500/20 px-3 py-1.5 rounded-xl">
-              <ShieldCheck className="w-4 h-4" />
-              <span>دفع مؤمّن عبر PayPal</span>
+            <div className="flex flex-wrap items-center gap-2.5 bg-gradient-to-r from-amber-500/10 via-purple-500/10 to-amber-500/10 border border-amber-500/30 px-3.5 py-2 rounded-xl text-xs">
+              <div className="flex items-center gap-1.5 text-amber-300 font-bold">
+                <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                <span>دفع مؤمّن ومشفر 100%</span>
+              </div>
+              <span className="text-gray-600">|</span>
+              <div className="flex items-center gap-1">
+                <VisaBadge size="sm" />
+                <MastercardBadge size="sm" />
+                <PayPalBadge size="sm" />
+                <MadaBadge size="sm" />
+              </div>
             </div>
           </div>
 
-          {clientId ? (
-            <div>
-              {sdkLoading && (
-                <div className="py-6 flex flex-col items-center justify-center gap-2 text-xs text-gray-400">
-                  <NajeSpinner className="w-5 h-5 text-amber-400" />
-                  <span>جاري تحميل بوابة الدفع الآمنة...</span>
+          <div className="space-y-6">
+            {/* Card & Payment Network Notice Banner */}
+            <div className="p-4 rounded-xl bg-gradient-to-r from-slate-900/90 via-[#131722] to-slate-900/90 border border-amber-400/20 shadow-md">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0 mt-0.5 shadow-inner">
+                    <CreditCard className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h4 className="text-sm font-extrabold text-white">
+                        بطاقات الائتمان وبطاقات السحب المباشر (Credit &amp; Debit Cards)
+                      </h4>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                        دفع فوري بدون حساب PayPal
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-300 mt-1 leading-relaxed">
+                      تدعم البوابة الدفع المباشر بجميع بطاقات الائتمان والسحب البنكي (Visa • Mastercard • مدى • Amex) دون الحاجة لامتلاك أو فتح حساب، كما يمكنك الدفع مباشرة برصيد حساب PayPal.
+                    </p>
+                  </div>
                 </div>
-              )}
-              {sdkError && (
-                <div className="p-3 rounded-lg bg-rose-950/30 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2 mb-3">
-                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                  <span>{sdkError}</span>
+                <div className="flex items-center gap-1.5 shrink-0 self-end md:self-center bg-black/40 px-3 py-1.5 rounded-xl border border-white/10">
+                  <VisaBadge size="sm" />
+                  <MastercardBadge size="sm" />
+                  <PayPalBadge size="sm" />
+                  <MadaBadge size="sm" />
+                  <AmexBadge size="sm" />
                 </div>
-              )}
-              <div
-                ref={buttonContainerRef}
-                className={`min-h-[45px] max-w-md transition-opacity duration-200 ${
-                  isProcessing ? 'opacity-50 pointer-events-none' : 'opacity-100'
-                }`}
-              />
-              {isProcessing && (
-                <div className="mt-2 text-xs text-amber-300 flex items-center gap-1.5 animate-pulse">
-                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                  <span>جاري معالجة الشحن...</span>
-                </div>
-              )}
+              </div>
             </div>
-          ) : (
-            <div className="p-4 rounded-xl bg-amber-500/5 border border-amber-500/20 text-xs text-amber-200/90 flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
-              <p className="text-gray-400">جاري تجهيز بوابة الدفع، يرجى الانتظار...</p>
+
+            {/* 2-Column Responsive Layout: Gateway on right, Virtual Card & Receipt on left */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+              {/* Main: Payment Execution Section (7 cols) */}
+              <div className="lg:col-span-7 space-y-4">
+                <div className="bg-[#0e1118] border border-gray-800 rounded-2xl p-5 shadow-lg relative">
+                  <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-800/80">
+                    <div className="flex items-center gap-2">
+                      <Lock className="w-4 h-4 text-amber-400" />
+                      <span className="text-xs font-bold text-white">بوابة المعالجة والدفع المباشر</span>
+                    </div>
+                    <span className="text-[11px] font-mono text-emerald-400 flex items-center gap-1">
+                      <ShieldCheck className="w-3.5 h-3.5" /> 256-Bit SSL Protected
+                    </span>
+                  </div>
+
+                  {/* PayPal SDK rendering area */}
+                  {clientId ? (
+                    <div>
+                      {sdkLoading && (
+                        <div className="py-8 flex flex-col items-center justify-center gap-2.5 text-xs text-gray-400">
+                          <NajeSpinner className="w-6 h-6 text-amber-400" />
+                          <span>جاري تحميل بوابة الدفع الآمنة وشارات البطاقات...</span>
+                        </div>
+                      )}
+                      {sdkError && (
+                        <div className="p-3.5 rounded-xl bg-rose-950/30 border border-rose-500/30 text-rose-300 text-xs flex items-center justify-between gap-2 mb-3">
+                          <div className="flex items-center gap-2">
+                            <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                            <span>{sdkError}</span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => window.location.reload()}
+                            className="text-[11px] underline text-rose-400 hover:text-white cursor-pointer"
+                          >
+                            إعادة المحاولة
+                          </button>
+                        </div>
+                      )}
+                      <div
+                        ref={buttonContainerRef}
+                        className={`min-h-[50px] w-full transition-opacity duration-200 ${
+                          isProcessing ? 'opacity-50 pointer-events-none' : 'opacity-100'
+                        }`}
+                      />
+                      {isProcessing && (
+                        <div className="mt-3 text-xs text-amber-300 flex items-center justify-center gap-2 animate-pulse bg-amber-500/10 p-2.5 rounded-xl border border-amber-500/20">
+                          <RefreshCw className="w-4 h-4 animate-spin text-amber-400" />
+                          <span>جاري معالجة الشحن وإيداع النقاط في حسابك...</span>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="p-5 rounded-xl bg-gradient-to-br from-amber-500/10 via-purple-900/10 to-black border border-amber-500/30 text-xs text-amber-200/90 leading-relaxed space-y-3">
+                      <div className="flex items-start gap-3">
+                        <AlertCircle className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
+                        <div>
+                          <p className="font-bold text-amber-300 text-sm mb-1">
+                            خدمة الدفع ببطاقات الائتمان والسحب مفعلة برمجياً
+                          </p>
+                          <p className="text-gray-300 text-xs">
+                            خدمة شحن PayPal وبطاقات Visa و Mastercard مجهزة برمجياً بالكامل. بانتظار تزويد مفتاح <code className="text-amber-300 font-mono bg-black/50 px-1 py-0.5 rounded">PAYPAL_CLIENT_ID</code> في بيئة السيرفر السحابي. بمجرد إدخاله ستظهر أزرار الدفع المباشر فوراً.
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="pt-3 border-t border-amber-500/20 flex items-center justify-between">
+                        <span className="text-[11px] text-gray-400">البطاقات المعتمدة فور التفعيل:</span>
+                        <div className="flex items-center gap-1.5">
+                          <VisaBadge size="sm" />
+                          <MastercardBadge size="sm" />
+                          <PayPalBadge size="sm" />
+                          <MadaBadge size="sm" />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Security badges footer */}
+                  <div className="mt-4 pt-3 border-t border-gray-800/80 flex items-center justify-between text-[11px] text-gray-400">
+                    <div className="flex items-center gap-1.5 text-emerald-400">
+                      <ShieldCheck className="w-3.5 h-3.5" />
+                      <span>معتمد ومحمي بمعايير PCI-DSS المصرفية</span>
+                    </div>
+                    <span className="text-gray-500">لا يتم تخزين بيانات بطاقتك أبداً</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Left Column: Order Breakdown (5 cols) */}
+              <div className="lg:col-span-5 space-y-4">
+                {/* Transparent Order Summary Receipt */}
+                <div className="bg-[#0e1118] border border-gray-800 rounded-2xl p-4 text-xs space-y-2.5 shadow-md">
+                  <div className="flex items-center justify-between pb-2 border-b border-gray-800 text-gray-400 font-medium">
+                    <span>ملخص الفاتورة الفورية</span>
+                    <span className="text-[10px] text-emerald-400 flex items-center gap-1 font-bold">
+                      <Zap className="w-3 h-3" /> تسليم فوري لحظي
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between text-gray-300">
+                    <span>الباقة المختارة:</span>
+                    <span className="font-bold text-white">{selectedContent?.name}</span>
+                  </div>
+
+                  <div className="flex items-center justify-between text-gray-300">
+                    <span>الرصيد الإبداعي:</span>
+                    <span className="font-bold text-amber-400 font-mono">+{selectedPackage?.points} نقطة إبداع</span>
+                  </div>
+
+                  <div className="flex items-center justify-between text-gray-300">
+                    <span>الضرائب ورسوم المعالجة:</span>
+                    <span className="text-emerald-400 font-bold">$0.00 (شاملة)</span>
+                  </div>
+
+                  <div className="pt-2 border-t border-gray-800/80 flex items-center justify-between text-sm">
+                    <span className="font-extrabold text-white">المبلغ الإجمالي للدفع:</span>
+                    <span className="font-mono font-black text-lg text-amber-300">
+                      ${selectedPackage?.usd.toFixed(2)} USD
+                    </span>
+                  </div>
+                </div>
+              </div>
             </div>
-          )}
+          </div>
         </div>
       </div>
 

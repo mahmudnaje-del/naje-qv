@@ -233,16 +233,32 @@ export default function NajeAd() {
         })
       });
 
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || 'فشل في بدء عملية التوليد.');
+      let data: any = {};
+      try {
+        const text = await res.text();
+        if (text) {
+          data = JSON.parse(text);
+        }
+      } catch (parseErr) {
+        console.warn('Non-JSON response received from server:', parseErr);
       }
 
-      if (data.jobId) {
+      if (res.status === 402 || data?.error === 'feature_locked') {
+        setShowAdPaywall(true);
+        setIsSubmitting(false);
+        setActiveJobId(null);
+        return;
+      }
+
+      if (!res.ok) {
+        throw new Error(data?.error || (res.status === 504 ? 'استغرقت المعالجة وقتاً طويلاً، يرجى المحاولة لاحقاً.' : 'فشل في بدء عملية التوليد.'));
+      }
+
+      if (data?.jobId) {
         setActiveJobId(data.jobId);
       }
 
-      if (data.newBalance !== undefined) {
+      if (data?.newBalance !== undefined) {
         updateBalance(data.newBalance);
       }
     } catch (err: any) {

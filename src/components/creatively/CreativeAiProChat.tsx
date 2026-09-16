@@ -514,39 +514,20 @@ export function CreativeAiProChat({ activationCode = 'naje_authenticated', setAc
         }),
       });
 
-      let data;
+      let data: any = {};
       try {
-        if (!res.ok) {
-          const text = await res.text();
+        const text = await res.text();
+        if (text) {
           try {
-             data = JSON.parse(text);
+            data = JSON.parse(text);
           } catch {
-             data = { error: text.slice(0, 50) };
+            data = { error: text.slice(0, 100) };
           }
-        } else {
-          data = await res.json();
         }
-      } catch (err: any) {
-        setSessions(prev => prev.map(s => {
-          if (s.id === currentSessionId) {
-            return {
-              ...s,
-              messages: [
-                ...s.messages,
-                {
-                  id: `err-${Date.now()}`,
-                  role: 'model' as const,
-                  text: lang === 'ar' ? `حدث خطأ: ${err.message}` : `An error occurred: ${err.message}`
-                }
-              ]
-            };
-          }
-          return s;
-        }));
-        setIsLoading(false);
-        return;
+      } catch (parseErr: any) {
+        data = { error: parseErr?.message || 'Failed to read response' };
       }
-      
+
       setSessions(prev => prev.map(s => {
         if (s.id === currentSessionId) {
           const aiMessage: Message = { 
@@ -699,20 +680,18 @@ export function CreativeAiProChat({ activationCode = 'naje_authenticated', setAc
         body: JSON.stringify(body)
       });
       
-      let data;
+      let data: any = {};
       try {
-        if (!res.ok) {
-          const text = await res.text();
+        const text = await res.text();
+        if (text) {
           try {
-             data = JSON.parse(text);
+            data = JSON.parse(text);
           } catch {
-             data = { error: text.slice(0, 100) };
+            data = { error: text.slice(0, 100) };
           }
-        } else {
-          data = await res.json();
         }
       } catch (err: any) {
-        data = { error: `Invalid JSON response: ${err.message}` };
+        data = { error: err.message };
       }
 
       if (data.jobId || data.status === 'queued') {

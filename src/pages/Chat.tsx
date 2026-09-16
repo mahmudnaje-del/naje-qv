@@ -1204,7 +1204,9 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
             triggerPrompt = data.triggerPrompt || finalPrompt;
             triggerEstimatedCount = data.estimatedCount || 5;
           }
-        } catch (e) { throw new Error('خطأ غير متوقع'); }
+        } catch (e) { 
+          throw new Error(text && text.length < 200 ? text : 'حدث خطأ غير متوقع أثناء معالجة الاستجابة.'); 
+        }
 
         // Text-risk gate: offer Pro model suggestion card
         if (data.action === 'model_upgrade_suggestion') {

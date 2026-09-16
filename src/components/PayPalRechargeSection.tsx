@@ -2,8 +2,14 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useAppStore } from '../store';
 import { auth } from '../firebase';
 import { toast } from '../toastStore';
-import { ShieldCheck, Sparkles, CheckCircle, AlertCircle, RefreshCw } from 'lucide-react';
+import { ShieldCheck, Sparkles, CheckCircle, AlertCircle, RefreshCw, CreditCard, Lock, Zap } from 'lucide-react';
 import { NajeSpinner } from './NajeSpinner';
+import {
+  VisaBadge,
+  MastercardBadge,
+  MadaBadge,
+  PayPalBadge,
+} from './PaymentBadges';
 
 declare global {
   interface Window {
@@ -129,13 +135,11 @@ export const PayPalRechargeSection: React.FC = () => {
             height: 44,
           },
           createOrder: async () => {
-            setIsProcessing(true);
             setSuccessInfo(null);
             try {
               const token = await auth.currentUser?.getIdToken();
               if (!token) {
                 toast.error('يجب تسجيل الدخول أولاً لإتمام عملية الدفع');
-                setIsProcessing(false);
                 throw new Error('User not authenticated');
               }
 
@@ -152,17 +156,16 @@ export const PayPalRechargeSection: React.FC = () => {
               if (!res.ok || !data.order_id) {
                 const errMsg = data.error || 'فشل في إنشاء طلب الدفع عبر PayPal';
                 toast.error(errMsg);
-                setIsProcessing(false);
                 throw new Error(errMsg);
               }
 
               return data.order_id;
             } catch (err: any) {
-              setIsProcessing(false);
               throw err;
             }
           },
           onApprove: async (data: any) => {
+            setIsProcessing(true);
             try {
               const token = await auth.currentUser?.getIdToken();
               const res = await fetch('/api/paypal/capture-order', {
@@ -175,7 +178,6 @@ export const PayPalRechargeSection: React.FC = () => {
               });
 
               const result = await res.json();
-              setIsProcessing(false);
 
               if (!res.ok) {
                 toast.error(result.error || 'حدث خطأ أثناء تأكيد عملية الدفع');
@@ -195,8 +197,9 @@ export const PayPalRechargeSection: React.FC = () => {
 
               toast.success(`تم بنجاح شحن ${pointsAdded} نقطة إلى رصيدك! شكراً لثقتك بنظام ناجي.`);
             } catch (err: any) {
-              setIsProcessing(false);
               toast.error(err.message || 'فشل في إتمام عملية الشحن');
+            } finally {
+              setIsProcessing(false);
             }
           },
           onError: (err: any) => {
@@ -244,9 +247,18 @@ export const PayPalRechargeSection: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex items-center gap-1.5 text-xs text-amber-400/90 bg-amber-500/10 border border-amber-500/20 px-3 py-1.5 rounded-xl self-start sm:self-center">
-          <ShieldCheck className="w-4 h-4 text-amber-400" />
-          <span>دفع مؤمّن ومشفر 100%</span>
+        <div className="flex flex-wrap items-center gap-2 text-xs bg-amber-500/10 border border-amber-500/20 px-3 py-1.5 rounded-xl self-start sm:self-center">
+          <div className="flex items-center gap-1.5 text-amber-400">
+            <ShieldCheck className="w-4 h-4 text-amber-400" />
+            <span>دفع مؤمّن ومشفر 100%</span>
+          </div>
+          <span className="text-gray-600">|</span>
+          <div className="flex items-center gap-1">
+            <VisaBadge size="sm" />
+            <MastercardBadge size="sm" />
+            <PayPalBadge size="sm" />
+            <MadaBadge size="sm" />
+          </div>
         </div>
       </div>
 
@@ -335,6 +347,22 @@ export const PayPalRechargeSection: React.FC = () => {
               ${packages.find((p) => p.id === selectedPackage)?.usd.toFixed(2)} USD
             </span>
           </span>
+        </div>
+
+        {/* Payment options banner */}
+        <div className="mb-4 p-3 rounded-xl bg-gradient-to-r from-slate-900/90 via-[#161a24] to-slate-900/90 border border-amber-500/20 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+          <div className="flex items-center gap-2">
+            <CreditCard className="w-4 h-4 text-amber-400 shrink-0" />
+            <span className="text-gray-200">
+              الدفع متاح بجميع <strong className="text-white">بطاقات الائتمان والسحب (Visa / Mastercard)</strong> أو عبر <strong className="text-amber-300">PayPal</strong>
+            </span>
+          </div>
+          <div className="flex items-center gap-1 shrink-0 self-end sm:self-center">
+            <VisaBadge size="sm" />
+            <MastercardBadge size="sm" />
+            <PayPalBadge size="sm" />
+            <MadaBadge size="sm" />
+          </div>
         </div>
 
         {/* PayPal SDK rendering area */}
