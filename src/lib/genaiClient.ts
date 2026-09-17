@@ -16,7 +16,7 @@ try {
 
 export const PROJECT_ID = process.env.GOOGLE_CLOUD_PROJECT || process.env.GCP_PROJECT || configProjectId;
 export const USE_VERTEX_AI = process.env.NAJE_USE_VERTEX_AI === 'true';
-export const VERTEX_LOCATION = process.env.VERTEX_AI_LOCATION || 'us-central1';
+export const VERTEX_LOCATION = process.env.VERTEX_AI_LOCATION || 'global';
 
 export function createGenAIClient(): GoogleGenAI {
   if (USE_VERTEX_AI) {

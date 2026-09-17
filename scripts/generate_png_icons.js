@@ -4,12 +4,34 @@ import path from 'path';
 
 const publicDir = path.resolve('public');
 
+function writeIcoFromPng(pngBuffer, icoPath) {
+  // ICO container with a single embedded PNG (Vista+).
+  const header = Buffer.alloc(6);
+  header.writeUInt16LE(0, 0);
+  header.writeUInt16LE(1, 2);
+  header.writeUInt16LE(1, 4);
+  const entry = Buffer.alloc(16);
+  entry.writeUInt8(32, 0);
+  entry.writeUInt8(32, 1);
+  entry.writeUInt8(0, 2);
+  entry.writeUInt8(0, 3);
+  entry.writeUInt16LE(1, 4);
+  entry.writeUInt16LE(32, 6);
+  entry.writeUInt32LE(pngBuffer.length, 8);
+  entry.writeUInt32LE(22, 12);
+  fs.writeFileSync(icoPath, Buffer.concat([header, entry, pngBuffer]));
+}
+
 async function generate() {
   const logoAppSvg = fs.readFileSync(path.join(publicDir, 'logo-app.svg'));
   const ogImageSvg = fs.readFileSync(path.join(publicDir, 'og-image.svg'));
+  const appleTouchSvg = fs.readFileSync(path.join(publicDir, 'apple-touch-icon.svg'));
 
   await sharp(logoAppSvg).resize(512, 512).png().toFile(path.join(publicDir, 'logo-512.png'));
   console.log('Generated logo-512.png');
+
+  await sharp(logoAppSvg).resize(512, 512).png().toFile(path.join(publicDir, 'icon.png'));
+  console.log('Generated icon.png');
 
   await sharp(logoAppSvg).resize(192, 192).png().toFile(path.join(publicDir, 'logo-192.png'));
   console.log('Generated logo-192.png');
@@ -23,8 +45,15 @@ async function generate() {
   await sharp(logoAppSvg).resize(32, 32).png().toFile(path.join(publicDir, 'favicon-32.png'));
   console.log('Generated favicon-32.png');
 
+  const favicon32 = await sharp(logoAppSvg).resize(32, 32).png().toBuffer();
+  writeIcoFromPng(favicon32, path.join(publicDir, 'favicon.ico'));
+  console.log('Generated favicon.ico');
+
   await sharp(logoAppSvg).resize(16, 16).png().toFile(path.join(publicDir, 'favicon-16.png'));
   console.log('Generated favicon-16.png');
+
+  await sharp(appleTouchSvg).resize(180, 180).png().toFile(path.join(publicDir, 'apple-touch-icon.png'));
+  console.log('Generated apple-touch-icon.png');
 
   const maskableSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
   <defs>

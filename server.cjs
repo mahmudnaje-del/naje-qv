@@ -188,6 +188,115 @@ var init_genaiClient = __esm({
   }
 });
 
+// src/lib/modelEnvConfig.ts
+function readEnv(keys, defaultValue) {
+  if (typeof process === "undefined" || !process.env) return defaultValue;
+  for (const key of keys) {
+    const val = process.env[key];
+    if (val && typeof val === "string" && val.trim().length > 0) {
+      return val.trim();
+    }
+  }
+  return defaultValue;
+}
+function getNajeModel(role) {
+  switch (role) {
+    case "core":
+      return readEnv(["NAJE_MODEL_CORE", "Naje-core", "MODEL_CORE", "NAJE_CORE"], "gemini-3.6-flash");
+    case "lite":
+      return readEnv(["NAJE_MODEL_LITE", "Naje-lite", "MODEL_LITE", "NAJE_LITE"], "gemini-3.5-flash-lite");
+    case "pro":
+      return readEnv(["NAJE_MODEL_PRO", "Naje-pro", "MODEL_PRO", "NAJE_PRO"], "gemini-3.1-pro-preview");
+    case "personas":
+      return readEnv(["NAJE_MODEL_PERSONAS", "Naje-personas", "MODEL_PERSONAS", "NAJE_PERSONAS"], "gemini-3.5-flash-lite");
+    case "image_lite":
+      return readEnv(["NAJE_MODEL_IMAGE_LITE", "Naje-image-lite", "MODEL_IMAGE_LITE"], "nano-banana-2-lite");
+    case "image_core":
+      return readEnv(["NAJE_MODEL_IMAGE_CORE", "Naje-image", "MODEL_IMAGE_CORE"], "nano-banana-2");
+    case "image_pro":
+      return readEnv(["NAJE_MODEL_IMAGE_PRO", "Naje-image-pro", "MODEL_IMAGE_PRO"], "nano-banana-pro");
+    case "video_core":
+      return readEnv(["NAJE_MODEL_VIDEO_CORE", "Naje-video-lite", "Naje-video", "MODEL_VIDEO_CORE", "NAJE_VIDEO_LITE", "NAJE_VIDEO"], "veo-3.1-lite-generate-001");
+    case "video_pro":
+      return readEnv(["NAJE_MODEL_VIDEO_PRO", "Naje-video-pro", "MODEL_VIDEO_PRO", "NAJE_VIDEO_PRO"], "gemini-omni-1.1-flash-preview");
+    case "voice_core":
+      return readEnv(["NAJE_MODEL_VOICE_CORE", "Naje-voice-core", "MODEL_VOICE_CORE", "NAJE_VOICE_CORE", "NAJE_MODEL_VOICE", "Naje-voice"], "gemini-3.1-flash-tts-preview");
+    case "voice_pro":
+      return readEnv(["NAJE_MODEL_VOICE_PRO", "Naje-voice-pro", "MODEL_VOICE_PRO", "NAJE_VOICE_PRO"], "gemini-3.1-flash-tts-preview");
+    case "voice":
+      return readEnv(["NAJE_MODEL_VOICE_CORE", "NAJE_MODEL_VOICE", "Naje-voice-core", "Naje-voice", "MODEL_VOICE_CORE", "MODEL_VOICE"], "gemini-3.1-flash-tts-preview");
+    default:
+      return readEnv(["NAJE_MODEL_CORE", "MODEL_CORE"], "gemini-3.6-flash");
+  }
+}
+function resolveEngineModel(modelOrAlias) {
+  if (!modelOrAlias) return getNajeModel("core");
+  const m = String(modelOrAlias || "").trim();
+  const lower = m.toLowerCase().replace(/\s+/g, "-");
+  if (lower === "naje-core" || lower === "core") {
+    return resolveEngineModel(getNajeModel("core"));
+  }
+  if (lower === "naje-lite" || lower === "lite") {
+    return resolveEngineModel(getNajeModel("lite"));
+  }
+  if (lower === "naje-pro" || lower === "max" || lower === "pro") {
+    return resolveEngineModel(getNajeModel("pro"));
+  }
+  if (lower === "naje-personas" || lower === "personas") {
+    return resolveEngineModel(getNajeModel("personas"));
+  }
+  if (lower === "naje-voice-core" || lower === "voice-core" || lower === "voice_core") {
+    return resolveEngineModel(getNajeModel("voice_core"));
+  }
+  if (lower === "naje-voice-pro" || lower === "voice-pro" || lower === "voice_pro") {
+    return resolveEngineModel(getNajeModel("voice_pro"));
+  }
+  if (lower === "naje-voice" || lower === "voice") {
+    return resolveEngineModel(getNajeModel("voice_core"));
+  }
+  if (lower === "naje-video-core" || lower === "naje-video-lite" || lower === "naje-video" || lower === "video" || lower === "veo" || lower === "video_standard" || lower === "video_veo_lite") {
+    return resolveEngineModel(getNajeModel("video_core"));
+  }
+  if (lower === "naje-video-pro" || lower === "video-pro" || lower === "video_pro" || lower === "veo-pro" || lower === "omni" || lower === "video_omni" || lower === "video_hd") {
+    return resolveEngineModel(getNajeModel("video_pro"));
+  }
+  if (lower === "gemini-3.1-pro" || lower === "gemini-3.1-pro-preview") {
+    return "gemini-3.1-pro-preview";
+  }
+  if (lower === "gemini-3.5-flash-lite" || lower === "flash-lite") {
+    return "gemini-3.5-flash-lite";
+  }
+  if (lower === "gemini-3.6-flash" || lower === "gemini-flash" || lower === "flash") {
+    return "gemini-3.6-flash";
+  }
+  if (lower.includes("flash-lite-image") || lower === "nano-banana-2-lite" || lower === "naje-image-lite") {
+    return "gemini-3.1-flash-lite-image";
+  }
+  if (lower.includes("flash-image") || lower === "nano-banana-2" || lower === "naje-image") {
+    return "gemini-3.1-flash-image";
+  }
+  if (lower.includes("pro-image") || lower === "nano-banana-pro" || lower === "naje-image-pro") {
+    return "gemini-3-pro-image";
+  }
+  if (lower === "veo-lite" || lower === "veo-3.1-lite" || lower === "veo-3.1-lite-generate" || lower === "veo-3.1-lite-generate-001" || lower === "veo-3.1-lite-generate-preview") {
+    return "veo-3.1-lite-generate-001";
+  }
+  if (lower === "veo-pro" || lower === "veo-3.1-pro" || lower === "veo-3.1-generate" || lower === "veo-3.1-generate-001" || lower === "veo-3.1-generate-preview") {
+    return "veo-3.1-generate-001";
+  }
+  if (lower.includes("omni")) {
+    return "gemini-omni-1.1-flash-preview";
+  }
+  if (lower === "gemini-3.1-flash-tts" || lower === "gemini-3.1-flash-tts-preview") {
+    return "gemini-3.1-flash-tts-preview";
+  }
+  return lower;
+}
+var init_modelEnvConfig = __esm({
+  "src/lib/modelEnvConfig.ts"() {
+  }
+});
+
 // src/lib/naje-engine.ts
 async function getPptxGenCtor() {
   const mod = await import("pptxgenjs");
@@ -261,6 +370,7 @@ var init_naje_engine = __esm({
     init_pptx_design();
     import_genai2 = require("@google/genai");
     init_genaiClient();
+    init_modelEnvConfig();
     import_zod = require("zod");
     import_path2 = __toESM(require("path"), 1);
     import_fs2 = __toESM(require("fs"), 1);
@@ -451,7 +561,7 @@ var init_naje_engine = __esm({
 
 \u0623\u0639\u062F \u0641\u0642\u0637 JSON \u0628\u0627\u0644\u0634\u0643\u0644: {"title":"...","theme":"dark","colors":{"background":"0B0F19","title":"FFFFFF","text":"94A3B8","accent":"6366F1"},"sections":[{"title":"...","description":"..."}]} \u0628\u062F\u0648\u0646 \u0623\u064A \u0646\u0635 \u0625\u0636\u0627\u0641\u064A \u0623\u0648 \u0639\u0644\u0627\u0645\u0627\u062A markdown.`;
           const response = await this.ai.models.generateContent({
-            model: "gemini-3.7-flash",
+            model: resolveEngineModel(getNajeModel("core")),
             contents: outlinePrompt,
             config: { responseMimeType: "application/json", responseSchema: docOutlineSchema, maxOutputTokens: 8192, temperature: 0.6 }
           });
@@ -490,7 +600,7 @@ Ensure a strong narrative arc. Language: Arabic (unless requested otherwise).
 
 Across the deck, no single layoutTemplate may be used for more than 30% of slides. Consecutive slides must not share the same layoutTemplate. Every slide must carry at least one visual element \u2014 an icon, a chart, a stat callout, an image, or a card grid. A slide with only a title and body text is not acceptable output.`;
           const response = await this.ai.models.generateContent({
-            model: "gemini-3.7-flash",
+            model: resolveEngineModel(getNajeModel("core")),
             contents: outlinePrompt,
             config: {
               responseMimeType: "application/json",
@@ -536,7 +646,7 @@ You MUST return a JSON object with:
 }
 If the presentation is modern/tech, prefer 'dark' theme. If corporate/formal, prefer 'light'.`;
           const response = await this.ai.models.generateContent({
-            model: "gemini-3.7-flash",
+            model: resolveEngineModel(getNajeModel("core")),
             contents: artPrompt,
             config: {
               responseMimeType: "application/json",
@@ -554,7 +664,7 @@ If the presentation is modern/tech, prefer 'dark' theme. If corporate/formal, pr
           return { theme: "dark", colors: { background: "0B0F19", title: "FFFFFF", text: "94A3B8", accent: "6366F1" } };
         }
       }
-      async generateSlideJSON(sectionTitle, sectionDesc, artDirection, retryCount = 0, model = "gemini-3.5-flash-lite") {
+      async generateSlideJSON(sectionTitle, sectionDesc, artDirection, retryCount = 0, model = getNajeModel("personas")) {
         try {
           const prompt = `You are Naje AI, an elite Presentation Designer.
 Generate a structured JSON slide based on this requirement:
@@ -567,7 +677,7 @@ CRITICAL TEXT RULE: 'content.text' MUST be at most one single, grammatically com
 
 CRITICAL IMAGE RULE: 'content.aiImagePrompt' is REQUIRED. It MUST be a concrete, literal, transliterated English noun phrase describing a real photographable scene relevant to this specific slide's topic (e.g. "business meeting in modern office", "abstract blue network lines", "laptop on desk"). NO Arabic. NO abstract concepts or AI buzzwords.`;
           const response = await this.ai.models.generateContent({
-            model,
+            model: resolveEngineModel(model),
             contents: prompt,
             config: {
               responseMimeType: "application/json",
@@ -961,9 +1071,10 @@ var init_audioContainer = __esm({
 });
 
 // src/lib/modelRegistry.ts
-var OUTPUT_TOKEN_LIMITS, SEED_ENDPOINTS, FALLBACK_DEFAULTS;
+var OUTPUT_TOKEN_LIMITS, SEED_ENDPOINTS, FALLBACK_MODEL_DEFAULTS, FALLBACK_DEFAULTS;
 var init_modelRegistry = __esm({
   "src/lib/modelRegistry.ts"() {
+    init_modelEnvConfig();
     OUTPUT_TOKEN_LIMITS = {
       criticReview: 4096,
       // الناقد's structured JSON verdict — short by design
@@ -1016,8 +1127,8 @@ var init_modelRegistry = __esm({
         id: "tier_lite",
         featureGroup: "text",
         labelAr: "Naje Lite (\u0646\u0635 \u062E\u0641\u064A\u0641)",
-        modelId: "gemini-3.5-flash-lite",
-        fallbackModelId: "gemini-3.1-flash-lite",
+        modelId: getNajeModel("lite"),
+        fallbackModelId: getNajeModel("lite"),
         paramNotes: "\u0627\u0633\u062A\u062C\u0627\u0628\u0629 \u0633\u0631\u064A\u0639\u0629 \u062C\u062F\u0627\u064B \u0648\u0627\u0633\u062A\u0647\u0644\u0627\u0643 \u062A\u0648\u0643\u0646\u0632 \u0645\u0646\u062E\u0641\u0636",
         maxOutputTokens: 32e3,
         pricingType: "per_token",
@@ -1036,8 +1147,8 @@ var init_modelRegistry = __esm({
         id: "tier_core",
         featureGroup: "text",
         labelAr: "Naje Core (\u0646\u0635 \u0642\u064A\u0627\u0633\u064A)",
-        modelId: "gemini-3.7-flash",
-        fallbackModelId: "gemini-3.5-flash",
+        modelId: getNajeModel("core"),
+        fallbackModelId: getNajeModel("lite"),
         paramNotes: "\u0645\u062A\u0648\u0627\u0632\u0646 \u0648\u0630\u0643\u064A (\u0627\u0644\u0646\u0645\u0648\u0630\u062C \u0627\u0644\u0627\u0641\u062A\u0631\u0627\u0636\u064A \u0644\u0644\u0630\u0643\u0627\u0621 \u0627\u0644\u0645\u062A\u0637\u0648\u0631)",
         maxOutputTokens: 32e3,
         pricingType: "per_token",
@@ -1055,9 +1166,9 @@ var init_modelRegistry = __esm({
       {
         id: "tier_max",
         featureGroup: "text",
-        labelAr: "Naje Max (\u062A\u0641\u0643\u064A\u0631 \u0639\u0645\u064A\u0642)",
-        modelId: "gemini-3.1-pro",
-        fallbackModelId: "gemini-3.7-flash",
+        labelAr: "Naje Pro (\u062A\u0641\u0643\u064A\u0631 \u0639\u0645\u064A\u0642)",
+        modelId: getNajeModel("pro"),
+        fallbackModelId: getNajeModel("core"),
         paramNotes: "\u0623\u0639\u0644\u0649 \u062F\u0642\u0629 \u0627\u0633\u062A\u062F\u0644\u0627\u0644\u064A\u0629 \u0648\u062A\u0641\u0643\u064A\u0631 \u062A\u062D\u0644\u064A\u0644\u064A \u0645\u062A\u0642\u062F\u0645",
         maxOutputTokens: 32e3,
         pricingType: "per_token",
@@ -1077,8 +1188,8 @@ var init_modelRegistry = __esm({
         id: "critic_review",
         featureGroup: "text",
         labelAr: "\u0627\u0644\u0646\u0627\u0642\u062F \u2014 \u0645\u0631\u0627\u062C\u0639\u0629 \u0648\u062A\u062F\u0642\u064A\u0642 \u0627\u0644\u0637\u0644\u0628\u0627\u062A \u0642\u0628\u0644 \u0627\u0644\u062A\u0646\u0641\u064A\u0630",
-        modelId: "gemini-3.5-flash-lite",
-        fallbackModelId: "gemini-3.1-flash-lite",
+        modelId: getNajeModel("personas"),
+        fallbackModelId: getNajeModel("personas"),
         paramNotes: "\u0641\u062D\u0635 \u0645\u0633\u0628\u0642 \u0644\u0644\u063A\u0645\u0648\u0636 \u0648\u0627\u0644\u062A\u0646\u0627\u0642\u0636\u0627\u062A \u0648\u062A\u0635\u062D\u064A\u062D\u0647\u0627",
         maxOutputTokens: 4096,
         pricingType: "per_token",
@@ -1092,14 +1203,14 @@ var init_modelRegistry = __esm({
         id: "creative_council",
         featureGroup: "text",
         labelAr: "\u0645\u062C\u0644\u0633 \u0639\u0642\u0648\u0644 \u0646\u0627\u062C\u064A \u2014 \u0627\u0644\u062A\u0648\u062C\u064A\u0647 \u0627\u0644\u0625\u0628\u062F\u0627\u0639\u064A \u0648\u0627\u0644\u0637\u0628\u0642\u0627\u062A",
-        modelId: "gemini-3.7-flash",
-        fallbackModelId: "gemini-3.5-flash",
-        paramNotes: "\u0627\u0644\u0645\u0635\u0648\u0651\u0631\u060C \u0627\u0644\u0645\u062E\u0631\u062C\u060C \u0627\u0644\u0643\u0627\u062A\u0628\u060C \u0645\u0647\u0646\u062F\u0633 \u0627\u0644\u0635\u0648\u062A\u064A\u0627\u062A",
+        modelId: getNajeModel("personas"),
+        fallbackModelId: getNajeModel("personas"),
+        paramNotes: "\u0627\u0644\u0645\u0635\u0648\u0651\u0631\u060C \u0627\u0644\u0645\u062E\u0631\u062C\u060C \u0627\u0644\u0643\u0627\u062A\u0628\u060C \u0645\u0647\u0646\u062F\u0633 \u0627\u0644\u0635\u0648\u062A\u064A\u0627\u062A (\u0634\u062E\u0635\u064A\u0627\u062A \u0646\u0627\u062C\u064A)",
         maxOutputTokens: 8192,
         pricingType: "per_token",
         inputPointsPer1k: 0.1,
         outputPointsPer1k: 0.1,
-        realCostPer: { unit: "per_1m_input_tokens", usd: 1.25 },
+        realCostPer: { unit: "per_1m_input_tokens", usd: 0.25 },
         pointsPrice: 0,
         isBackground: true
       },
@@ -1107,14 +1218,14 @@ var init_modelRegistry = __esm({
         id: "agent_planner",
         featureGroup: "text",
         labelAr: "\u0645\u062E\u0637\u0637 \u0627\u0644\u0648\u0643\u0644\u0627\u0621 \u0627\u0644\u0630\u0643\u064A (Agent Planner)",
-        modelId: "gemini-3.7-flash",
-        fallbackModelId: "gemini-3.5-flash",
-        paramNotes: "\u062A\u0641\u0643\u064A\u0643 \u0627\u0644\u0645\u0647\u0627\u0645 \u0648\u0628\u0646\u0627\u0621 \u062E\u0637\u0637 \u0627\u0644\u0648\u0643\u064A\u0644 \u0648\u062A\u0639\u062F\u064A\u0644\u0647\u0627",
+        modelId: getNajeModel("personas"),
+        fallbackModelId: getNajeModel("personas"),
+        paramNotes: "\u062A\u0641\u0643\u064A\u0643 \u0627\u0644\u0645\u0647\u0627\u0645 \u0648\u0628\u0646\u0627\u0621 \u062E\u0637\u0637 \u0627\u0644\u0648\u0643\u064A\u0644 \u0648\u062A\u0639\u062F\u064A\u0644\u0647\u0627 (\u0634\u062E\u0635\u064A\u0629 \u0627\u0644\u0648\u0643\u064A\u0644)",
         maxOutputTokens: 8192,
         pricingType: "per_token",
         inputPointsPer1k: 0.1,
         outputPointsPer1k: 0.1,
-        realCostPer: { unit: "per_1m_input_tokens", usd: 1.25 },
+        realCostPer: { unit: "per_1m_input_tokens", usd: 0.25 },
         pointsPrice: 0,
         isBackground: true
       },
@@ -1122,14 +1233,14 @@ var init_modelRegistry = __esm({
         id: "agent_auditor",
         featureGroup: "text",
         labelAr: "\u0645\u062F\u0642\u0642 \u062E\u0637\u0648\u0627\u062A \u0627\u0644\u0648\u0643\u064A\u0644 (Agent Step Auditor)",
-        modelId: "gemini-3.7-flash",
-        fallbackModelId: "gemini-3.5-flash",
-        paramNotes: "\u0627\u0644\u062A\u062D\u0642\u0642 \u0627\u0644\u0627\u0633\u062A\u0631\u0627\u062A\u064A\u062C\u064A \u0648\u0636\u0628\u0637 \u0627\u0644\u062C\u0648\u062F\u0629 \u0644\u0643\u0644 \u062E\u0637\u0648\u0629",
+        modelId: getNajeModel("personas"),
+        fallbackModelId: getNajeModel("personas"),
+        paramNotes: "\u0627\u0644\u062A\u062D\u0642\u0642 \u0627\u0644\u0627\u0633\u062A\u0631\u0627\u062A\u064A\u062C\u064A \u0648\u0636\u0628\u0637 \u0627\u0644\u062C\u0648\u062F\u0629 \u0644\u0643\u0644 \u062E\u0637\u0648\u0629 (\u0634\u062E\u0635\u064A\u0629 \u0627\u0644\u0648\u0643\u064A\u0644)",
         maxOutputTokens: 8192,
         pricingType: "per_token",
         inputPointsPer1k: 0.1,
         outputPointsPer1k: 0.1,
-        realCostPer: { unit: "per_1m_input_tokens", usd: 1.25 },
+        realCostPer: { unit: "per_1m_input_tokens", usd: 0.25 },
         pointsPrice: 0,
         isBackground: true
       },
@@ -1137,9 +1248,9 @@ var init_modelRegistry = __esm({
         id: "agent_narrator",
         featureGroup: "text",
         labelAr: "\u0633\u0627\u0631\u062F \u0625\u0646\u062C\u0627\u0632\u0627\u062A \u0627\u0644\u0648\u0643\u064A\u0644 (Agent Step Narrator)",
-        modelId: "gemini-3.5-flash-lite",
-        fallbackModelId: "gemini-3.1-flash-lite",
-        paramNotes: "\u0635\u064A\u0627\u063A\u0629 \u062A\u0623\u0643\u064A\u062F \u0625\u0646\u062C\u0627\u0632 \u0627\u0644\u062E\u0637\u0648\u0627\u062A \u0628\u0635\u0648\u062A \u0646\u0627\u062C\u064A \u0627\u0644\u0637\u0628\u064A\u0639\u064A",
+        modelId: getNajeModel("personas"),
+        fallbackModelId: getNajeModel("personas"),
+        paramNotes: "\u0635\u064A\u0627\u063A\u0629 \u062A\u0623\u0643\u064A\u062F \u0625\u0646\u062C\u0627\u0632 \u0627\u0644\u062E\u0637\u0648\u0627\u062A \u0628\u0635\u0648\u062A \u0646\u0627\u062C\u064A \u0627\u0644\u0637\u0628\u064A\u0639\u064A (\u0634\u062E\u0635\u064A\u0629 \u0627\u0644\u0648\u0643\u064A\u0644)",
         maxOutputTokens: 4096,
         pricingType: "per_token",
         inputPointsPer1k: 0.1,
@@ -1152,8 +1263,8 @@ var init_modelRegistry = __esm({
         id: "fullstack_builder",
         featureGroup: "ui",
         labelAr: "\u0627\u0644\u0646\u0633\u0651\u0627\u062C \u2014 \u0645\u0647\u0646\u062F\u0633 \u0627\u0644\u0623\u0646\u0638\u0645\u0629 \u0627\u0644\u0645\u062A\u0643\u0627\u0645\u0644\u0629 (Fullstack Engineer)",
-        modelId: "gemini-3.1-pro",
-        fallbackModelId: "gemini-3.7-flash",
+        modelId: getNajeModel("pro"),
+        fallbackModelId: getNajeModel("core"),
         paramNotes: "\u062A\u0648\u0644\u064A\u062F \u0645\u0644\u0641\u0627\u062A \u0627\u0644\u0628\u0631\u0645\u062C\u0629 \u0648\u0627\u0644\u0623\u0646\u0638\u0645\u0629 \u0627\u0644\u0643\u0627\u0645\u0644\u0629 (Phase 3)",
         maxOutputTokens: 6e4,
         pricingType: "per_token",
@@ -1167,14 +1278,14 @@ var init_modelRegistry = __esm({
         id: "fullstack_auditor",
         featureGroup: "ui",
         labelAr: "\u0627\u0644\u0646\u0633\u0651\u0627\u062C \u2014 \u0645\u062F\u0642\u0642 \u0627\u0644\u062C\u0648\u062F\u0629 \u0648\u0627\u0644\u0623\u0646\u0638\u0645\u0629 (Fullstack Auditor)",
-        modelId: "gemini-3.7-flash",
-        fallbackModelId: "gemini-3.5-flash",
-        paramNotes: "\u0627\u0644\u062A\u062F\u0642\u064A\u0642 \u0627\u0644\u0645\u0639\u0645\u0627\u0631\u064A \u0648\u0627\u0644\u0628\u0631\u0645\u062C\u064A \u0648\u0641\u062D\u0635 \u0627\u0644\u062A\u0648\u0627\u0641\u0642",
+        modelId: getNajeModel("personas"),
+        fallbackModelId: getNajeModel("personas"),
+        paramNotes: "\u0627\u0644\u062A\u062F\u0642\u064A\u0642 \u0627\u0644\u0645\u0639\u0645\u0627\u0631\u064A \u0648\u0627\u0644\u0628\u0631\u0645\u062C\u064A \u0648\u0641\u062D\u0635 \u0627\u0644\u062A\u0648\u0627\u0641\u0642 (\u0634\u062E\u0635\u064A\u0629 \u0627\u0644\u0645\u062F\u0642\u0642)",
         maxOutputTokens: 16e3,
         pricingType: "per_token",
         inputPointsPer1k: 0.1,
         outputPointsPer1k: 0.1,
-        realCostPer: { unit: "per_1m_input_tokens", usd: 1.25 },
+        realCostPer: { unit: "per_1m_input_tokens", usd: 0.25 },
         pointsPrice: 0,
         isBackground: true
       },
@@ -1182,14 +1293,14 @@ var init_modelRegistry = __esm({
         id: "image_prompt_compiler",
         featureGroup: "image",
         labelAr: "\u0645\u062C\u0645\u0651\u0639 \u0623\u0648\u0627\u0645\u0631 \u0627\u0644\u0635\u0648\u0631 (Image Prompt Compiler)",
-        modelId: "gemini-3.7-flash",
-        fallbackModelId: "gemini-3.5-flash",
-        paramNotes: "\u0647\u064A\u0643\u0644\u0629 \u0648\u0625\u062B\u0631\u0627\u0621 \u0623\u0648\u0627\u0645\u0631 \u062A\u0648\u0644\u064A\u062F \u0627\u0644\u0635\u0648\u0631 \u0627\u0644\u0627\u062D\u062A\u0631\u0627\u0641\u064A\u0629",
+        modelId: getNajeModel("personas"),
+        fallbackModelId: getNajeModel("personas"),
+        paramNotes: "\u0647\u064A\u0643\u0644\u0629 \u0648\u0625\u062B\u0631\u0627\u0621 \u0623\u0648\u0627\u0645\u0631 \u062A\u0648\u0644\u064A\u062F \u0627\u0644\u0635\u0648\u0631 \u0627\u0644\u0627\u062D\u062A\u0631\u0627\u0641\u064A\u0629 (\u0634\u062E\u0635\u064A\u0629 \u0627\u0644\u0645\u0635\u0648\u0631)",
         maxOutputTokens: 4096,
         pricingType: "per_token",
         inputPointsPer1k: 0.1,
         outputPointsPer1k: 0.1,
-        realCostPer: { unit: "per_1m_input_tokens", usd: 1.25 },
+        realCostPer: { unit: "per_1m_input_tokens", usd: 0.25 },
         pointsPrice: 0,
         isBackground: true
       },
@@ -1197,14 +1308,14 @@ var init_modelRegistry = __esm({
         id: "video_prompt_compiler",
         featureGroup: "video",
         labelAr: "\u0645\u062E\u0631\u062C \u0648\u0645\u0634\u0631\u0641 \u0633\u064A\u0646\u0627\u0631\u064A\u0648 \u0627\u0644\u0641\u064A\u062F\u064A\u0648 (Video Director)",
-        modelId: "gemini-3.7-flash",
-        fallbackModelId: "gemini-3.5-flash",
-        paramNotes: "\u062A\u0635\u0645\u064A\u0645 \u0644\u0642\u0637\u0627\u062A \u0648\u0633\u064A\u0646\u0627\u0631\u064A\u0648 \u0648\u062D\u0631\u0643\u0627\u062A \u0627\u0644\u0643\u0627\u0645\u064A\u0631\u0627",
+        modelId: getNajeModel("personas"),
+        fallbackModelId: getNajeModel("personas"),
+        paramNotes: "\u062A\u0635\u0645\u064A\u0645 \u0644\u0642\u0637\u0627\u062A \u0648\u0633\u064A\u0646\u0627\u0631\u064A\u0648 \u0648\u062D\u0631\u0643\u0627\u062A \u0627\u0644\u0643\u0627\u0645\u064A\u0631\u0627 (\u0634\u062E\u0635\u064A\u0629 \u0627\u0644\u0645\u062E\u0631\u062C)",
         maxOutputTokens: 8192,
         pricingType: "per_token",
         inputPointsPer1k: 0.1,
         outputPointsPer1k: 0.1,
-        realCostPer: { unit: "per_1m_input_tokens", usd: 1.25 },
+        realCostPer: { unit: "per_1m_input_tokens", usd: 0.25 },
         pointsPrice: 0,
         isBackground: true
       },
@@ -1212,14 +1323,14 @@ var init_modelRegistry = __esm({
         id: "image_auditor",
         featureGroup: "image",
         labelAr: "\u0645\u062F\u0642\u0642 \u062C\u0648\u062F\u0629 \u0648\u062A\u0637\u0627\u0628\u0642 \u0627\u0644\u0635\u0648\u0631 (Image Verifier)",
-        modelId: "gemini-3.7-flash",
-        fallbackModelId: "gemini-3.5-flash",
-        paramNotes: "\u0641\u062D\u0635 \u0645\u062E\u0631\u062C\u0627\u062A \u0627\u0644\u0635\u0648\u0631 \u0648\u0645\u0642\u0627\u0631\u0646\u062A\u0647\u0627 \u0628\u0627\u0644\u0637\u0644\u0628 \u0627\u0644\u0623\u0635\u0644\u064A",
+        modelId: getNajeModel("personas"),
+        fallbackModelId: getNajeModel("personas"),
+        paramNotes: "\u0641\u062D\u0635 \u0645\u062E\u0631\u062C\u0627\u062A \u0627\u0644\u0635\u0648\u0631 \u0648\u0645\u0642\u0627\u0631\u0646\u062A\u0647\u0627 \u0628\u0627\u0644\u0637\u0644\u0628 \u0627\u0644\u0623\u0635\u0644\u064A (\u0634\u062E\u0635\u064A\u0629 \u0627\u0644\u0641\u0627\u062D\u0635)",
         maxOutputTokens: 4096,
         pricingType: "per_token",
         inputPointsPer1k: 0.1,
         outputPointsPer1k: 0.1,
-        realCostPer: { unit: "per_1m_input_tokens", usd: 1.25 },
+        realCostPer: { unit: "per_1m_input_tokens", usd: 0.25 },
         pointsPrice: 0,
         isBackground: true
       },
@@ -1228,8 +1339,8 @@ var init_modelRegistry = __esm({
         id: "ui_builder",
         featureGroup: "ui",
         labelAr: "\u0627\u0633\u062A\u0648\u062F\u064A\u0648 \u0627\u0644\u0648\u0627\u062C\u0647\u0627\u062A UI Studio",
-        modelId: "gemini-3.7-flash",
-        fallbackModelId: "gemini-3.5-flash",
+        modelId: getNajeModel("core"),
+        fallbackModelId: getNajeModel("personas"),
         paramNotes: "\u062A\u0648\u0644\u064A\u062F \u0627\u0644\u0645\u0643\u0648\u0646\u0627\u062A \u0627\u0644\u062A\u0641\u0627\u0639\u0644\u064A\u0629 \u0648\u062A\u0635\u0645\u064A\u0645 \u0627\u0644\u0635\u0641\u062D\u0627\u062A",
         maxOutputTokens: 32e3,
         pricingType: "per_token",
@@ -1243,14 +1354,14 @@ var init_modelRegistry = __esm({
         id: "document_engine",
         featureGroup: "document",
         labelAr: "\u0645\u062D\u0631\u0643 \u062A\u062F\u0642\u064A\u0642 \u0627\u0644\u0645\u0633\u062A\u0646\u062F\u0627\u062A \u0648\u0627\u0644\u0634\u0631\u0627\u0626\u062D (Auditor)",
-        modelId: "gemini-3.7-flash",
-        fallbackModelId: "gemini-3.5-flash",
-        paramNotes: "\u0645\u0631\u0627\u062C\u0639\u0629 \u0648\u062A\u062F\u0642\u064A\u0642 \u062C\u0648\u062F\u0629 \u0648\u062A\u0646\u0627\u0633\u0642 \u0627\u0644\u0645\u0633\u062A\u0646\u062F\u0627\u062A \u0648\u0627\u0644\u0634\u0631\u0627\u0626\u062D",
+        modelId: getNajeModel("personas"),
+        fallbackModelId: getNajeModel("personas"),
+        paramNotes: "\u0645\u0631\u0627\u062C\u0639\u0629 \u0648\u062A\u062F\u0642\u064A\u0642 \u062C\u0648\u062F\u0629 \u0648\u062A\u0646\u0627\u0633\u0642 \u0627\u0644\u0645\u0633\u062A\u0646\u062F\u0627\u062A \u0648\u0627\u0644\u0634\u0631\u0627\u0626\u062D (\u0634\u062E\u0635\u064A\u0629 \u0627\u0644\u0643\u0627\u062A\u0628)",
         maxOutputTokens: 16e3,
         pricingType: "per_token",
         inputPointsPer1k: 0.1,
         outputPointsPer1k: 0.1,
-        realCostPer: { unit: "per_1m_input_tokens", usd: 1.25 },
+        realCostPer: { unit: "per_1m_input_tokens", usd: 0.25 },
         pointsPrice: 0,
         isBackground: true
       },
@@ -1258,9 +1369,9 @@ var init_modelRegistry = __esm({
         id: "document_writer",
         featureGroup: "document",
         labelAr: "\u0643\u0627\u062A\u0628 \u0627\u0644\u0645\u0633\u062A\u0646\u062F\u0627\u062A (Document Writer)",
-        modelId: "gemini-3.5-flash-lite",
-        fallbackModelId: "gemini-3.1-flash-lite",
-        paramNotes: "\u062A\u0648\u0644\u064A\u062F \u0648\u0635\u064A\u0627\u063A\u0629 \u0623\u0642\u0633\u0627\u0645 \u0627\u0644\u0645\u0633\u062A\u0646\u062F\u0627\u062A \u0648\u0627\u0644\u062A\u0642\u0627\u0631\u064A\u0631",
+        modelId: getNajeModel("personas"),
+        fallbackModelId: getNajeModel("personas"),
+        paramNotes: "\u062A\u0648\u0644\u064A\u062F \u0648\u0635\u064A\u0627\u063A\u0629 \u0623\u0642\u0633\u0627\u0645 \u0627\u0644\u0645\u0633\u062A\u0646\u062F\u0627\u062A \u0648\u0627\u0644\u062A\u0642\u0627\u0631\u064A\u0631 (\u0634\u062E\u0635\u064A\u0629 \u0627\u0644\u0643\u0627\u062A\u0628)",
         maxOutputTokens: 32e3,
         pricingType: "per_token",
         inputPointsPer1k: 0.1,
@@ -1273,9 +1384,9 @@ var init_modelRegistry = __esm({
         id: "slide_writer",
         featureGroup: "document",
         labelAr: "\u0643\u0627\u062A\u0628 \u0627\u0644\u0634\u0631\u0627\u0626\u062D (Slide Writer)",
-        modelId: "gemini-3.5-flash-lite",
-        fallbackModelId: "gemini-3.1-flash-lite",
-        paramNotes: "\u062A\u0648\u0644\u064A\u062F \u0648\u062A\u0623\u0644\u064A\u0641 \u0645\u062D\u062A\u0648\u0649 \u0627\u0644\u0639\u0631\u0648\u0636 \u0627\u0644\u062A\u0642\u062F\u064A\u0645\u064A\u0629",
+        modelId: getNajeModel("personas"),
+        fallbackModelId: getNajeModel("personas"),
+        paramNotes: "\u062A\u0648\u0644\u064A\u062F \u0648\u062A\u0623\u0644\u064A\u0641 \u0645\u062D\u062A\u0648\u0649 \u0627\u0644\u0639\u0631\u0648\u0636 \u0627\u0644\u062A\u0642\u062F\u064A\u0645\u064A\u0629 (\u0634\u062E\u0635\u064A\u0629 \u0627\u0644\u0643\u0627\u062A\u0628)",
         maxOutputTokens: 32e3,
         pricingType: "per_token",
         inputPointsPer1k: 0.1,
@@ -1288,8 +1399,8 @@ var init_modelRegistry = __esm({
         id: "doc_standard",
         featureGroup: "document",
         labelAr: "\u0645\u0633\u062A\u0646\u062F \u2014 A4 (\u0644\u0643\u0644 \u0635\u0641\u062D\u0629)",
-        modelId: "gemini-3.7-flash",
-        fallbackModelId: "gemini-3.5-flash",
+        modelId: getNajeModel("core"),
+        fallbackModelId: getNajeModel("personas"),
         paramNotes: "\u062A\u0648\u0644\u064A\u062F \u0648\u062A\u0635\u062F\u064A\u0631 \u0635\u0641\u062D\u0627\u062A A4 \u0627\u0644\u0631\u0633\u0645\u064A\u0629",
         maxOutputTokens: 32e3,
         pricingType: "per_generation",
@@ -1301,8 +1412,8 @@ var init_modelRegistry = __esm({
         id: "doc_a5",
         featureGroup: "document",
         labelAr: "\u0645\u0633\u062A\u0646\u062F \u2014 A5 (\u0644\u0643\u0644 \u0635\u0641\u062D\u0629)",
-        modelId: "gemini-3.7-flash",
-        fallbackModelId: "gemini-3.5-flash",
+        modelId: getNajeModel("core"),
+        fallbackModelId: getNajeModel("personas"),
         paramNotes: "\u062A\u0648\u0644\u064A\u062F \u0648\u062A\u0635\u062F\u064A\u0631 \u0635\u0641\u062D\u0627\u062A A5 \u0627\u0644\u0645\u0635\u063A\u0631\u0629",
         maxOutputTokens: 32e3,
         pricingType: "per_generation",
@@ -1314,8 +1425,8 @@ var init_modelRegistry = __esm({
         id: "doc_slides",
         featureGroup: "document",
         labelAr: "\u0639\u0631\u0636 \u062A\u0642\u062F\u064A\u0645\u064A \u2014 \u0634\u0631\u0627\u0626\u062D (\u0644\u0643\u0644 \u0634\u0631\u064A\u062D\u0629)",
-        modelId: "gemini-3.7-flash",
-        fallbackModelId: "gemini-3.5-flash",
+        modelId: getNajeModel("core"),
+        fallbackModelId: getNajeModel("personas"),
         paramNotes: "\u062A\u0648\u0644\u064A\u062F \u0648\u062A\u0635\u062F\u064A\u0631 \u0634\u0631\u0627\u0626\u062D \u0627\u0644\u0639\u0631\u0636 \u0627\u0644\u062A\u0642\u062F\u064A\u0645\u064A PPTX/PDF",
         maxOutputTokens: 32e3,
         pricingType: "per_generation",
@@ -1327,8 +1438,8 @@ var init_modelRegistry = __esm({
         id: "infographic_designer",
         featureGroup: "document",
         labelAr: "\u0627\u0644\u0645\u0635\u0645\u0645 \u2014 \u0645\u062D\u0631\u0643 \u0627\u0644\u0625\u0646\u0641\u0648\u062C\u0631\u0627\u0641\u064A\u0643 (Infographic Engine)",
-        modelId: "gemini-3.5-flash-lite",
-        fallbackModelId: "gemini-3.1-flash-lite",
+        modelId: getNajeModel("personas"),
+        fallbackModelId: getNajeModel("personas"),
         paramNotes: "\u0631\u0633\u0645 \u0628\u064A\u0627\u0646\u064A \u0648\u062A\u0635\u0645\u064A\u0645 \u0625\u0646\u0641\u0648\u062C\u0631\u0627\u0641\u064A\u0643 \u0628\u0635\u0631\u064A \u0648\u062A\u0635\u062F\u064A\u0631\u0647 \u0639\u0628\u0631 Puppeteer (PNG + PDF)",
         maxOutputTokens: 16e3,
         pricingType: "per_generation",
@@ -1341,8 +1452,8 @@ var init_modelRegistry = __esm({
         id: "image_lite",
         featureGroup: "image",
         labelAr: "\u0635\u0648\u0631\u0629 \u2014 Naje Imagen Lite",
-        modelId: "gemini-3.1-flash-lite-image",
-        fallbackModelId: "gemini-3.1-flash-image",
+        modelId: "nano-banana-2-lite",
+        fallbackModelId: getNajeModel("image_lite"),
         paramNotes: "\u062E\u0641\u064A\u0641 \u0648\u0633\u0631\u064A\u0639 (0.5 \u0646\u0642\u0637\u0629 \u0627\u0641\u062A\u0631\u0627\u0636\u064A\u0627\u064B)",
         maxOutputTokens: 4096,
         pricingType: "per_generation",
@@ -1353,9 +1464,9 @@ var init_modelRegistry = __esm({
       {
         id: "image_spectra",
         featureGroup: "image",
-        labelAr: "\u0635\u0648\u0631\u0629 \u2014 Naje Imagen (Spectra)",
-        modelId: "gemini-3.1-flash-image",
-        fallbackModelId: "gemini-3.1-flash-lite-image",
+        labelAr: "\u0635\u0648\u0631\u0629 \u2014 Naje Imagen",
+        modelId: "nano-banana-2",
+        fallbackModelId: getNajeModel("image_core"),
         paramNotes: "\u062A\u0648\u0627\u0632\u0646 \u0642\u064A\u0627\u0633\u064A (\u0646\u0642\u0637\u0629 \u0648\u0627\u062D\u062F\u0629 \u0627\u0641\u062A\u0631\u0627\u0636\u064A\u0627\u064B)",
         maxOutputTokens: 4096,
         pricingType: "per_generation",
@@ -1367,8 +1478,8 @@ var init_modelRegistry = __esm({
         id: "image_addon",
         featureGroup: "image",
         labelAr: "\u0625\u0636\u0627\u0641\u0629 \u062F\u0645\u062C \u0627\u0644\u0635\u0648\u0631 \u0627\u0644\u0645\u0631\u062C\u0639\u064A\u0629 (Addon)",
-        modelId: "gemini-3.7-flash",
-        fallbackModelId: "gemini-3.5-flash",
+        modelId: getNajeModel("personas"),
+        fallbackModelId: getNajeModel("personas"),
         paramNotes: "\u062A\u0643\u0644\u0641\u0629 \u062F\u0645\u062C \u0643\u0644 \u0635\u0648\u0631\u0629 \u0645\u0631\u062C\u0639\u064A\u0629 \u0625\u0636\u0627\u0641\u064A\u0629",
         maxOutputTokens: 4096,
         pricingType: "per_generation",
@@ -1379,9 +1490,9 @@ var init_modelRegistry = __esm({
       {
         id: "image_fast",
         featureGroup: "image",
-        labelAr: "\u0635\u0648\u0631\u0629 \u2014 \u0633\u0631\u064A\u0639\u0629 (Fast)",
-        modelId: "gemini-3.1-flash-lite-image",
-        fallbackModelId: "gemini-3.1-flash-image",
+        labelAr: "\u0635\u0648\u0631\u0629 \u2014 Naje Imagen Lite (\u0633\u0631\u064A\u0639\u0629)",
+        modelId: "nano-banana-2-lite",
+        fallbackModelId: getNajeModel("image_lite"),
         paramNotes: "\u062A\u0648\u0644\u064A\u062F \u0641\u0648\u0631\u064A \u062E\u0641\u064A\u0641",
         maxOutputTokens: 4096,
         pricingType: "per_generation",
@@ -1392,9 +1503,9 @@ var init_modelRegistry = __esm({
       {
         id: "image_standard",
         featureGroup: "image",
-        labelAr: "\u0635\u0648\u0631\u0629 \u2014 \u0645\u0639\u064A\u0627\u0631\u064A\u0629 Spectra (1K)",
-        modelId: "gemini-3.1-flash-image",
-        fallbackModelId: "gemini-3.1-flash-lite-image",
+        labelAr: "\u0635\u0648\u0631\u0629 \u2014 Naje Imagen \u0627\u0644\u0645\u0639\u064A\u0627\u0631\u064A\u0629",
+        modelId: "nano-banana-2",
+        fallbackModelId: getNajeModel("image_core"),
         paramNotes: "1024x1024 \u062F\u0642\u0629 \u0642\u064A\u0627\u0633\u064A\u0629",
         maxOutputTokens: 4096,
         pricingType: "per_generation",
@@ -1405,9 +1516,9 @@ var init_modelRegistry = __esm({
       {
         id: "image_hd",
         featureGroup: "image",
-        labelAr: "\u0635\u0648\u0631\u0629 \u2014 \u0639\u0627\u0644\u064A\u0629 \u0627\u0644\u062F\u0642\u0629 Nova (2K)",
-        modelId: "gemini-3-pro-image",
-        fallbackModelId: "gemini-3.1-flash-image",
+        labelAr: "\u0635\u0648\u0631\u0629 \u2014 Naje Imagen Pro (\u0639\u0627\u0644\u064A\u0629 \u0627\u0644\u062F\u0642\u0629)",
+        modelId: "nano-banana-pro",
+        fallbackModelId: getNajeModel("image_pro"),
         paramNotes: "2048x2048 \u062F\u0642\u0629 \u0641\u0627\u0626\u0642\u0629",
         maxOutputTokens: 4096,
         pricingType: "per_generation",
@@ -1418,9 +1529,9 @@ var init_modelRegistry = __esm({
       {
         id: "image_pro",
         featureGroup: "image",
-        labelAr: "\u0635\u0648\u0631\u0629 \u2014 Nova Canvas (Pro)",
-        modelId: "gemini-3-pro-image",
-        fallbackModelId: "gemini-3.1-flash-image",
+        labelAr: "\u0635\u0648\u0631\u0629 \u2014 Naje Imagen Pro (\u0627\u0644\u0627\u062D\u062A\u0631\u0627\u0641\u064A\u0629)",
+        modelId: "nano-banana-pro",
+        fallbackModelId: getNajeModel("image_pro"),
         paramNotes: "\u062C\u0648\u062F\u0629 \u0641\u0627\u0626\u0642\u0629 \u0645\u0639 \u062A\u062D\u0643\u0645 \u0628\u0627\u0644\u0641\u0631\u0634\u0627\u0629 \u0648\u0627\u0644\u0637\u0628\u0642\u0627\u062A",
         maxOutputTokens: 4096,
         pricingType: "per_generation",
@@ -1431,10 +1542,11 @@ var init_modelRegistry = __esm({
       // VIDEO GENERATION (Flat Per-Unit Pricing)
       {
         id: "video_standard",
+        envVarKey: "NAJE_MODEL_VIDEO_CORE",
         featureGroup: "video",
-        labelAr: "\u0641\u064A\u062F\u064A\u0648 \u2014 Veo \u0627\u0644\u0642\u064A\u0627\u0633\u064A",
-        modelId: "veo-3.1-lite-generate-preview",
-        fallbackModelId: "gemini-omni-flash-preview",
+        labelAr: "\u0641\u064A\u062F\u064A\u0648 \u2014 Naje Video",
+        modelId: getNajeModel("video_core"),
+        fallbackModelId: getNajeModel("video_core"),
         paramNotes: "720p \u0633\u064A\u0646\u0645\u0627\u0626\u064A \u0642\u064A\u0627\u0633\u064A",
         maxOutputTokens: 8192,
         pricingType: "per_generation",
@@ -1446,10 +1558,11 @@ var init_modelRegistry = __esm({
       },
       {
         id: "video_veo_lite",
+        envVarKey: "NAJE_MODEL_VIDEO_CORE",
         featureGroup: "video",
-        labelAr: "\u0641\u064A\u062F\u064A\u0648 \u2014 Veo Lite (720p)",
-        modelId: "veo-3.1-lite-generate-preview",
-        fallbackModelId: "gemini-omni-flash-preview",
+        labelAr: "\u0641\u064A\u062F\u064A\u0648 \u2014 Naje Video (Lite)",
+        modelId: getNajeModel("video_core"),
+        fallbackModelId: getNajeModel("video_core"),
         paramNotes: "720p @ 5s",
         maxOutputTokens: 8192,
         pricingType: "per_generation",
@@ -1461,11 +1574,12 @@ var init_modelRegistry = __esm({
       },
       {
         id: "video_omni",
+        envVarKey: "NAJE_MODEL_VIDEO_PRO",
         featureGroup: "video",
-        labelAr: "\u0641\u064A\u062F\u064A\u0648 \u2014 Omni Flash",
-        modelId: "gemini-omni-flash-preview",
-        fallbackModelId: "veo-3.1-lite-generate-preview",
-        paramNotes: "Omni Multimodal Video",
+        labelAr: "\u0641\u064A\u062F\u064A\u0648 \u2014 Naje Video Pro",
+        modelId: getNajeModel("video_pro"),
+        fallbackModelId: getNajeModel("video_pro"),
+        paramNotes: "Naje Video Pro Multimodal Video",
         maxOutputTokens: 8192,
         pricingType: "per_generation",
         realCostPer: { unit: "per_second", usd: 0.05 },
@@ -1479,10 +1593,10 @@ var init_modelRegistry = __esm({
       {
         id: "voice_tts",
         featureGroup: "voice",
-        labelAr: "\u062A\u0633\u062C\u064A\u0644 \u0635\u0648\u062A\u064A \u2014 TTS \u0637\u0628\u064A\u0639\u064A",
-        modelId: "gemini-3.1-flash-tts-preview",
-        fallbackModelId: "gemini-3.1-flash-tts-preview",
-        paramNotes: "\u062A\u062D\u0648\u064A\u0644 \u0627\u0644\u0646\u0635 \u0625\u0644\u0649 \u0635\u0648\u062A \u0628\u0634\u0631\u064A \u0645\u062A\u0646\u0627\u0633\u0642",
+        labelAr: "\u062A\u0633\u062C\u064A\u0644 \u0635\u0648\u062A\u064A \u2014 Naje Voice Core (\u0627\u0644\u0623\u0633\u0627\u0633\u064A)",
+        modelId: getNajeModel("voice_core"),
+        fallbackModelId: getNajeModel("voice_core"),
+        paramNotes: "\u062A\u062D\u0648\u064A\u0644 \u0627\u0644\u0646\u0635 \u0625\u0644\u0649 \u0635\u0648\u062A \u0628\u0634\u0631\u064A \u0645\u062A\u0646\u0627\u0633\u0642 \u0648\u0633\u0631\u064A\u0639 (Core)",
         maxOutputTokens: 8192,
         pricingType: "per_generation",
         realCostPer: { unit: "per_1m_audio_tokens", usd: 20 },
@@ -1491,11 +1605,25 @@ var init_modelRegistry = __esm({
         isBackground: false
       },
       {
+        id: "voice_tts_pro",
+        featureGroup: "voice",
+        labelAr: "\u062A\u0633\u062C\u064A\u0644 \u0635\u0648\u062A\u064A \u2014 Naje Voice Pro (\u0627\u0644\u0627\u062D\u062A\u0631\u0627\u0641\u064A \u0627\u0644\u0641\u0627\u0626\u0642)",
+        modelId: getNajeModel("voice_pro"),
+        fallbackModelId: getNajeModel("voice_core"),
+        paramNotes: "\u0623\u0639\u0644\u0649 \u062F\u0642\u0629 \u0648\u0646\u0642\u0627\u0621 \u0635\u0648\u062A\u064A \u0648\u0645\u0639\u0627\u0644\u062C\u0629 \u0646\u0628\u0631\u0627\u062A \u0645\u062A\u0642\u062F\u0645\u0629 (Pro)",
+        maxOutputTokens: 16384,
+        pricingType: "per_generation",
+        realCostPer: { unit: "per_1m_audio_tokens", usd: 40 },
+        isUnconfirmedCost: true,
+        pointsPrice: 4,
+        isBackground: false
+      },
+      {
         id: "voice_tts_standard",
         featureGroup: "voice",
-        labelAr: "\u062A\u0633\u062C\u064A\u0644 \u0635\u0648\u062A\u064A \u2014 \u062D\u0648\u0627\u0631 \u0645\u062A\u0639\u062F\u062F \u0627\u0644\u0623\u0635\u0648\u0627\u062A",
-        modelId: "gemini-3.1-flash-tts-preview",
-        fallbackModelId: "gemini-3.1-flash-tts-preview",
+        labelAr: "\u062A\u0633\u062C\u064A\u0644 \u0635\u0648\u062A\u064A \u2014 \u062D\u0648\u0627\u0631 \u0645\u062A\u0639\u062F\u062F \u0627\u0644\u0623\u0635\u0648\u0627\u062A (Core)",
+        modelId: getNajeModel("voice_core"),
+        fallbackModelId: getNajeModel("voice_core"),
         paramNotes: "\u062D\u0648\u0627\u0631 \u0628\u064A\u0646 \u0634\u062E\u0635\u064A\u0627\u062A \u0645\u062A\u0639\u062F\u062F\u0629",
         maxOutputTokens: 8192,
         pricingType: "per_generation",
@@ -1509,8 +1637,8 @@ var init_modelRegistry = __esm({
         id: "text_lite",
         featureGroup: "text",
         labelAr: "\u0646\u0635 \u062E\u0641\u064A\u0641 (Lite Tier)",
-        modelId: "gemini-3.5-flash-lite",
-        fallbackModelId: "gemini-3.1-flash-lite",
+        modelId: getNajeModel("lite"),
+        fallbackModelId: getNajeModel("lite"),
         paramNotes: "\u0645\u062D\u0627\u062F\u062B\u0629 \u0633\u0631\u064A\u0639\u0629 \u0648\u0627\u0633\u062A\u0647\u0644\u0627\u0643 \u0627\u0642\u062A\u0635\u0627\u062F\u064A",
         maxOutputTokens: 32e3,
         pricingType: "per_token",
@@ -1524,8 +1652,8 @@ var init_modelRegistry = __esm({
         id: "text_core",
         featureGroup: "text",
         labelAr: "\u0646\u0635 \u0642\u064A\u0627\u0633\u064A (Core Tier)",
-        modelId: "gemini-3.7-flash",
-        fallbackModelId: "gemini-3.5-flash",
+        modelId: getNajeModel("core"),
+        fallbackModelId: getNajeModel("lite"),
         paramNotes: "\u0645\u062D\u0627\u062F\u062B\u0629 \u0645\u062A\u0648\u0627\u0632\u0646\u0629 \u0630\u0643\u064A\u0629 \u0648\u0633\u0631\u064A\u0639\u0629",
         maxOutputTokens: 32e3,
         pricingType: "per_token",
@@ -1538,9 +1666,9 @@ var init_modelRegistry = __esm({
       {
         id: "text_max",
         featureGroup: "text",
-        labelAr: "\u0646\u0635 \u0627\u0633\u062A\u062F\u0644\u0627\u0644\u064A (Max Tier)",
-        modelId: "gemini-3.1-pro",
-        fallbackModelId: "gemini-3.7-flash",
+        labelAr: "\u0646\u0635 \u0627\u0633\u062A\u062F\u0644\u0627\u0644\u064A (Pro Tier)",
+        modelId: getNajeModel("pro"),
+        fallbackModelId: getNajeModel("core"),
         paramNotes: "\u062A\u0641\u0643\u064A\u0631 \u062A\u062D\u0644\u064A\u0644\u064A \u0639\u0645\u064A\u0642 \u0648\u0645\u0639\u0627\u0644\u062C\u0629 \u0645\u0639\u0642\u062F\u0629",
         maxOutputTokens: 32e3,
         pricingType: "per_token",
@@ -1554,8 +1682,8 @@ var init_modelRegistry = __esm({
         id: "ui_standard",
         featureGroup: "ui",
         labelAr: "\u0648\u0627\u062C\u0647\u0627\u062A \u2014 \u0627\u0644\u0642\u064A\u0627\u0633\u064A",
-        modelId: "gemini-3.7-flash",
-        fallbackModelId: "gemini-3.5-flash",
+        modelId: getNajeModel("core"),
+        fallbackModelId: getNajeModel("lite"),
         paramNotes: "\u062A\u0648\u0644\u064A\u062F \u0643\u0648\u062F \u0648\u0627\u062C\u0647\u0627\u062A \u0627\u0644\u0645\u0633\u062A\u062E\u062F\u0645",
         maxOutputTokens: 32e3,
         pricingType: "per_token",
@@ -1566,38 +1694,88 @@ var init_modelRegistry = __esm({
         isBackground: false
       }
     ];
+    FALLBACK_MODEL_DEFAULTS = {
+      tier_lite: getNajeModel("lite"),
+      tier_core: getNajeModel("core"),
+      tier_max: getNajeModel("pro"),
+      text_lite: getNajeModel("lite"),
+      text_core: getNajeModel("core"),
+      text_max: getNajeModel("pro"),
+      critic_review: getNajeModel("personas"),
+      creative_council: getNajeModel("personas"),
+      agent_planner: getNajeModel("personas"),
+      agent_auditor: getNajeModel("personas"),
+      agent_narrator: getNajeModel("personas"),
+      fullstack_builder: getNajeModel("pro"),
+      fullstack_auditor: getNajeModel("personas"),
+      image_prompt_compiler: getNajeModel("personas"),
+      video_prompt_compiler: getNajeModel("personas"),
+      image_auditor: getNajeModel("personas"),
+      image_standard: getNajeModel("image_core"),
+      image_hd: getNajeModel("image_pro"),
+      image_pro: getNajeModel("image_pro"),
+      image_fast: getNajeModel("image_lite"),
+      image_lite: getNajeModel("image_lite"),
+      image_spectra: getNajeModel("image_core"),
+      image_addon: getNajeModel("personas"),
+      video_veo_lite: getNajeModel("video_core"),
+      video_standard: getNajeModel("video_core"),
+      video_omni: getNajeModel("video_pro"),
+      video_hd: getNajeModel("video_pro"),
+      ui_builder: getNajeModel("core"),
+      ui_standard: getNajeModel("core"),
+      voice_tts: getNajeModel("voice_core"),
+      voice_tts_core: getNajeModel("voice_core"),
+      voice_tts_pro: getNajeModel("voice_pro"),
+      voice_tts_standard: getNajeModel("voice_core"),
+      document_engine: getNajeModel("personas"),
+      doc_standard: getNajeModel("core"),
+      doc_a5: getNajeModel("core"),
+      doc_slides: getNajeModel("core"),
+      document_writer: getNajeModel("personas"),
+      slide_writer: getNajeModel("personas"),
+      infographic_designer: getNajeModel("personas")
+    };
     FALLBACK_DEFAULTS = {
-      tier_lite: "gemini-3.5-flash-lite",
-      tier_core: "gemini-3.7-flash",
-      tier_max: "gemini-3.1-pro",
-      text_lite: "gemini-3.5-flash-lite",
-      text_core: "gemini-3.7-flash",
-      text_max: "gemini-3.1-pro",
-      critic_review: "gemini-3.5-flash-lite",
-      creative_council: "gemini-3.7-flash",
-      agent_planner: "gemini-3.7-flash",
-      agent_auditor: "gemini-3.7-flash",
-      agent_narrator: "gemini-3.5-flash-lite",
-      fullstack_builder: "gemini-3.1-pro",
-      fullstack_auditor: "gemini-3.7-flash",
-      image_prompt_compiler: "gemini-3.7-flash",
-      video_prompt_compiler: "gemini-3.7-flash",
-      image_auditor: "gemini-3.7-flash",
-      image_standard: "gemini-3.1-flash-image",
-      image_hd: "gemini-3-pro-image",
-      image_pro: "gemini-3-pro-image",
-      image_fast: "gemini-3.1-flash-lite-image",
-      video_veo_lite: "veo-3.1-lite-generate-preview",
-      video_standard: "veo-3.1-lite-generate-preview",
-      video_omni: "gemini-omni-flash-preview",
-      ui_builder: "gemini-3.7-flash",
-      ui_standard: "gemini-3.7-flash",
-      voice_tts: "gemini-3.1-flash-tts-preview",
-      voice_tts_standard: "gemini-3.1-flash-tts-preview",
-      document_engine: "gemini-3.7-flash",
-      doc_standard: "gemini-3.7-flash",
-      document_writer: "gemini-3.5-flash-lite",
-      slide_writer: "gemini-3.5-flash-lite"
+      tier_lite: getNajeModel("lite"),
+      tier_core: getNajeModel("core"),
+      tier_max: getNajeModel("pro"),
+      text_lite: getNajeModel("lite"),
+      text_core: getNajeModel("core"),
+      text_max: getNajeModel("pro"),
+      critic_review: getNajeModel("personas"),
+      creative_council: getNajeModel("personas"),
+      agent_planner: getNajeModel("personas"),
+      agent_auditor: getNajeModel("personas"),
+      agent_narrator: getNajeModel("personas"),
+      fullstack_builder: getNajeModel("pro"),
+      fullstack_auditor: getNajeModel("personas"),
+      image_prompt_compiler: getNajeModel("personas"),
+      video_prompt_compiler: getNajeModel("personas"),
+      image_auditor: getNajeModel("personas"),
+      image_standard: getNajeModel("image_core"),
+      image_hd: getNajeModel("image_pro"),
+      image_pro: getNajeModel("image_pro"),
+      image_fast: getNajeModel("image_lite"),
+      image_lite: getNajeModel("image_lite"),
+      image_spectra: getNajeModel("image_core"),
+      image_addon: getNajeModel("personas"),
+      video_veo_lite: getNajeModel("video_core"),
+      video_standard: getNajeModel("video_core"),
+      video_omni: getNajeModel("video_pro"),
+      ui_builder: getNajeModel("core"),
+      ui_standard: getNajeModel("core"),
+      voice_tts: getNajeModel("voice_core"),
+      voice_tts_core: getNajeModel("voice_core"),
+      voice_tts_pro: getNajeModel("voice_pro"),
+      voice_tts_standard: getNajeModel("voice_core"),
+      document_engine: getNajeModel("personas"),
+      doc_standard: getNajeModel("core"),
+      doc_a5: getNajeModel("core"),
+      doc_slides: getNajeModel("core"),
+      document_writer: getNajeModel("personas"),
+      slide_writer: getNajeModel("personas"),
+      infographic_designer: getNajeModel("personas")
     };
   }
 });
@@ -1608,6 +1786,9 @@ async function getOrCreateExplicitCache(ai5, key, model, systemInstructionText, 
   const now = Date.now();
   if (existing && existing.model === model && existing.expiresAt > now + 3e5) {
     return existing.cacheName;
+  }
+  if (!systemInstructionText || systemInstructionText.length < 16e3) {
+    return null;
   }
   try {
     if (ai5 && ai5.caches && typeof ai5.caches.create === "function") {
@@ -1713,10 +1894,11 @@ async function criticReviewRequest(ai5, rawPrompt, generationType, brandContext)
   "clarificationQuestion": "\u0633\u0624\u0627\u0644 \u062A\u0648\u0636\u064A\u062D\u064A \u0644\u0637\u064A\u0641 \u0648\u0645\u0628\u0627\u0634\u0631 \u0644\u0644\u0645\u0633\u062A\u062E\u062F\u0645 \u0641\u0642\u0637 \u0625\u0630\u0627 \u0643\u0627\u0646 verdict \u0647\u0648 needs_clarification"
 }`;
   try {
+    const personasModel = PERSONAS_MODEL();
     const cachedCriticContent = await getOrCreateExplicitCache(
       ai5,
       "critic_persona",
-      "gemini-3.5-flash-lite",
+      personasModel,
       getCriticCachedInstruction(),
       7200
     );
@@ -1724,13 +1906,13 @@ async function criticReviewRequest(ai5, rawPrompt, generationType, brandContext)
       maxOutputTokens: OUTPUT_TOKEN_LIMITS.criticReview,
       responseMimeType: "application/json",
       temperature: 0.2,
-      ...getThinkingConfig("gemini-3.5-flash-lite")
+      ...getThinkingConfig(personasModel)
     };
     if (cachedCriticContent) {
       configPayload.cachedContent = cachedCriticContent;
     }
     const res = await ai5.models.generateContent({
-      model: "gemini-3.5-flash-lite",
+      model: personasModel,
       contents: [
         { role: "user", parts: [{ text: `${systemInstruction}
 
@@ -1767,7 +1949,7 @@ async function extractVoiceFingerprint(ai5, firstChapterHtmlOrText) {
   const systemInstruction = buildPersonaInstruction("\u0627\u0644\u0643\u0627\u062A\u0628", personaCore);
   try {
     const res = await ai5.models.generateContent({
-      model: "gemini-3.5-flash-lite",
+      model: PERSONAS_MODEL(),
       contents: [
         {
           role: "user",
@@ -1802,7 +1984,7 @@ async function reasonBestVoice(ai5, scriptText, brandContext, availableVoices = 
 - Kore: \u0635\u0648\u062A \u0647\u0627\u062F\u0626 \u0648\u0646\u0627\u0639\u0645 \u0648\u0645\u0637\u0645\u0626\u0646\u060C \u0645\u0646\u0627\u0633\u0628 \u0644\u0644\u0635\u062D\u0629 \u0648\u0627\u0644\u062A\u0623\u0645\u0644 \u0648\u0627\u0644\u062A\u0639\u0644\u064A\u0645 \u0648\u0627\u0644\u0627\u0633\u062A\u0634\u0627\u0631\u0627\u062A.`;
   try {
     const res = await ai5.models.generateContent({
-      model: "gemini-3.5-flash-lite",
+      model: PERSONAS_MODEL(),
       contents: [
         {
           role: "user",
@@ -1846,7 +2028,7 @@ async function detectAndParseDialogue(ai5, rawText, brandContext) {
   const systemInstruction = buildPersonaInstruction("\u0645\u0647\u0646\u062F\u0633 \u0627\u0644\u0635\u0648\u062A", personaCore);
   try {
     const res = await ai5.models.generateContent({
-      model: "gemini-3.5-flash-lite",
+      model: PERSONAS_MODEL(),
       contents: [
         {
           role: "user",
@@ -1913,10 +2095,13 @@ async function detectAndParseDialogue(ai5, rawText, brandContext) {
     return { isDialogue: false, speakers: [], turns: [] };
   }
 }
+var PERSONAS_MODEL;
 var init_councilOfMinds = __esm({
   "src/lib/councilOfMinds.ts"() {
     init_modelRegistry();
     init_geminiCaching();
+    init_modelEnvConfig();
+    PERSONAS_MODEL = () => resolveEngineModel(getNajeModel("personas"));
   }
 });
 
@@ -2169,7 +2354,7 @@ ${deckText}
     await geminiSemaphore2.acquire();
     try {
       const auditRes = await ai5.models.generateContent({
-        model: MODEL_ID,
+        model: resolveEngineModel(MODEL_ID),
         contents: auditPrompt,
         config: {
           responseMimeType: "application/json",
@@ -2256,6 +2441,7 @@ var init_grounding = __esm({
   "src/lib/grounding.ts"() {
     import_jsdom = require("jsdom");
     import_genai3 = require("@google/genai");
+    init_modelEnvConfig();
   }
 });
 
@@ -2932,7 +3118,7 @@ var init_pdf_engine = __esm({
     import_fs4 = __toESM(require("fs"), 1);
     import_path4 = __toESM(require("path"), 1);
     import_sharp = __toESM(require("sharp"), 1);
-    DEFAULT_MODEL = FALLBACK_DEFAULTS.doc_standard || "gemini-3.7-flash";
+    DEFAULT_MODEL = FALLBACK_DEFAULTS.doc_standard || "gemini-3.6-flash";
     DEFAULT_CONFIG = {
       maxSlidesHard: 30,
       maxSlidesSoft: 20,
@@ -3805,7 +3991,7 @@ async function processAgentChatTurn(messages, pricingConfig = {}, projectContext
   }
   try {
     const res = await ai2.models.generateContent({
-      model: "gemini-3.5-flash-lite",
+      model: resolveEngineModel(getNajeModel("personas")),
       contents: formattedContents,
       config: {
         systemInstruction,
@@ -3897,7 +4083,7 @@ async function generateAgentProposal(userPrompt, projectContext, pricingConfig =
     return result.proposal;
   }
   const forcedProposalRes = await ai2.models.generateContent({
-    model: "gemini-3.5-flash-lite",
+    model: resolveEngineModel(getNajeModel("personas")),
     contents: `\u0627\u0644\u0645\u0637\u0644\u0648\u0628: \u062A\u0648\u0644\u064A\u062F \u062E\u0637\u0629 \u0639\u0645\u0644 \u0645\u062A\u0643\u0627\u0645\u0644\u0629 \u0648\u0645\u062D\u062F\u062F\u0629 \u0628\u0635\u064A\u063A\u0629 \u0648\u0638\u064A\u0641\u0629 propose_mission \u0644\u0644\u0637\u0644\u0628: "${userPrompt}"`,
     config: {
       maxOutputTokens: OUTPUT_TOKEN_LIMITS.agentPlan,
@@ -4012,7 +4198,7 @@ ${isCodeProject ? `
 
 \u062F\u0642\u0642 \u0641\u064A \u0627\u0644\u062C\u0648\u062F\u0629 \u0648\u0627\u0644\u0627\u062A\u0633\u0627\u0642.`;
     const res = await ai2.models.generateContent({
-      model: "gemini-3.7-flash",
+      model: resolveEngineModel(getNajeModel("personas")),
       contents: prompt,
       config: {
         systemInstruction,
@@ -4044,6 +4230,7 @@ var init_agentPlanner = __esm({
     init_modelRegistry();
     init_councilOfMinds();
     init_genaiClient();
+    init_modelEnvConfig();
     ai2 = createGenAIClient();
     agentFunctionDeclarations = [
       {
@@ -4149,16 +4336,16 @@ var init_agentPlanner = __esm({
 
 // src/lib/fullstackBuilder.ts
 function getPlanningModel() {
-  return "gemini-3.1-pro";
+  return resolveEngineModel(getNajeModel("pro"));
 }
 function getAuditingModel() {
-  return "gemini-3.7-flash";
+  return resolveEngineModel(getNajeModel("personas"));
 }
 async function planFullstackProject(userPrompt, brandContext, inputParams = {}) {
   let searchGroundingContext = "";
   try {
     const searchRes = await ai3.models.generateContent({
-      model: "gemini-3.5-flash-lite",
+      model: resolveEngineModel(getNajeModel("personas")),
       contents: [{
         role: "user",
         parts: [{
@@ -4919,6 +5106,7 @@ var init_fullstackBuilder = __esm({
     init_councilOfMinds();
     init_modelRegistry();
     init_genaiClient();
+    init_modelEnvConfig();
     ai3 = createGenAIClient();
     PROGRAMMER_CORE = `\u0645\u0647\u0646\u062F\u0633 \u0628\u0631\u0645\u062C\u064A\u0627\u062A \u0645\u062D\u062A\u0631\u0641. \u0643\u0644 \u0633\u0637\u0631 \u0628\u0631\u0645\u062C\u064A \u062A\u0643\u062A\u0628\u0647 \u0645\u0642\u0635\u0648\u062F \u0648\u0645\u062F\u0631\u0648\u0633\u060C \u0628\u0623\u062D\u062F\u062B \u0627\u0644\u0645\u0645\u0627\u0631\u0633\u0627\u062A \u0627\u0644\u0645\u0639\u062A\u0645\u062F\u0629 \u0641\u0639\u0644\u064A\u0627\u064B \u0628\u0627\u0644\u0635\u0646\u0627\u0639\u0629 (\u062A\u062D\u0642\u0642 \u0645\u0646\u0647\u0627 \u0639\u0628\u0631 \u0627\u0644\u0628\u062D\u062B \u0639\u0646\u062F \u0627\u0644\u062D\u0627\u062C\u0629\u060C \u0644\u0627 \u062A\u062E\u0645\u0651\u0646). \u0635\u0645\u0651\u0645 \u0648\u0627\u0628\u0646\u0650 \u0645\u0646\u0638\u0648\u0645\u0627\u062A \u0628\u0631\u0645\u062C\u064A\u0629 \u062D\u0642\u064A\u0642\u064A\u0629 \u0645\u062A\u0639\u062F\u062F\u0629 \u0627\u0644\u0645\u0644\u0641\u0627\u062A \u0645\u062A\u0645\u0627\u0633\u0643\u0629 \u0648\u062E\u0627\u0644\u064A\u0629 \u0645\u0646 \u0627\u0644\u0623\u062E\u0637\u0627\u0621.`;
   }
@@ -4952,7 +5140,7 @@ async function executeAgentTool(toolName, inputParams, missionContext, pricingCo
 \u0645\u0647\u0645\u062A\u0643: \u0635\u064A\u0627\u063A\u0629 \u0647\u0648\u064A\u0629 \u0645\u062A\u0643\u0627\u0645\u0644\u0629 \u0648\u0633\u064A\u0643\u0648\u0644\u0648\u062C\u064A\u0629 \u0644\u0644\u0628\u0631\u0627\u0646\u062F \u0628\u0646\u0627\u0621 \u0639\u0644\u0649 \u0627\u0644\u0645\u0639\u0637\u064A\u0627\u062A \u0628\u062F\u0642\u0629 \u0648\u0639\u0646\u0627\u064A\u0629 \u0645\u062A\u0646\u0627\u0647\u064A\u0629.`;
       const systemInstruction = buildPersonaInstruction("\u0627\u0644\u0645\u0635\u0648\u0651\u0631", personaCore);
       const res = await ai4.models.generateContent({
-        model: "gemini-3.5-flash-lite",
+        model: PERSONAS_MODEL2(),
         contents: `\u0627\u0644\u0637\u0644\u0628: ${enrichedPrompt}
 \u0627\u0644\u0645\u062F\u062E\u0644\u0627\u062A: ${JSON.stringify(inputParams)}${recentAuditFeedback}
 \u0623\u062E\u0631\u062C JSON \u0641\u0642\u0637:
@@ -4992,7 +5180,7 @@ async function executeAgentTool(toolName, inputParams, missionContext, pricingCo
       const personaCore = `\u0645\u062E\u0631\u062C \u062A\u0635\u0648\u064A\u0631 \u0648\u062A\u0635\u0645\u064A\u0645 \u0628\u0635\u0631\u064A \u0639\u0627\u0644\u0645\u064A. \u062A\u0635\u0648\u063A \u0623\u062F\u0642 \u0627\u0644\u0623\u0648\u0635\u0627\u0641 \u0627\u0644\u062A\u0648\u0644\u064A\u062F\u064A\u0629 \u0627\u0644\u0625\u0646\u062C\u0644\u064A\u0632\u064A\u0629 \u0627\u0644\u0645\u062A\u0648\u0627\u0641\u0642\u0629 \u0645\u0639 \u0623\u062D\u062F\u062B \u0645\u0639\u0627\u064A\u064A\u0631 \u0627\u0644\u0625\u0636\u0627\u0621\u0629 \u0648\u0627\u0644\u0639\u062F\u0633\u0627\u062A \u0627\u0644\u0633\u064A\u0646\u0645\u0627\u0626\u064A\u0629.`;
       const systemInstruction = buildPersonaInstruction("\u0627\u0644\u0645\u0635\u0648\u0651\u0631", personaCore);
       const promptGen = await ai4.models.generateContent({
-        model: "gemini-3.5-flash-lite",
+        model: LITE_MODEL(),
         contents: `${systemInstruction}
 
 \u0627\u0635\u0646\u0639 \u0648\u0635\u0641\u0627\u064B \u0625\u0646\u062C\u0644\u064A\u0632\u064A\u0627\u064B \u062F\u0642\u064A\u0642\u0627\u064B \u0648\u0645\u0628\u0647\u0631\u0627\u064B \u0644\u062A\u0648\u0644\u064A\u062F \u062A\u0635\u0645\u064A\u0645/\u0634\u0639\u0627\u0631 \u0644\u0640:
@@ -5009,7 +5197,7 @@ async function executeAgentTool(toolName, inputParams, missionContext, pricingCo
       let imageUrl = "";
       try {
         const imgResponse = await ai4.models.generateContent({
-          model: "gemini-3.1-flash-image",
+          model: IMAGE_MODEL(),
           contents: [{ role: "user", parts: [{ text: generatedImagePrompt }] }],
           config: {
             responseModalities: ["IMAGE"],
@@ -5068,7 +5256,7 @@ async function executeAgentTool(toolName, inputParams, missionContext, pricingCo
           for (let i = 0; i < dialogueInfo.turns.length; i++) {
             const turn = dialogueInfo.turns[i];
             const turnTtsRes = await ai4.models.generateContent({
-              model: "gemini-3.1-flash-tts-preview",
+              model: VOICE_MODEL(),
               contents: turn.text,
               config: {
                 maxOutputTokens: OUTPUT_TOKEN_LIMITS.voiceScript,
@@ -5108,7 +5296,7 @@ async function executeAgentTool(toolName, inputParams, missionContext, pricingCo
 \u0623\u062E\u0631\u062C \u0627\u0644\u0646\u0635 \u0627\u0644\u0639\u0631\u0628\u064A \u0627\u0644\u0635\u0627\u0641\u064A \u0641\u0642\u0637 \u0628\u062F\u0648\u0646 \u0645\u0642\u062F\u0645\u0627\u062A.`;
         const systemInstruction = buildPersonaInstruction("\u0645\u0647\u0646\u062F\u0633 \u0627\u0644\u0635\u0648\u062A", personaCore);
         const scriptRes = await ai4.models.generateContent({
-          model: "gemini-3.5-flash-lite",
+          model: PERSONAS_MODEL2(),
           contents: systemInstruction,
           config: {
             maxOutputTokens: OUTPUT_TOKEN_LIMITS.voiceScript
@@ -5118,7 +5306,7 @@ async function executeAgentTool(toolName, inputParams, missionContext, pricingCo
         usedVoice = inputParams.voice || await reasonBestVoice(ai4, narrationText, brandContext);
         try {
           const ttsRes = await ai4.models.generateContent({
-            model: "gemini-3.1-flash-tts-preview",
+            model: VOICE_MODEL(),
             contents: narrationText,
             config: {
               maxOutputTokens: OUTPUT_TOKEN_LIMITS.voiceScript,
@@ -5199,7 +5387,7 @@ async function executeAgentTool(toolName, inputParams, missionContext, pricingCo
       const personaCore = `\u0645\u0646\u062A\u062C \u0623\u0641\u0644\u0627\u0645 \u0625\u0639\u0644\u0627\u0646\u064A\u0629 \u0645\u062D\u062A\u0631\u0641. \u0644\u0643\u0644 \u062B\u0627\u0646\u064A\u0629 \u0645\u0646 \u0645\u062F\u0629 \u0627\u0644\u0641\u064A\u062F\u064A\u0648 \u0627\u0644\u0645\u0637\u0644\u0648\u0628\u0629\u060C \u0641\u0643\u0651\u0631 \u0641\u0639\u0644\u064A\u0627\u064B: \u0645\u0627 \u0623\u0642\u0648\u0649 \u0644\u062D\u0638\u0629 \u0628\u0635\u0631\u064A\u0629 \u0645\u0645\u0643\u0646\u0629 \u0628\u0647\u0630\u0647 \u0627\u0644\u062B\u0627\u0646\u064A\u0629 \u062A\u062D\u062F\u064A\u062F\u0627\u064B\u061F \u0645\u0627\u0630\u0627 \u064A\u062C\u0628 \u0623\u0646 \u064A\u064F\u0633\u062A\u0628\u0639\u062F \u0644\u062A\u062A\u0631\u0643 \u0645\u062C\u0627\u0644\u0627\u064B \u0644\u0645\u0627 \u0647\u0648 \u0623\u0647\u0645\u061F \u0627\u0633\u062A\u062B\u0645\u0631 \u0643\u0644 \u062B\u0627\u0646\u064A\u0629 \u0628\u0642\u0631\u0627\u0631 \u0625\u0628\u062F\u0627\u0639\u064A \u0648\u0627\u0639\u064D \u0648\u062D\u0627\u0641\u0638 \u0639\u0644\u0649 \u0627\u062A\u0633\u0627\u0642 \u0627\u0644\u0645\u0648\u0636\u0648\u0639 \u0648\u0627\u0644\u0623\u0633\u0644\u0648\u0628 \u0645\u0646 \u0627\u0644\u062B\u0627\u0646\u064A\u0629 \u0627\u0644\u0623\u0648\u0644\u0649 \u0644\u0644\u062B\u0627\u0646\u064A\u0629 \u0627\u0644\u0623\u062E\u064A\u0631\u0629.`;
       const systemInstruction = buildPersonaInstruction("\u0627\u0644\u0645\u0646\u062A\u062C", personaCore);
       const scriptRes = await ai4.models.generateContent({
-        model: "gemini-3.5-flash-lite",
+        model: PERSONAS_MODEL2(),
         contents: `${systemInstruction}
 
 \u0627\u0643\u062A\u0628 \u0633\u064A\u0646\u0627\u0631\u064A\u0648 \u0625\u0639\u0644\u0627\u0646 \u0633\u064A\u0646\u0645\u0627\u0626\u064A \u0641\u062E\u0645 \u0644\u0645\u0642\u0637\u0639 \u0641\u064A\u062F\u064A\u0648 \u0645\u062F\u062A\u0647 ${durationSec} \u062B\u0648\u0627\u0646\u064D \u0644\u0640 ${brandContext?.brandName || "\u0627\u0644\u0639\u0644\u0627\u0645\u0629"}.
@@ -5238,7 +5426,7 @@ async function executeAgentTool(toolName, inputParams, missionContext, pricingCo
       const personaCore = `\u0643\u0627\u062A\u0628 \u0645\u062D\u062A\u0631\u0641 \u064A\u0643\u062A\u0628 \u0628\u0623\u0639\u0644\u0649 \u062F\u0631\u062C\u0627\u062A \u0627\u0644\u062F\u0642\u0629 \u0648\u0627\u0644\u0639\u0646\u0627\u064A\u0629\u060C \u0643\u0644 \u0643\u0644\u0645\u0629 \u0645\u0642\u0635\u0648\u062F\u0629. \u062D\u0627\u0641\u0638 \u0639\u0644\u0649 \u0646\u0641\u0633 \u0627\u0644\u0635\u0648\u062A \u0648\u0627\u0644\u0646\u0628\u0631\u0629 \u0639\u0628\u0631 \u0643\u0644 \u0641\u0635\u0644 \u0623\u0648 \u0634\u0631\u064A\u062D\u0629 \u0628\u0647\u0630\u0627 \u0627\u0644\u0645\u0633\u062A\u0646\u062F \u062A\u062D\u062F\u064A\u062F\u0627\u064B \u0644\u064A\u062E\u0631\u062C \u0627\u0644\u0639\u0645\u0644 \u0643\u0627\u0645\u0644\u0627\u064B \u0628\u0635\u0648\u062A \u0645\u0624\u0644\u0641 \u0648\u0627\u062D\u062F \u0645\u062A\u0645\u0627\u0633\u0643 \u0648\u0631\u0641\u064A\u0639 \u0627\u0644\u0645\u0633\u062A\u0648\u0649.`;
       const systemInstruction = buildPersonaInstruction("\u0627\u0644\u0643\u0627\u062A\u0628", personaCore);
       const docRes = await ai4.models.generateContent({
-        model: "gemini-3.5-flash-lite",
+        model: PERSONAS_MODEL2(),
         contents: `${systemInstruction}
 
 \u0627\u0643\u062A\u0628 ${isSlides ? "\u0639\u0631\u0636\u0627\u064B \u062A\u0642\u062F\u064A\u0645\u064A\u0627\u064B" : "\u0643\u062A\u064A\u0628\u0627\u064B \u0645\u062A\u0643\u0627\u0645\u0644\u0627\u064B"} \u0645\u0646 ${pagesCount} ${isSlides ? "\u0634\u0631\u0627\u0626\u062D" : "\u0641\u0635\u0648\u0644"} \u0644\u0640 ${brandContext?.brandName || "\u0627\u0644\u0639\u0644\u0627\u0645\u0629"}.
@@ -5323,7 +5511,7 @@ async function executeAgentTool(toolName, inputParams, missionContext, pricingCo
     case "web_grounding":
     default: {
       const res = await ai4.models.generateContent({
-        model: "gemini-3.5-flash-lite",
+        model: LITE_MODEL(),
         contents: `\u0627\u0628\u062D\u062B \u0639\u0646 \u0623\u062D\u062F\u062B \u0627\u062A\u062C\u0627\u0647\u0627\u062A \u0627\u0644\u0633\u0648\u0642\u060C \u0627\u0644\u0645\u0646\u0627\u0641\u0633\u064A\u0646\u060C \u0648\u0627\u0644\u062D\u0642\u0627\u0626\u0642 \u0627\u0644\u0635\u0646\u0627\u0639\u064A\u0629 \u0627\u0644\u0645\u062D\u062F\u062B\u0629 \u0630\u0627\u062A \u0627\u0644\u0635\u0644\u0629 \u0628\u0640: ${enrichedPrompt}.${recentAuditFeedback}
 \u0644\u062E\u0651\u0635 \u0623\u0647\u0645 3 \u0625\u0644\u0649 5 \u0646\u062A\u0627\u0626\u062C \u062D\u0642\u064A\u0642\u064A\u0629 \u0648\u0645\u062D\u062F\u0651\u062B\u0629 \u0645\u0639 \u0630\u0643\u0631 \u0645\u0635\u0627\u062F\u0631\u0647\u0627 \u0648\u062A\u062D\u0644\u064A\u0644 \u0623\u062B\u0631\u0647\u0627 \u0627\u0644\u0625\u0633\u062A\u0631\u0627\u062A\u064A\u062C\u064A.`,
         config: {
@@ -5350,7 +5538,7 @@ async function executeAgentTool(toolName, inputParams, missionContext, pricingCo
     }
   }
 }
-var ai4;
+var ai4, LITE_MODEL, PERSONAS_MODEL2, IMAGE_MODEL, VOICE_MODEL;
 var init_agentExecutor = __esm({
   "src/lib/agentExecutor.ts"() {
     init_audioContainer();
@@ -5360,7 +5548,12 @@ var init_agentExecutor = __esm({
     init_infographicEngine();
     init_modelRegistry();
     init_genaiClient();
+    init_modelEnvConfig();
     ai4 = createGenAIClient();
+    LITE_MODEL = () => resolveEngineModel(getNajeModel("lite"));
+    PERSONAS_MODEL2 = () => resolveEngineModel(getNajeModel("personas"));
+    IMAGE_MODEL = () => resolveEngineModel(getNajeModel("image_core"));
+    VOICE_MODEL = () => resolveEngineModel(getNajeModel("voice_core"));
   }
 });
 
@@ -5615,6 +5808,7 @@ var import_storage = require("firebase-admin/storage");
 var import_messaging = require("firebase-admin/messaging");
 var import_dotenv = __toESM(require("dotenv"), 1);
 init_modelRegistry();
+init_modelEnvConfig();
 init_agentPricing();
 init_councilOfMinds();
 var import_fluent_ffmpeg = __toESM(require("fluent-ffmpeg"), 1);
@@ -5649,7 +5843,7 @@ function buildInitialPlan(params) {
     rawPrompt,
     totalDurationSec,
     aspectRatio: aspectRatio2 = "16:9",
-    model = "veo-3.1-lite-generate-preview",
+    model = "veo-lite",
     brandProfile,
     pointsRatePerSecond = 2.5
   } = params;
@@ -5822,15 +6016,16 @@ function assertModelNameSane(name, where) {
   }
 }
 async function getModelEndpointConfig(endpointId, defaultFallback, _token) {
-  const fallback = defaultFallback || FALLBACK_DEFAULTS[endpointId] || "gemini-3.7-flash";
+  const rawFallback = defaultFallback || FALLBACK_DEFAULTS[endpointId] || getNajeModel("core");
+  const fallback = resolveEngineModel(rawFallback);
   assertModelNameSane(fallback, `getModelEndpointConfig fallback for ${endpointId}`);
   const now = Date.now();
   const cached = modelEndpointCache.get(endpointId);
   if (cached && now - cached.fetchedAt < MODEL_CACHE_TTL) {
     assertModelNameSane(cached.modelId, `modelEndpointCache for ${endpointId}`);
     return {
-      modelId: cached.modelId,
-      fallbackModelId: cached.fallbackModelId,
+      modelId: resolveEngineModel(cached.modelId),
+      fallbackModelId: cached.fallbackModelId ? resolveEngineModel(cached.fallbackModelId) : void 0,
       maxOutputTokens: cached.maxOutputTokens,
       isEnabled: cached.isEnabled !== false,
       supportedDurations: cached.supportedDurations
@@ -5840,8 +6035,8 @@ async function getModelEndpointConfig(endpointId, defaultFallback, _token) {
     const doc = await dbAdmin.collection("model_endpoints").doc(endpointId).get();
     if (doc.exists && doc.data()) {
       const data = doc.data();
-      const modelId = String(data.modelId || fallback).trim();
-      const fallbackModelId = data.fallbackModelId ? String(data.fallbackModelId).trim() : void 0;
+      const modelId = resolveEngineModel(String(data.modelId || fallback).trim());
+      const fallbackModelId = data.fallbackModelId ? resolveEngineModel(String(data.fallbackModelId).trim()) : void 0;
       const maxOutputTokens = typeof data.maxOutputTokens === "number" ? data.maxOutputTokens : void 0;
       const isEnabled = data.isEnabled !== false;
       const supportedDurations = Array.isArray(data.supportedDurations) ? data.supportedDurations : void 0;
@@ -5870,7 +6065,7 @@ async function getModelEndpointId(endpointId, defaultFallback, token) {
     err.isModelDisabled = true;
     throw err;
   }
-  return cfg.modelId;
+  return resolveEngineModel(cfg.modelId);
 }
 function isModelDeadOrDeprecated(err) {
   if (!err) return false;
@@ -5910,29 +6105,48 @@ async function updateEndpointHealthOnSuccess(endpointId, successfulModelId) {
 async function seedModelEndpointsIfMissing() {
   if (!dbAdmin) return;
   try {
-    const endpointsToMigrate = [
-      "text_lite",
-      "text_core",
-      "text_max",
-      "ui_standard",
-      "ui_builder",
-      "document_engine",
-      "doc_standard",
-      "document_writer",
-      "slide_writer",
-      "tier_lite",
-      "tier_core",
-      "tier_max",
-      "image_fast",
-      "image_standard",
-      "image_hd",
-      "image_pro",
-      "video_standard",
-      "video_veo_lite",
-      "video_omni",
-      "voice_tts",
-      "voice_tts_standard"
-    ];
+    const targetModelMap = {
+      text_lite: getNajeModel("lite"),
+      tier_lite: getNajeModel("lite"),
+      text_core: getNajeModel("core"),
+      tier_core: getNajeModel("core"),
+      text_max: getNajeModel("pro"),
+      tier_max: getNajeModel("pro"),
+      critic_review: getNajeModel("personas"),
+      creative_council: getNajeModel("personas"),
+      agent_planner: getNajeModel("personas"),
+      agent_auditor: getNajeModel("personas"),
+      agent_narrator: getNajeModel("personas"),
+      fullstack_builder: getNajeModel("pro"),
+      fullstack_auditor: getNajeModel("personas"),
+      image_prompt_compiler: getNajeModel("personas"),
+      video_prompt_compiler: getNajeModel("personas"),
+      image_auditor: getNajeModel("personas"),
+      ui_standard: getNajeModel("core"),
+      ui_builder: getNajeModel("core"),
+      document_engine: getNajeModel("personas"),
+      doc_standard: getNajeModel("core"),
+      doc_a5: getNajeModel("core"),
+      doc_slides: getNajeModel("core"),
+      document_writer: getNajeModel("personas"),
+      slide_writer: getNajeModel("personas"),
+      infographic_designer: getNajeModel("personas"),
+      image_lite: getNajeModel("image_lite"),
+      image_fast: getNajeModel("image_lite"),
+      image_spectra: getNajeModel("image_core"),
+      image_standard: getNajeModel("image_core"),
+      image_hd: getNajeModel("image_pro"),
+      image_pro: getNajeModel("image_pro"),
+      image_addon: getNajeModel("personas"),
+      video_standard: getNajeModel("video_core"),
+      video_veo_lite: getNajeModel("video_core"),
+      video_omni: getNajeModel("video_pro"),
+      voice_tts_standard: getNajeModel("voice_core"),
+      voice_tts: getNajeModel("voice_core"),
+      voice_tts_core: getNajeModel("voice_core"),
+      voice_tts_pro: getNajeModel("voice_pro")
+    };
+    const endpointsToMigrate = Object.keys(targetModelMap);
     const snapshot = await dbAdmin.collection("model_endpoints").limit(1).get();
     if (snapshot.empty) {
       console.log("[Model Registry] Seeding initial model_endpoints collection...");
@@ -5948,32 +6162,9 @@ async function seedModelEndpointsIfMissing() {
       await batch.commit();
       console.log("[Model Registry] Successfully seeded model_endpoints collection.");
     } else {
-      const targetModelMap = {
-        text_lite: "gemini-3.5-flash-lite",
-        tier_lite: "gemini-3.5-flash-lite",
-        text_core: "gemini-3.7-flash",
-        tier_core: "gemini-3.7-flash",
-        text_max: "gemini-3.1-pro",
-        tier_max: "gemini-3.1-pro",
-        ui_standard: "gemini-3.7-flash",
-        ui_builder: "gemini-3.7-flash",
-        document_engine: "gemini-3.7-flash",
-        doc_standard: "gemini-3.7-flash",
-        document_writer: "gemini-3.5-flash-lite",
-        slide_writer: "gemini-3.5-flash-lite",
-        image_fast: "gemini-3.1-flash-lite-image",
-        image_standard: "gemini-3.1-flash-image",
-        image_hd: "gemini-3-pro-image",
-        image_pro: "gemini-3-pro-image",
-        video_standard: "veo-3.1-lite-generate-preview",
-        video_veo_lite: "veo-3.1-lite-generate-preview",
-        video_omni: "gemini-omni-flash-preview",
-        voice_tts_standard: "gemini-3.1-flash-tts-preview",
-        voice_tts: "gemini-3.1-flash-tts-preview"
-      };
       for (const epId of endpointsToMigrate) {
         try {
-          const targetModel = targetModelMap[epId] || "gemini-3.7-flash";
+          const targetModel = targetModelMap[epId] || "gemini-3.6-flash";
           const docRef = dbAdmin.collection("model_endpoints").doc(epId);
           const docSnap = await docRef.get();
           if (docSnap.exists) {
@@ -6387,7 +6578,7 @@ async function generateMemoryItemSummary(rawTextOrDescription, label) {
 \u0627\u0644\u0646\u0635 \u0627\u0644\u0645\u0631\u0627\u062F \u062A\u0644\u062E\u064A\u0635\u0647:
 "${rawTextOrDescription.slice(0, 3e4)}"`;
     const response = await generateContentWithFallback(ai5, {
-      model: "gemini-3.7-flash",
+      model: "gemini-3.6-flash",
       endpointId: "text_core",
       contents: prompt,
       config: { maxOutputTokens: OUTPUT_TOKEN_LIMITS.memorySummary }
@@ -6781,12 +6972,12 @@ ${compiledShotList}
 
 Return ONLY the refined, perfected shot list text in English without markdown code fences or conversational preamble.`;
     const result = await generateContentWithFallback(ai5, {
-      model: "gemini-3.7-flash",
+      model: "gemini-3.5-flash-lite",
       // Auditor tier
       endpointId: "tier_core",
       contents: critiquePrompt,
       config: {
-        ...getThinkingConfig("gemini-3.7-flash"),
+        ...getThinkingConfig("gemini-3.5-flash-lite"),
         maxOutputTokens: OUTPUT_TOKEN_LIMITS.chatResponse
       }
     });
@@ -6835,11 +7026,11 @@ ${rawPrompt}
 
 Return ONLY the rewritten, refined prompt string in English without markdown or preamble.`;
     const result = await generateContentWithFallback(ai5, {
-      model: "gemini-3.7-flash",
+      model: "gemini-3.5-flash-lite",
       endpointId: "tier_core",
       contents: critiquePrompt,
       config: {
-        ...getThinkingConfig("gemini-3.7-flash"),
+        ...getThinkingConfig("gemini-3.5-flash-lite"),
         maxOutputTokens: OUTPUT_TOKEN_LIMITS.imageCompiler
       }
     });
@@ -6903,7 +7094,7 @@ ${structuredPrompt}`);
   const auditedPrompt = await applyCreativeLayers(ai5, structuredPrompt, "design", aspectRatio2, safeZoneConstraint || void 0);
   return auditedPrompt;
 }
-async function auditDocChunk(ai5, sectionTitle, sectionHtml, contextSummary, auditorModel = "gemini-3.7-flash") {
+async function auditDocChunk(ai5, sectionTitle, sectionHtml, contextSummary, auditorModel = "gemini-3.5-flash-lite") {
   try {
     const auditPrompt = `You are Naje AI's Senior Document Editor & Quality Auditor.
 Audit this generated HTML section for quality, tone consistency, and structural completeness.
@@ -6927,7 +7118,7 @@ Return ONLY a JSON object:
   "reason": "approved"
 }`;
     const res = await ai5.models.generateContent({
-      model: auditorModel,
+      model: resolveEngineModel(auditorModel),
       contents: auditPrompt,
       config: { responseMimeType: "application/json", maxOutputTokens: OUTPUT_TOKEN_LIMITS.documentSection }
     });
@@ -6941,7 +7132,7 @@ Return ONLY a JSON object:
     return { ok: true, refinedHtml: sectionHtml };
   }
 }
-async function auditSlideChunk(ai5, slideData, auditorModel = "gemini-3.7-flash") {
+async function auditSlideChunk(ai5, slideData, auditorModel = "gemini-3.5-flash-lite") {
   try {
     const auditPrompt = `You are Naje AI's Presentation Quality Auditor.
 Audit this slide JSON object for structural validity, conciseness, visual appeal, and proper visual element assignment (aiImagePrompt, stats, cards, bulletPoints).
@@ -6962,7 +7153,7 @@ Return ONLY a JSON object matching:
   "reason": "approved"
 }`;
     const res = await ai5.models.generateContent({
-      model: auditorModel,
+      model: resolveEngineModel(auditorModel),
       contents: auditPrompt,
       config: { responseMimeType: "application/json", maxOutputTokens: OUTPUT_TOKEN_LIMITS.slideJson }
     });
@@ -6978,7 +7169,7 @@ Return ONLY a JSON object matching:
 }
 function getDefaultMaxOutputTokensForModel(modelName) {
   if (modelName.includes("3.5-flash-lite")) return 65535;
-  if (modelName.includes("3.7-flash")) return 65535;
+  if (modelName.includes("3.6-flash") || modelName.includes("3.7-flash")) return 65535;
   if (modelName.includes("3.1-pro")) return 65535;
   return 8192;
 }
@@ -7007,7 +7198,7 @@ async function generateContentWithFallback(ai5, options) {
   try {
     const result = await ai5.models.generateContent({
       ...mergedOptions,
-      model: primaryModel,
+      model: resolveEngineModel(primaryModel),
       config: {
         ...baseConfig,
         maxOutputTokens: baseConfig.maxOutputTokens || getDefaultMaxOutputTokensForModel(primaryModel)
@@ -7027,8 +7218,8 @@ async function generateContentWithFallback(ai5, options) {
       });
     }
     if (isModelDead || isQuotaOrAccess) {
-      const isImageReq = primaryModel.includes("image") || primaryModel.includes("imagen");
-      const defaultFallbacks = isImageReq ? ["gemini-3.1-flash-image", "gemini-3.1-flash-lite-image", "gemini-3-pro-image"] : ["gemini-3.7-flash", "gemini-3.1-pro", "gemini-3.5-flash-lite"];
+      const isImageReq = primaryModel.includes("image") || primaryModel.includes("imagen") || primaryModel.includes("nano-banana");
+      const defaultFallbacks = isImageReq ? [resolveEngineModel(getNajeModel("image_core")), resolveEngineModel(getNajeModel("image_lite"))] : [resolveEngineModel(getNajeModel("core")), resolveEngineModel(getNajeModel("lite")), resolveEngineModel(getNajeModel("pro"))];
       const candidateModels = [
         configuredFallback,
         ...defaultFallbacks
@@ -7047,7 +7238,7 @@ async function generateContentWithFallback(ai5, options) {
               ...fbConfig,
               maxOutputTokens: fbConfig.maxOutputTokens || getDefaultMaxOutputTokensForModel(fallbackModel)
             },
-            model: fallbackModel
+            model: resolveEngineModel(fallbackModel)
           });
           if (endpointId) {
             updateEndpointHealthOnSuccess(endpointId, fallbackModel).catch(() => {
@@ -7507,6 +7698,14 @@ var DEFAULT_TEXT_TOKEN_RATES = {
     audioInputPointsPerBlock: 0.2,
     audioInputTokenBlockSize: 1e3
   },
+  "gemini-3.6-flash": {
+    inputPointsPerBlock: 0.1,
+    inputTokenBlockSize: 1e3,
+    outputPointsPerBlock: 0.1,
+    outputTokenBlockSize: 1e3,
+    audioInputPointsPerBlock: 0.2,
+    audioInputTokenBlockSize: 1e3
+  },
   "gemini-3.7-flash": {
     inputPointsPerBlock: 0.1,
     inputTokenBlockSize: 1e3,
@@ -7516,6 +7715,14 @@ var DEFAULT_TEXT_TOKEN_RATES = {
     audioInputTokenBlockSize: 1e3
   },
   "gemini-3.1-pro": {
+    inputPointsPerBlock: 0.1,
+    inputTokenBlockSize: 1e3,
+    outputPointsPerBlock: 0.1,
+    outputTokenBlockSize: 1e3,
+    audioInputPointsPerBlock: 0.2,
+    audioInputTokenBlockSize: 1e3
+  },
+  "gemini-3.1-pro-preview": {
     inputPointsPerBlock: 0.1,
     inputTokenBlockSize: 1e3,
     outputPointsPerBlock: 0.1,
@@ -7638,11 +7845,19 @@ async function requireAuth(req, res) {
   }
   try {
     const decoded = await (0, import_auth.getAuth)().verifyIdToken(token);
-    return { uid: decoded.uid, token };
+    if (decoded.uid) userTokenCache.set(decoded.uid, token);
+    return { uid: decoded.uid, token, email: decoded.email };
   } catch {
     res.status(401).json({ error: "\u0641\u0634\u0644 \u0627\u0644\u062A\u062D\u0642\u0642 \u0645\u0646 \u0627\u0644\u062A\u0648\u0643\u064A\u0646." });
     return null;
   }
+}
+function isPrivilegedAdmin(userDoc, decodedToken) {
+  if (userDoc?.isAdmin === true) return true;
+  const adminEmail = (process.env.ADMIN_EMAIL || "").trim().toLowerCase();
+  if (!adminEmail) return false;
+  const tokenEmail = (decodedToken?.email || "").trim().toLowerCase();
+  return Boolean(tokenEmail && tokenEmail === adminEmail);
 }
 async function mediaCost(token, kind, durationSeconds = 0) {
   try {
@@ -7706,26 +7921,13 @@ async function startServer() {
     }
     next();
   });
-  app.use(import_express.default.json({ limit: "150mb" }));
-  app.use(import_express.default.urlencoded({ extended: true, limit: "150mb" }));
-  app.use((req, _res, next) => {
-    const authHeader = req.headers.authorization;
-    if (authHeader && authHeader.startsWith("Bearer ")) {
-      const token = authHeader.substring(7).trim();
-      try {
-        const parts = token.split(".");
-        if (parts.length === 3) {
-          const payload = JSON.parse(Buffer.from(parts[1], "base64").toString("utf8"));
-          const uid = payload.user_id || payload.sub;
-          if (uid && typeof uid === "string") {
-            userTokenCache.set(uid, token);
-          }
-        }
-      } catch {
-      }
-    }
-    next();
+  const json15mb = import_express.default.json({ limit: "15mb" });
+  const json50mb = import_express.default.json({ limit: "50mb" });
+  app.use((req, res, next) => {
+    const parser = req.path === "/api/upload-media" ? json50mb : json15mb;
+    return parser(req, res, next);
   });
+  app.use(import_express.default.urlencoded({ extended: true, limit: "15mb" }));
   app.get(["/api/health", "/health", "/healthz", "/_ah/health", "/_health", "/ping", "/livez", "/readyz"], (req, res) => {
     res.status(200).json({ status: "ok", timestamp: Date.now() });
   });
@@ -7807,7 +8009,7 @@ async function startServer() {
     try {
       const ai5 = createGenAIClient2();
       const safetyCheck = await ai5.models.generateContent({
-        model: "gemini-3.7-flash",
+        model: "gemini-2.5-flash",
         contents: `You are a content safety filter for an Arabic AI application called Naje AI. Analyze the following user prompt for safety issues (violence, self-harm, adult content, hate speech, dangerous weapons/explosives, extreme political incitement, illegal drugs).
 Respond ONLY in JSON format with two keys:
 "safe": true or false,
@@ -7827,11 +8029,9 @@ User prompt: "${prompt}"`,
           try {
             checkRes = JSON.parse(match[0]);
           } catch (e2) {
-            console.error("Failed to parse safety check JSON:", rawText, e2);
             checkRes = { safe: true };
           }
         } else {
-          console.error("Failed to parse safety check JSON:", rawText, e);
           checkRes = { safe: true };
         }
       }
@@ -7845,38 +8045,59 @@ User prompt: "${prompt}"`,
         }, token).catch((e) => console.error("Failed to log flagged request REST:", e));
         return { safe: false, reason: `\u0639\u0630\u0631\u0627\u064B\u060C \u062A\u0645 \u062D\u0638\u0631 \u0647\u0630\u0627 \u0627\u0644\u0637\u0644\u0628 \u0644\u0645\u062E\u0627\u0644\u0641\u062A\u0647 \u0634\u0631\u0648\u0637 \u0633\u0644\u0627\u0645\u0629 \u0627\u0644\u0645\u062D\u062A\u0648\u0649 \u0627\u0644\u062E\u0627\u0635\u0629 \u0628\u0646\u0627: ${checkRes.reason}` };
       }
-    } catch (e) {
-      console.warn("Safety check API notice, proceeding with local keyword verification:", e?.message || e);
+    } catch {
       return { safe: true };
     }
     return { safe: true };
   };
   app.post("/api/upload-media", async (req, res) => {
     try {
-      const authHeader = req.headers.authorization;
-      if (!authHeader || !authHeader.startsWith("Bearer ")) {
-        return res.status(401).json({ error: "Unauthorized" });
+      const auth = await requireAuth(req, res);
+      if (!auth) return;
+      const { uid } = auth;
+      const rl = checkRateLimit(`upload:${uid}`, 30, 60 * 1e3);
+      if (!rl.allowed) {
+        res.setHeader("Retry-After", String(rl.retryAfterSec));
+        return res.status(429).json({ error: "\u062A\u062C\u0627\u0648\u0632\u062A \u062D\u062F \u0627\u0644\u0631\u0641\u0639. \u062D\u0627\u0648\u0644 \u0644\u0627\u062D\u0642\u0627\u064B.", retryAfterSec: rl.retryAfterSec });
       }
-      const token = authHeader.split("Bearer ")[1];
-      await (0, import_auth.getAuth)().verifyIdToken(token);
       const { path: storagePath, base64Data, mediaType } = req.body || {};
-      if (!storagePath || !base64Data) {
+      if (!storagePath || typeof storagePath !== "string" || !base64Data || typeof base64Data !== "string") {
         return res.status(400).json({ error: "Missing storage path or base64Data" });
       }
-      if (storagePath.includes("..")) {
+      if (storagePath.includes("..") || storagePath.includes("\\") || storagePath.includes("\0") || storagePath.startsWith("/") || storagePath.includes("://")) {
         return res.status(400).json({ error: "Invalid path" });
       }
+      const normalized = storagePath.replace(/\/+/g, "/");
+      const allowedPrefixes = [`generated_media/${uid}/`, `uploads/${uid}/`];
+      let safePath;
+      if (allowedPrefixes.some((prefix) => normalized.startsWith(prefix))) {
+        const leaf = normalized.split("/").pop() || `file_${Date.now()}`;
+        const safeLeaf = leaf.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 180);
+        const root = normalized.startsWith(`generated_media/${uid}/`) ? `generated_media/${uid}` : `uploads/${uid}`;
+        safePath = `${root}/${safeLeaf}`;
+      } else {
+        const leaf = normalized.split("/").pop() || `file_${Date.now()}`;
+        const safeLeaf = leaf.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 180);
+        safePath = `uploads/${uid}/${safeLeaf}`;
+      }
       const cleanBase64 = base64Data.includes(",") ? base64Data.split(",")[1] : base64Data;
+      const maxBytes = mediaType === "video" ? 50 * 1024 * 1024 : 15 * 1024 * 1024;
+      if (Math.floor(cleanBase64.length * 0.75) > maxBytes) {
+        return res.status(413).json({ error: "\u0627\u0644\u0645\u0644\u0641 \u0623\u0643\u0628\u0631 \u0645\u0646 \u0627\u0644\u062D\u062F \u0627\u0644\u0645\u0633\u0645\u0648\u062D." });
+      }
       const buffer = Buffer.from(cleanBase64, "base64");
-      const contentType = mediaType === "video" ? "video/mp4" : mediaType === "voice" ? "audio/wav" : "image/png";
+      if (buffer.length > maxBytes) {
+        return res.status(413).json({ error: "\u0627\u0644\u0645\u0644\u0641 \u0623\u0643\u0628\u0631 \u0645\u0646 \u0627\u0644\u062D\u062F \u0627\u0644\u0645\u0633\u0645\u0648\u062D." });
+      }
+      const contentType = mediaType === "video" ? "video/mp4" : mediaType === "voice" || mediaType === "audio" ? "audio/wav" : "image/png";
       const bucket = (0, import_storage.getStorage)().bucket(STORAGE_BUCKET);
-      const file = bucket.file(storagePath);
+      const file = bucket.file(safePath);
       await file.save(buffer, {
-        metadata: { contentType },
+        metadata: { contentType, metadata: { ownerId: uid } },
         public: true,
         resumable: false
       });
-      const publicUrl = `https://storage.googleapis.com/${bucket.name}/${storagePath}`;
+      const publicUrl = `https://storage.googleapis.com/${bucket.name}/${safePath}`;
       return res.json({ url: publicUrl });
     } catch (err) {
       console.warn("[Upload Media API] Storage save warning:", err?.message || err);
@@ -7884,7 +8105,7 @@ User prompt: "${prompt}"`,
     }
   });
   async function generateSingleVeoShot(ai5, params) {
-    const videoModelId = params.modelId || "veo-3.1-lite-generate-preview";
+    const videoModelId = resolveEngineModel(params.modelId || "veo-lite");
     const veoParams = {
       model: videoModelId,
       prompt: params.prompt,
@@ -9005,7 +9226,7 @@ User prompt: "${prompt}"`,
 \u0627\u0644\u0645\u0633\u062A\u062E\u062F\u0645 \u062F\u0627\u062E\u0644 \u0645\u0634\u0631\u0648\u0639 \u0627\u0633\u0645\u0647: "${projectData.name}".` : "";
       const ai5 = createGenAIClient2();
       const response = await ai5.models.generateContent({
-        model: "gemini-3.7-flash",
+        model: "gemini-3.6-flash",
         contents: prompt || "",
         config: {
           responseMimeType: "application/json",
@@ -9043,7 +9264,7 @@ User prompt: "${prompt}"`,
     try {
       const ai5 = createGenAIClient2();
       const response = await ai5.models.generateContent({
-        model: "gemini-3.7-flash",
+        model: "gemini-3.6-flash",
         contents: prompt || "",
         config: {
           responseMimeType: "application/json",
@@ -9181,7 +9402,7 @@ User prompt: "${prompt}"`,
             if (ext === "pdf") effectiveMime = "application/pdf";
             else if (["png", "jpeg", "jpg", "webp", "gif"].includes(ext)) effectiveMime = `image/${ext === "jpg" ? "jpeg" : ext}`;
             const resGen = await ai5.models.generateContent({
-              model: "gemini-3.7-flash",
+              model: "gemini-3.6-flash",
               contents: [
                 {
                   inlineData: {
@@ -9691,7 +9912,7 @@ Target aspect ratio: ${targetAspectRatio}`
           }
         ];
         const strategyRes = await ai5.models.generateContent({
-          model: useCreativePro ? "gemini-3.7-flash" : "gemini-3.7-flash",
+          model: resolveEngineModel(useCreativePro ? getNajeModel("pro") : getNajeModel("core")),
           contents: strategyContents,
           config: { systemInstruction: strategySystem, responseMimeType: "application/json", maxOutputTokens: OUTPUT_TOKEN_LIMITS.imageCompiler }
         });
@@ -9788,7 +10009,7 @@ ABSOLUTE TEXT RULE: The ONLY text/letters allowed ANYWHERE in the image is EXACT
       const _userDocSnapForGate = await dbAdmin.collection("users").doc(uid).get();
       if (!checkFeatureAccess(res, _userDocSnapForGate.data(), "creativelyAI")) return;
       const userDoc = await getDocRest("users", uid, token).catch(() => null);
-      const isAdmin = userDoc?.isAdmin === true || userDoc?.email === "mahmudnaje2009@gmail.com";
+      const isAdmin = isPrivilegedAdmin(userDoc, { email: _auth.email });
       const userBalance = typeof userDoc?.balance === "number" ? userDoc.balance : 0;
       const isNegativeBalance = userDoc?.isNegativeBalance === true;
       if (!isAdmin && (userBalance <= 0 || isNegativeBalance)) {
@@ -9827,7 +10048,7 @@ ABSOLUTE TEXT RULE: The ONLY text/letters allowed ANYWHERE in the image is EXACT
         };
       });
       const chatResponse = await ai5.models.generateContent({
-        model: "gemini-3.7-flash",
+        model: "gemini-3.6-flash",
         contents,
         config: {
           systemInstruction: systemPrompt,
@@ -9868,7 +10089,7 @@ ABSOLUTE TEXT RULE: The ONLY text/letters allowed ANYWHERE in the image is EXACT
         if (fc.name === "generate_design") {
           const args = fc.args;
           res.write(JSON.stringify({ type: "status", status: "generating" }) + "\n");
-          const imageModelId = useCreativePro ? "gemini-3-pro-image" : "gemini-3.1-flash-image";
+          const imageModelId = resolveEngineModel(useCreativePro ? "nano-banana-pro" : "nano-banana-2");
           if (useCreativePro) {
             const rlNovaHr = checkRateLimit(`nova_hr:${uid}`, 30, 60 * 60 * 1e3);
             if (!rlNovaHr.allowed) {
@@ -9909,7 +10130,7 @@ ABSOLUTE TEXT RULE: The ONLY text/letters allowed ANYWHERE in the image is EXACT
           const args = fc.args;
           res.write(JSON.stringify({ type: "status", status: "generating" }) + "\n");
           const videoOp = await ai5.models.generateVideos({
-            model: "veo-3.1-lite-generate-preview",
+            model: resolveEngineModel("veo-lite"),
             prompt: args.prompt || "Cinematic video shot",
             config: {
               numberOfVideos: 1,
@@ -9930,7 +10151,7 @@ ABSOLUTE TEXT RULE: The ONLY text/letters allowed ANYWHERE in the image is EXACT
         }
       }
       if (chatResponse.usageMetadata) {
-        await chargeForTextModelUsage(uid, "gemini-3.7-flash", chatResponse.usageMetadata, isAdmin).catch((e) => console.error("chat-designer metering error:", e));
+        await chargeForTextModelUsage(uid, "gemini-3.6-flash", chatResponse.usageMetadata, isAdmin).catch((e) => console.error("chat-designer metering error:", e));
       }
       res.write(JSON.stringify({ type: "result", data: { reply: chatResponse.text || "" } }) + "\n");
       return res.end();
@@ -9949,7 +10170,7 @@ ABSOLUTE TEXT RULE: The ONLY text/letters allowed ANYWHERE in the image is EXACT
       if (!_auth) return;
       const { uid, token } = _auth;
       const userDoc = await getDocRest("users", uid, token).catch(() => null);
-      const isAdmin = userDoc?.isAdmin === true || userDoc?.email === "mahmudnaje2009@gmail.com";
+      const isAdmin = isPrivilegedAdmin(userDoc, { email: _auth.email });
       const userBalance = typeof userDoc?.balance === "number" ? userDoc.balance : 0;
       const isNegativeBalance = userDoc?.isNegativeBalance === true;
       if (!isAdmin && (userBalance <= 0 || isNegativeBalance)) {
@@ -10093,14 +10314,14 @@ ABSOLUTE TEXT RULE: The ONLY text/letters allowed ANYWHERE in the image is EXACT
         ...hasFuncs && hasBuiltin ? { toolConfig: { includeServerSideToolInvocations: true } } : {},
         thinkingConfig: { thinkingLevel: proMode === "thinking" || proMode === "search" || proMode === "study" ? "HIGH" : "LOW" }
       };
-      let modelToUse = "gemini-3.7-flash";
+      let modelToUse = getNajeModel("core");
       if (proMode === "thinking") {
-        modelToUse = "gemini-3.7-flash";
-      } else if (["search", "study", "image", "video"].includes(proMode)) {
-        modelToUse = "gemini-3.7-flash";
+        modelToUse = getNajeModel("pro");
+      } else if (["search", "study"].includes(proMode)) {
+        modelToUse = getNajeModel("pro");
       }
       const response = await ai5.models.generateContent({
-        model: modelToUse,
+        model: resolveEngineModel(modelToUse),
         config: {
           ...generateConfig,
           maxOutputTokens: OUTPUT_TOKEN_LIMITS.chatResponse
@@ -10179,7 +10400,7 @@ Output a JSON array of frames following this format:
 Total 4-6 frames. Return raw JSON array ONLY, no markdown.`;
       const ai5 = createGenAIClient2();
       const response = await ai5.models.generateContent({
-        model: "gemini-3.7-flash",
+        model: "gemini-3.6-flash",
         contents: "Generate the script.",
         config: {
           systemInstruction,
@@ -10252,6 +10473,7 @@ Total 4-6 frames. Return raw JSON array ONLY, no markdown.`;
       let decodedToken;
       try {
         decodedToken = await (0, import_auth.getAuth)().verifyIdToken(token);
+        userTokenCache.set(decodedToken.uid, token);
       } catch (err) {
         return res.status(401).json({ error: "\u0641\u0634\u0644 \u0627\u0644\u062A\u062D\u0642\u0642 \u0645\u0646 \u0627\u0644\u062A\u0648\u0643\u064A\u0646: " + err.message });
       }
@@ -10313,7 +10535,7 @@ Total 4-6 frames. Return raw JSON array ONLY, no markdown.`;
       }
       let totalSteps = 4;
       const userDoc = await getDocRest("users", uid, token).catch(() => null);
-      const userIsAdmin = decodedToken?.email === "mahmudnaje2009@gmail.com" || userDoc?.isAdmin === true;
+      const userIsAdmin = isPrivilegedAdmin(userDoc, decodedToken);
       const userBalance = typeof userDoc?.balance === "number" ? userDoc.balance : 0;
       const isNegativeBalance = userDoc?.isNegativeBalance === true;
       if (!userIsAdmin && (userBalance <= 0 || isNegativeBalance)) {
@@ -10731,13 +10953,13 @@ Total 4-6 frames. Return raw JSON array ONLY, no markdown.`;
           const sharpModule = await import("sharp");
           const sharp2 = sharpModule.default || sharpModule;
           if (type === "image") {
-            let imageModelName = "gemini-3.1-flash-image";
+            let imageModelName = resolveEngineModel(getNajeModel("image_core"));
             if (model === "nova" || model === "pro") {
-              imageModelName = await getModelEndpointId("image_hd", "gemini-3-pro-image", token);
+              imageModelName = await getModelEndpointId("image_hd", getNajeModel("image_pro"), token);
             } else if (model === "lite") {
-              imageModelName = await getModelEndpointId("image_fast", "gemini-3.1-flash-lite-image", token);
+              imageModelName = await getModelEndpointId("image_fast", getNajeModel("image_lite"), token);
             } else {
-              imageModelName = await getModelEndpointId("image_standard", "gemini-3.1-flash-image", token);
+              imageModelName = await getModelEndpointId("image_standard", getNajeModel("image_core"), token);
             }
             if (imageModelName === "gemini-3-pro-image" || model === "nova" || model === "pro") {
               const rlNovaHr = checkRateLimit(`nova_hr:${uid}`, 30, 60 * 60 * 1e3);
@@ -10832,47 +11054,171 @@ ${compiledImagePrompt}`;
             }
             let base64Data = "";
             let primaryErr = null;
-            if (!base64Data) {
-              const targetModel = imageModelName || "gemini-3.1-flash-image";
-              let interactionConfig2 = {
-                model: targetModel,
-                input: contentsParts.length > 1 ? contentsParts.map((p) => {
-                  if (typeof p === "string") return { type: "text", text: p };
-                  if (p.inlineData) return { type: "image", mime_type: p.inlineData.mimeType, data: p.inlineData.data };
-                  return { type: "text", text: JSON.stringify(p) };
-                }) : contentsParts[0],
-                response_modalities: ["image", "text"],
-                generation_config: {
-                  image_config: {
-                    aspect_ratio: selectedAspectRatio,
-                    image_size: selectedImageSize
-                  }
-                },
-                store: true
-              };
-              if (isEdit && previousInteractionId) {
-                interactionConfig2.previous_interaction_id = previousInteractionId;
+            const generateWithImagen = async (promptText, aspect) => {
+              const imagenAspects = ["1:1", "3:4", "4:3", "9:16", "16:9"];
+              const validAspect = imagenAspects.includes(aspect) ? aspect : "1:1";
+              const res2 = await ai5.models.generateImages({
+                model: "imagen-3.0-generate-002",
+                prompt: promptText,
+                config: {
+                  numberOfImages: 1,
+                  aspectRatio: validAspect,
+                  outputMimeType: "image/png"
+                }
+              });
+              const bytes = res2?.generatedImages?.[0]?.image?.imageBytes;
+              if (bytes) {
+                return { data: bytes, mime: "image/png" };
               }
-              let interaction;
-              try {
-                interaction = await ai5.interactions.create(interactionConfig2);
-              } catch (imgErr) {
-                if (selectedImageSize !== "1K") {
-                  console.warn(`[Image Gen] Failed with image_size=${selectedImageSize}, retrying with 1K fallback:`, imgErr?.message || imgErr);
-                  interactionConfig2.generation_config.image_config.image_size = "1K";
-                  interaction = await ai5.interactions.create(interactionConfig2);
-                } else {
-                  throw primaryErr || imgErr;
+              return null;
+            };
+            if (!base64Data) {
+              const targetModel = resolveEngineModel(imageModelName || "gemini-3.1-flash-image");
+              const generateContentParts = [];
+              for (const p of contentsParts) {
+                if (typeof p === "string") {
+                  generateContentParts.push({ text: p });
+                } else if (p.inlineData) {
+                  generateContentParts.push({
+                    inlineData: {
+                      data: p.inlineData.data,
+                      mimeType: p.inlineData.mimeType
+                    }
+                  });
                 }
               }
-              interactionId = interaction.id;
-              for (const step of interaction.steps) {
-                if (step.type === "model_output") {
-                  const img = step.content?.find((c) => c.type === "image");
-                  if (img && img.data) {
-                    base64Data = img.data;
-                    mimeType = img.mime_type || "image/png";
+              if (generateContentParts.length === 0) {
+                generateContentParts.push({ text: compiledImagePrompt || prompt || "A creative artistic image" });
+              }
+              const imageConfig = {
+                aspectRatio: selectedAspectRatio || "1:1"
+              };
+              if (selectedImageSize && (targetModel.includes("flash-image") || targetModel.includes("pro-image"))) {
+                imageConfig.imageSize = selectedImageSize;
+              }
+              try {
+                console.log(`[Image Gen] Generating image using ${targetModel} via generateContent...`);
+                const genRes = await ai5.models.generateContent({
+                  model: targetModel,
+                  contents: [
+                    {
+                      role: "user",
+                      parts: generateContentParts
+                    }
+                  ],
+                  config: {
+                    imageConfig
+                  }
+                });
+                for (const part of genRes?.candidates?.[0]?.content?.parts || []) {
+                  if (part.inlineData?.data) {
+                    base64Data = part.inlineData.data;
+                    mimeType = part.inlineData.mimeType || "image/png";
+                    console.log(`[Image Gen] Successfully generated image via ${targetModel}, size: ${base64Data.length}`);
                     break;
+                  }
+                }
+              } catch (gErr) {
+                console.warn(`[Image Gen] Primary generateContent attempt notice for ${targetModel}:`, gErr?.message || gErr);
+                primaryErr = gErr;
+                if (targetModel !== "gemini-3.1-flash-lite-image") {
+                  try {
+                    console.log(`[Image Gen] Attempting fallback to gemini-3.1-flash-lite-image...`);
+                    const fbRes = await ai5.models.generateContent({
+                      model: "gemini-3.1-flash-lite-image",
+                      contents: [
+                        {
+                          role: "user",
+                          parts: generateContentParts
+                        }
+                      ],
+                      config: {
+                        imageConfig: { aspectRatio: selectedAspectRatio || "1:1" }
+                      }
+                    });
+                    for (const part of fbRes?.candidates?.[0]?.content?.parts || []) {
+                      if (part.inlineData?.data) {
+                        base64Data = part.inlineData.data;
+                        mimeType = part.inlineData.mimeType || "image/jpeg";
+                        console.log(`[Image Gen] Fallback to gemini-3.1-flash-lite-image succeeded, size: ${base64Data.length}`);
+                        break;
+                      }
+                    }
+                  } catch (fbErr) {
+                    console.warn(`[Image Gen] Fallback generateContent notice:`, fbErr?.message || fbErr);
+                  }
+                }
+              }
+              if (!base64Data && (targetModel.includes("imagen") || USE_VERTEX_AI2)) {
+                try {
+                  console.log(`[Image Gen] Generating image using Imagen (imagen-3.0-generate-002) fallback...`);
+                  const imgRes = await generateWithImagen(compiledImagePrompt || prompt, selectedAspectRatio);
+                  if (imgRes) {
+                    base64Data = imgRes.data;
+                    mimeType = imgRes.mime;
+                  }
+                } catch (vErr) {
+                  console.warn(`[Image Gen] Direct Imagen generation attempt notice:`, vErr?.message || vErr);
+                  primaryErr = vErr;
+                }
+              }
+              if (!base64Data) {
+                let interactionConfig2 = {
+                  model: targetModel,
+                  input: contentsParts.length > 1 ? contentsParts.map((p) => {
+                    if (typeof p === "string") return { type: "text", text: p };
+                    if (p.inlineData) return { type: "image", mime_type: p.inlineData.mimeType, data: p.inlineData.data };
+                    return { type: "text", text: JSON.stringify(p) };
+                  }) : contentsParts[0],
+                  response_modalities: ["image", "text"],
+                  generation_config: {
+                    image_config: {
+                      aspect_ratio: selectedAspectRatio,
+                      image_size: selectedImageSize
+                    }
+                  },
+                  store: true
+                };
+                if (isEdit && previousInteractionId) {
+                  interactionConfig2.previous_interaction_id = previousInteractionId;
+                }
+                let interaction;
+                try {
+                  interaction = await ai5.interactions.create(interactionConfig2);
+                } catch (imgErr) {
+                  const errStr = (imgErr?.message || "") + " " + (imgErr?.body || "") + " " + String(imgErr);
+                  const isUnsupported = errStr.includes("Unsupported model interaction") || errStr.includes("invalid_request") || errStr.includes("400") || errStr.includes("404");
+                  if (isUnsupported) {
+                    console.warn(`[Image Gen] Interaction API unsupported for ${targetModel}, falling back to imagen-3.0-generate-002:`, imgErr?.message || imgErr);
+                    try {
+                      const fallbackRes = await generateWithImagen(compiledImagePrompt || prompt, selectedAspectRatio);
+                      if (fallbackRes) {
+                        base64Data = fallbackRes.data;
+                        mimeType = fallbackRes.mime;
+                      }
+                    } catch (fbErr) {
+                      console.error(`[Image Gen] Imagen fallback also failed:`, fbErr?.message || fbErr);
+                      throw primaryErr || fbErr || imgErr;
+                    }
+                  } else if (selectedImageSize !== "1K") {
+                    console.warn(`[Image Gen] Failed with image_size=${selectedImageSize}, retrying with 1K fallback:`, imgErr?.message || imgErr);
+                    interactionConfig2.generation_config.image_config.image_size = "1K";
+                    interaction = await ai5.interactions.create(interactionConfig2);
+                  } else {
+                    throw primaryErr || imgErr;
+                  }
+                }
+                if (interaction && !base64Data) {
+                  interactionId = interaction.id;
+                  for (const step of interaction.steps) {
+                    if (step.type === "model_output") {
+                      const img = step.content?.find((c) => c.type === "image");
+                      if (img && img.data) {
+                        base64Data = img.data;
+                        mimeType = img.mime_type || "image/png";
+                        break;
+                      }
+                    }
                   }
                 }
               }
@@ -10926,7 +11272,7 @@ ${compiledImagePrompt}`;
               }
               try {
                 const flashResult = await ai5.models.generateContent({
-                  model: "gemini-3.7-flash",
+                  model: "gemini-3.6-flash",
                   contents: [
                     `Analyze this image which is meant to be a logo or branded image. 
 Find the most appropriate negative space to place the main text (brand name). 
@@ -10972,40 +11318,157 @@ Return ONLY valid JSON matching this schema:
               }, token).catch((e) => console.error(e));
             }
           } else if (type === "video") {
-            if (model === "veo") {
-              const durSec = parseFloat(duration) || (config?.duration ? parseFloat(config.duration) : 4);
+            const isProTier = model === "veo-pro" || model === "video_hd" || model === "naje-video-pro" || model === "omni";
+            const durSec = parseFloat(duration) || (config?.duration ? parseFloat(config.duration) : isProTier ? 5 : 4);
+            if (jobId) {
+              await setDocRest("generation_jobs", jobId, {
+                status: "compiling_prompt",
+                progress: 10,
+                stepLabel: "\u062C\u0627\u0631\u064A \u062A\u062D\u0644\u064A\u0644 \u0637\u0644\u0628\u0643 \u0648\u0628\u0646\u0627\u0621 \u062A\u0633\u0644\u0633\u0644 \u0627\u0644\u0644\u0642\u0637\u0627\u062A \u0628\u062F\u0642\u0629...",
+                type: "video",
+                createdAt: Date.now()
+              }, token).catch((e) => console.error("Firestore job update failed:", e));
+            }
+            const selectedVideoAspect = config?.aspectRatio === "9:16" ? "9:16" : "16:9";
+            const rawVideoPrompt = prompt || "A creative video based on the request";
+            const compiledVideoPrompt = await compileVideoPrompt(
+              rawVideoPrompt,
+              durSec,
+              selectedVideoAspect,
+              isProTier ? "omni" : "veo",
+              projectData?.brandProfile ? { ...projectData.brandProfile, entityType: projectData.entityType } : void 0
+            );
+            const auditedVideoPrompt = await auditVideoPrompt(ai5, compiledVideoPrompt, durSec, selectedVideoAspect, rawVideoPrompt);
+            if (jobId) {
+              await setDocRest("generation_jobs", jobId, {
+                status: "starting",
+                progress: 25,
+                stepLabel: "\u062A\u0645 \u062A\u0623\u0645\u064A\u0646 \u0627\u0644\u0645\u062D\u062A\u0648\u0649\u060C \u062C\u0627\u0631\u064A \u062A\u062C\u0647\u064A\u0632 \u0627\u0644\u0641\u0643\u0631\u0629...",
+                type: "video",
+                createdAt: Date.now()
+              }, token).catch((e) => console.error("Firestore job update failed:", e));
+            }
+            try {
+              const firstImageFile = files && Array.isArray(files) ? files.find((f) => f.mimeType && f.mimeType.startsWith("image/")) : null;
+              const endpointKey = isProTier ? "video_hd" : "video_standard";
+              const modelRole = isProTier ? "video_pro" : "video_core";
+              const rawVideoModel = await getModelEndpointId(endpointKey, getNajeModel(modelRole), token);
+              let videoModelId = resolveEngineModel(rawVideoModel);
+              if (model === "omni" || isProTier && !videoModelId.startsWith("veo")) {
+                if (!videoModelId.includes("omni")) {
+                  videoModelId = "gemini-omni-1.1-flash-preview";
+                }
+              }
+              const requestedRes = config?.resolution === "1080p" ? "1080p" : "720p";
               if (jobId) {
                 await setDocRest("generation_jobs", jobId, {
-                  status: "compiling_prompt",
-                  progress: 10,
-                  stepLabel: "\u062C\u0627\u0631\u064A \u062A\u062D\u0644\u064A\u0644 \u0637\u0644\u0628\u0643 \u0648\u0628\u0646\u0627\u0621 \u062A\u0633\u0644\u0633\u0644 \u0627\u0644\u0644\u0642\u0637\u0627\u062A \u0628\u062F\u0642\u0629...",
+                  status: "generating",
+                  progress: 60,
+                  stepLabel: "\u062C\u0627\u0631\u064A \u0627\u0644\u062A\u0648\u0644\u064A\u062F...",
                   type: "video",
                   createdAt: Date.now()
                 }, token).catch((e) => console.error("Firestore job update failed:", e));
               }
-              const selectedVideoAspect = config?.aspectRatio === "9:16" ? "9:16" : "16:9";
-              const rawVideoPrompt = prompt || "A creative video based on the request";
-              const compiledVideoPrompt = await compileVideoPrompt(
-                rawVideoPrompt,
-                durSec,
-                selectedVideoAspect,
-                "veo",
-                projectData?.brandProfile ? { ...projectData.brandProfile, entityType: projectData.entityType } : void 0
-              );
-              const auditedVideoPrompt = await auditVideoPrompt(ai5, compiledVideoPrompt, durSec, selectedVideoAspect, rawVideoPrompt);
-              if (jobId) {
-                await setDocRest("generation_jobs", jobId, {
-                  status: "starting",
-                  progress: 25,
-                  stepLabel: "\u062A\u0645 \u062A\u0623\u0645\u064A\u0646 \u0627\u0644\u0645\u062D\u062A\u0648\u0649\u060C \u062C\u0627\u0631\u064A \u062A\u062C\u0647\u064A\u0632 \u0627\u0644\u0641\u0643\u0631\u0629...",
-                  type: "video",
-                  createdAt: Date.now()
-                }, token).catch((e) => console.error("Firestore job update failed:", e));
-              }
-              try {
-                const firstImageFile = files && Array.isArray(files) ? files.find((f) => f.mimeType && f.mimeType.startsWith("image/")) : null;
-                const videoModelId = await getModelEndpointId("video_standard", "veo-3.1-lite-generate-preview", token);
-                const requestedRes = config?.resolution === "1080p" ? "1080p" : "720p";
+              if (videoModelId.includes("omni")) {
+                console.log(`[Omni Video Gen] Generating video with ${videoModelId} (duration=${durSec}s, res=${requestedRes}, aspect=${selectedVideoAspect})...`);
+                const omniPromptText = `${auditedVideoPrompt}
+Duration: ${durSec} seconds. Resolution: ${requestedRes}. Aspect ratio: ${selectedVideoAspect}.`;
+                let interactionInput;
+                if (firstImageFile && firstImageFile.data && firstImageFile.mimeType) {
+                  interactionInput = [
+                    {
+                      type: "image",
+                      data: firstImageFile.data,
+                      mime_type: firstImageFile.mimeType
+                    },
+                    {
+                      type: "text",
+                      text: omniPromptText
+                    }
+                  ];
+                } else {
+                  interactionInput = omniPromptText;
+                }
+                try {
+                  const interaction = await ai5.interactions.create({
+                    model: videoModelId,
+                    input: interactionInput,
+                    response_modalities: ["video", "text"],
+                    store: true
+                  }, { timeout: 3e5 });
+                  interactionId = interaction.id;
+                  for (const step of interaction.steps || []) {
+                    if (step.type === "model_output") {
+                      for (const c of step.content || []) {
+                        if (c.type === "video" && c.data) {
+                          generationResult = c.data;
+                          mimeType = c.mime_type || "video/mp4";
+                          extension = "mp4";
+                          break;
+                        }
+                      }
+                    }
+                  }
+                  if (!generationResult) {
+                    throw new Error("\u0644\u0645 \u064A\u062D\u062A\u0648\u064A \u0631\u062F \u0627\u0644\u0646\u0645\u0648\u0630\u062C \u0639\u0644\u0649 \u0645\u062D\u062A\u0648\u0649 \u0641\u064A\u062F\u064A\u0648 \u0635\u0627\u0644\u062D.");
+                  }
+                } catch (omniErr) {
+                  console.warn(`[Omni Video Gen] Primary generation failed with ${videoModelId}:`, omniErr?.message || omniErr);
+                  console.log(`[Omni Video Gen] Falling back to Veo Pro (veo-3.1-generate-001)...`);
+                  const veoFallbackParams = {
+                    model: "veo-3.1-generate-001",
+                    prompt: auditedVideoPrompt,
+                    config: {
+                      numberOfVideos: 1,
+                      resolution: requestedRes,
+                      aspectRatio: selectedVideoAspect,
+                      durationSeconds: durSec
+                    }
+                  };
+                  if (firstImageFile && firstImageFile.data && firstImageFile.mimeType) {
+                    veoFallbackParams.image = {
+                      imageBytes: firstImageFile.data,
+                      mimeType: firstImageFile.mimeType
+                    };
+                  }
+                  const operation = await ai5.models.generateVideos(veoFallbackParams);
+                  const op = new import_genai5.GenerateVideosOperation();
+                  op.name = operation.name;
+                  let done = false;
+                  let attempt = 0;
+                  while (!done && attempt < 60) {
+                    const updated = await ai5.operations.getVideosOperation({ operation: op });
+                    if (updated.done) {
+                      done = true;
+                      const uri = updated.response?.generatedVideos?.[0]?.video?.uri;
+                      if (!uri) throw new Error("\u0644\u0645 \u064A\u062A\u0645 \u0627\u0644\u0639\u062B\u0648\u0631 \u0639\u0644\u0649 \u0631\u0627\u0628\u0637 \u062A\u062D\u0645\u064A\u0644 \u0627\u0644\u0641\u064A\u062F\u064A\u0648 \u0627\u0644\u0646\u0627\u062A\u062C \u0645\u0646 Veo.");
+                      let videoRes = await fetch(uri, {
+                        headers: { "x-goog-api-key": process.env.GEMINI_API_KEY }
+                      });
+                      if (!videoRes.ok) {
+                        const altUri = uri.includes("?") ? `${uri}&key=${process.env.GEMINI_API_KEY}` : `${uri}?key=${process.env.GEMINI_API_KEY}`;
+                        videoRes = await fetch(altUri);
+                      }
+                      if (!videoRes.ok) {
+                        throw new Error(`\u062A\u0639\u0630\u0631 \u062A\u0646\u0632\u064A\u0644 \u0645\u0644\u0641 \u0627\u0644\u0641\u064A\u062F\u064A\u0648 \u0645\u0646 \u0627\u0644\u062E\u0627\u062F\u0645 (${videoRes.status})`);
+                      }
+                      const arrayBuffer = await videoRes.arrayBuffer();
+                      generationResult = Buffer.from(arrayBuffer).toString("base64");
+                      mimeType = "video/mp4";
+                      extension = "mp4";
+                      break;
+                    }
+                    attempt++;
+                    await new Promise((resolve) => setTimeout(resolve, 5e3));
+                  }
+                  if (!done) {
+                    throw new Error("\u0627\u0646\u062A\u0647\u062A \u0645\u0647\u0644\u0629 \u0627\u0646\u062A\u0638\u0627\u0631 \u062A\u0648\u0644\u064A\u062F \u0627\u0644\u0641\u064A\u062F\u064A\u0648 \u0627\u0644\u0628\u062F\u064A\u0644.");
+                  }
+                }
+              } else {
+                if (!videoModelId.startsWith("veo")) {
+                  videoModelId = isProTier ? "veo-3.1-generate-001" : "veo-3.1-lite-generate-001";
+                }
                 const veoParams = {
                   model: videoModelId,
                   prompt: auditedVideoPrompt,
@@ -11022,20 +11485,17 @@ Return ONLY valid JSON matching this schema:
                     mimeType: firstImageFile.mimeType
                   };
                 }
-                if (jobId) {
-                  await setDocRest("generation_jobs", jobId, {
-                    status: "generating",
-                    progress: 60,
-                    stepLabel: "\u062C\u0627\u0631\u064A \u0627\u0644\u062A\u0648\u0644\u064A\u062F...",
-                    type: "video",
-                    createdAt: Date.now()
-                  }, token).catch((e) => console.error("Firestore job update failed:", e));
-                }
                 let operation;
                 try {
                   operation = await ai5.models.generateVideos(veoParams);
                 } catch (veoErr) {
-                  if (requestedRes !== "720p") {
+                  console.warn(`[Veo Gen] Initial attempt failed with model=${veoParams.model}:`, veoErr?.message || veoErr);
+                  if (veoParams.model !== "veo-3.1-lite-generate-001") {
+                    console.log(`[Veo Gen] Retrying with veo-3.1-lite-generate-001 fallback...`);
+                    veoParams.model = "veo-3.1-lite-generate-001";
+                    veoParams.config.resolution = "720p";
+                    operation = await ai5.models.generateVideos(veoParams);
+                  } else if (requestedRes !== "720p") {
                     console.warn(`[Veo Gen] Failed with resolution=${requestedRes}, retrying with 720p fallback:`, veoErr?.message || veoErr);
                     veoParams.config.resolution = "720p";
                     operation = await ai5.models.generateVideos(veoParams);
@@ -11076,120 +11536,31 @@ Return ONLY valid JSON matching this schema:
                 if (!done) {
                   throw new Error("\u0627\u0646\u062A\u0647\u062A \u0645\u0647\u0644\u0629 \u0627\u0646\u062A\u0638\u0627\u0631 \u062A\u0648\u0644\u064A\u062F \u0627\u0644\u0641\u064A\u062F\u064A\u0648 \u0645\u0646 Veo.");
                 }
-                if (jobId) {
-                  await setDocRest("generation_jobs", jobId, {
-                    status: "generating",
-                    progress: 85,
-                    stepLabel: "\u0627\u0644\u0644\u0645\u0633\u0627\u062A \u0627\u0644\u0623\u062E\u064A\u0631\u0629...",
-                    type: "video",
-                    createdAt: Date.now()
-                  }, token).catch((e) => console.error(e));
-                }
-              } catch (err) {
-                throw err;
-              }
-            } else if (model === "omni") {
-              const durSec = parseFloat(duration) || (config?.duration ? parseFloat(config.duration) : 5);
-              if (jobId) {
-                await setDocRest("generation_jobs", jobId, {
-                  status: "compiling_prompt",
-                  progress: 10,
-                  stepLabel: "\u062C\u0627\u0631\u064A \u062A\u062D\u0644\u064A\u0644 \u0637\u0644\u0628\u0643 \u0648\u0628\u0646\u0627\u0621 \u062A\u0633\u0644\u0633\u0644 \u0627\u0644\u0644\u0642\u0637\u0627\u062A \u0628\u062F\u0642\u0629...",
-                  type: "video",
-                  createdAt: Date.now()
-                }, token).catch((e) => console.error("Firestore job update failed:", e));
-              }
-              const selectedVideoAspect = config?.aspectRatio === "9:16" ? "9:16" : "16:9";
-              const rawVideoPrompt = prompt || "A creative video based on the request";
-              const compiledVideoPrompt = await compileVideoPrompt(
-                rawVideoPrompt,
-                durSec,
-                selectedVideoAspect,
-                "omni",
-                projectData?.brandProfile ? { ...projectData.brandProfile, entityType: projectData.entityType } : void 0
-              );
-              const auditedVideoPrompt = await auditVideoPrompt(ai5, compiledVideoPrompt, durSec, selectedVideoAspect, rawVideoPrompt);
-              if (jobId) {
-                await setDocRest("generation_jobs", jobId, {
-                  status: "starting",
-                  progress: 25,
-                  stepLabel: "\u062A\u0645 \u062A\u0623\u0645\u064A\u0646 \u0627\u0644\u0645\u062D\u062A\u0648\u0649\u060C \u062C\u0627\u0631\u064A \u062A\u062C\u0647\u064A\u0632 \u0627\u0644\u0641\u0643\u0631\u0629...",
-                  type: "video",
-                  createdAt: Date.now()
-                }, token).catch((e) => console.error("Firestore job update failed:", e));
               }
               if (jobId) {
                 await setDocRest("generation_jobs", jobId, {
                   status: "generating",
-                  progress: 60,
-                  stepLabel: "\u062C\u0627\u0631\u064A \u0627\u0644\u062A\u0648\u0644\u064A\u062F...",
+                  progress: 85,
+                  stepLabel: "\u0627\u0644\u0644\u0645\u0633\u0627\u062A \u0627\u0644\u0623\u062E\u064A\u0631\u0629...",
                   type: "video",
                   createdAt: Date.now()
-                }, token).catch((e) => console.error("Firestore job update failed:", e));
+                }, token).catch((e) => console.error(e));
               }
-              try {
-                const omniModelId = await getModelEndpointId("video_hd", "gemini-omni-flash-preview", token);
-                let interaction;
-                if (isEdit && previousInteractionId) {
-                  interaction = await ai5.interactions.create({
-                    model: omniModelId,
-                    previous_interaction_id: previousInteractionId,
-                    input: `${systemInstruction}
-
-\u0627\u0644\u062A\u0639\u062F\u064A\u0644 \u0627\u0644\u0645\u0637\u0644\u0648\u0628: ${auditedVideoPrompt}`,
-                    store: true,
-                    response_format: {
-                      type: "video",
-                      aspect_ratio: selectedVideoAspect
-                    }
-                  }, { timeout: 3e5 });
-                } else {
-                  interaction = await ai5.interactions.create({
-                    model: omniModelId,
-                    input: `${systemInstruction}
-
-\u0627\u0644\u0637\u0644\u0628: ${auditedVideoPrompt}`,
-                    store: true,
-                    response_format: {
-                      type: "video",
-                      aspect_ratio: selectedVideoAspect,
-                      duration: `${durSec}s`
-                    }
-                  }, { timeout: 3e5 });
-                }
-                interactionId = interaction.id;
-                const videoPart = interaction.output_video;
-                if (videoPart && videoPart.data) {
-                  generationResult = videoPart.data;
-                  mimeType = videoPart.mime_type || "video/mp4";
-                  extension = "mp4";
-                  if (jobId) {
-                    await setDocRest("generation_jobs", jobId, {
-                      status: "generating",
-                      progress: 85,
-                      stepLabel: "\u0627\u0644\u0644\u0645\u0633\u0627\u062A \u0627\u0644\u0623\u062E\u064A\u0631\u0629...",
-                      type: "video",
-                      createdAt: Date.now()
-                    }, token).catch((e) => console.error(e));
-                  }
-                  if (jobId) {
-                    await setDocRest("generation_jobs", jobId, {
-                      status: "completed",
-                      progress: 100,
-                      stepLabel: "\u062A\u0645 \u062A\u0648\u0644\u064A\u062F \u0648\u0625\u062E\u0631\u0627\u062C \u0627\u0644\u0641\u064A\u062F\u064A\u0648 \u0628\u0646\u062C\u0627\u062D!",
-                      type: "video",
-                      createdAt: Date.now()
-                    }, token).catch((e) => console.error(e));
-                  }
-                } else {
-                  throw new Error("\u0641\u0634\u0644 \u062A\u0648\u0644\u064A\u062F \u0627\u0644\u0641\u064A\u062F\u064A\u0648 \u0623\u0648 \u0627\u0646\u062A\u0647\u0649 \u0648\u0642\u062A \u0627\u0644\u0627\u0646\u062A\u0638\u0627\u0631.");
-                }
-              } catch (err) {
-                throw err;
+              if (jobId) {
+                await setDocRest("generation_jobs", jobId, {
+                  status: "completed",
+                  progress: 100,
+                  stepLabel: "\u062A\u0645 \u062A\u0648\u0644\u064A\u062F \u0648\u0625\u062E\u0631\u0627\u062C \u0627\u0644\u0641\u064A\u062F\u064A\u0648 \u0628\u0646\u062C\u0627\u062D!",
+                  type: "video",
+                  createdAt: Date.now()
+                }, token).catch((e) => console.error(e));
               }
+            } catch (err) {
+              throw err;
             }
           } else if (type === "voice") {
             const voiceMode = req.body.voiceMode === "dual" ? "dual" : "single";
+            const voiceTier = String(req.body.voiceTier || req.body.model || "core").toLowerCase() === "pro" ? "pro" : "core";
             const selectedVoice = req.body.selectedVoice || "Kore";
             const speaker1Voice = req.body.speaker1Voice || "Puck";
             const speaker2Voice = req.body.speaker2Voice || "Kore";
@@ -11221,7 +11592,7 @@ Return ONLY valid JSON matching this schema:
                 try {
                   console.log("[Voice Gen Dual Gateway] Transforming informal/colloquial/narrative input into structured dialogue script...");
                   const scriptGenRes = await ai5.models.generateContent({
-                    model: "gemini-3.7-flash",
+                    model: "gemini-3.5-flash-lite",
                     config: { maxOutputTokens: OUTPUT_TOKEN_LIMITS.voiceScript },
                     contents: `You are an AI Smart Dialogue Formatting Gateway for Multi-Speaker Text-to-Speech (Arabic & English).
 
@@ -11293,7 +11664,10 @@ ${speaker2Name}: \u0644\u0627 \u0648\u0627\u0644\u0644\u0647\u060C \u0627\u0644\
 Read/TTS the following script as spoken audio:
 ${finalScript}` : `Read/TTS the following script as spoken audio:
 ${finalScript}`;
-            const ttsModelId = await getModelEndpointId("voice_tts_standard", "gemini-3.1-flash-tts-preview", token);
+            const isProVoice = voiceTier === "pro";
+            const targetEndpoint = isProVoice ? "voice_tts_pro" : voiceMode === "dual" ? "voice_tts_standard" : "voice_tts";
+            const defaultFallback = isProVoice ? getNajeModel("voice_pro") : getNajeModel("voice_core");
+            const ttsModelId = resolveEngineModel(await getModelEndpointId(targetEndpoint, defaultFallback, token));
             let response = null;
             try {
               response = await ai5.models.generateContent({
@@ -11307,10 +11681,11 @@ ${finalScript}`;
               });
             } catch (ttsErr) {
               console.warn("[Voice Gen] Dual or primary TTS call failed, attempting fallback call:", ttsErr?.message || ttsErr);
+              const fallbackModelId = resolveEngineModel(getNajeModel("voice_core"));
               const fallbackSpeechConfig = voiceMode === "dual" ? speechConfig : { voiceConfig: { prebuiltVoiceConfig: { voiceName: selectedVoice } } };
               try {
                 response = await ai5.models.generateContent({
-                  model: ttsModelId,
+                  model: fallbackModelId,
                   contents: scriptPrompt,
                   config: {
                     responseModalities: ["AUDIO"],
@@ -11322,7 +11697,7 @@ ${finalScript}`;
                 console.warn("[Voice Gen] Second attempt failed, retrying single-speaker fallback:", retryErr?.message || retryErr);
                 try {
                   response = await ai5.models.generateContent({
-                    model: ttsModelId,
+                    model: fallbackModelId,
                     contents: `Read/TTS the following dialogue/script as spoken audio:
 ${finalScript}`,
                     config: {
@@ -11428,7 +11803,7 @@ ${finalScript}`,
               const projectDocs = projectData?.sourceDocuments ? Array.isArray(projectData.sourceDocuments) ? projectData.sourceDocuments.join("\n\n") : String(projectData.sourceDocuments) : "";
               const slidesConfigDoc = await getDocRest("slides_config", "global", token).catch(() => null);
               const slidesConfig = slidesConfigDoc || {};
-              const modelId = slidesConfig?.modelId || "gemini-3.7-flash";
+              const modelId = slidesConfig?.modelId || "gemini-3.6-flash";
               const { text: uploadedText, truncated } = await transcribeSource2(ai5, files || [], modelId);
               const sourceText = [projectDocs, uploadedText].filter(Boolean).join("\n\n");
               const updateProgress = async (step, label) => {
@@ -11453,8 +11828,8 @@ ${finalScript}`,
                 cost2 = result.slideCount * (pricing.document.pdf_per_slide || 0.2);
               }
             } else if (docTypeToUse === "pptx") {
-              const slideWriterModel = await getModelEndpointId("slide_writer", "gemini-3.5-flash-lite", token);
-              const slideAuditorModel = await getModelEndpointId("document_engine", "gemini-3.7-flash", token);
+              const slideWriterModel = await getModelEndpointId("slide_writer", getNajeModel("personas"), token);
+              const slideAuditorModel = await getModelEndpointId("document_engine", getNajeModel("personas"), token);
               const naje2 = new NajeEngine(process.env.GEMINI_API_KEY);
               totalSteps = sections.length + 2;
               var generatedSlides = [];
@@ -11518,8 +11893,8 @@ ${finalScript}`,
               mimeType = "application/vnd.openxmlformats-officedocument.presentationml.presentation";
               extension = "pptx";
             } else {
-              const docWriterModel = await getModelEndpointId("document_writer", "gemini-3.5-flash-lite", token);
-              const docAuditorModel = await getModelEndpointId("document_engine", "gemini-3.7-flash", token);
+              const docWriterModel = await getModelEndpointId("document_writer", getNajeModel("personas"), token);
+              const docAuditorModel = await getModelEndpointId("document_engine", getNajeModel("personas"), token);
               const brandBgHex = artDirection?.colors?.background || "0B0F19";
               const bgHex = brandBgHex.startsWith("#") ? brandBgHex : `#${brandBgHex}`;
               const brandTitleHex = artDirection?.colors?.title || "FFFFFF";
@@ -12070,23 +12445,23 @@ Aim for output a senior product designer would approve. Restraint, hierarchy, an
               const hasFunctionDecls = tools.some((t) => t.functionDeclarations && t.functionDeclarations.length > 0);
               const hasBuiltinTools = tools.some((t) => t.googleSearch || t.codeExecution);
               const toolConfig = hasFunctionDecls && hasBuiltinTools ? { includeServerSideToolInvocations: true } : void 0;
-              const textLiteModel = await getModelEndpointId("text_lite", "gemini-3.5-flash-lite", token);
-              const textCoreModel = await getModelEndpointId("text_core", "gemini-3.7-flash", token);
-              const textMaxModel = await getModelEndpointId("text_max", "gemini-3.1-pro", token);
-              const uiModelId = await getModelEndpointId("ui_standard", "gemini-3.7-flash", token);
+              const textLiteModel = await getModelEndpointId("text_lite", getNajeModel("lite"), token);
+              const textCoreModel = await getModelEndpointId("text_core", getNajeModel("core"), token);
+              const textMaxModel = await getModelEndpointId("text_max", getNajeModel("pro"), token);
+              const uiModelId = await getModelEndpointId("ui_standard", getNajeModel("core"), token);
               const MODEL_MAP = {
                 lite: textLiteModel,
                 core: textCoreModel,
                 max: textMaxModel
               };
               const requestedModelKey = String(req.body.model || "core").toLowerCase();
-              const selectedModelId = type === "ui" ? uiModelId : MODEL_MAP[requestedModelKey] || textCoreModel;
-              console.log(`[UI Generation] type=${type}, requestedModel=${requestedModelKey}, selectedModelId=${selectedModelId}, mode=${req.body.mode || "build"}`);
+              const selectedModelId2 = resolveEngineModel(type === "ui" ? uiModelId : MODEL_MAP[requestedModelKey] || textCoreModel);
+              console.log(`[UI Generation] type=${type}, requestedModel=${requestedModelKey}, selectedModelId=${selectedModelId2}, mode=${req.body.mode || "build"}`);
               let generatedImageSlots = {};
               if (type === "ui" && !isPlanMode && !isUiEdit) {
                 try {
                   const planResp = await ai5.models.generateContent({
-                    model: uiModelId,
+                    model: resolveEngineModel(uiModelId),
                     contents: [
                       { role: "user", parts: [{ text: `Analyze this UI request: "${prompt}". Produce a concise JSON plan:
 {
@@ -12115,21 +12490,35 @@ Return ONLY raw JSON, no markdown code fences.` }] }
                       for (let idx = 0; idx < promptsToRun.length; idx++) {
                         const imgPrompt = promptsToRun[idx];
                         try {
-                          const imgInteraction = await ai5.interactions.create({
-                            model: "gemini-3.1-flash-image",
-                            input: `Professional high quality photo of ${imgPrompt}. Clean, cinematic, modern, realistic lighting.`,
-                            response_modalities: ["image"]
-                          });
-                          for (const step of imgInteraction.steps) {
-                            if (step.type === "model_output") {
-                              const img = step.content?.find((c) => c.type === "image");
-                              if (img && img.data) {
-                                const rawBuf = Buffer.from(img.data, "base64");
-                                const compressedBuf = await sharp3(rawBuf).resize(800, 600, { fit: "inside" }).jpeg({ quality: 78 }).toBuffer();
-                                const slotKey = `hero-photo-${idx + 1}`;
-                                generatedImageSlots[slotKey] = `data:image/jpeg;base64,${compressedBuf.toString("base64")}`;
+                          let rawBase64 = "";
+                          if (USE_VERTEX_AI2) {
+                            const imgRes = await ai5.models.generateImages({
+                              model: "imagen-3.0-generate-002",
+                              prompt: `Professional high quality photo of ${imgPrompt}. Clean, cinematic, modern, realistic lighting.`,
+                              config: { numberOfImages: 1, aspectRatio: "4:3", outputMimeType: "image/png" }
+                            });
+                            rawBase64 = imgRes?.generatedImages?.[0]?.image?.imageBytes || "";
+                          } else {
+                            const imgInteraction = await ai5.interactions.create({
+                              model: "gemini-3.1-flash-image",
+                              input: `Professional high quality photo of ${imgPrompt}. Clean, cinematic, modern, realistic lighting.`,
+                              response_modalities: ["image"]
+                            });
+                            for (const step of imgInteraction.steps) {
+                              if (step.type === "model_output") {
+                                const img = step.content?.find((c) => c.type === "image");
+                                if (img && img.data) {
+                                  rawBase64 = img.data;
+                                  break;
+                                }
                               }
                             }
+                          }
+                          if (rawBase64) {
+                            const rawBuf = Buffer.from(rawBase64, "base64");
+                            const compressedBuf = await sharp3(rawBuf).resize(800, 600, { fit: "inside" }).jpeg({ quality: 78 }).toBuffer();
+                            const slotKey = `hero-photo-${idx + 1}`;
+                            generatedImageSlots[slotKey] = `data:image/jpeg;base64,${compressedBuf.toString("base64")}`;
                           }
                         } catch (imgErr) {
                           console.warn(`[UI Staged Imagery] Generation failed for prompt "${imgPrompt}":`, imgErr);
@@ -12153,7 +12542,7 @@ Return ONLY raw JSON, no markdown code fences.` }] }
                 }
               }
               const stream = await ai5.models.generateContentStream({
-                model: selectedModelId,
+                model: selectedModelId2,
                 contents,
                 config: {
                   systemInstruction: finalSystemInstruction,
@@ -12227,12 +12616,12 @@ Return ONLY raw JSON, no markdown code fences.` }] }
               }
               if (type === "ui" && isUiEdit && previousHtml && fullText) {
                 const similarity = structuralSimilarity(previousHtml, fullText);
-                console.log(`[Edit Fidelity] similarity=${similarity.toFixed(2)} model=${selectedModelId} uid=${uid}`);
+                console.log(`[Edit Fidelity] similarity=${similarity.toFixed(2)} model=${selectedModelId2} uid=${uid}`);
                 if (similarity < 0.5) {
                   console.warn(`[Edit Fidelity] LOW similarity (${similarity.toFixed(2)}) \u2014 model regenerated instead of editing. Forcing a strict re-edit.`);
                   try {
                     const reEdit = await ai5.models.generateContent({
-                      model: selectedModelId,
+                      model: selectedModelId2,
                       contents: [
                         { role: "user", parts: [{ text: `You must EDIT the document below IN PLACE. Apply ONLY this change: "${prompt}". Keep everything else identical \u2014 same layout, colors, text, structure, and all prior content. Do NOT regenerate, redesign, reorder, or drop anything.
 
@@ -12268,7 +12657,7 @@ Return ONLY the full edited document, starting with <!DOCTYPE html> and ending w
                   console.log(`[UI Polish Pass] Responsiveness check failed on initial output \u2014 running Polish pass.`);
                   try {
                     const polishResp = await ai5.models.generateContent({
-                      model: selectedModelId,
+                      model: selectedModelId2,
                       contents: [
                         { role: "user", parts: [{ text: `Your generated HTML failed the mobile responsiveness requirement \u2014 it must restructure at 640px (e.g., collapse multi-column layouts, stack sidebars/navigation, or restructure tables into card lists).
 
@@ -12349,7 +12738,7 @@ Return the complete updated HTML document with real layout-changing mobile media
                     if (itemData) {
                       const rawFullText = itemData.storageRef || itemData.content || itemData.summary || "";
                       const followUp = await ai5.models.generateContent({
-                        model: selectedModelId,
+                        model: selectedModelId2,
                         contents: [
                           ...contents,
                           { role: "model", parts: [{ functionCall: recallCall2 }] },
@@ -12419,7 +12808,7 @@ Return the complete updated HTML document with real layout-changing mobile media
               });
             }
             const response = await ai5.models.generateContent({
-              model: "gemini-3.7-flash",
+              model: resolveEngineModel(selectedModelId || "gemini-3.6-flash"),
               contents,
               config: {
                 systemInstruction,
@@ -12432,7 +12821,7 @@ Return the complete updated HTML document with real layout-changing mobile media
               }
             });
             if (response.usageMetadata) {
-              await chargeForTextModelUsage(uid, "gemini-3.7-flash", response.usageMetadata, userIsAdmin).catch((e) => console.error("Text generate metering error:", e));
+              await chargeForTextModelUsage(uid, selectedModelId || "gemini-3.6-flash", response.usageMetadata, userIsAdmin).catch((e) => console.error("Text generate metering error:", e));
             }
             let textResult = response.text || "";
             const recallCall = response.functionCalls?.find((fc) => fc.name === "recall_project_memory");
@@ -12454,7 +12843,7 @@ Return the complete updated HTML document with real layout-changing mobile media
                   if (itemData) {
                     const rawFullText = itemData.storageRef || itemData.content || itemData.summary || "";
                     const followUp = await ai5.models.generateContent({
-                      model: "gemini-3.7-flash",
+                      model: resolveEngineModel(selectedModelId || "gemini-3.6-flash"),
                       contents: [
                         ...contents,
                         { role: "model", parts: [{ functionCall: recallCall }] },
@@ -12500,7 +12889,7 @@ Return the complete updated HTML document with real layout-changing mobile media
               try {
                 const ai6 = createGenAIClient2();
                 const profileRes = await ai6.models.generateContent({
-                  model: "gemini-3.7-flash",
+                  model: "gemini-3.5-flash-lite",
                   contents: `Extract a brand profile based on this project data and user request.
 Entity Type: ${projectData.entityType || "\u063A\u064A\u0631 \u0645\u062D\u062F\u062F"}
 Project Name: ${projectData.name || "\u0645\u0634\u0631\u0648\u0639 \u062C\u062F\u064A\u062F"}
@@ -13712,7 +14101,7 @@ Respond ONLY with JSON matching this structure:
       }
       const ai5 = createGenAIClient2();
       const sampleText = `\u0645\u0631\u062D\u0628\u0627\u064B\u060C \u0623\u0646\u0627 \u0635\u0648\u062A ${voice} \u0641\u064A \u0645\u0646\u0635\u0629 \u0646\u0627\u062C\u064A \u2014 \u062C\u0627\u0647\u0632 \u0644\u062A\u062D\u0648\u064A\u0644 \u0643\u062A\u0627\u0628\u0627\u062A\u0643 \u0644\u062A\u0633\u062C\u064A\u0644 \u0635\u0648\u0651\u062A\u064A \u0639\u0627\u0644\u064A \u0627\u0644\u062C\u0648\u062F\u0629.`;
-      const ttsModelSample = await getModelEndpointId("voice_tts_standard", "gemini-3.1-flash-tts-preview");
+      const ttsModelSample = resolveEngineModel(await getModelEndpointId("voice_tts_standard", getNajeModel("voice_core")));
       let response = null;
       try {
         response = await ai5.models.generateContent({
@@ -13863,7 +14252,7 @@ Respond ONLY with JSON matching this structure:
           }
         }
         let success = false;
-        const ttsModelSample = await getModelEndpointId("voice_tts_standard", "gemini-3.1-flash-tts-preview");
+        const ttsModelSample = resolveEngineModel(await getModelEndpointId("voice_tts_standard", getNajeModel("voice_core")));
         for (let attempt = 1; attempt <= 3; attempt++) {
           try {
             const sampleText = `\u0645\u0631\u062D\u0628\u0627\u064B\u060C \u0623\u0646\u0627 \u0635\u0648\u062A ${voice} \u0641\u064A \u0646\u0627\u062C\u064A \u2014 \u062C\u0627\u0647\u0632 \u0623\u062D\u0648\u0651\u0644 \u0646\u0635\u0643 \u0644\u062A\u0633\u062C\u064A\u0644 \u0627\u062D\u062A\u0631\u0627\u0641\u064A.`;

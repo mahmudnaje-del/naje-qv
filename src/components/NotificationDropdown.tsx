@@ -233,7 +233,7 @@ export default function NotificationDropdown() {
                       try {
                         new Notification('استوديو ناجي الذكي Naje AI', {
                           body: 'أهلاً بك! تم تفعيل الإشعارات الفورية بنجاح على هذا المتصفح.',
-                          icon: '/favicon.ico',
+                          icon: '/logo-192.png',
                         });
                       } catch (err) {
                         console.log('Test notification error:', err);
@@ -268,7 +268,7 @@ export default function NotificationDropdown() {
                     try {
                       new Notification('استوديو ناجي الذكي Naje AI', {
                         body: 'إشعار تجريبي اختباري من استوديو ناجي!',
-                        icon: '/favicon.ico',
+                        icon: '/logo-192.png',
                       });
                       toast.success('تم إرسال إشعار تجريبي لنظام التشغيل');
                     } catch (e) {

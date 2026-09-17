@@ -27,6 +27,7 @@ const NajeAgent = lazyWithRetry(() => import('./pages/NajeAgent'));
 const NajeAd = lazyWithRetry(() => import('./pages/NajeAd'));
 const Store = lazyWithRetry(() => import('./pages/Store'));
 const AuthAction = lazyWithRetry(() => import('./pages/AuthAction'));
+const NotFound = lazyWithRetry(() => import('./pages/NotFound'));
 
 export default function App() {
   const { initializeAuth, loadingAuth, user, themeMode } = useAppStore();
@@ -62,8 +63,15 @@ export default function App() {
         }>
           <Routes>
             <Route path="/auth" element={!user ? <Auth /> : <Navigate to="/" />} />
-            
-            {/* User Routes */}
+            <Route path="/auth/action" element={<AuthAction />} />
+
+            {/* Public legal / compliance — never nest under the auth layout */}
+            <Route path="/Terms-of-Service" element={<TermsOfService />} />
+            <Route path="/Privacy-Policy" element={<PrivacyPolicy />} />
+            <Route path="/Sitemap" element={<Sitemap />} />
+            <Route path="/delete-account-request" element={<DeleteAccountRequest />} />
+
+            {/* Authenticated product */}
             <Route path="/" element={user ? <Dashboard /> : <Navigate to="/auth" />}>
               <Route index element={<Projects />} />
               <Route path="chat/:chatId" element={<Chat />} />
@@ -81,20 +89,10 @@ export default function App() {
               <Route path="profile" element={<Navigate to="/settings" replace />} />
               <Route path="favorites" element={<Favorites />} />
               <Route path="projects" element={<Projects />} />
-              <Route path="Terms-of-Service" element={<TermsOfService />} />
-              <Route path="Privacy-Policy" element={<PrivacyPolicy />} />
-              <Route path="Sitemap" element={<Sitemap />} />
             </Route>
 
-            {/* Public Routes (No auth required) */}
-            <Route path="/auth/action" element={<AuthAction />} />
-            <Route path="/Terms-of-Service" element={<TermsOfService />} />
-            <Route path="/Privacy-Policy" element={<PrivacyPolicy />} />
-            <Route path="/Sitemap" element={<Sitemap />} />
-            <Route path="/delete-account-request" element={<DeleteAccountRequest />} />
-
-            {/* Admin Route */}
             <Route path="/naje-admin-ai" element={user?.isAdmin ? <Admin /> : <Navigate to="/" />} />
+            <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>
         <ToastContainer />

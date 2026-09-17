@@ -222,13 +222,6 @@ const renderErrorText = (err: any) => typeof err === 'string' ? err : err?.messa
 export default function CreativelyAI() {
   const { user, updateBalance } = useAppStore();
   const balance = Number(user?.balance || 0);
-  const [currentPath, setCurrentPath] = useState(window.location.pathname);
-  
-  
-
-  if (currentPath === '/qweqwe') {
-    return <EpisodesViewer />;
-  }
 
   const lang: 'ar' | 'en' = 'ar';
   const handleLangChange = (_newLang: 'ar' | 'en') => {};
@@ -247,21 +240,6 @@ export default function CreativelyAI() {
     setCurrentScreen(screen);
     if (newMode !== undefined) {
       setMode(newMode);
-    }
-    
-    let path = '/';
-    if (screen === 'admin') path = '/QUANTUM-APP';
-    else if (screen === 'creative_ai_pro') path = '/creative-ai-pro';
-    else if (screen === 'gallery') path = '/creative-exhibition';
-    else if (screen === 'app') {
-      if (newMode === 'chat') path = '/creative-ai';
-      else if (newMode === 'brand_kit') path = '/Creative-Bundle-Generator';
-      else path = '/creative-design';
-    }
-    
-    // Check if current path is different to avoid pushing same state
-    if (window.location.pathname !== path) {
-      window.history.pushState({}, '', path);
     }
   };
 

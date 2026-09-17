@@ -2439,7 +2439,7 @@ async function updateUserBalance(uid: string, newBalance: number, _token?: strin
 }
 
 // --- Auth + billing helpers for the creative media endpoints ---
-async function requireAuth(req: any, res: any): Promise<{ uid: string; token: string } | null> {
+async function requireAuth(req: any, res: any): Promise<{ uid: string; token: string; email?: string } | null> {
   const authHeader = req.headers.authorization;
   let token: string | undefined;
   if (authHeader && authHeader.startsWith("Bearer ")) {
@@ -2452,11 +2452,20 @@ async function requireAuth(req: any, res: any): Promise<{ uid: string; token: st
   }
   try {
     const decoded = await getAuth().verifyIdToken(token);
-    return { uid: decoded.uid, token };
+    if (decoded.uid) userTokenCache.set(decoded.uid, token);
+    return { uid: decoded.uid, token, email: decoded.email };
   } catch {
     res.status(401).json({ error: "فشل التحقق من التوكين." });
     return null;
   }
+}
+
+function isPrivilegedAdmin(userDoc: any, decodedToken?: { email?: string } | null): boolean {
+  if (userDoc?.isAdmin === true) return true;
+  const adminEmail = (process.env.ADMIN_EMAIL || '').trim().toLowerCase();
+  if (!adminEmail) return false;
+  const tokenEmail = (decodedToken?.email || '').trim().toLowerCase();
+  return Boolean(tokenEmail && tokenEmail === adminEmail);
 }
 
 // Compute the flat cost of one media generation from the live pricing config.
@@ -2541,27 +2550,15 @@ async function startServer() {
     next();
   });
 
-  app.use(express.json({ limit: '150mb' }));
-  app.use(express.urlencoded({ extended: true, limit: '150mb' }));
-
-  // Automatically index user token for resilient REST operations
-  app.use((req, _res, next) => {
-    const authHeader = req.headers.authorization;
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      const token = authHeader.substring(7).trim();
-      try {
-        const parts = token.split('.');
-        if (parts.length === 3) {
-          const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString('utf8'));
-          const uid = payload.user_id || payload.sub;
-          if (uid && typeof uid === 'string') {
-            userTokenCache.set(uid, token);
-          }
-        }
-      } catch {}
-    }
-    next();
+  const json15mb = express.json({ limit: '15mb' });
+  const json50mb = express.json({ limit: '50mb' });
+  app.use((req, res, next) => {
+    const parser = req.path === '/api/upload-media' ? json50mb : json15mb;
+    return parser(req, res, next);
   });
+  app.use(express.urlencoded({ extended: true, limit: '15mb' }));
+
+  // Token cache is filled only after verifyIdToken (see requireAuth).
 
   // Health check endpoint for Cloud Run, container startup, and load balancer probes
   app.get(['/api/health', '/health', '/healthz', '/_ah/health', '/_health', '/ping', '/livez', '/readyz'], (req, res) => {
@@ -2698,32 +2695,67 @@ User prompt: "${prompt}"`,
 
 app.post('/api/upload-media', async (req, res) => {
   try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return res.status(401).json({ error: "Unauthorized" });
+    const auth = await requireAuth(req, res);
+    if (!auth) return;
+    const { uid } = auth;
+
+    const rl = checkRateLimit(`upload:${uid}`, 30, 60 * 1000);
+    if (!rl.allowed) {
+      res.setHeader('Retry-After', String(rl.retryAfterSec));
+      return res.status(429).json({ error: "تجاوزت حد الرفع. حاول لاحقاً.", retryAfterSec: rl.retryAfterSec });
     }
-    const token = authHeader.split("Bearer ")[1];
-    await getAuth().verifyIdToken(token); // Verify user is authenticated
 
     const { path: storagePath, base64Data, mediaType } = req.body || {};
-    if (!storagePath || !base64Data) {
+    if (!storagePath || typeof storagePath !== 'string' || !base64Data || typeof base64Data !== 'string') {
       return res.status(400).json({ error: "Missing storage path or base64Data" });
     }
-    // Prevent directory traversal attacks
-    if (storagePath.includes('..')) {
+    if (
+      storagePath.includes('..') ||
+      storagePath.includes('\\') ||
+      storagePath.includes('\0') ||
+      storagePath.startsWith('/') ||
+      storagePath.includes('://')
+    ) {
       return res.status(400).json({ error: "Invalid path" });
     }
+
+    const normalized = storagePath.replace(/\/+/g, '/');
+    const allowedPrefixes = [`generated_media/${uid}/`, `uploads/${uid}/`];
+    let safePath: string;
+    if (allowedPrefixes.some((prefix) => normalized.startsWith(prefix))) {
+      const leaf = normalized.split('/').pop() || `file_${Date.now()}`;
+      const safeLeaf = leaf.replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 180);
+      const root = normalized.startsWith(`generated_media/${uid}/`) ? `generated_media/${uid}` : `uploads/${uid}`;
+      safePath = `${root}/${safeLeaf}`;
+    } else {
+      const leaf = normalized.split('/').pop() || `file_${Date.now()}`;
+      const safeLeaf = leaf.replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 180);
+      safePath = `uploads/${uid}/${safeLeaf}`;
+    }
+
     const cleanBase64 = base64Data.includes(',') ? base64Data.split(',')[1] : base64Data;
+    const maxBytes = mediaType === 'video' ? 50 * 1024 * 1024 : 15 * 1024 * 1024;
+    if (Math.floor(cleanBase64.length * 0.75) > maxBytes) {
+      return res.status(413).json({ error: "الملف أكبر من الحد المسموح." });
+    }
     const buffer = Buffer.from(cleanBase64, 'base64');
-    const contentType = mediaType === 'video' ? 'video/mp4' : mediaType === 'voice' ? 'audio/wav' : 'image/png';
+    if (buffer.length > maxBytes) {
+      return res.status(413).json({ error: "الملف أكبر من الحد المسموح." });
+    }
+
+    const contentType =
+      mediaType === 'video' ? 'video/mp4'
+      : (mediaType === 'voice' || mediaType === 'audio') ? 'audio/wav'
+      : 'image/png';
+
     const bucket = getStorage().bucket(STORAGE_BUCKET);
-    const file = bucket.file(storagePath);
+    const file = bucket.file(safePath);
     await file.save(buffer, {
-      metadata: { contentType },
+      metadata: { contentType, metadata: { ownerId: uid } },
       public: true,
       resumable: false,
     });
-    const publicUrl = `https://storage.googleapis.com/${bucket.name}/${storagePath}`;
+    const publicUrl = `https://storage.googleapis.com/${bucket.name}/${safePath}`;
     return res.json({ url: publicUrl });
   } catch (err: any) {
     console.warn("[Upload Media API] Storage save warning:", err?.message || err);
@@ -5057,7 +5089,7 @@ app.post("/api/chat-designer", async (req, res) => {
     if (!checkFeatureAccess(res, _userDocSnapForGate.data(), 'creativelyAI')) return;
 
     const userDoc = await getDocRest("users", uid, token).catch(() => null);
-    const isAdmin = (userDoc?.isAdmin === true) || (userDoc?.email === 'mahmudnaje2009@gmail.com');
+    const isAdmin = isPrivilegedAdmin(userDoc, { email: _auth.email });
     const userBalance = typeof userDoc?.balance === 'number' ? userDoc.balance : 0;
     const isNegativeBalance = userDoc?.isNegativeBalance === true;
 
@@ -5263,7 +5295,7 @@ app.post("/api/creative-pro-chat", async (req, res) => {
     const { uid, token } = _auth;
 
     const userDoc = await getDocRest("users", uid, token).catch(() => null);
-    const isAdmin = (userDoc?.isAdmin === true) || (userDoc?.email === 'mahmudnaje2009@gmail.com');
+    const isAdmin = isPrivilegedAdmin(userDoc, { email: _auth.email });
     const userBalance = typeof userDoc?.balance === 'number' ? userDoc.balance : 0;
     const isNegativeBalance = userDoc?.isNegativeBalance === true;
 
@@ -5613,6 +5645,7 @@ app.post("/api/generate", async (req, res) => {
       let decodedToken;
       try {
         decodedToken = await getAuth().verifyIdToken(token);
+        userTokenCache.set(decodedToken.uid, token);
       } catch (err: any) {
         return res.status(401).json({ error: "فشل التحقق من التوكين: " + err.message });
       }
@@ -5684,7 +5717,7 @@ app.post("/api/generate", async (req, res) => {
 
       // Rate Limiting (P1-8) & User Pre-checks
       const userDoc = await getDocRest("users", uid, token).catch(() => null);
-      const userIsAdmin = decodedToken?.email === 'mahmudnaje2009@gmail.com' || (userDoc?.isAdmin === true);
+      const userIsAdmin = isPrivilegedAdmin(userDoc, decodedToken);
       const userBalance = typeof userDoc?.balance === 'number' ? userDoc.balance : 0;
       const isNegativeBalance = userDoc?.isNegativeBalance === true;
 

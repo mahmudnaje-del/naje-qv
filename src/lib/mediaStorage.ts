@@ -8,7 +8,8 @@ export async function uploadBase64ToStorage(path: string, base64Data: string, me
   const prefix = mediaType === 'video' ? 'data:video/mp4;base64,' : mediaType === 'voice' ? 'data:audio/wav;base64,' : 'data:image/png;base64,';
   const fallbackDataUri = base64Data.startsWith('data:') ? base64Data : `${prefix}${base64Data}`;
 
-  // 1. Primary: Server-side upload via Admin SDK (bypasses client Storage Security Rules)
+  // 1. Primary: Server-side upload. The API binds the object to the verified uid
+  // under generated_media/{uid}/ or uploads/{uid}/ — client path is a hint only.
   try {
     const user = auth.currentUser;
     let headers: Record<string, string> = { 'Content-Type': 'application/json' };
