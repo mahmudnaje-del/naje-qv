@@ -71,20 +71,20 @@ export default function FeaturePaywallModal({ isOpen, onClose, feature }: Props)
           {FEATURE_LABELS[feature]} تحتاج ترقية
         </h2>
         <p className="text-xs text-gray-400 mb-5 leading-relaxed">
-          هاي الأداة متاحة بعد الاشتراك بباقة {content?.name}. اشترك مرة وحدة
+          هاي الأداة متاحة بعد الاشتراك بباقة {content?.name?.ar || 'المطلوبة'}. اشترك مرة وحدة
           واستخدمها براحتك.
         </p>
 
         {content && (
           <div className="bg-[#12141a] border border-gray-800 rounded-xl p-4 mb-5">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-bold text-white">{content.name}</span>
+              <span className="text-sm font-bold text-white">{content.name.ar}</span>
               <span className="text-amber-300 font-mono font-extrabold text-sm">
                 ${displayPrice}
               </span>
             </div>
             <ul className="space-y-1.5">
-              {content.features.slice(0, 3).map((f, i) => (
+              {(content.features?.ar || []).slice(0, 3).map((f: string, i: number) => (
                 <li key={i} className="text-[11px] text-gray-400 flex items-start gap-1.5">
                   <span className="text-emerald-400">✓</span>
                   <span>{f}</span>

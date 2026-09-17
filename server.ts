@@ -3840,6 +3840,16 @@ app.post('/api/paypal/create-order', async (req, res) => {
           },
           description: `Naje AI Points - ${pkg.points} points package`,
         }],
+        payment_source: {
+          paypal: {
+            experience_context: {
+              brand_name: 'استوديو ناجي للذكاء الاصطناعي',
+              locale: 'ar-SA',
+              landing_page: 'NO_PREFERENCE',
+              user_action: 'PAY_NOW',
+            },
+          },
+        },
       }),
     });
     const orderData = await orderResp.json() as any;

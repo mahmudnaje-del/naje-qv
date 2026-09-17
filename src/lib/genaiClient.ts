@@ -1,22 +1,20 @@
 import { GoogleGenAI } from '@google/genai';
-import fs from 'fs';
-import path from 'path';
 
-let configProjectId = "gen-lang-client-0549025293";
-try {
-  const configPath = path.join(process.cwd(), "firebase-applet-config.json");
-  if (fs.existsSync(configPath)) {
-    const configRaw = fs.readFileSync(configPath, "utf8");
-    const parsed = JSON.parse(configRaw);
-    if (parsed.projectId) configProjectId = parsed.projectId;
+const configProjectId = 'gen-lang-client-0549025293';
+
+const getEnvVar = (name: string): string => {
+  if (typeof process !== 'undefined' && process.env && process.env[name]) {
+    return process.env[name] as string;
   }
-} catch (e) {
-  // quiet fallback
-}
+  if (typeof import.meta !== 'undefined' && (import.meta as any).env) {
+    return (import.meta as any).env[name] || (import.meta as any).env[`VITE_${name}`] || '';
+  }
+  return '';
+};
 
-export const PROJECT_ID = process.env.GOOGLE_CLOUD_PROJECT || process.env.GCP_PROJECT || configProjectId;
-export const USE_VERTEX_AI = process.env.NAJE_USE_VERTEX_AI === 'true';
-export const VERTEX_LOCATION = process.env.VERTEX_AI_LOCATION || 'global';
+export const PROJECT_ID = getEnvVar('GOOGLE_CLOUD_PROJECT') || getEnvVar('GCP_PROJECT') || configProjectId;
+export const USE_VERTEX_AI = getEnvVar('NAJE_USE_VERTEX_AI') === 'true';
+export const VERTEX_LOCATION = getEnvVar('VERTEX_AI_LOCATION') || 'global';
 
 export function createGenAIClient(): GoogleGenAI {
   if (USE_VERTEX_AI) {
@@ -26,5 +24,8 @@ export function createGenAIClient(): GoogleGenAI {
       location: VERTEX_LOCATION,
     });
   }
-  return new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY || '' });
+  const apiKey = getEnvVar('GEMINI_API_KEY') || getEnvVar('VITE_GEMINI_API_KEY') || '';
+  return new GoogleGenAI({ apiKey });
 }
+
+

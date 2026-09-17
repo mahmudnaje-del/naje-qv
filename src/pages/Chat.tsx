@@ -1838,8 +1838,8 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
         )}
       </AnimatePresence>
 
-      {/* Redesigned 56px Single-Row Header */}
-      <header className="px-4 h-[56px] min-h-[56px] naje-glass-card-lg rounded-none border-t-0 border-r-0 border-l-0 flex items-center justify-between sticky top-0 z-10 w-full">
+      {/* Redesigned Slim Responsive Single-Row Header */}
+      <header className="px-3 sm:px-4 h-12 sm:h-14 min-h-[48px] sm:min-h-[56px] naje-glass-card-lg rounded-none border-t-0 border-r-0 border-l-0 flex items-center justify-between sticky top-0 z-10 w-full">
         <div className="flex items-center gap-2.5 min-w-0">
           
           {/* Sidebar toggle button (replaces back button as requested) */}

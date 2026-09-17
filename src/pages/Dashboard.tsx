@@ -952,7 +952,7 @@ export default function Dashboard() {
 
         {/* Global Top Header (visible on all screens when NOT in a Chat view) */}
         {!location.pathname.includes('/chat') && (
-          <header className={`flex items-center justify-between p-4 flex-shrink-0 z-30 h-auto pt-8 sm:pt-5 ${location.pathname.includes('/creative') ? 'bg-[#030303]' : 'naje-glass-card-lg rounded-none border-t-0 border-r-0 border-l-0'}`}>
+          <header className={`flex items-center justify-between px-3 sm:px-4 py-2 sm:py-2.5 flex-shrink-0 z-30 h-12 sm:h-14 ${location.pathname.includes('/creative') ? 'bg-[#030303]' : 'naje-glass-card-lg rounded-none border-t-0 border-r-0 border-l-0'}`}>
             <div className="flex items-center gap-3">
               {/* Hamburger Menu (Mobile only) */}
               <button 

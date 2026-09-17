@@ -103,7 +103,7 @@ export const PayPalRechargeSection: React.FC = () => {
       setSdkLoading(true);
       script = document.createElement('script');
       script.id = scriptId;
-      script.src = `https://www.paypal.com/sdk/js?client-id=${encodeURIComponent(clientId)}&currency=USD&intent=capture`;
+      script.src = `https://www.paypal.com/sdk/js?client-id=${encodeURIComponent(clientId)}&currency=USD&intent=capture&locale=ar_EG`;
       script.async = true;
       script.onload = onScriptLoaded;
       script.onerror = () => {

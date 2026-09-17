@@ -993,9 +993,9 @@ export default function TextChatPanel({
                  </div>
               )}
 
-              {/* Badges placed on their own row - horizontal single line on mobile with overflow visible */}
-              <div className="flex items-center justify-between flex-wrap sm:flex-nowrap gap-1.5 px-2 sm:px-3 pt-2 empty:hidden overflow-visible relative z-30 max-w-full">
-                <div className="flex items-center gap-1.5 flex-wrap sm:flex-nowrap shrink-0 overflow-visible">
+              {/* Badges placed on their own row - fitted naturally on a single line with no scrollbar */}
+              <div className="flex items-center justify-between gap-1.5 sm:gap-2 px-2.5 sm:px-3 pt-2 empty:hidden relative z-30 max-w-full flex-nowrap overflow-hidden">
+                <div className="flex items-center gap-1.5 flex-nowrap min-w-0 shrink">
                   {/* Text Model Tier Selector */}
                   {chat.type === 'text' && (
                     <NajeModelTierSelector
@@ -1019,7 +1019,7 @@ export default function TextChatPanel({
                   {/* Document Badge */}
                   {chat.type === 'text' && docType !== 'none' && (
                      <div 
-                        className="inline-flex items-center gap-1 sm:gap-1.5 bg-indigo-500/15 border border-indigo-500/25 hover:bg-indigo-500/25 px-2 sm:px-2.5 py-1 rounded-lg text-[11px] sm:text-xs font-semibold text-indigo-600 dark:text-indigo-400 transition-all shadow-sm cursor-pointer whitespace-nowrap shrink-0"
+                        className="inline-flex items-center gap-1 sm:gap-1.5 bg-indigo-500/15 border border-indigo-500/25 hover:bg-indigo-500/25 px-2.5 py-1 rounded-xl text-[11px] font-bold text-indigo-600 dark:text-indigo-400 transition-all shadow-sm cursor-pointer whitespace-nowrap shrink-0"
                         onClick={() => { setShowDocSettings(!showDocSettings); setShowImageSettings(false); setShowVideoSettings(false); }}
                      >
                         <FileText className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 shrink-0" />
@@ -1092,7 +1092,7 @@ export default function TextChatPanel({
                   {/* Voice Studio Model Badge */}
                   {chat.type === 'voice' && (
                      <div 
-                        className="inline-flex items-center gap-1 sm:gap-1.5 bg-emerald-500/15 border border-emerald-500/25 hover:bg-emerald-500/25 px-2 sm:px-2.5 py-1 rounded-lg text-[11px] sm:text-xs font-semibold text-emerald-600 dark:text-emerald-400 shadow-sm cursor-pointer transition-colors whitespace-nowrap shrink-0"
+                        className="inline-flex items-center gap-1 sm:gap-1.5 bg-emerald-500/15 border border-emerald-500/25 hover:bg-emerald-500/25 px-2.5 py-1 rounded-xl text-[11px] font-bold text-emerald-600 dark:text-emerald-400 shadow-sm cursor-pointer transition-colors whitespace-nowrap shrink-0"
                         onClick={() => { setShowVoiceSettings(!showVoiceSettings); setShowDocSettings(false); setShowImageSettings(false); setShowVideoSettings(false); }}
                      >
                         <Mic2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
@@ -1102,9 +1102,9 @@ export default function TextChatPanel({
                   )}
                 </div>
 
-                {/* Cost Indicator Badge placed above the send button */}
+                {/* Cost Indicator Badge placed on the exact same row */}
                 {getCalculatedCost() > 0 && (
-                  <div className="inline-flex items-center gap-1 bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-500/15 px-2 sm:px-2.5 py-1 rounded-full text-[11px] sm:text-xs text-indigo-600 dark:text-indigo-400 font-bold tracking-tight shadow-sm ms-auto whitespace-nowrap shrink-0">
+                  <div className="inline-flex items-center gap-1 bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-500/15 px-2.5 py-1 rounded-xl text-[11px] text-indigo-600 dark:text-indigo-400 font-bold tracking-tight shadow-sm ms-auto whitespace-nowrap shrink-0">
                     <Sparkles className="w-3 h-3 text-indigo-600 dark:text-indigo-400 flex-shrink-0" />
                     <span>تكلفة الطلب: {getCalculatedCost()} نقاط</span>
                   </div>
@@ -1177,23 +1177,9 @@ export default function TextChatPanel({
                     </button>
                   )}
 
-                  {/* Document Icon in Text Chat */}
+                  {/* Document / Visual Icons in Text Chat */}
                   {chat.type === 'text' && (
                     <>
-                      <button 
-                        type="button" 
-                        onClick={() => { setShowDocSettings(!showDocSettings); setShowImageSettings(false); setShowVideoSettings(false); }} 
-                        className={cn(
-                          "p-1.5 sm:p-2 rounded-xl transition flex items-center justify-center cursor-pointer",
-                          showDocSettings || docType !== 'none'
-                            ? 'bg-indigo-600/10 border border-indigo-400 dark:border-indigo-500/20 text-indigo-600 dark:text-indigo-400' 
-                            : 'text-gray-800 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:bg-gray-800/60'
-                        )}
-                        title="توليد مستند (PDF / Word / PPTX)"
-                      >
-                        <FileText className="w-4 h-4 sm:w-5 sm:h-5" />
-                      </button>
-
                       <button 
                         type="button" 
                         onClick={() => setShowInfographicModal(true)} 

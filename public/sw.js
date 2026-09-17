@@ -26,8 +26,18 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
-  // Never intercept API calls.
-  if (url.pathname.startsWith('/api/')) return;
+  // Never intercept API calls or Vite dev modules.
+  if (
+    url.pathname.startsWith('/api/') ||
+    url.pathname.startsWith('/src/') ||
+    url.pathname.startsWith('/@') ||
+    url.pathname.startsWith('/node_modules/') ||
+    url.hostname === 'localhost' ||
+    url.hostname.includes('.run.app')
+  ) {
+    return;
+  }
+
 
   // NETWORK-FIRST for navigations / the HTML shell — prevents stale index.html
   // pointing at deleted hashed JS (the white-screen bug).
