@@ -227,6 +227,7 @@ export function composeMasterAdPrompt(basePrompt: string, state: AdDnaState): st
   // 2. Character specifications
   if (avatar) {
     parts.push(`Featuring protagonist: ${avatar.name} (${avatar.age} years old, ${avatar.genderPresentation}, ${avatar.visualRegion}), ${avatar.skin}, ${avatar.face}, ${avatar.hair}, wearing ${avatar.clothing}, expressing ${avatar.expression}.`);
+    parts.push(`Character photographic reference (must match exactly): ${avatar.aiImagePrompt}`);
   }
 
   // 3. Location specifications
@@ -238,7 +239,7 @@ export function composeMasterAdPrompt(basePrompt: string, state: AdDnaState): st
   const visualNotes: string[] = [];
   if (lightingObj) visualNotes.push(`Lighting: ${lightingObj.promptEn}`);
   if (cameraObj) visualNotes.push(`Cinematography: ${cameraObj.promptEn}`);
-  visualNotes.push('Commercial high-end production, photorealistic, natural skin texture, smooth camera movement, color-graded advert.');
+  visualNotes.push('Commercial high-end live-action production, 100% photorealistic, indistinguishable from a real camera photograph, natural skin texture, smooth camera movement, color-graded advert.');
 
   parts.push(visualNotes.join(' | '));
 
@@ -248,9 +249,13 @@ export function composeMasterAdPrompt(basePrompt: string, state: AdDnaState): st
     ? VIDEO_STYLE_TEMPLATES.find(t => t.id === state.selectedStyleTemplateId)
     : null;
     
-  const REALISTIC_STYLE_DIRECTIVE = 'Photorealistic, natural, true-to-life cinematography — shot on a professional cinema camera with authentic film-like color grading and natural depth of field. Natural human skin texture with visible pores and subtle realistic imperfections, soft natural lighting, avoiding an overly smooth, waxy, or plastic AI-generated look. Anatomically correct hands, fingers, and facial features. Physically plausible, natural motion and blinking with no floaty, stiff, or morphing movement. The result should be indistinguishable from real, unedited camera footage — no synthetic sheen, no unnatural symmetry, no deformed hands or facial distortion.';
+  const REALISTIC_STYLE_DIRECTIVE = '100% photorealistic live-action cinematography — shot on a professional full-frame cinema camera with authentic film-like color grading and natural depth of field. Natural human skin texture with visible pores and subtle realistic imperfections. Anatomically correct hands, fingers, and facial features. Physically plausible motion. The result must be indistinguishable from real unedited camera footage of a real adult human — no illustration, no CGI, no anime, no cartoon, no synthetic sheen, no unnatural symmetry, no deformed hands.';
 
-  strictDirectives.push(`Mandatory visual style: ${selectedTemplate ? selectedTemplate.prompt : REALISTIC_STYLE_DIRECTIVE}`);
+  if (selectedTemplate) {
+    strictDirectives.push(`Environmental grade / lighting mood: ${selectedTemplate.prompt}`);
+    strictDirectives.push('The protagonist MUST remain a 100% photorealistic real human. Style templates may affect color, lighting, and atmosphere only — never turn the person into illustration, cartoon, CGI, or anime.');
+  }
+  strictDirectives.push(`Mandatory photorealism: ${REALISTIC_STYLE_DIRECTIVE}`);
   strictDirectives.push('Maintain anatomically correct hands, fingers, and facial proportions throughout — avoid extra or fused fingers, distorted faces, or asymmetrical eyes, regardless of the chosen visual style.');
   
   const languageObj = LANGUAGE_OPTIONS.find(l => l.id === state.language);

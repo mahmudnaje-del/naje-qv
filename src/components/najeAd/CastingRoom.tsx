@@ -11,7 +11,7 @@ import {
   Sparkles,
   UserCheck
 } from 'lucide-react';
-import { AVATAR_REGISTRY, NajiAvatar } from '../../data/avatars/avatarRegistry';
+import { AVATAR_REGISTRY, NajiAvatar, interleaveDiverseAvatars } from '../../data/avatars/avatarRegistry';
 import { getRegionLabelAr } from '../../data/avatars/avatarRegionLabels';
 import { CircularCardCarousel } from './CircularCardCarousel';
 import { AvatarPhoto } from './AvatarPhoto';
@@ -43,7 +43,7 @@ export const CastingRoom: React.FC<CastingRoomProps> = ({
   const [centerIndex, setCenterIndex] = useState(0);
 
   // Convert registry to array
-  const allAvatars = useMemo(() => Object.values(AVATAR_REGISTRY), []);
+  const allAvatars = useMemo(() => interleaveDiverseAvatars(Object.values(AVATAR_REGISTRY)), []);
 
   // Extract unique regions for filtering
   const regions = useMemo(() => {
@@ -57,7 +57,7 @@ export const CastingRoom: React.FC<CastingRoomProps> = ({
 
   // Filtered avatars
   const filteredAvatars = useMemo(() => {
-    return allAvatars.filter(av => {
+    return interleaveDiverseAvatars(allAvatars.filter(av => {
       const matchesSearch = 
         !searchTerm.trim() ||
         av.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -70,7 +70,7 @@ export const CastingRoom: React.FC<CastingRoomProps> = ({
       const matchesRegion = selectedRegion === 'all' || av.visualRegion.startsWith(selectedRegion);
 
       return matchesSearch && matchesAge && matchesRegion;
-    });
+    }));
   }, [allAvatars, searchTerm, selectedAgeGroup, selectedRegion]);
 
   // If selected avatar exists in filtered list on initial mount or when changed, center on it
