@@ -351,7 +351,7 @@ export default function Dashboard() {
     };
   }, [sidebarOpen, newChatModalOpen, userGalleriesOpen]);
 
-  const handleCreateNewChat = async (type: 'text' | 'image' | 'video' | 'ui' | 'voice' | 'design') => {
+  const handleCreateNewChat = async (type: 'text' | 'image' | 'video' | 'ui' | 'voice' | 'design' | 'najeDeveloper' | 'najeSource' | 'agent') => {
     setCreatingChatType(type);
     const projId = activeProjectId || (selectedProjectForNewChat !== 'none' ? selectedProjectForNewChat : '');
 
@@ -368,6 +368,9 @@ export default function Dashboard() {
            : type === 'text' ? 'مساحة تحليل نصوص جديدة'
            : type === 'image' ? 'مساحة صور جديدة'
            : type === 'video' ? 'مساحة فيديو جديدة'
+           : type === 'najeDeveloper' ? 'مساحة ناجي المطور'
+           : type === 'najeSource' ? 'مساحة ناجي من مصادرك'
+           : type === 'agent' ? 'مساحة وكيل ناجي'
            : 'مساحة تسجيلات صوتية جديدة',
       createdAt: Date.now()
     };
@@ -377,7 +380,15 @@ export default function Dashboard() {
       setNewChatModalOpen(false);
       setSidebarOpen(false);
       setCreatingChatType(null);
-      navigate(`/chat/${chatId}`);
+      if (type === 'najeDeveloper') {
+        navigate(`/naje-developer?chatId=${chatId}`);
+      } else if (type === 'najeSource') {
+        navigate(`/naje-source?chatId=${chatId}`);
+      } else if (type === 'agent') {
+        navigate(`/naje-agent-core?chatId=${chatId}`);
+      } else {
+        navigate(`/chat/${chatId}`);
+      }
     }, 120);
 
     // 3. Write in the background; the chat page already has the ID
@@ -503,8 +514,75 @@ export default function Dashboard() {
               <Bot className="w-4 h-4 text-indigo-500" />
               <span dir="ltr">Naje Agent Core</span>
             </div>
-            <span className="text-[9px] bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 font-extrabold px-1.5 py-0.5 rounded border border-indigo-500/20">
-              برو
+          </Link>
+
+          <Link 
+            to="/naje-developer" 
+            onClick={() => { setSidebarOpen(false); setUserGalleriesOpen('none'); }}
+            className={cn(
+              "w-full h-11 md:h-9 flex items-center justify-between px-3 rounded-xl text-xs font-bold transition-all border border-transparent",
+              location.pathname.includes('naje-developer')
+                ? "bg-white dark:bg-purple-950/45 text-purple-950 dark:text-purple-200 border border-purple-300 dark:border-purple-500/40 shadow-md shadow-purple-500/10 font-extrabold" 
+                : "text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-900/60"
+            )}
+          >
+            <div className="flex items-center gap-2.5">
+              <Code2 className="w-4 h-4 text-sky-500" />
+              <span>ناجي المطور</span>
+            </div>
+          </Link>
+
+          <Link 
+            to="/naje-source" 
+            onClick={() => { setSidebarOpen(false); setUserGalleriesOpen('none'); }}
+            className={cn(
+              "w-full h-11 md:h-9 flex items-center justify-between px-3 rounded-xl text-xs font-bold transition-all border border-transparent",
+              location.pathname.includes('naje-source')
+                ? "bg-white dark:bg-purple-950/45 text-purple-950 dark:text-purple-200 border border-purple-300 dark:border-purple-500/40 shadow-md shadow-purple-500/10 font-extrabold" 
+                : "text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-900/60"
+            )}
+          >
+            <div className="flex items-center gap-2.5">
+              <BookOpen className="w-4 h-4 text-emerald-500" />
+              <span>ناجي من مصادرك</span>
+            </div>
+          </Link>
+
+          <Link 
+            to="/naje-developer" 
+            onClick={() => { setSidebarOpen(false); setUserGalleriesOpen('none'); }}
+            className={cn(
+              "w-full h-11 md:h-9 flex items-center justify-between px-3 rounded-xl text-xs font-bold transition-all border border-transparent",
+              location.pathname.includes('naje-developer')
+                ? "bg-white dark:bg-purple-950/45 text-purple-950 dark:text-purple-200 border border-purple-300 dark:border-purple-500/40 shadow-md shadow-purple-500/10 font-extrabold" 
+                : "text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-900/60"
+            )}
+          >
+            <div className="flex items-center gap-2.5">
+              <Code2 className="w-4 h-4 text-sky-500" />
+              <span>ناجي المطور</span>
+            </div>
+            <span className="text-[9px] bg-sky-500/10 text-sky-600 dark:text-sky-400 font-extrabold px-1.5 py-0.5 rounded border border-sky-500/20">
+              $10
+            </span>
+          </Link>
+
+          <Link 
+            to="/naje-source" 
+            onClick={() => { setSidebarOpen(false); setUserGalleriesOpen('none'); }}
+            className={cn(
+              "w-full h-11 md:h-9 flex items-center justify-between px-3 rounded-xl text-xs font-bold transition-all border border-transparent",
+              location.pathname.includes('naje-source')
+                ? "bg-white dark:bg-purple-950/45 text-purple-950 dark:text-purple-200 border border-purple-300 dark:border-purple-500/40 shadow-md shadow-purple-500/10 font-extrabold" 
+                : "text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-900/60"
+            )}
+          >
+            <div className="flex items-center gap-2.5">
+              <BookOpen className="w-4 h-4 text-emerald-500" />
+              <span>ناجي من مصادرك</span>
+            </div>
+            <span className="text-[9px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-extrabold px-1.5 py-0.5 rounded border border-emerald-500/20">
+              $5
             </span>
           </Link>
 
@@ -560,9 +638,6 @@ export default function Dashboard() {
               <Sparkles className="w-4 h-4 text-amber-500" />
               <span>استوديو التصميم الإبداعي</span>
             </div>
-            <span className="text-[9px] bg-amber-500/10 text-amber-600 dark:text-amber-400 font-extrabold px-1.5 py-0.5 rounded border border-amber-500/20">
-              جديد
-            </span>
           </Link>
 
           <Link 
@@ -579,9 +654,6 @@ export default function Dashboard() {
               <Film className="w-4 h-4 text-indigo-500" />
               <span>محرك الفيديو (NAJI Ad)</span>
             </div>
-            <span className="text-[9px] bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 font-extrabold px-1.5 py-0.5 rounded border border-indigo-500/20">
-              Multi-Shot
-            </span>
           </Link>
 
           <button 
@@ -595,9 +667,6 @@ export default function Dashboard() {
               <Mic2 className="w-4 h-4 text-emerald-500 shrink-0" />
               <span>الدردشة الصوتية</span>
             </div>
-            <span className="text-[9px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-extrabold px-1.5 py-0.5 rounded border border-emerald-500/20 font-sans">
-              صوت
-            </span>
           </button>
         </div>
 
@@ -691,11 +760,21 @@ export default function Dashboard() {
             <div className="space-y-1">
               {recentChats.map(c => {
                 const projName = c.projectId && projects.find(p => p.id === c.projectId)?.name;
-                const isActive = location.pathname === `/chat/${c.id}`;
+                const targetUrl = c.type === 'najeDeveloper'
+                  ? `/naje-developer?chatId=${c.id}`
+                  : c.type === 'najeSource'
+                  ? `/naje-source?chatId=${c.id}`
+                  : c.type === 'agent'
+                  ? `/naje-agent-core?chatId=${c.id}`
+                  : `/chat/${c.id}`;
+                const isActive = location.pathname === `/chat/${c.id}` ||
+                  (c.type === 'najeDeveloper' && location.pathname.includes('naje-developer') && location.search.includes(c.id)) ||
+                  (c.type === 'najeSource' && location.pathname.includes('naje-source') && location.search.includes(c.id)) ||
+                  (c.type === 'agent' && (location.pathname.includes('naje-agent') || location.pathname.includes('agent')) && location.search.includes(c.id));
                 return (
                   <div key={c.id} className="relative group w-full">
                     <Link 
-                      to={`/chat/${c.id}`}
+                      to={targetUrl}
                       onClick={() => { setSidebarOpen(false); setUserGalleriesOpen('none'); }}
                       className={cn(
                         "w-full h-11 md:h-10 flex items-center justify-between pl-14 pr-3 rounded-xl text-xs font-bold transition-all border border-transparent truncate",
@@ -715,6 +794,12 @@ export default function Dashboard() {
                           <Layout className="w-3.5 h-3.5 flex-shrink-0 text-amber-600 dark:text-amber-400" />
                         ) : c.type === 'voice' ? (
                           <Mic2 className="w-3.5 h-3.5 flex-shrink-0 text-emerald-600 dark:text-emerald-400" />
+                        ) : c.type === 'najeDeveloper' ? (
+                          <Code2 className="w-3.5 h-3.5 flex-shrink-0 text-sky-500" />
+                        ) : c.type === 'najeSource' ? (
+                          <BookOpen className="w-3.5 h-3.5 flex-shrink-0 text-emerald-500" />
+                        ) : c.type === 'agent' ? (
+                          <Bot className="w-3.5 h-3.5 flex-shrink-0 text-purple-600 dark:text-purple-400" />
                         ) : (
                           <FileText className="w-3.5 h-3.5 flex-shrink-0 text-indigo-600 dark:text-indigo-400" />
                         )}
@@ -988,8 +1073,12 @@ export default function Dashboard() {
           )}
         </AnimatePresence>
 
-        {/* Global Top Header (visible on all screens when NOT in a Chat view) */}
-        {!location.pathname.includes('/chat') && (
+        {/* Global Top Header (visible on all screens when NOT in a Chat view or specialized custom headers) */}
+        {!location.pathname.includes('/chat') && 
+         !location.pathname.includes('/naje-developer') && 
+         !location.pathname.includes('/naje-source') && 
+         !location.pathname.endsWith('naje-developer') && 
+         !location.pathname.endsWith('naje-source') && (
           <header className={`flex items-center justify-between px-3 sm:px-4 py-2 sm:py-2.5 flex-shrink-0 z-30 h-12 sm:h-14 ${location.pathname.includes('/creative') ? 'bg-[#030303]' : 'naje-glass-card-lg rounded-none border-t-0 border-r-0 border-l-0'}`}>
             <div className="flex items-center gap-3">
               {/* Hamburger Menu (Mobile only) */}
@@ -1056,7 +1145,7 @@ export default function Dashboard() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 100, scale: 0.95 }}
               transition={{ type: 'spring', damping: 25, stiffness: 220 }}
-              className="relative naje-glass-card-lg border-t sm:border shadow-2xl flex flex-col gap-5 text-right z-10 w-full sm:max-w-[480px] p-6"
+              className="relative naje-glass-card-lg border-t sm:border shadow-2xl flex flex-col gap-5 text-right z-10 w-full sm:max-w-[560px] max-h-[92vh] overflow-y-auto p-5 sm:p-6"
             >
               {/* Header */}
               <div className="flex items-center justify-between pb-3 border-b border-gray-200 dark:border-gray-900">
@@ -1154,11 +1243,11 @@ export default function Dashboard() {
                   <ChevronLeft className="w-4 h-4 text-gray-900 dark:text-gray-300 group-hover:text-gray-500 dark:text-gray-400 transition sm:hidden flex-shrink-0" />
                 </button>
 
-                {/* 6. استوديو الصوت والبودكاست (Voice Studio) */}
+                {/* 5. استوديو الصوت والبودكاست (Voice Studio) */}
                 <button 
                   onClick={() => handleCreateNewChat('voice')}
                   disabled={creatingChatType !== null}
-                  className={`w-full sm:h-[140px] min-h-[72px] h-auto px-4 py-3 sm:p-5 bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-800 border border-gray-200 dark:border-gray-800 hover:border-emerald-500/30 hover:bg-emerald-600/[0.02] rounded-xl flex flex-row sm:flex-col items-center justify-between sm:justify-center sm:text-center gap-3 sm:gap-4 transition cursor-pointer group sm:col-span-2 active:scale-[0.98] ${creatingChatType === 'voice' ? 'ring-2 ring-emerald-500 bg-emerald-500/10 opacity-90' : ''}`}
+                  className={`w-full sm:h-[140px] min-h-[72px] h-auto px-4 py-3 sm:p-5 bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-800 border border-gray-200 dark:border-gray-800 hover:border-emerald-500/30 hover:bg-emerald-600/[0.02] rounded-xl flex flex-row sm:flex-col items-center justify-between sm:justify-center sm:text-center gap-3 sm:gap-4 transition cursor-pointer group active:scale-[0.98] ${creatingChatType === 'voice' ? 'ring-2 ring-emerald-500 bg-emerald-500/10 opacity-90' : ''}`}
                 >
                   <div className="flex flex-row sm:flex-col items-center gap-3 sm:gap-2 min-w-0 sm:w-full">
                     <div className="w-10 h-10 rounded-full bg-emerald-500/10 text-emerald-500 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
@@ -1169,7 +1258,70 @@ export default function Dashboard() {
                         <span>{creatingChatType === 'voice' ? 'جاري تحضير الاستوديو...' : 'استوديو الصوتيات'}</span>
                         <span className="text-[9px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-1.5 py-0.2 rounded border border-emerald-500/20 font-sans">جديد</span>
                       </span>
-                      <span className="text-[10px] text-gray-800 dark:text-gray-400 mt-0.5">حوّل نصوصك لتسجيلات صوتية احترافية — بصوت واحد أو حوار بين صوتين</span>
+                      <span className="text-[10px] text-gray-800 dark:text-gray-400 mt-0.5">تسجيلات صوتية احترافية بصوت أو حوار</span>
+                    </div>
+                  </div>
+                  <ChevronLeft className="w-4 h-4 text-gray-900 dark:text-gray-300 group-hover:text-gray-500 dark:text-gray-400 transition sm:hidden flex-shrink-0" />
+                </button>
+
+                {/* 6. ناجي المطور */}
+                <button 
+                  onClick={() => handleCreateNewChat('najeDeveloper')}
+                  disabled={creatingChatType !== null}
+                  className={`w-full sm:h-[140px] min-h-[72px] h-auto px-4 py-3 sm:p-5 bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-800 border border-gray-200 dark:border-gray-800 hover:border-sky-500/30 hover:bg-sky-600/[0.02] rounded-xl flex flex-row sm:flex-col items-center justify-between sm:justify-center sm:text-center gap-3 sm:gap-4 transition cursor-pointer group active:scale-[0.98] ${creatingChatType === 'najeDeveloper' ? 'ring-2 ring-sky-500 bg-sky-500/10 opacity-90' : ''}`}
+                >
+                  <div className="flex flex-row sm:flex-col items-center gap-3 sm:gap-2 min-w-0 sm:w-full">
+                    <div className="w-10 h-10 rounded-full bg-sky-500/10 text-sky-500 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
+                      {creatingChatType === 'najeDeveloper' ? <NajeSpinner className="w-5 h-5" /> : <Code2 className="w-5 h-5" />}
+                    </div>
+                    <div className="flex flex-col text-right sm:text-center">
+                      <span className="text-xs font-bold text-gray-900 dark:text-white group-hover:text-sky-500 transition-colors flex items-center gap-1.5 justify-start sm:justify-center">
+                        <span>{creatingChatType === 'najeDeveloper' ? 'جاري تحضير مساحة المطور...' : 'ناجي المطور'}</span>
+                        <span className="text-[9px] bg-sky-500/10 text-sky-600 dark:text-sky-400 px-1.5 py-0.2 rounded border border-sky-500/20 font-sans">باقة المُبتكر</span>
+                      </span>
+                      <span className="text-[10px] text-gray-800 dark:text-gray-400 mt-0.5">فحص وتعديل أرشيف الموقع والبرمجيات وكتابة الأكواد</span>
+                    </div>
+                  </div>
+                  <ChevronLeft className="w-4 h-4 text-gray-900 dark:text-gray-300 group-hover:text-gray-500 dark:text-gray-400 transition sm:hidden flex-shrink-0" />
+                </button>
+
+                {/* 7. ناجي من مصادرك */}
+                <button 
+                  onClick={() => handleCreateNewChat('najeSource')}
+                  disabled={creatingChatType !== null}
+                  className={`w-full sm:h-[140px] min-h-[72px] h-auto px-4 py-3 sm:p-5 bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-800 border border-gray-200 dark:border-gray-800 hover:border-emerald-500/30 hover:bg-emerald-600/[0.02] rounded-xl flex flex-row sm:flex-col items-center justify-between sm:justify-center sm:text-center gap-3 sm:gap-4 transition cursor-pointer group sm:col-span-2 active:scale-[0.98] ${creatingChatType === 'najeSource' ? 'ring-2 ring-emerald-500 bg-emerald-500/10 opacity-90' : ''}`}
+                >
+                  <div className="flex flex-row sm:flex-col items-center gap-3 sm:gap-2 min-w-0 sm:w-full">
+                    <div className="w-10 h-10 rounded-full bg-emerald-500/10 text-emerald-500 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
+                      {creatingChatType === 'najeSource' ? <NajeSpinner className="w-5 h-5" /> : <BookOpen className="w-5 h-5" />}
+                    </div>
+                    <div className="flex flex-col text-right sm:text-center">
+                      <span className="text-xs font-bold text-gray-900 dark:text-white group-hover:text-emerald-500 transition-colors flex items-center gap-1.5 justify-start sm:justify-center">
+                        <span>{creatingChatType === 'najeSource' ? 'جاري تحضير مساحة المصادر...' : 'ناجي من مصادرك'}</span>
+                        <span className="text-[9px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-1.5 py-0.2 rounded border border-emerald-500/20 font-sans">باقة الشرارة</span>
+                      </span>
+                      <span className="text-[10px] text-gray-800 dark:text-gray-400 mt-0.5">حلّل ملفاتك ومستنداتك ومصادرك الخاصة واستخرج أدق الإجابات</span>
+                    </div>
+                  </div>
+                  <ChevronLeft className="w-4 h-4 text-gray-900 dark:text-gray-300 group-hover:text-gray-500 dark:text-gray-400 transition sm:hidden flex-shrink-0" />
+                </button>
+
+                {/* 8. وكيل ناجي */}
+                <button 
+                  onClick={() => handleCreateNewChat('agent')}
+                  disabled={creatingChatType !== null}
+                  className={`w-full sm:h-[140px] min-h-[72px] h-auto px-4 py-3 sm:p-5 bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-800 border border-purple-500/30 dark:border-purple-500/20 hover:border-purple-500/50 hover:bg-purple-600/[0.04] rounded-xl flex flex-row sm:flex-col items-center justify-between sm:justify-center sm:text-center gap-3 sm:gap-4 transition cursor-pointer group sm:col-span-2 active:scale-[0.98] ${creatingChatType === 'agent' ? 'ring-2 ring-purple-500 bg-purple-500/10 opacity-90' : ''}`}
+                >
+                  <div className="flex flex-row sm:flex-col items-center gap-3 sm:gap-2 min-w-0 sm:w-full">
+                    <div className="w-10 h-10 rounded-full bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
+                      {creatingChatType === 'agent' ? <NajeSpinner className="w-5 h-5" /> : <Bot className="w-5 h-5" />}
+                    </div>
+                    <div className="flex flex-col text-right sm:text-center">
+                      <span className="text-xs font-bold text-gray-900 dark:text-white group-hover:text-purple-500 transition-colors flex items-center gap-1.5 justify-start sm:justify-center">
+                        <span>{creatingChatType === 'agent' ? 'جاري تحضير وكيل ناجي...' : 'وكيل ناجي (نظام وكلاء متعددين)'}</span>
+                        <span className="text-[9px] bg-purple-500/10 text-purple-600 dark:text-purple-400 px-1.5 py-0.2 rounded border border-purple-500/20 font-sans font-bold">الأقوى</span>
+                      </span>
+                      <span className="text-[10px] text-gray-800 dark:text-gray-400 mt-0.5">بناء الهوية البصرية وصياغة الإعلانات وحملات التسويق بالاعتماد على مصادر مشروعك</span>
                     </div>
                   </div>
                   <ChevronLeft className="w-4 h-4 text-gray-900 dark:text-gray-300 group-hover:text-gray-500 dark:text-gray-400 transition sm:hidden flex-shrink-0" />

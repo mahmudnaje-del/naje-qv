@@ -71,7 +71,7 @@ export function getClassificationLabel(classification?: ProjectClassification, c
   }
 }
 
-export type ChatType = 'text' | 'image' | 'video' | 'ui' | 'voice' | 'document' | 'design' | 'agent';
+export type ChatType = 'text' | 'image' | 'video' | 'ui' | 'voice' | 'document' | 'design' | 'agent' | 'najeDeveloper' | 'najeSource';
 
 export type ChatSession = {
   ownerId?: string;

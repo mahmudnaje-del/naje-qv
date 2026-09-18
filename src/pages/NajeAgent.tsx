@@ -1,16 +1,23 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useAppStore } from '../store';
 import { db, auth } from '../firebase';
-import { collection, query, where, orderBy, onSnapshot, addDoc, updateDoc, doc, deleteDoc } from 'firebase/firestore';
+import { 
+  collection, query, where, orderBy, onSnapshot, addDoc, updateDoc, 
+  doc, deleteDoc, getDoc, getDocs, limit, setDoc 
+} from 'firebase/firestore';
 import { 
   Bot, Sparkles, Send, Play, CheckCircle2, Circle, AlertCircle, 
   Layers, Shield, Download, FileText, Image as ImageIcon, Film, 
-  Palette, ArrowRight, RefreshCw, ChevronRight, Zap,
+  Palette, ArrowRight, RefreshCw, ChevronRight, ChevronLeft, Zap,
   ExternalLink, Eye, Check, X, Sparkle, Volume2, Mic, Code2, 
   FolderTree, FileCode, MonitorPlay, Copy, Archive, CheckCheck,
-  MessageSquare, HelpCircle, ArrowUpRight, Cpu, Wrench, Star
+  MessageSquare, HelpCircle, ArrowUpRight, Cpu, Wrench, Star,
+  PanelRight, Upload, Paperclip, Link2, Plus, Trash2, BookOpen,
+  FolderOpen, FileSpreadsheet, Share2, Tag, Megaphone, CheckSquare
 } from 'lucide-react';
 import NajeSpinner from '../components/NajeSpinner';
+import BalanceTopDropdown from '../components/BalanceTopDropdown';
 import { applyVersionCap, toggleFavoriteVersion, MAX_VERSIONS_PER_ASSET } from '../lib/versionHistory';
 import { 
   AgentMission, AgentStep, AgentToolCall, AgentArtifact, 
@@ -27,18 +34,26 @@ import NajeErrorCard from '../components/NajeErrorCard';
 import FeaturePaywallModal from '../components/FeaturePaywallModal';
 import { hasFeatureAccess } from '../lib/featureAccess';
 
+export interface AgentSourceItem {
+  id: string;
+  title: string;
+  type: 'file' | 'image' | 'link' | 'text';
+  content?: string;
+  url?: string;
+  previewUrl?: string;
+  size?: number;
+  addedAt: number;
+}
+
 function sanitizeHtmlContent(html: string): string {
   if (!html) return '';
   return html
-    // Strip dangerous active tags
     .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
     .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
     .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '')
     .replace(/<object\b[^<]*(?:(?!<\/object>)<[^<]*)*<\/object>/gi, '')
     .replace(/<embed\b[^<]*(?:(?!<\/embed>)<[^<]*)*<\/embed>/gi, '')
-    // Strip all inline event handlers (e.g. onclick, onload, onerror, onmouseover...)
     .replace(/\son\w+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, '')
-    // Strip javascript: and vbscript: URIs in attributes
     .replace(/href\s*=\s*["']?\s*javascript:[^"'>]*/gi, '')
     .replace(/src\s*=\s*["']?\s*javascript:[^"'>]*/gi, '')
     .replace(/data\s*=\s*["']?\s*javascript:[^"'>]*/gi, '')
@@ -49,28 +64,62 @@ const INITIAL_GREETING: AgentChatMessage = {
   id: 'msg_welcome',
   role: 'model',
   type: 'reply',
-  content: 'أهلاً بك! أنا Naje Agent Core — محرك البناء والنسج البرمجي المستقل. أستطيع تخطيط وصياغة وتوليد المنظومات البرمجية متعددة الملفات، وبناء الهويات الرقمية، والأبحاث المعززة بالبحث الحي. صف فكرتك أو مشروعك وسأنسج لك المعمارية الكاملة.',
+  content: 'أهلاً بك! أنا وكيل ناجي (Naje Agent) — نظام الوكلاء المتعددين لبناء الهوية البصرية، صياغة الإعلانات، وهندسة المشاريع المتكاملة. يمكنك رفع ملفاتك ومصادرك في تبويب "المصادر" ليعتمد عليها وكيل الهوية ووكيل الإعلانات مباشرة أثناء بناء مشروعك. صف فكرتك وسنتولى التخطيط والتنفيذ خطوة بخطوة.',
   timestamp: Date.now()
 };
 
 const SUGGESTED_PROMPTS = [
-  'مرحبا! ما هي قدراتك ونطاق عملك؟',
-  'بناء موقع تجارة إلكترونية كامل مع هوية بصرية وشعار',
-  'تصميم هوية فاخرة لبراند عطور مع فويس أوفر وفيديو إعلاني',
-  'كتيب استراتيجي تسويقي من 4 فصول لشركة ناشئة'
+  'ابنِ لي هوية بصرية كاملة مع إعلانات سوشيال ميديا وفيديو ترويجي لمتجري',
+  'حلل مصادر مشروعي وأنشئ لوحة الألوان والشعار مع حملة إعلانات إطلاق',
+  'اصنع إعلان فيديو سينمائي مع سيناريو وتعليق صوتي فخم لمنتجي',
+  'بناء موقع تجارة إلكترونية كامل مع هوية البراند وتصاميم الإعلانات'
 ];
 
+const getAgentMeta = (toolName: string) => {
+  switch (toolName) {
+    case 'brand_identity':
+    case 'graphic_designer':
+      return { name: 'وكيل الهوية', icon: Palette };
+    case 'marketing_copywriter':
+    case 'ad_creator':
+      return { name: 'وكيل الإعلانات', icon: Megaphone };
+    case 'video_director':
+    case 'voiceover_producer':
+      return { name: 'وكيل الفيديو', icon: Film };
+    case 'fullstack_engineer':
+      return { name: 'وكيل الأنظمة', icon: Code2 };
+    default:
+      return { name: 'وكيل ناجي', icon: Bot };
+  }
+};
+
 export default function NajeAgent() {
-  const { user } = useAppStore();
+  const { user, sidebarOpen, setSidebarOpen } = useAppStore();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const chatId = searchParams.get('chatId');
+
+  // Active top navigation tab: الدردشة / النتائج / المصادر
+  const [tab, setTab] = useState<'chat' | 'results' | 'sources'>('chat');
+
+  // Mission & Chat state
   const [missions, setMissions] = useState<AgentMission[]>([]);
   const [activeMission, setActiveMission] = useState<AgentMission | null>(null);
-  
-  // Chat state
   const [messages, setMessages] = useState<AgentChatMessage[]>([INITIAL_GREETING]);
   const [inputText, setInputText] = useState('');
   const [isSendingChat, setIsSendingChat] = useState(false);
   const [activeProposal, setActiveProposal] = useState<AgentPlanProposal | null>(null);
   const [showAgentPaywall, setShowAgentPaywall] = useState(false);
+
+  // Sources state (المصادر)
+  const [sources, setSources] = useState<AgentSourceItem[]>([]);
+  const [addingSourceType, setAddingSourceType] = useState<'file' | 'image' | 'link' | 'text' | null>(null);
+  const [sourceTitle, setSourceTitle] = useState('');
+  const [sourceContent, setSourceContent] = useState('');
+  const [sourceUrl, setSourceUrl] = useState('');
+  const [sourceFileUploading, setSourceFileUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
+  const chatAttachmentInputRef = useRef<HTMLInputElement>(null);
 
   // Execution state
   const [isExecuting, setIsExecuting] = useState(false);
@@ -81,12 +130,149 @@ export default function NajeAgent() {
   const [selectedCodeTab, setSelectedCodeTab] = useState<'preview' | 'code'>('preview');
   const [activeFileIndex, setActiveFileIndex] = useState<number>(0);
   const [copiedCode, setCopiedCode] = useState(false);
+  const [resultsFilter, setResultsFilter] = useState<'all' | 'brand' | 'ads' | 'video' | 'audio' | 'code' | 'docs'>('all');
   const chatBottomRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll chat
   useEffect(() => {
     chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isSendingChat]);
+
+  // Sync Chat Session and Sources with Firestore
+  useEffect(() => {
+    if (!user) return;
+    let active = true;
+
+    const syncChatSession = async () => {
+      try {
+        if (chatId) {
+          const chatDocSnap = await getDoc(doc(db, 'chats', chatId));
+          if (chatDocSnap.exists()) {
+            const data = chatDocSnap.data();
+            if (Array.isArray(data.sources)) {
+              setSources(data.sources);
+            }
+            if (data.missionId && !activeMission) {
+              const mSnap = await getDoc(doc(db, 'autonoma_missions', data.missionId));
+              if (mSnap.exists() && active) {
+                setActiveMission({ id: mSnap.id, ...mSnap.data() } as AgentMission);
+              }
+            }
+          }
+        } else {
+          // Find latest agent chat or create one
+          const q = query(
+            collection(db, 'chats'),
+            where('ownerId', '==', user.uid),
+            where('type', '==', 'agent'),
+            orderBy('createdAt', 'desc'),
+            limit(1)
+          );
+          const snap = await getDocs(q);
+          if (!active) return;
+          if (!snap.empty) {
+            const latest = snap.docs[0];
+            setSearchParams({ chatId: latest.id }, { replace: true });
+            const data = latest.data();
+            if (Array.isArray(data.sources)) {
+              setSources(data.sources);
+            }
+          } else {
+            const newRef = doc(collection(db, 'chats'));
+            await setDoc(newRef, {
+              ownerId: user.uid,
+              type: 'agent',
+              title: 'مساحة وكيل ناجي',
+              createdAt: Date.now(),
+              sources: []
+            });
+            if (!active) return;
+            setSearchParams({ chatId: newRef.id }, { replace: true });
+          }
+        }
+      } catch (err) {
+        console.warn('Error syncing agent chat session:', err);
+      }
+    };
+
+    syncChatSession();
+    return () => { active = false; };
+  }, [user, chatId]);
+
+  // Save sources to Firestore when modified
+  const updateSources = async (newSources: AgentSourceItem[]) => {
+    setSources(newSources);
+    if (chatId) {
+      try {
+        await updateDoc(doc(db, 'chats', chatId), {
+          sources: newSources,
+          updatedAt: Date.now()
+        });
+      } catch (e) {
+        console.warn('Error saving sources:', e);
+      }
+    }
+  };
+
+  // Add a new source handler
+  const handleAddSource = (item: Omit<AgentSourceItem, 'id' | 'addedAt'>) => {
+    const newItem: AgentSourceItem = {
+      id: `src_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+      ...item,
+      addedAt: Date.now()
+    };
+    const updated = [newItem, ...sources];
+    updateSources(updated);
+    setAddingSourceType(null);
+    setSourceTitle('');
+    setSourceContent('');
+    setSourceUrl('');
+    toast.success('تمت إضافة المصدر بنجاح! سيتم اعتماده بواسطة الوكلاء.');
+  };
+
+  // Handle file upload to sources
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, isImage = false) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setSourceFileUploading(true);
+    const reader = new FileReader();
+
+    if (isImage) {
+      reader.onload = () => {
+        const result = reader.result as string;
+        handleAddSource({
+          title: file.name,
+          type: 'image',
+          previewUrl: result,
+          content: `صورة مرجعية: ${file.name} (حجم: ${(file.size / 1024).toFixed(1)} KB)`,
+          size: file.size
+        });
+        setSourceFileUploading(false);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      reader.onload = () => {
+        const text = reader.result as string;
+        handleAddSource({
+          title: file.name,
+          type: 'file',
+          content: text.slice(0, 10000), // Ingest content snippet
+          size: file.size
+        });
+        setSourceFileUploading(false);
+      };
+      reader.readAsText(file);
+    }
+    e.target.value = '';
+  };
+
+  // Delete source
+  const handleDeleteSource = (id: string) => {
+    const updated = sources.filter(s => s.id !== id);
+    updateSources(updated);
+    toast.success('تم حذف المصدر.');
+  };
 
   // Subscribe to user missions
   useEffect(() => {
@@ -124,6 +310,7 @@ export default function NajeAgent() {
     const userMessage: AgentChatMessage = {
       id: `usr_${Date.now()}`,
       role: 'user',
+      type: 'reply',
       content: text,
       timestamp: Date.now()
     };
@@ -133,13 +320,33 @@ export default function NajeAgent() {
     setInputText('');
     setIsSendingChat(true);
 
+    // Update chat title in recent chats
+    if (chatId) {
+      updateDoc(doc(db, 'chats', chatId), {
+        title: text.length > 28 ? `وكيل ناجي: ${text.slice(0, 28)}...` : `وكيل ناجي: ${text}`,
+        updatedAt: Date.now()
+      }).catch(() => {});
+    }
+
     try {
       const token = await auth.currentUser?.getIdToken();
       if (!token) {
-        toast.error('يجب تسجيل الدخول لمحادثة Naje Agent Core.');
+        toast.error('يجب تسجيل الدخول لاستخدام وكيل ناجي.');
         setIsSendingChat(false);
         return;
       }
+
+      // Pack project sources and multi-agent context
+      const projectContext = {
+        sources: sources.map(s => ({
+          title: s.title,
+          type: s.type,
+          snippet: s.content ? s.content.slice(0, 1000) : (s.url || 'مرفق وسائط/ملف')
+        })),
+        sourceCount: sources.length,
+        orchestrationSystem: 'Multi-Agent Orchestra (Brand Identity Agent, Advertising & Campaign Agent, Video & Script Director, Graphic Designer, Fullstack Engineer)',
+        missionFocus: 'بناء الهوية البصرية المتكاملة، صياغة الإعلانات التسويقية، وتوليد المشاريع بالاعتماد الوثيق على مصادر المشروع المرفوعة'
+      };
 
       const res = await fetch('/api/agent/chat-turn', {
         method: 'POST',
@@ -151,17 +358,19 @@ export default function NajeAgent() {
           messages: newMessages.map(m => ({
             role: m.role,
             content: m.content || m.question || (m.proposal ? m.proposal.planSummary : '')
-          }))
+          })),
+          projectContext
         })
       });
 
       if (!res.ok) {
-        throw new Error('تعذر التواصل مع Naje Agent Core حالياً.');
+        throw new Error('تعذر التواصل مع خادم وكيل ناجي حالياً.');
       }
 
-      const turnData: { success: boolean; turn: AgentChatTurnResponse } = await res.json();
-      if (turnData.success && turnData.turn) {
-        const turn = turnData.turn;
+      const turnData = await res.json();
+      const turn: AgentChatTurnResponse = turnData.turn || turnData.result;
+
+      if (turnData.success && turn) {
         const botMsg: AgentChatMessage = {
           id: `bot_${Date.now()}`,
           role: 'model',
@@ -240,7 +449,16 @@ export default function NajeAgent() {
       const docRef = await addDoc(collection(db, 'autonoma_missions'), newMissionData);
       const fullMission: AgentMission = { id: docRef.id, ...newMissionData };
       setActiveMission(fullMission);
-      toast.success('تم إنشاء خطة العمل بنجاح! يمكنك مراجعتها والبدء فوراً.');
+
+      if (chatId) {
+        await updateDoc(doc(db, 'chats', chatId), {
+          missionId: docRef.id,
+          title: proposal.missionTitle,
+          updatedAt: Date.now()
+        });
+      }
+
+      toast.success('تم إنشاء خطة العمل بنجاح! انقر على "بدء التنفيذ المستقل" لبدء توليد المخرجات.');
     } catch (err: any) {
       console.error('Error approving proposal:', err);
       toast.error('تعذر حفظ الخطة، حاول ثانية.');
@@ -248,243 +466,166 @@ export default function NajeAgent() {
   };
 
   // Start Autonomous Execution Loop
-  const handleExecuteMission = async () => {
+  const handleRunMission = async () => {
     if (!activeMission || isExecuting) return;
 
+    if (!hasFeatureAccess(user, 'najeAgent')) {
+      setShowAgentPaywall(true);
+      return;
+    }
+
+    setIsExecuting(true);
+    const missionRef = doc(db, 'autonoma_missions', activeMission.id);
+    await updateDoc(missionRef, { status: 'executing', updatedAt: Date.now() });
+
     try {
-      setIsExecuting(true);
-      setLiveProgress(null);
+      const token = await auth.currentUser?.getIdToken();
+      if (!token) throw new Error('Auth token required');
 
-      await updateDoc(doc(db, 'autonoma_missions', activeMission.id), {
-        status: 'executing',
-        updatedAt: Date.now()
-      });
+      let accumulatedBrand = activeMission.brandContext || {};
+      let missionArtifacts = [...(activeMission.artifacts || [])];
+      let consumed = activeMission.consumedPoints || 0;
 
-      const currentMission: AgentMission = { 
-        ...activeMission, 
-        status: 'executing',
-        steps: [...activeMission.steps],
-        artifacts: [...activeMission.artifacts],
-        auditHistory: [...(activeMission.auditHistory || [])]
-      };
-
-      const totalSteps = currentMission.steps.length;
-
-      for (let sIdx = 0; sIdx < totalSteps; sIdx++) {
+      for (let sIdx = 0; sIdx < activeMission.steps.length; sIdx++) {
         setCurrentStepIndex(sIdx);
-        const step = currentMission.steps[sIdx];
+        const step = activeMission.steps[sIdx];
+
         step.status = 'in_progress';
+        await updateDoc(missionRef, { steps: activeMission.steps, updatedAt: Date.now() });
 
-        await updateDoc(doc(db, 'autonoma_missions', currentMission.id), {
-          steps: currentMission.steps,
-          updatedAt: Date.now()
-        });
-
-        // Run tools sequentially inside this step
-        if (step.toolCalls && step.toolCalls.length > 0) {
+        if (step.toolCalls) {
           for (const tc of step.toolCalls) {
             tc.status = 'running';
-            
-            // Set initial status message based on tool
+            await updateDoc(missionRef, { steps: activeMission.steps, updatedAt: Date.now() });
+
+            // Streaming handler for code projects
             if (tc.name === 'fullstack_engineer') {
-              setExecutingStatusMessage('Naje Agent Core يحلل المتطلبات ويخطط المعمارية الهندسية الشاملة...');
-            } else if (tc.name === 'web_grounding') {
-              setExecutingStatusMessage('Naje Agent Core يستدعي Google Search Grounding ويستخرج أحدث البيانات الحية...');
-            } else if (tc.name === 'brand_identity') {
-              setExecutingStatusMessage('Naje Agent Core يصيغ الهوية اللفظية ولوحة الألوان المتناسقة...');
-            } else if (tc.name === 'image_studio') {
-              setExecutingStatusMessage('Naje Agent Core يولد الصورة الاحترافية بدقة عالية...');
-            } else if (tc.name === 'voice_narration') {
-              setExecutingStatusMessage('Naje Agent Core يولد التسجيل الصوتي الطبيعي والمعالجة الصوتية...');
-            } else if (tc.name === 'document_architect') {
-              setExecutingStatusMessage('Naje Agent Core يصيغ وهيكلة فصول الكتيب الفاخر...');
-            } else {
-              setExecutingStatusMessage('Naje Agent Core يعالج ويولد المخرج الذاتي...');
-            }
-
-            await updateDoc(doc(db, 'autonoma_missions', currentMission.id), {
-              steps: currentMission.steps
-            });
-
-            const token = await auth.currentUser?.getIdToken();
-            if (!token) {
-              throw new Error('جلسة الدخول غير صالحة.');
-            }
-
-            // If tool is fullstack_engineer -> Use Real-Time SSE Stream Endpoint
-            if (tc.name === 'fullstack_engineer') {
+              setExecutingStatusMessage(`جاري نسج وبناء المشروع البرمجي مع وكيل الأنظمة...`);
               const streamRes = await fetch('/api/agent/execute-tool-stream', {
                 method: 'POST',
-                headers: { 
+                headers: {
                   'Content-Type': 'application/json',
                   'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({
                   toolName: tc.name,
-                  inputParams: tc.input,
-                  missionContext: {
-                    missionId: currentMission.id,
-                    brandContext: currentMission.brandContext,
-                    userPrompt: currentMission.userPrompt,
-                    auditHistory: currentMission.auditHistory
-                  },
-                  chatId: currentMission.id,
-                  projectId: useAppStore.getState().activeProjectId || undefined
+                  inputParams: { ...tc.input, brandContext: accumulatedBrand, sources },
+                  brandContext: accumulatedBrand
                 })
               });
 
               if (!streamRes.ok) {
-                const errJson = await streamRes.json().catch(() => ({}));
-                throw new Error(errJson.error || 'تعذر تشغيل Naje Agent Core عبر قناة البث المباشر.');
+                const errData = await streamRes.json().catch(() => ({}));
+                throw new Error(errData.error || 'فشل تشغيل مهندس الأنظمة المستقل.');
               }
 
               const reader = streamRes.body?.getReader();
               const decoder = new TextDecoder();
-              let buffer = '';
-              let streamDone = false;
-              let finalData: any = null;
-              let lastStreamError = '';
+              let streamBuffer = '';
 
               if (reader) {
-                while (!streamDone) {
+                while (true) {
                   const { done, value } = await reader.read();
                   if (done) break;
-                  buffer += decoder.decode(value, { stream: true });
-                  const eventBlocks = buffer.split('\n\n');
-                  buffer = eventBlocks.pop() || '';
 
-                  for (const block of eventBlocks) {
-                    const eventMatch = block.match(/^event:\s*(\w+)/m);
-                    const dataMatch = block.match(/^data:\s*(.+)$/m);
+                  streamBuffer += decoder.decode(value, { stream: true });
+                  const lines = streamBuffer.split('\n\n');
+                  streamBuffer = lines.pop() || '';
 
-                    if (eventMatch && dataMatch) {
-                      const eventType = eventMatch[1];
+                  for (const line of lines) {
+                    if (line.startsWith('data: ')) {
                       try {
-                        const parsedPayload = JSON.parse(dataMatch[1]);
-                        if (eventType === 'progress') {
-                          setLiveProgress(parsedPayload);
-                          if (parsedPayload.statusMessage) {
-                            setExecutingStatusMessage(parsedPayload.statusMessage);
+                        const event = JSON.parse(line.slice(6));
+                        if (event.type === 'progress') {
+                          setLiveProgress(event.progress);
+                          if (event.statusMessage) setExecutingStatusMessage(event.statusMessage);
+                        } else if (event.type === 'complete') {
+                          tc.status = 'completed';
+                          tc.output = event.output;
+                          consumed += tc.pointsCost;
+
+                          if (event.artifacts && Array.isArray(event.artifacts)) {
+                            for (const art of event.artifacts) {
+                              missionArtifacts = applyVersionCap(missionArtifacts, art).updatedVersions;
+                            }
                           }
-                        } else if (eventType === 'done') {
-                          finalData = parsedPayload;
-                          streamDone = true;
-                        } else if (eventType === 'error') {
-                          lastStreamError = parsedPayload.error || 'فشلت معالجة نسج المشروع البرمجي.';
-                          streamDone = true;
+                          setLiveProgress(null);
+                        } else if (event.type === 'error') {
+                          throw new Error(event.error || 'حدث خطأ أثناء نسج الملفات.');
                         }
                       } catch (parseErr) {
-                        console.warn('SSE chunk parse error:', parseErr);
+                        console.warn('SSE Parse error:', parseErr);
                       }
                     }
                   }
                 }
               }
-
-              if (finalData && finalData.success) {
-                tc.status = 'completed';
-                tc.output = finalData.output;
-                currentMission.consumedPoints += (finalData.pointsDeducted || 0);
-
-                if (finalData.artifact) {
-                  const { updatedVersions } = applyVersionCap(currentMission.artifacts, finalData.artifact, MAX_VERSIONS_PER_ASSET);
-                  currentMission.artifacts = updatedVersions;
-                }
-
-                if (finalData.audit) {
-                  if (!currentMission.auditHistory) currentMission.auditHistory = [];
-                  currentMission.auditHistory.push({
-                    stepTitle: step.title,
-                    feedback: finalData.audit.feedback || 'تم اعتماد المشروع بنجاح',
-                    passed: !!finalData.audit.passed,
-                    timestamp: Date.now()
-                  });
-                }
-              } else {
-                tc.status = 'failed';
-                tc.error = lastStreamError || finalData?.error || 'تعذّر قراءة رد النموذج.';
-              }
-
             } else {
-              // Standard Tool Execution
+              setExecutingStatusMessage(`جاري تنفيذ: ${tc.title}...`);
               const execRes = await fetch('/api/agent/execute-tool', {
                 method: 'POST',
-                headers: { 
+                headers: {
                   'Content-Type': 'application/json',
                   'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({
                   toolName: tc.name,
-                  inputParams: tc.input,
-                  missionContext: {
-                    missionId: currentMission.id,
-                    brandContext: currentMission.brandContext,
-                    userPrompt: currentMission.userPrompt,
-                    auditHistory: currentMission.auditHistory || []
-                  },
-                  chatId: currentMission.id,
-                  projectId: useAppStore.getState().activeProjectId || undefined
+                  inputParams: { ...tc.input, brandContext: accumulatedBrand, sources },
+                  brandContext: accumulatedBrand
                 })
               });
 
+              if (!execRes.ok) {
+                const errData = await execRes.json().catch(() => ({}));
+                throw new Error(errData.error || `فشل تشغيل أداة ${tc.title}`);
+              }
+
               const execData = await execRes.json();
-              if (execData.success) {
-                tc.status = 'completed';
-                tc.output = execData.output;
-                currentMission.consumedPoints += (execData.pointsDeducted || 0);
+              tc.status = 'completed';
+              tc.output = execData.output;
+              consumed += tc.pointsCost;
 
-                if (execData.artifact) {
-                  const { updatedVersions } = applyVersionCap(currentMission.artifacts, execData.artifact, MAX_VERSIONS_PER_ASSET);
-                  currentMission.artifacts = updatedVersions;
-                }
+              if (tc.name === 'brand_identity' && execData.output?.palette) {
+                accumulatedBrand = { ...accumulatedBrand, ...execData.output };
+              }
 
-                if (execData.audit) {
-                  if (!currentMission.auditHistory) currentMission.auditHistory = [];
-                  currentMission.auditHistory.push({
-                    stepTitle: step.title,
-                    feedback: execData.audit.feedback || 'تم الاعتماد بنجاح',
-                    passed: !!execData.audit.passed,
-                    timestamp: Date.now()
-                  });
+              if (execData.artifacts && Array.isArray(execData.artifacts)) {
+                for (const art of execData.artifacts) {
+                  missionArtifacts = applyVersionCap(missionArtifacts, art).updatedVersions;
                 }
-              } else {
-                tc.status = 'failed';
-                tc.error = execData.error;
               }
             }
 
-            // Sync step, artifacts, and audit history to Firestore
-            await updateDoc(doc(db, 'autonoma_missions', currentMission.id), {
-              steps: currentMission.steps,
-              artifacts: currentMission.artifacts,
-              auditHistory: currentMission.auditHistory,
-              consumedPoints: currentMission.consumedPoints,
+            await updateDoc(missionRef, {
+              steps: activeMission.steps,
+              artifacts: missionArtifacts,
+              consumedPoints: consumed,
+              brandContext: accumulatedBrand,
               updatedAt: Date.now()
             });
           }
         }
 
         step.status = 'completed';
-        await updateDoc(doc(db, 'autonoma_missions', currentMission.id), {
-          steps: currentMission.steps,
-          updatedAt: Date.now()
-        });
+        await updateDoc(missionRef, { steps: activeMission.steps, updatedAt: Date.now() });
       }
 
-      await updateDoc(doc(db, 'autonoma_missions', currentMission.id), {
+      await updateDoc(missionRef, {
         status: 'completed',
+        consumedPoints: consumed,
         updatedAt: Date.now()
       });
 
-      toast.success('تم إنجاز المهمة بالكامل ونسج جميع المخرجات بنجاح!');
+      toast.success('اكتملت المهمة بنجاح! تم بناء الهوية والإعلانات والمخرجات، يمكنك معاينتها في تبويب "النتائج".');
+      setTab('results');
     } catch (err: any) {
-      console.error('Mission execution error:', err);
-      toast.error(err.message || 'حدث خطأ أثناء تنفيذ المهمة.');
+      console.error('Execution error:', err);
+      toast.error(err.message || 'توقف التنفيذ بسبب خطأ.');
+      await updateDoc(missionRef, { status: 'failed', updatedAt: Date.now() });
     } finally {
       setIsExecuting(false);
-      setLiveProgress(null);
-      setCurrentStepIndex(-1);
       setExecutingStatusMessage('');
+      setLiveProgress(null);
     }
   };
 
@@ -511,624 +652,871 @@ export default function NajeAgent() {
     }
   };
 
+  // Filtered artifacts
+  const allArtifacts = activeMission?.artifacts || [];
+  const filteredArtifacts = allArtifacts.filter(art => {
+    if (resultsFilter === 'all') return true;
+    if (resultsFilter === 'brand') return art.type === 'brand_palette' || art.type === 'image';
+    if (resultsFilter === 'ads') return art.type === 'image' || art.type === 'document';
+    if (resultsFilter === 'video') return art.type === 'video';
+    if (resultsFilter === 'audio') return art.type === 'audio';
+    if (resultsFilter === 'code') return art.type === 'code_project';
+    if (resultsFilter === 'docs') return art.type === 'pdf' || art.type === 'document';
+    return true;
+  });
+
+  // Active agents status: displays ONLY when agents are actually executing a task
+  const isAnyAgentWorking = isExecuting || (activeMission?.status === 'executing');
+  
+  const currentRunningTools = activeMission && currentStepIndex >= 0 && activeMission.steps[currentStepIndex]
+    ? (activeMission.steps[currentStepIndex].toolCalls?.filter(tc => tc.status === 'running') || [])
+    : [];
+
+  const activeAgentNames = currentRunningTools.length > 0
+    ? Array.from(new Set(currentRunningTools.map(tc => getAgentMeta(tc.name).name)))
+    : (isAnyAgentWorking ? ['وكيل ناجي'] : []);
+
+  const activeAgentsCount = Math.max(activeAgentNames.length, 1);
+  const ActiveAgentIcon = currentRunningTools.length > 0 
+    ? getAgentMeta(currentRunningTools[0].name).icon 
+    : Bot;
+
   return (
-    <div className="flex-1 flex flex-col h-full min-h-0 bg-[#FAF9FC] dark:bg-[#0d0f12] text-slate-800 dark:text-slate-200 overflow-hidden font-sans" dir="rtl">
+    <div className="flex-1 flex flex-col h-full min-h-0 bg-[#FAF9FC] dark:bg-[#0a0c10] text-slate-800 dark:text-slate-200 overflow-hidden font-sans" dir="rtl">
       <FeaturePaywallModal
         isOpen={showAgentPaywall}
         onClose={() => setShowAgentPaywall(false)}
         feature="najeAgent"
       />
-      
-      {/* 1. Top Header Bar */}
-      <div className="h-16 px-6 border-b border-gray-200/80 dark:border-gray-800/80 bg-white/70 dark:bg-gray-900/50 backdrop-blur-md flex items-center justify-between shrink-0">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-purple-600 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-purple-500/20">
-            <Cpu className="w-5 h-5" />
+
+      {/* Hidden File Inputs */}
+      <input 
+        type="file" 
+        ref={fileInputRef} 
+        onChange={(e) => handleFileUpload(e, false)} 
+        className="hidden" 
+        accept=".pdf,.doc,.docx,.txt,.json,.md,.csv" 
+      />
+      <input 
+        type="file" 
+        ref={imageInputRef} 
+        onChange={(e) => handleFileUpload(e, true)} 
+        className="hidden" 
+        accept="image/*" 
+      />
+      <input 
+        type="file" 
+        ref={chatAttachmentInputRef} 
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) {
+            const isImg = file.type.startsWith('image/');
+            handleFileUpload(e, isImg);
+            setInputText(prev => prev ? `${prev}\n(تم إرفاق المصدر: ${file.name})` : `اعتمد على المصدر المرفوع (${file.name}) لبناء الهوية والحملة الإعلانية.`);
+          }
+        }} 
+        className="hidden" 
+      />
+
+      {/* ========================================================= */}
+      {/* 1. Header: Sidebar Toggle, Title, 3 Tabs, Balance Dropdown */}
+      {/* ========================================================= */}
+      <div className="h-14 sm:h-16 px-3 sm:px-5 border-b border-gray-200/80 dark:border-gray-800/80 bg-white/80 dark:bg-[#0f1218]/90 backdrop-blur-md flex items-center justify-between shrink-0 z-10">
+        {/* Right side: Sidebar toggle and Brand title */}
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+          <button
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="p-1.5 sm:p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl text-gray-700 dark:text-gray-300 transition cursor-pointer"
+            title={sidebarOpen ? "إخفاء القائمة الجانبية" : "إظهار القائمة الجانبية"}
+            aria-label="تبديل القائمة الجانبية"
+          >
+            <PanelRight className="w-4 h-4 sm:w-5 sm:h-5" />
+          </button>
+
+          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-tr from-purple-600 via-indigo-600 to-pink-600 flex items-center justify-center text-white shadow-sm flex-shrink-0">
+            <Bot className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
-          <div>
+
+          <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <h1 className="text-base font-extrabold text-gray-900 dark:text-white tracking-wide" dir="ltr">Naje Agent Core</h1>
-              <span className="text-[10px] uppercase font-bold tracking-widest px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800" dir="ltr">
-                Engine Pro
+              <h1 className="text-xs sm:text-sm font-extrabold text-gray-900 dark:text-white truncate">
+                وكيل ناجي · نظام الوكلاء المتعددين
+              </h1>
+              <span className="hidden sm:inline-flex text-[9px] font-bold px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
+                Agent Pro
               </span>
             </div>
-            <p className="text-[11px] text-gray-500 dark:text-gray-400">محرك البناء البرمجي وصياغة المنظومات والهويات الرقمية متعددة الملفات</p>
+            <p className="text-[10px] sm:text-[11px] text-gray-500 dark:text-gray-400 truncate">
+              بناء الهوية البصرية وصياغة الإعلانات والمشاريع المتكاملة من مصادرك
+            </p>
           </div>
         </div>
 
-        {/* Action / Balance Indicator */}
-        <div className="flex items-center gap-3">
-          {activeMission ? (
-            <div className="flex items-center gap-2 text-xs px-3 py-1.5 rounded-xl bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800/50">
-              <Zap className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
-              <span className="font-bold text-gray-700 dark:text-gray-300">النقاط:</span>
-              <span className="font-extrabold text-purple-600 dark:text-purple-400">{activeMission.consumedPoints} / {activeMission.estimatedPoints}</span>
-            </div>
-          ) : (
-            <div className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 font-bold">
-              <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-              <span>الرصيد: {user?.balance ?? 0} نقطة</span>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* 2. Main Workstation Area (3-Column Layout) */}
-      <div className="flex-1 flex min-h-0 overflow-hidden">
-        
-        {/* Left Column: Missions History Sidebar */}
-        <div className="w-72 border-l border-gray-200/80 dark:border-gray-800/80 bg-white/40 dark:bg-gray-900/30 flex flex-col shrink-0">
-          <div className="p-4 border-b border-gray-200/60 dark:border-gray-800/60 flex items-center justify-between">
-            <span className="text-xs font-extrabold text-gray-900 dark:text-white">سجل مشاريع <span dir="ltr">Naje Agent Core</span></span>
-            <button 
-              onClick={() => {
-                setActiveMission(null);
-                setActiveProposal(null);
-              }}
-              className="text-[11px] font-bold text-purple-600 hover:text-purple-700 dark:text-purple-400 flex items-center gap-1 cursor-pointer bg-purple-50 dark:bg-purple-950/40 px-2.5 py-1 rounded-lg border border-purple-200 dark:border-purple-800/50"
+        {/* Left side: The 3 Requested Tab Buttons + Balance Dropdown */}
+        <div className="flex items-center gap-2">
+          {/* Segmented 3-Tab Control: الدردشة / النتائج / المصادر */}
+          <div className="bg-gray-100 dark:bg-gray-900/80 p-1 rounded-xl flex items-center gap-1 border border-gray-200/80 dark:border-gray-800">
+            {/* 1. الدردشة */}
+            <button
+              onClick={() => setTab('chat')}
+              className={`h-8 w-8 sm:h-9 sm:w-9 rounded-lg flex items-center justify-center transition cursor-pointer active:scale-95 relative ${
+                tab === 'chat' 
+                  ? 'bg-white dark:bg-gray-800 text-purple-600 dark:text-purple-400 shadow-sm' 
+                  : 'text-gray-500 hover:text-gray-800 dark:hover:text-white'
+              }`}
+              title="الدردشة"
+              aria-label="الدردشة"
             >
-              <MessageSquare className="w-3 h-3" />
-              محادثة جديدة
+              <MessageSquare className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
+            </button>
+
+            {/* 2. النتائج */}
+            <button
+              onClick={() => setTab('results')}
+              className={`h-8 w-8 sm:h-9 sm:w-9 rounded-lg flex items-center justify-center transition cursor-pointer active:scale-95 relative ${
+                tab === 'results' 
+                  ? 'bg-white dark:bg-gray-800 text-purple-600 dark:text-purple-400 shadow-sm' 
+                  : 'text-gray-500 hover:text-gray-800 dark:hover:text-white'
+              }`}
+              title="النتائج"
+              aria-label="النتائج"
+            >
+              <Sparkles className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
+              {allArtifacts.length > 0 && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-purple-600 text-white text-[9px] font-bold flex items-center justify-center ring-2 ring-white dark:ring-gray-900">
+                  {allArtifacts.length}
+                </span>
+              )}
+            </button>
+
+            {/* 3. المصادر */}
+            <button
+              onClick={() => setTab('sources')}
+              className={`h-8 w-8 sm:h-9 sm:w-9 rounded-lg flex items-center justify-center transition cursor-pointer active:scale-95 relative ${
+                tab === 'sources' 
+                  ? 'bg-white dark:bg-gray-800 text-purple-600 dark:text-purple-400 shadow-sm' 
+                  : 'text-gray-500 hover:text-gray-800 dark:hover:text-white'
+              }`}
+              title="المصادر"
+              aria-label="المصادر"
+            >
+              <BookOpen className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
+              {sources.length > 0 && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-emerald-600 text-white text-[9px] font-bold flex items-center justify-center ring-2 ring-white dark:ring-gray-900">
+                  {sources.length}
+                </span>
+              )}
             </button>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-3 space-y-2">
-            {missions.length === 0 ? (
-              <div className="text-center py-10 px-4">
-                <Cpu className="w-8 h-8 mx-auto text-gray-300 dark:text-gray-600 mb-2" />
-                <p className="text-xs text-gray-500">لا توجد مشاريع سابقة. تحدث مع <span dir="ltr">Naje Agent Core</span> وسيقترح لك معمارية محكمة عند تحديد طلبك!</p>
-              </div>
-            ) : (
-              missions.map((m) => (
-                <div
-                  key={m.id}
-                  onClick={() => setActiveMission(m)}
-                  className={`p-3 rounded-xl cursor-pointer border transition-all ${
-                    activeMission?.id === m.id
-                      ? 'bg-purple-50 dark:bg-purple-950/40 border-purple-300 dark:border-purple-700/60 shadow-sm'
-                      : 'bg-white/60 dark:bg-gray-900/50 border-gray-200/60 dark:border-gray-800/60 hover:border-purple-200 dark:hover:border-purple-800'
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs font-bold text-gray-900 dark:text-white truncate max-w-[140px]">{m.title}</span>
-                    <div className="flex items-center gap-1.5">
-                      <span className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded ${
-                        m.status === 'completed' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300' :
-                        m.status === 'executing' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 animate-pulse' :
-                        'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300'
-                      }`}>
-                        {m.status === 'completed' ? 'مكتملة' : m.status === 'executing' ? 'قيد التنفيذ' : 'بانتظار الموافقة'}
-                      </span>
-                      <button
-                        onClick={async (e) => {
-                          e.stopPropagation();
-                          if (window.confirm('هل تريد حذف هذا المشروع وسجله؟')) {
-                            await deleteDoc(doc(db, 'autonoma_missions', m.id));
-                            if (activeMission?.id === m.id) setActiveMission(null);
-                            toast.success('تم حذف المشروع بنجاح.');
-                          }
-                        }}
-                        className="p-1 hover:text-red-600 text-gray-400 dark:text-gray-500 rounded transition-colors"
-                        title="حذف المشروع"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    </div>
-                  </div>
-                  <p className="text-[11px] text-gray-500 dark:text-gray-400 line-clamp-2">{m.planSummary || m.userPrompt}</p>
-                </div>
-              ))
-            )}
-          </div>
+          <BalanceTopDropdown />
         </div>
+      </div>
 
-        {/* Center Column: Interactive Conversational Workstation / Execution Flow */}
-        <div className="flex-1 flex flex-col min-w-0 border-l border-gray-200/80 dark:border-gray-800/80 bg-white/60 dark:bg-gray-900/40 overflow-hidden">
-          
-          {!activeMission ? (
-            // ==========================================
-            // CONVERSATIONAL CHAT WORKSTATION
-            // ==========================================
-            <div className="flex-1 flex flex-col min-h-0">
-              
-              {/* Chat Stream */}
-              <div className="flex-1 overflow-y-auto p-6 space-y-4">
-                {messages.map((msg) => (
-                  <div key={msg.id} className={`flex gap-3 max-w-2xl ${msg.role === 'user' ? 'mr-auto flex-row-reverse' : 'ml-auto'}`}>
-                    
-                    {/* Avatar */}
-                    <div className={`w-8 h-8 rounded-xl shrink-0 flex items-center justify-center text-xs font-bold ${
-                      msg.role === 'user' 
-                        ? 'bg-purple-600 text-white shadow-sm' 
-                        : 'bg-gradient-to-tr from-purple-600 to-indigo-600 text-white shadow-sm'
-                    }`}>
-                      {msg.role === 'user' ? 'أنت' : <Cpu className="w-4 h-4" />}
-                    </div>
+      {/* ========================================================= */}
+      {/* 2. Main Content Body according to the Active Tab          */}
+      {/* ========================================================= */}
+      <div className="flex-1 min-h-0 flex flex-col overflow-hidden relative">
 
-                    {/* Message Bubble Content */}
-                    <div className="space-y-3 min-w-0 max-w-[85%]">
-                      
-                      {/* Standard Text Bubble or Error Card */}
-                      {msg.content && (
-                        msg.content.startsWith('__NAJE_ERROR_JSON__:') ? (
-                          <div className="w-full">
-                            <NajeErrorCard jsonContent={msg.content} />
-                          </div>
-                        ) : (
-                          <div className={`p-4 rounded-2xl text-xs leading-relaxed ${
-                            msg.role === 'user'
-                              ? 'bg-purple-600 text-white rounded-tr-xs shadow-sm font-medium'
-                              : 'bg-white dark:bg-gray-800/90 text-gray-800 dark:text-gray-200 border border-gray-200/80 dark:border-gray-700/80 rounded-tl-xs shadow-sm'
-                          }`}>
-                            {msg.content}
-                          </div>
-                        )
-                      )}
+        {/* --------------------------------------------------------- */}
+        {/* TAB 1: الدردشة (Chat & Multi-Agent Workstation)           */}
+        {/* --------------------------------------------------------- */}
+        {tab === 'chat' && (
+          <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+            {/* Chat Messages Stream */}
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
+              {messages.map((msg) => (
+                <div key={msg.id} className={`flex gap-3 max-w-3xl ${msg.role === 'user' ? 'mr-auto flex-row-reverse' : 'ml-auto'}`}>
+                  {/* Avatar */}
+                  <div className={`w-8 h-8 rounded-xl shrink-0 flex items-center justify-center text-xs font-bold ${
+                    msg.role === 'user' 
+                      ? 'bg-purple-600 text-white shadow-sm' 
+                      : 'bg-gradient-to-tr from-purple-600 via-indigo-600 to-pink-600 text-white shadow-sm'
+                  }`}>
+                    {msg.role === 'user' ? 'أنت' : <Bot className="w-4 h-4" />}
+                  </div>
 
-                      {/* Clarification Question Bubble with Quick Replies */}
-                      {msg.type === 'clarification' && (
-                        <div className="p-4 rounded-2xl bg-white dark:bg-gray-800/90 text-gray-800 dark:text-gray-200 border border-purple-200 dark:border-purple-800/60 rounded-tl-xs shadow-sm space-y-3">
-                          <div className="flex items-center gap-2 text-purple-600 dark:text-purple-400 font-extrabold text-xs">
-                            <HelpCircle className="w-4 h-4" />
-                            <span>استيضاح لتخصيص الخطة المعمارية:</span>
-                          </div>
-                          <p className="text-xs leading-relaxed">{msg.question}</p>
+                  {/* Bubble Content */}
+                  <div className="space-y-3 min-w-0 max-w-[90%] sm:max-w-[85%]">
+                    {msg.content && (
+                      <div className={`p-4 rounded-2xl text-xs sm:text-sm leading-relaxed whitespace-pre-wrap ${
+                        msg.role === 'user'
+                          ? 'bg-purple-600 text-white shadow-sm rounded-tr-sm'
+                          : 'bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 shadow-sm text-gray-800 dark:text-gray-200 rounded-tl-sm'
+                      }`}>
+                        {msg.content}
+                      </div>
+                    )}
 
-                          {msg.suggestedQuickReplies && msg.suggestedQuickReplies.length > 0 && (
-                            <div className="flex flex-wrap gap-2 pt-2 border-t border-gray-100 dark:border-gray-700">
-                              {msg.suggestedQuickReplies.map((reply, rIdx) => (
-                                <button
-                                  key={rIdx}
-                                  onClick={() => handleSendMessage(reply)}
-                                  disabled={isSendingChat}
-                                  className="text-[11px] font-bold px-3 py-1.5 rounded-xl bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800/60 hover:bg-purple-100 dark:hover:bg-purple-900/50 transition-all cursor-pointer flex items-center gap-1"
-                                >
-                                  <span>{reply}</span>
-                                  <ArrowUpRight className="w-3 h-3 opacity-60" />
-                                </button>
-                              ))}
-                            </div>
-                          )}
+                    {/* Clarification Question Card */}
+                    {msg.question && (
+                      <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/60 text-xs sm:text-sm text-amber-900 dark:text-amber-200 shadow-sm space-y-3">
+                        <div className="flex items-center gap-2 font-extrabold">
+                          <HelpCircle className="w-4 h-4 text-amber-600 shrink-0" />
+                          <span>سؤال استيضاحي من الوكيل:</span>
                         </div>
-                      )}
-
-                      {/* Proposal Card Bubble */}
-                      {msg.type === 'proposal' && msg.proposal && (
-                        <div className="p-5 rounded-2xl bg-white dark:bg-gray-800/95 border border-purple-300 dark:border-purple-700 shadow-md space-y-4 text-gray-800 dark:text-gray-200">
-                          
-                          {/* Proposal Header */}
-                          <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-700 pb-3">
-                            <div className="flex items-center gap-2">
-                              <Sparkles className="w-4 h-4 text-purple-600" />
-                              <span className="font-extrabold text-sm text-gray-900 dark:text-white">
-                                {msg.proposal.missionTitle}
-                              </span>
-                            </div>
-                            <span className="text-[11px] font-extrabold px-2.5 py-1 rounded-full bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300">
-                              {msg.proposal.totalEstimatedPoints} نقطة
-                            </span>
-                          </div>
-
-                          <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed">
-                            {msg.proposal.planSummary}
-                          </p>
-
-                          {/* Steps List */}
-                          <div className="space-y-2">
-                            {msg.proposal.steps.map((st, sIdx) => (
-                              <div key={sIdx} className="p-2.5 rounded-xl bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-700/60 space-y-1">
-                                <div className="flex items-center justify-between text-xs font-bold text-gray-800 dark:text-gray-200">
-                                  <span>{sIdx + 1}. {st.title}</span>
-                                </div>
-                                <p className="text-[11px] text-gray-500 dark:text-gray-400">{st.description}</p>
-                              </div>
+                        <p className="leading-relaxed">{msg.question}</p>
+                        {msg.suggestedQuickReplies && msg.suggestedQuickReplies.length > 0 && (
+                          <div className="flex flex-wrap gap-2 pt-2 border-t border-amber-200/60 dark:border-amber-800/40">
+                            {msg.suggestedQuickReplies.map((reply, rIdx) => (
+                              <button
+                                key={rIdx}
+                                onClick={() => handleSendMessage(reply)}
+                                className="px-3 py-1.5 rounded-xl bg-white dark:bg-gray-900 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700/60 hover:bg-amber-100 text-xs font-bold transition cursor-pointer"
+                              >
+                                {reply}
+                              </button>
                             ))}
                           </div>
-
-                          {/* Approval Action Button */}
-                          <div className="pt-2">
-                            <button
-                              onClick={() => handleApproveProposal(msg.proposal!)}
-                              className="w-full py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-lg shadow-purple-500/25 transition-all cursor-pointer"
-                            >
-                              <Play className="w-3.5 h-3.5 fill-white" />
-                              اعتماد المعمارية وبدء النسج الذاتي ({msg.proposal.totalEstimatedPoints} نقطة)
-                            </button>
-                          </div>
-
-                        </div>
-                      )}
-
-                    </div>
-                  </div>
-                ))}
-
-                {isSendingChat && (
-                  <div className="flex gap-3 max-w-2xl ml-auto">
-                    <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-purple-600 to-indigo-600 text-white flex items-center justify-center">
-                      <Cpu className="w-4 h-4" />
-                    </div>
-                    <div className="p-3.5 rounded-2xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 flex items-center gap-2 text-xs text-gray-500">
-                      <NajeSpinner className="w-3.5 h-3.5" />
-                      <span><span dir="ltr">Naje Agent Core</span> يفكر ويصيغ المعمارية...</span>
-                    </div>
-                  </div>
-                )}
-                
-                <div ref={chatBottomRef} />
-              </div>
-
-              {/* Chat Input & Suggested Chips Bar */}
-              <div className="p-4 border-t border-gray-200/80 dark:border-gray-800/80 bg-white/80 dark:bg-gray-900/60 backdrop-blur-sm space-y-2.5">
-                {messages.length <= 2 && (
-                  <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
-                    {SUGGESTED_PROMPTS.map((prompt, pIdx) => (
-                      <button
-                        key={pIdx}
-                        onClick={() => handleSendMessage(prompt)}
-                        disabled={isSendingChat}
-                        className="text-[11px] whitespace-nowrap px-3 py-1 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-purple-100 hover:text-purple-700 dark:hover:bg-purple-950/60 dark:hover:text-purple-300 transition-all border border-gray-200/60 dark:border-gray-700/60 cursor-pointer shrink-0"
-                      >
-                        {prompt}
-                      </button>
-                    ))}
-                  </div>
-                )}
-
-                <div className="relative flex items-center bg-white dark:bg-gray-900 rounded-2xl border border-purple-200/80 dark:border-gray-800 shadow-sm focus-within:ring-2 focus-within:ring-purple-500/20 focus-within:border-purple-500">
-                  <textarea
-                    rows={2}
-                    value={inputText}
-                    onChange={(e) => setInputText(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        handleSendMessage();
-                      }
-                    }}
-                    placeholder="تحدث مع Naje Agent Core أو اطلب بناء منظومة برمجية/موقع/هوية/فيديو..."
-                    className="w-full bg-transparent resize-none p-3.5 outline-none text-xs text-gray-900 dark:text-white placeholder:text-gray-400 leading-relaxed"
-                  />
-                  <div className="pl-3">
-                    <button
-                      onClick={() => handleSendMessage()}
-                      disabled={isSendingChat || !inputText.trim()}
-                      className="w-9 h-9 rounded-xl bg-purple-600 hover:bg-purple-700 text-white flex items-center justify-center shadow-md shadow-purple-500/20 transition-all disabled:opacity-40 cursor-pointer"
-                    >
-                      {isSendingChat ? <NajeSpinner className="w-4 h-4" /> : <Send className="w-4 h-4" />}
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-            </div>
-          ) : (
-            // ==========================================
-            // ACTIVE MISSION EXECUTION GRAPH VIEW
-            // ==========================================
-            <div className="flex-1 overflow-y-auto p-6 space-y-6">
-              <div className="max-w-3xl mx-auto space-y-6">
-                
-                {/* Mission Header Card */}
-                <div className="p-5 rounded-2xl bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 shadow-sm space-y-3">
-                  <div className="flex items-center justify-between">
-                    <h2 className="text-base font-extrabold text-gray-900 dark:text-white flex items-center gap-2">
-                      <Layers className="w-4 h-4 text-purple-600" />
-                      {activeMission.title}
-                    </h2>
-                    {activeMission.status === 'waiting_approval' && (
-                      <button
-                        onClick={handleExecuteMission}
-                        disabled={isExecuting}
-                        className="px-4 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-extrabold text-xs flex items-center gap-2 shadow-lg shadow-purple-500/25 cursor-pointer disabled:opacity-50"
-                      >
-                        {isExecuting ? <NajeSpinner className="w-4 h-4" /> : <Play className="w-4 h-4 fill-white" />}
-                        بدء النسج والتنفيذ ({activeMission.estimatedPoints} نقطة)
-                      </button>
+                        )}
+                      </div>
                     )}
-                  </div>
-                  
-                  <p className="text-xs text-gray-600 dark:text-gray-300 bg-purple-50/50 dark:bg-purple-950/20 p-3 rounded-xl border border-purple-100 dark:border-purple-900/40">
-                    {activeMission.planSummary}
-                  </p>
 
-                  {/* Brand Context Chips */}
-                  {activeMission.brandContext && (
-                    <div className="flex flex-wrap gap-2 pt-1 border-t border-gray-100 dark:border-gray-800">
-                      {activeMission.brandContext.brandName && (
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300">
-                          البراند: {activeMission.brandContext.brandName}
-                        </span>
-                      )}
-                      {activeMission.brandContext.industry && (
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300">
-                          المجال: {activeMission.brandContext.industry}
-                        </span>
-                      )}
-                      {activeMission.brandContext.tone && (
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300">
-                          النبرة: {activeMission.brandContext.tone}
-                        </span>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                {/* Steps Execution Graph */}
-                <div className="space-y-4">
-                  <h3 className="text-xs font-extrabold uppercase text-gray-400 tracking-wider">مراحل التنفيذ والتدقيق الهندسي</h3>
-                  
-                  {activeMission.steps.map((step, idx) => {
-                    const isCurrent = currentStepIndex === idx;
-                    return (
-                      <div 
-                        key={step.id}
-                        className={`p-4 rounded-2xl border transition-all ${
-                          step.status === 'completed' ? 'bg-white dark:bg-gray-900/70 border-emerald-300/80 dark:border-emerald-800/50' :
-                          step.status === 'in_progress' || isCurrent ? 'bg-purple-50/70 dark:bg-purple-950/30 border-purple-400 dark:border-purple-600 shadow-md ring-1 ring-purple-400' :
-                          'bg-white/40 dark:bg-gray-900/30 border-gray-200/60 dark:border-gray-800/60 opacity-80'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center gap-2.5">
-                            {step.status === 'completed' ? (
-                              <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                            ) : step.status === 'in_progress' || isCurrent ? (
-                              <NajeSpinner className="w-4 h-4" />
-                            ) : (
-                              <Circle className="w-4 h-4 text-gray-300 dark:text-gray-600" />
-                            )}
-                            <span className="text-xs font-bold text-gray-900 dark:text-white">
-                              {idx + 1}. {step.title}
-                            </span>
+                    {/* Mission Proposal Card */}
+                    {msg.proposal && (
+                      <div className="p-5 rounded-2xl bg-gradient-to-br from-purple-50/90 to-indigo-50/70 dark:from-purple-950/40 dark:to-indigo-950/30 border border-purple-200 dark:border-purple-800/60 shadow-md space-y-4">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <Sparkles className="w-4 h-4 text-purple-600" />
+                              <h3 className="font-extrabold text-sm sm:text-base text-gray-900 dark:text-white">
+                                {msg.proposal.missionTitle}
+                              </h3>
+                            </div>
+                            <p className="text-xs text-gray-600 dark:text-gray-300 mt-1 leading-relaxed">
+                              {msg.proposal.planSummary}
+                            </p>
                           </div>
-                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${
-                            step.status === 'completed' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400' :
-                            step.status === 'in_progress' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300' :
-                            'bg-gray-100 text-gray-500 dark:bg-gray-800'
-                          }`}>
-                            {step.status === 'completed' ? 'مكتملة ومدققة' : step.status === 'in_progress' ? 'جاري النسج والتوليد...' : 'مجدولة'}
+                          <span className="text-[11px] font-extrabold px-2.5 py-1 rounded-full bg-purple-600 text-white shadow-sm shrink-0">
+                            {msg.proposal.totalEstimatedPoints} نقطة
                           </span>
                         </div>
 
-                        <p className="text-[11px] text-gray-500 dark:text-gray-400 mb-3">{step.description}</p>
-
-                        {/* Real-time Weaver Compiler HUD Banner */}
-                        {(step.status === 'in_progress' || isCurrent) && (
-                          <div className="mb-3 p-3.5 rounded-xl bg-purple-950/80 border border-purple-500/40 shadow-inner text-white space-y-2.5">
-                            <div className="flex items-center justify-between text-xs">
-                              <div className="flex items-center gap-2">
-                                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
-                                <span className="font-extrabold text-purple-300">محرك <span dir="ltr">Naje Agent Core</span> في وضع المعالجة الحية</span>
-                              </div>
-                              {liveProgress && liveProgress.totalFiles > 0 && (
-                                <span className="text-[10px] font-mono font-bold bg-purple-900/80 px-2 py-0.5 rounded border border-purple-700">
-                                  {liveProgress.completedFiles} / {liveProgress.totalFiles} ملفات
-                                </span>
-                              )}
+                        {/* Proposed Steps */}
+                        <div className="space-y-2">
+                          <span className="text-[11px] font-bold text-gray-500 dark:text-gray-400">مراحل التنفيذ المقترحة:</span>
+                          {msg.proposal.steps.map((st, sIdx) => (
+                            <div key={sIdx} className="p-3 bg-white/80 dark:bg-gray-900/80 rounded-xl border border-gray-200/60 dark:border-gray-800/60 text-xs">
+                              <div className="font-bold text-gray-800 dark:text-gray-200">{st.title}</div>
+                              <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">{st.description}</p>
                             </div>
-
-                            <div className="flex items-center gap-2 text-xs font-semibold text-purple-100">
-                              <Zap className="w-4 h-4 text-amber-400 shrink-0 animate-pulse" />
-                              <span>{executingStatusMessage || 'Naje Agent Core ينسج المعمارية البرمجية...'}</span>
-                            </div>
-
-                            {/* Active file glowing path indicator */}
-                            {liveProgress?.activeFilePath && (
-                              <div className="flex items-center gap-2 text-[11px] bg-black/40 px-2.5 py-1.5 rounded-lg border border-purple-500/20">
-                                <FileCode className="w-3.5 h-3.5 text-indigo-400" />
-                                <span className="text-gray-400">الملف النشط:</span>
-                                <span className="font-mono text-indigo-300 font-bold" dir="ltr">{liveProgress.activeFilePath}</span>
-                              </div>
-                            )}
-
-                            {/* Progress bar */}
-                            {liveProgress && liveProgress.totalFiles > 0 && (
-                              <div className="w-full bg-purple-900/50 h-1.5 rounded-full overflow-hidden">
-                                <div 
-                                  className="bg-gradient-to-r from-indigo-400 to-emerald-400 h-full transition-all duration-300"
-                                  style={{ width: `${Math.round((liveProgress.completedFiles / liveProgress.totalFiles) * 100)}%` }}
-                                />
-                              </div>
-                            )}
-                          </div>
-                        )}
-
-                        {/* Tool Calls Breakdown */}
-                        {step.toolCalls && step.toolCalls.length > 0 && (
-                          <div className="space-y-1.5 pt-2 border-t border-gray-100 dark:border-gray-800/60">
-                            {step.toolCalls.map((tc) => (
-                              <div key={tc.id} className="flex items-center justify-between text-[11px] bg-gray-50 dark:bg-gray-800/50 px-3 py-1.5 rounded-xl">
-                                <div className="flex items-center gap-2">
-                                  {tc.name === 'brand_identity' && <Palette className="w-3.5 h-3.5 text-amber-500" />}
-                                  {tc.name === 'image_studio' && <ImageIcon className="w-3.5 h-3.5 text-purple-500" />}
-                                  {tc.name === 'video_director' && <Film className="w-3.5 h-3.5 text-pink-500" />}
-                                  {tc.name === 'voice_narration' && <Volume2 className="w-3.5 h-3.5 text-emerald-500" />}
-                                  {tc.name === 'fullstack_engineer' && <Code2 className="w-3.5 h-3.5 text-blue-500" />}
-                                  {tc.name === 'document_architect' && <FileText className="w-3.5 h-3.5 text-indigo-500" />}
-                                  {tc.name === 'web_grounding' && <Sparkles className="w-3.5 h-3.5 text-cyan-500" />}
-                                  <span className="font-bold text-gray-700 dark:text-gray-300">{tc.title}</span>
-                                </div>
-                                <span className="text-[10px] font-mono text-purple-600 dark:text-purple-400 font-bold">{tc.pointsCost} نقطة</span>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-
-                {/* Audit Quality History */}
-                {activeMission.auditHistory && activeMission.auditHistory.length > 0 && (
-                  <div className="p-4 rounded-2xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900/40 space-y-2">
-                    <div className="flex items-center gap-2 text-xs font-extrabold text-emerald-700 dark:text-emerald-400">
-                      <Shield className="w-4 h-4" />
-                      <span>سجل تدقيق الجودة والتحقق (Audit History)</span>
-                    </div>
-                    <div className="space-y-1.5">
-                      {activeMission.auditHistory.map((audit, aIdx) => (
-                        <div key={aIdx} className="text-[11px] bg-white/80 dark:bg-gray-900/60 p-2 rounded-xl border border-emerald-100 dark:border-emerald-900/30 flex items-start gap-2">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5" />
-                          <div>
-                            <span className="font-bold text-gray-900 dark:text-white">[{audit.stepTitle}]: </span>
-                            <span className="text-gray-600 dark:text-gray-300">{audit.feedback}</span>
-                          </div>
+                          ))}
                         </div>
-                      ))}
+
+                        {/* Action buttons */}
+                        <div className="flex items-center gap-3 pt-2">
+                          <button
+                            onClick={() => handleApproveProposal(msg.proposal!)}
+                            className="px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-xl text-xs font-extrabold shadow-sm hover:shadow transition cursor-pointer flex items-center gap-2"
+                          >
+                            <Check className="w-4 h-4" />
+                            <span>اعتماد الخطة والبدء</span>
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+
+              {/* Realtime Execution HUD if mission is active */}
+              {activeMission && (
+                <div className="my-4 p-5 rounded-2xl bg-white dark:bg-gray-900 border border-purple-300 dark:border-purple-800/80 shadow-lg space-y-4">
+                  <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 pb-3">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-3 h-3 rounded-full bg-purple-600 animate-pulse"></div>
+                      <span className="font-extrabold text-sm text-gray-900 dark:text-white">
+                        {activeMission.title}
+                      </span>
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                        activeMission.status === 'completed' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300' :
+                        activeMission.status === 'executing' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 animate-pulse' :
+                        'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300'
+                      }`}>
+                        {activeMission.status === 'completed' ? 'مكتملة' : activeMission.status === 'executing' ? 'قيد المعالجة' : 'بانتظار الإطلاق'}
+                      </span>
+                    </div>
+
+                    {activeMission.status !== 'executing' && activeMission.status !== 'completed' && (
+                      <button
+                        onClick={handleRunMission}
+                        disabled={isExecuting}
+                        className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-extrabold shadow transition cursor-pointer flex items-center gap-1.5"
+                      >
+                        <Play className="w-3.5 h-3.5" />
+                        <span>تشغيل المهام الآن</span>
+                      </button>
+                    )}
+
+                    {activeMission.status === 'completed' && (
+                      <button
+                        onClick={() => setTab('results')}
+                        className="px-3 py-1.5 bg-purple-600 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5"
+                      >
+                        <Sparkles className="w-3.5 h-3.5" />
+                        <span>معاينة النتائج</span>
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Steps status */}
+                  <div className="space-y-2">
+                    {activeMission.steps.map((st, idx) => (
+                      <div key={st.id} className="flex items-center justify-between text-xs p-2.5 rounded-xl bg-gray-50 dark:bg-gray-800/50">
+                        <div className="flex items-center gap-2">
+                          {st.status === 'completed' ? <CheckCircle2 className="w-4 h-4 text-emerald-500" /> :
+                           st.status === 'in_progress' ? <NajeSpinner className="w-4 h-4 text-amber-500" /> :
+                           <Circle className="w-4 h-4 text-gray-400" />}
+                          <span className="font-bold text-gray-800 dark:text-gray-200">{st.title}</span>
+                        </div>
+                        <span className="text-[10px] text-gray-500">{st.toolCalls?.length || 0} أدوات</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {isExecuting && (
+                    <div className="p-3 bg-purple-50 dark:bg-purple-950/40 rounded-xl border border-purple-200 dark:border-purple-800 text-xs font-semibold text-purple-700 dark:text-purple-300 flex items-center gap-2">
+                      <NajeSpinner className="w-4 h-4" />
+                      <span>{executingStatusMessage || 'وكلاء ناجي يعملون على معالجة الخطوات بالتتابع...'}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {isSendingChat && (
+                <div className="flex gap-3 max-w-2xl ml-auto">
+                  <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-purple-600 to-indigo-600 text-white flex items-center justify-center shadow-sm">
+                    <NajeSpinner className="w-4 h-4" />
+                  </div>
+                  <div className="p-3.5 rounded-2xl bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 text-xs text-gray-500 dark:text-gray-400 flex items-center gap-2">
+                    <span>وكيل ناجي يقرأ مصادرك ويهندس الاستجابة...</span>
+                  </div>
+                </div>
+              )}
+
+              <div ref={chatBottomRef} />
+            </div>
+
+            {/* Quick Suggested Prompts */}
+            {messages.length <= 2 && (
+              <div className="px-4 py-2 flex flex-wrap gap-1.5 border-t border-gray-100 dark:border-gray-800/60 bg-white/20 dark:bg-gray-900/20">
+                {SUGGESTED_PROMPTS.map((prompt, pIdx) => (
+                  <button
+                    key={pIdx}
+                    onClick={() => handleSendMessage(prompt)}
+                    className="text-[11px] px-3 py-1.5 rounded-full bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:border-purple-400 hover:text-purple-600 transition cursor-pointer"
+                  >
+                    {prompt}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Chat Input Bar */}
+            <div className="p-3 sm:p-4 border-t border-gray-200/80 dark:border-gray-800/80 bg-white/80 dark:bg-[#0f1218]/90 backdrop-blur-md">
+              <div className="max-w-4xl mx-auto space-y-2">
+                {/* Active Agent Working Indicator: Appears ONLY when agent is actually working */}
+                {isAnyAgentWorking && (
+                  <div className="flex items-center justify-start animate-in fade-in slide-in-from-bottom-1 duration-200">
+                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-purple-50 dark:bg-purple-950/60 border border-purple-200/80 dark:border-purple-800/80 shadow-xs text-xs font-bold text-purple-700 dark:text-purple-300">
+                      <div className="relative flex items-center justify-center">
+                        <ActiveAgentIcon className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                        <span className="absolute -top-1 -right-1 flex h-2 w-2">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                        </span>
+                      </div>
+                      <span>
+                        {activeAgentsCount === 1 ? '1 وكيل شغال' : `${activeAgentsCount} وكلاء شغالين`}
+                      </span>
+                      {activeAgentNames.length > 0 && (
+                        <span className="text-[11px] font-semibold text-purple-600 dark:text-purple-400 bg-white/80 dark:bg-gray-900/60 px-2 py-0.5 rounded-lg border border-purple-200/60 dark:border-purple-800/40">
+                          {activeAgentNames.join(' · ')}
+                        </span>
+                      )}
+                      {executingStatusMessage && (
+                        <span className="text-[11px] font-normal text-gray-500 dark:text-gray-400 hidden sm:inline max-w-xs truncate">
+                          ({executingStatusMessage})
+                        </span>
+                      )}
                     </div>
                   </div>
                 )}
 
-              </div>
-            </div>
-          )}
-
-        </div>
-
-        {/* Right Column: Live Artifacts Canvas */}
-        <div className="w-80 border-r border-gray-200/80 dark:border-gray-800/80 bg-white/50 dark:bg-gray-900/30 flex flex-col shrink-0">
-          <div className="p-4 border-b border-gray-200/60 dark:border-gray-800/60 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-purple-600" />
-              <span className="text-xs font-extrabold text-gray-900 dark:text-white">معرض المخرجات (Artifacts)</span>
-            </div>
-            {activeMission?.artifacts && (
-              <span className="text-[10px] bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 font-bold px-2 py-0.5 rounded-full" title={`الحد الأقصى للإصدارات: ${MAX_VERSIONS_PER_ASSET}`}>
-                {activeMission.artifacts.length}/{MAX_VERSIONS_PER_ASSET}
-              </span>
-            )}
-          </div>
-
-          <div className="flex-1 overflow-y-auto p-4 space-y-3">
-            {!activeMission || activeMission.artifacts.length === 0 ? (
-              <div className="text-center py-16 px-4">
-                <Layers className="w-8 h-8 mx-auto text-gray-300 dark:text-gray-600 mb-2" />
-                <p className="text-xs text-gray-400">ستظهر هنا المخرجات النهائية (المشروع البرمجي المنسوج، الشعار، الفيديو، التسجيل الصوتي، الكتيب) فور اكتمال خطوات <span dir="ltr">Naje Agent Core</span>.</p>
-              </div>
-            ) : (
-              activeMission.artifacts.map((art) => (
-                <div 
-                  key={art.id}
-                  onClick={() => { setSelectedArtifactPreview(art); setActiveFileIndex(0); setSelectedCodeTab('preview'); }}
-                  className="p-3 bg-white dark:bg-gray-900 rounded-2xl border border-gray-200/80 dark:border-gray-800 hover:border-purple-300 shadow-sm cursor-pointer transition-all flex flex-col gap-2 relative group"
+                <form 
+                  onSubmit={(e) => { e.preventDefault(); handleSendMessage(); }}
+                  className="flex items-center gap-2"
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      {art.type === 'code_project' && <Code2 className="w-4 h-4 text-blue-600" />}
-                      {art.type === 'image' && <ImageIcon className="w-4 h-4 text-purple-600" />}
-                      {art.type === 'video' && <Film className="w-4 h-4 text-pink-600" />}
-                      {art.type === 'audio' && <Volume2 className="w-4 h-4 text-emerald-600" />}
-                      {art.type === 'pdf' && <FileText className="w-4 h-4 text-indigo-600" />}
-                      {art.type === 'brand_palette' && <Palette className="w-4 h-4 text-amber-500" />}
-                      <span className="text-xs font-bold text-gray-900 dark:text-white truncate max-w-[140px]">{art.title}</span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={async (e) => {
-                        e.stopPropagation();
-                        if (!activeMission) return;
-                        const updated = toggleFavoriteVersion(activeMission.artifacts, art.id);
-                        activeMission.artifacts = updated;
-                        await updateDoc(doc(db, 'autonoma_missions', activeMission.id), {
-                          artifacts: updated,
-                          updatedAt: Date.now()
-                        });
-                        toast.success((art as any).isFavorite ? 'تم إزالة التثبيت' : 'تم تثبيت الإصدار لمنع الحذف التلقائي ⭐');
-                      }}
-                      className={`p-1 rounded-lg transition-colors cursor-pointer ${
-                        (art as any).isFavorite 
-                          ? 'text-amber-500 hover:text-amber-600 bg-amber-50 dark:bg-amber-950/40' 
-                          : 'text-gray-400 hover:text-amber-500 opacity-60 group-hover:opacity-100'
-                      }`}
-                      title={(art as any).isFavorite ? 'إصدار مثبت ومحمي من الحذف' : 'تثبيت الإصدار لحمايته من الحذف التلقائي'}
+                  {/* Direct Attachment Button (Adds directly to Sources) */}
+                  <button
+                    type="button"
+                    onClick={() => chatAttachmentInputRef.current?.click()}
+                    className="p-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition cursor-pointer shrink-0"
+                    title="إرفاق ملف أو صورة لمصادر المشروع"
+                  >
+                    <Paperclip className="w-4 h-4" />
+                  </button>
+
+                  <input
+                    type="text"
+                    value={inputText}
+                    onChange={(e) => setInputText(e.target.value)}
+                    placeholder={sources.length > 0 ? "صف فكرتك وسيعتمد الوكلاء على مصادرك المرفوعة..." : "صف مشروعك لبناء الهوية والإعلانات (أو ارفع مصادرك أولاً)..."}
+                    disabled={isSendingChat}
+                    className="flex-1 bg-gray-50 dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl px-4 py-2.5 text-xs sm:text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500/30"
+                  />
+
+                  <button
+                    type="submit"
+                    disabled={!inputText.trim() || isSendingChat}
+                    className="px-4 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 disabled:opacity-50 text-white rounded-xl text-xs sm:text-sm font-bold shadow-sm transition cursor-pointer flex items-center gap-1.5 shrink-0"
+                  >
+                    {isSendingChat ? <NajeSpinner className="w-4 h-4" /> : <Send className="w-4 h-4" />}
+                    <span className="hidden sm:inline">إرسال</span>
+                  </button>
+                </form>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* --------------------------------------------------------- */}
+        {/* TAB 2: النتائج (Results & Deliverables)                   */}
+        {/* --------------------------------------------------------- */}
+        {tab === 'results' && (
+          <div className="flex-1 flex flex-col min-h-0 overflow-hidden p-4 sm:p-6 space-y-4">
+            {/* Header & Filter Chips */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-gray-200/80 dark:border-gray-800">
+              <div>
+                <h2 className="text-base font-extrabold text-gray-900 dark:text-white flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-purple-600" />
+                  <span>معرض النتائج والمخرجات</span>
+                </h2>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                  كافة الشعارات، الإعلانات، الفيديوهات، الأكواد، والكتيبات التي صنعها نظام الوكلاء
+                </p>
+              </div>
+
+              {/* Filter Tabs */}
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+                {[
+                  { id: 'all', label: 'الكل' },
+                  { id: 'brand', label: 'الهوية والشعار' },
+                  { id: 'ads', label: 'الإعلانات' },
+                  { id: 'video', label: 'فيديو' },
+                  { id: 'audio', label: 'صوتيات' },
+                  { id: 'code', label: 'أنظمة وأكواد' },
+                  { id: 'docs', label: 'كتيبات' }
+                ].map(f => (
+                  <button
+                    key={f.id}
+                    onClick={() => setResultsFilter(f.id as any)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer whitespace-nowrap ${
+                      resultsFilter === f.id
+                        ? 'bg-purple-600 text-white shadow-sm'
+                        : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-800 hover:bg-gray-50'
+                    }`}
+                  >
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Results Grid */}
+            <div className="flex-1 overflow-y-auto min-h-0">
+              {filteredArtifacts.length === 0 ? (
+                <div className="h-full flex flex-col items-center justify-center text-center p-8 bg-white/40 dark:bg-gray-900/30 rounded-3xl border border-dashed border-gray-200 dark:border-gray-800">
+                  <Layers className="w-12 h-12 text-gray-300 dark:text-gray-600 mb-3" />
+                  <h3 className="text-sm font-extrabold text-gray-800 dark:text-gray-200">
+                    لم يتم توليد نتائج بعد
+                  </h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 max-w-md mt-1 mb-4 leading-relaxed">
+                    ابدأ محادثة في تبويب "الدردشة" واطلب من الوكلاء بناء الهوية البصرية أو صياغة الإعلانات، وستظهر كافة النتائج والمخرجات فور اكتمالها هنا.
+                  </p>
+                  <button
+                    onClick={() => setTab('chat')}
+                    className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold shadow-sm transition cursor-pointer flex items-center gap-1.5"
+                  >
+                    <MessageSquare className="w-4 h-4" />
+                    <span>بدء مهمة في الدردشة</span>
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {filteredArtifacts.map((art) => (
+                    <div
+                      key={art.id}
+                      onClick={() => { setSelectedArtifactPreview(art); setActiveFileIndex(0); setSelectedCodeTab('preview'); }}
+                      className="p-4 bg-white dark:bg-gray-900 rounded-2xl border border-gray-200/80 dark:border-gray-800 hover:border-purple-400 hover:shadow-md transition cursor-pointer flex flex-col justify-between group"
                     >
-                      <Star className={`w-3.5 h-3.5 ${(art as any).isFavorite ? 'fill-amber-500' : ''}`} />
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            {art.type === 'code_project' && <Code2 className="w-4 h-4 text-blue-600" />}
+                            {art.type === 'image' && <ImageIcon className="w-4 h-4 text-purple-600" />}
+                            {art.type === 'video' && <Film className="w-4 h-4 text-pink-600" />}
+                            {art.type === 'audio' && <Volume2 className="w-4 h-4 text-emerald-600" />}
+                            {art.type === 'pdf' && <FileText className="w-4 h-4 text-indigo-600" />}
+                            {art.type === 'brand_palette' && <Palette className="w-4 h-4 text-amber-500" />}
+                            <span className="text-xs font-extrabold text-gray-900 dark:text-white truncate max-w-[170px]">
+                              {art.title}
+                            </span>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              if (!activeMission) return;
+                              const updated = toggleFavoriteVersion(activeMission.artifacts, art.id);
+                              activeMission.artifacts = updated;
+                              await updateDoc(doc(db, 'autonoma_missions', activeMission.id), {
+                                artifacts: updated,
+                                updatedAt: Date.now()
+                              });
+                              toast.success((art as any).isFavorite ? 'تم إزالة التثبيت' : 'تم تثبيت المخرج وحمايته ⭐');
+                            }}
+                            className={`p-1 rounded-lg transition cursor-pointer ${
+                              (art as any).isFavorite ? 'text-amber-500' : 'text-gray-400 opacity-60 group-hover:opacity-100'
+                            }`}
+                            title="تثبيت"
+                          >
+                            <Star className={`w-4 h-4 ${(art as any).isFavorite ? 'fill-amber-500' : ''}`} />
+                          </button>
+                        </div>
+
+                        {/* Thumbnail / Visual representation */}
+                        {art.type === 'image' && art.url && (
+                          <div className="w-full h-36 rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-800">
+                            <img src={art.url} alt={art.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                          </div>
+                        )}
+
+                        {art.type === 'video' && art.url && (
+                          <div className="w-full h-36 rounded-xl overflow-hidden bg-black flex items-center justify-center">
+                            <video src={art.url} className="w-full h-full object-cover" />
+                          </div>
+                        )}
+
+                        {art.type === 'brand_palette' && art.data?.palette && (
+                          <div className="p-3 bg-gray-50 dark:bg-gray-800/60 rounded-xl space-y-2">
+                            <div className="flex items-center gap-1.5">
+                              {Object.entries(art.data.palette).slice(0, 5).map(([k, hex]: any) => (
+                                <div key={k} className="h-6 flex-1 rounded-md" style={{ backgroundColor: hex }} title={`${k}: ${hex}`} />
+                              ))}
+                            </div>
+                            <p className="text-[10px] text-gray-500 truncate">{art.data.name || 'لوحة الألوان المعتمدة'}</p>
+                          </div>
+                        )}
+
+                        {art.type === 'code_project' && (
+                          <div className="p-3 bg-gray-50 dark:bg-gray-800/60 rounded-xl space-y-1">
+                            <span className="text-[11px] font-mono text-purple-600 dark:text-purple-400 font-bold block">
+                              {art.files?.length || 1} ملفات برمجية منسوجة
+                            </span>
+                            <span className="text-[10px] text-gray-500 block">جاهز للمعاينة الحية والتحميل كـ ZIP</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Action buttons */}
+                      <div className="pt-3 border-t border-gray-100 dark:border-gray-800/60 flex items-center justify-between text-xs mt-3">
+                        <span className="text-[10px] text-gray-400 font-mono">
+                          {new Date(art.createdAt).toLocaleDateString('ar-EG')}
+                        </span>
+                        <div className="flex items-center gap-2">
+                          {art.type === 'code_project' && (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleDownloadZip(art); }}
+                              className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg text-gray-600 dark:text-gray-300"
+                              title="تحميل ZIP"
+                            >
+                              <Archive className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                          <span className="text-purple-600 font-bold text-[11px] flex items-center gap-1">
+                            <span>معاينة</span>
+                            <ChevronLeft className="w-3.5 h-3.5" />
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* --------------------------------------------------------- */}
+        {/* TAB 3: المصادر (Project Sources & Assets)                 */}
+        {/* --------------------------------------------------------- */}
+        {tab === 'sources' && (
+          <div className="flex-1 flex flex-col min-h-0 overflow-hidden p-4 sm:p-6 space-y-4">
+            {/* Header banner */}
+            <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-emerald-500/10 via-purple-500/5 to-indigo-500/10 border border-emerald-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <BookOpen className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                  <h2 className="text-base font-extrabold text-gray-900 dark:text-white">
+                    المصادر المرجعية للمشروع
+                  </h2>
+                </div>
+                <p className="text-xs text-gray-600 dark:text-gray-300 mt-1 max-w-2xl leading-relaxed">
+                  أي مصدر ترفعه هنا (شعارك الحالي، صور منتجاتك، ملفات ومستندات، روابط، أو موجز مكتوب) يقرأه وكلاء ناجي تلقائياً: يبني وكيل الهوية البصرية الشعار والألوان بناءً عليه، ويصنع وكيل الإعلانات حملتك التسويقية المتناغمة معه.
+                </p>
+              </div>
+
+              {/* Add actions dropdown / buttons */}
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={sourceFileUploading}
+                  className="px-3 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 hover:border-emerald-400 rounded-xl text-xs font-bold text-gray-800 dark:text-white transition cursor-pointer flex items-center gap-1.5 shadow-sm"
+                >
+                  <FileText className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>رفع مستند</span>
+                </button>
+
+                <button
+                  onClick={() => imageInputRef.current?.click()}
+                  disabled={sourceFileUploading}
+                  className="px-3 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 hover:border-purple-400 rounded-xl text-xs font-bold text-gray-800 dark:text-white transition cursor-pointer flex items-center gap-1.5 shadow-sm"
+                >
+                  <ImageIcon className="w-3.5 h-3.5 text-purple-600" />
+                  <span>رفع صورة أو شعار</span>
+                </button>
+
+                <button
+                  onClick={() => setAddingSourceType('link')}
+                  className="px-3 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 hover:border-sky-400 rounded-xl text-xs font-bold text-gray-800 dark:text-white transition cursor-pointer flex items-center gap-1.5 shadow-sm"
+                >
+                  <Link2 className="w-3.5 h-3.5 text-sky-600" />
+                  <span>إضافة رابط</span>
+                </button>
+
+                <button
+                  onClick={() => setAddingSourceType('text')}
+                  className="px-3 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 hover:border-amber-400 rounded-xl text-xs font-bold text-gray-800 dark:text-white transition cursor-pointer flex items-center gap-1.5 shadow-sm"
+                >
+                  <Plus className="w-3.5 h-3.5 text-amber-600" />
+                  <span>كتابة موجز</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Modal / Inline form for Link or Text Source */}
+            {addingSourceType && (
+              <div className="p-4 rounded-2xl bg-white dark:bg-gray-900 border border-purple-300 dark:border-purple-800 shadow-md space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs font-extrabold text-gray-900 dark:text-white">
+                    {addingSourceType === 'link' ? 'إضافة رابط أو موقع مرجعي' : 'كتابة موجز نصي لعلامتك التجارية'}
+                  </h3>
+                  <button onClick={() => setAddingSourceType(null)} className="text-gray-400 hover:text-gray-600">
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                <input
+                  type="text"
+                  placeholder="عنوان المصدر (مثال: موقع المنافس، أو موجز الرؤية)..."
+                  value={sourceTitle}
+                  onChange={(e) => setSourceTitle(e.target.value)}
+                  className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2 text-xs text-gray-900 dark:text-white"
+                />
+
+                {addingSourceType === 'link' ? (
+                  <input
+                    type="url"
+                    placeholder="https://example.com"
+                    value={sourceUrl}
+                    onChange={(e) => setSourceUrl(e.target.value)}
+                    className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2 text-xs text-gray-900 dark:text-white"
+                  />
+                ) : (
+                  <textarea
+                    rows={3}
+                    placeholder="اكتب تفاصيل هوية مشروعك، الألوان المفضلة، الجمهور المستهدف، أو نص الإعلان المرغوب..."
+                    value={sourceContent}
+                    onChange={(e) => setSourceContent(e.target.value)}
+                    className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3 text-xs text-gray-900 dark:text-white"
+                  />
+                )}
+
+                <div className="flex justify-end gap-2">
+                  <button
+                    onClick={() => setAddingSourceType(null)}
+                    className="px-3 py-1.5 rounded-xl text-xs text-gray-500 hover:bg-gray-100"
+                  >
+                    إلغاء
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (!sourceTitle.trim()) {
+                        toast.error('يرجى كتابة عنوان للمصدر');
+                        return;
+                      }
+                      handleAddSource({
+                        title: sourceTitle,
+                        type: addingSourceType,
+                        url: sourceUrl || undefined,
+                        content: sourceContent || undefined
+                      });
+                    }}
+                    className="px-4 py-1.5 bg-purple-600 text-white rounded-xl text-xs font-bold"
+                  >
+                    حفظ المصدر
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Sources List */}
+            <div className="flex-1 overflow-y-auto min-h-0">
+              {sources.length === 0 ? (
+                <div className="h-full flex flex-col items-center justify-center text-center p-8 bg-white/40 dark:bg-gray-900/30 rounded-3xl border border-dashed border-gray-200 dark:border-gray-800">
+                  <BookOpen className="w-12 h-12 text-gray-300 dark:text-gray-600 mb-3" />
+                  <h3 className="text-sm font-extrabold text-gray-800 dark:text-gray-200">
+                    لا توجد مصادر مرفوعة بعد
+                  </h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 max-w-md mt-1 mb-4 leading-relaxed">
+                    قم برفع ملفات PDF، صور الشعار أو المنتجات، أو روابط المواقع التي ترغب أن يستلهم منها وكيل الهوية البصرية ووكيل الإعلانات.
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm"
+                    >
+                      <Upload className="w-4 h-4" />
+                      <span>رفع أول مصدر الآن</span>
                     </button>
                   </div>
-
-                  {art.type === 'code_project' && (
-                    <div className="p-2.5 bg-blue-50/60 dark:bg-blue-950/20 rounded-xl border border-blue-100 dark:border-blue-900/40 space-y-1.5">
-                      <div className="flex items-center justify-between text-[10px] text-blue-700 dark:text-blue-300 font-bold">
-                        <span className="flex items-center gap-1"><FolderTree className="w-3 h-3" /> {art.files?.length || 1} ملفات برمجية</span>
-                        <span className="bg-blue-200/60 dark:bg-blue-900/60 px-1.5 py-0.5 rounded text-[9px]">معاينة حية + ZIP</span>
-                      </div>
-                      <p className="text-[10px] text-gray-500 dark:text-gray-400 line-clamp-1">{art.data?.projectDescription}</p>
-                    </div>
-                  )}
-
-                  {art.type === 'image' && (art.previewUrl || art.url) && (
-                    <div className="h-28 rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
-                      <img src={art.previewUrl || art.url} alt={art.title} className="w-full h-full object-cover" />
-                    </div>
-                  )}
-
-                  <div className="flex items-center justify-between text-[10px] text-gray-400 pt-1 border-t border-gray-100 dark:border-gray-800">
-                    <span>انقر للمعاينة الكاملة</span>
-                    <ChevronRight className="w-3.5 h-3.5" />
-                  </div>
                 </div>
-              ))
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {sources.map((src) => (
+                    <div
+                      key={src.id}
+                      className="p-4 bg-white dark:bg-gray-900 rounded-2xl border border-gray-200/80 dark:border-gray-800 hover:border-emerald-300 transition flex flex-col justify-between group shadow-sm"
+                    >
+                      <div className="space-y-2.5">
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <div className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                              {src.type === 'file' && <FileText className="w-4 h-4" />}
+                              {src.type === 'image' && <ImageIcon className="w-4 h-4" />}
+                              {src.type === 'link' && <Link2 className="w-4 h-4" />}
+                              {src.type === 'text' && <FileSpreadsheet className="w-4 h-4" />}
+                            </div>
+                            <div className="min-w-0">
+                              <h4 className="text-xs font-extrabold text-gray-900 dark:text-white truncate">
+                                {src.title}
+                              </h4>
+                              <span className="text-[10px] text-gray-400">
+                                {src.type === 'file' ? 'مستند مرجعي' :
+                                 src.type === 'image' ? 'صورة / شعار' :
+                                 src.type === 'link' ? 'رابط خارجي' : 'موجز نصي'}
+                              </span>
+                            </div>
+                          </div>
+
+                          <button
+                            onClick={() => handleDeleteSource(src.id)}
+                            className="p-1.5 text-gray-400 hover:text-red-600 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/30 transition cursor-pointer"
+                            title="حذف المصدر"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+
+                        {/* Image Preview Thumbnail if type is image */}
+                        {src.previewUrl && (
+                          <div className="w-full h-28 rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-800">
+                            <img src={src.previewUrl} alt={src.title} className="w-full h-full object-cover" />
+                          </div>
+                        )}
+
+                        {/* Content Snippet */}
+                        {src.content && (
+                          <p className="text-[11px] text-gray-600 dark:text-gray-300 line-clamp-3 bg-gray-50 dark:bg-gray-800/40 p-2.5 rounded-xl leading-relaxed">
+                            {src.content}
+                          </p>
+                        )}
+
+                        {src.url && (
+                          <a
+                            href={src.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-[11px] text-sky-600 dark:text-sky-400 hover:underline flex items-center gap-1 truncate"
+                          >
+                            <ExternalLink className="w-3 h-3 shrink-0" />
+                            <span className="truncate">{src.url}</span>
+                          </a>
+                        )}
+                      </div>
+
+                      <div className="pt-3 mt-2 border-t border-gray-100 dark:border-gray-800/60 flex items-center justify-between text-[10px] text-gray-400">
+                        <span>{new Date(src.addedAt).toLocaleDateString('ar-EG')}</span>
+                        <span className="text-emerald-600 font-bold">معتمد لدى الوكلاء ✓</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* CTA bar to start chat with these sources */}
+            {sources.length > 0 && (
+              <div className="p-3.5 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white flex flex-col sm:flex-row items-center justify-between gap-3 shadow-md">
+                <div className="text-center sm:text-right">
+                  <span className="text-xs font-extrabold block">جاهز للبدء؟ تم ربط {sources.length} مصادر</span>
+                  <span className="text-[11px] text-purple-100 opacity-90">سيعتمد وكيل الهوية ووكيل الإعلانات على هذه المصادر مباشرة.</span>
+                </div>
+                <button
+                  onClick={() => {
+                    setTab('chat');
+                    handleSendMessage(`اعتمد على مصادر المشروع المرفوعة (${sources.map(s => s.title).join('، ')})، وابدأ نظام الوكلاء لبناء الهوية البصرية الكاملة وصياغة الإعلانات وسيناريو الحملة التسويقية.`);
+                  }}
+                  className="px-4 py-2 bg-white text-purple-700 hover:bg-purple-50 rounded-xl text-xs font-extrabold shadow transition cursor-pointer flex items-center gap-1.5 shrink-0"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-purple-600" />
+                  <span>بدء بناء الهوية والحملة الإعلانية من المصادر</span>
+                </button>
+              </div>
             )}
           </div>
-        </div>
-
+        )}
       </div>
 
-      {/* 3. Full Artifact Preview Modal */}
+      {/* ========================================================= */}
+      {/* 3. Full Artifact Preview Modal (Code, Palette, Video, Audio) */}
+      {/* ========================================================= */}
       {selectedArtifactPreview && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl w-full max-w-5xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
-            
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6" dir="rtl">
+          <div className="bg-white dark:bg-gray-900 rounded-3xl border border-gray-200 dark:border-gray-800 w-full max-w-5xl h-[90vh] flex flex-col overflow-hidden shadow-2xl">
             {/* Modal Header */}
-            <div className="p-4 px-6 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-xl bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-300 flex items-center justify-center">
-                  {selectedArtifactPreview.type === 'code_project' ? <Code2 className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </div>
-                <div>
-                  <h3 className="text-sm font-extrabold text-gray-900 dark:text-white">{selectedArtifactPreview.title}</h3>
-                  <span className="text-[10px] text-gray-400 font-mono">ID: {selectedArtifactPreview.id}</span>
-                </div>
+            <div className="p-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
+              <div className="flex items-center gap-2 min-w-0">
+                <Sparkles className="w-4 h-4 text-purple-600" />
+                <h3 className="font-extrabold text-sm sm:text-base text-gray-900 dark:text-white truncate">
+                  {selectedArtifactPreview.title}
+                </h3>
               </div>
-
               <div className="flex items-center gap-2">
-                {selectedArtifactPreview.type === 'code_project' && (
-                  <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-800 p-1 rounded-xl">
-                    <button
-                      onClick={() => setSelectedCodeTab('preview')}
-                      className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
-                        selectedCodeTab === 'preview' ? 'bg-purple-600 text-white shadow-sm' : 'text-gray-600 dark:text-gray-400'
-                      }`}
-                    >
-                      <MonitorPlay className="w-3.5 h-3.5 inline ml-1" />
-                      المعاينة التفاعلية
-                    </button>
-                    <button
-                      onClick={() => setSelectedCodeTab('code')}
-                      className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
-                        selectedCodeTab === 'code' ? 'bg-purple-600 text-white shadow-sm' : 'text-gray-600 dark:text-gray-400'
-                      }`}
-                    >
-                      <FileCode className="w-3.5 h-3.5 inline ml-1" />
-                      الأكواد والمحرر
-                    </button>
-                  </div>
-                )}
-
                 {selectedArtifactPreview.type === 'code_project' && (
                   <button
                     onClick={() => handleDownloadZip(selectedArtifactPreview)}
-                    className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition cursor-pointer"
+                    className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition"
                   >
-                    <Archive className="w-3.5 h-3.5" />
-                    تحميل حزمة ZIP
+                    <Download className="w-3.5 h-3.5" />
+                    <span>تحميل ZIP</span>
                   </button>
                 )}
-
                 <button
                   onClick={() => setSelectedArtifactPreview(null)}
-                  className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl text-gray-400 hover:text-gray-600 transition"
+                  className="p-1.5 text-gray-400 hover:text-gray-700 dark:hover:text-white rounded-xl transition"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -1136,181 +1524,111 @@ export default function NajeAgent() {
             </div>
 
             {/* Modal Body */}
-            <div className="flex-1 overflow-y-auto p-6 flex flex-col min-h-0">
-              
-              {/* Fullstack Code Project Preview (Live Iframe vs Multi-File Code Pane) */}
+            <div className="flex-1 overflow-auto p-4 min-h-0">
               {selectedArtifactPreview.type === 'code_project' && (
-                selectedCodeTab === 'preview' ? (
-                  <div className="flex-1 h-[550px] rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden bg-white">
-                    <iframe
-                      srcDoc={selectedArtifactPreview.data?.previewHtml || selectedArtifactPreview.files?.find(f => f.path === 'index.html')?.content || '<div class="p-8 font-sans">تطبيق الويب جاهز للمعاينة</div>'}
-                      className="w-full h-full border-none"
-                      title="Live Code Preview"
-                      sandbox="allow-scripts"
-                    />
+                <div className="h-full flex flex-col">
+                  <div className="flex items-center gap-2 mb-3 border-b border-gray-200 dark:border-gray-800 pb-2">
+                    <button
+                      onClick={() => setSelectedCodeTab('preview')}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold ${selectedCodeTab === 'preview' ? 'bg-purple-600 text-white' : 'text-gray-500'}`}
+                    >
+                      معاينة حية
+                    </button>
+                    <button
+                      onClick={() => setSelectedCodeTab('code')}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold ${selectedCodeTab === 'code' ? 'bg-purple-600 text-white' : 'text-gray-500'}`}
+                    >
+                      استعراض الأكواد ({selectedArtifactPreview.files?.length || 0})
+                    </button>
                   </div>
-                ) : (
-                  <div className="flex-1 flex min-h-[500px] border border-gray-200 dark:border-gray-800 rounded-2xl overflow-hidden bg-gray-950 text-gray-200 font-mono text-xs">
-                    {/* Files List */}
-                    <div className="w-64 border-l border-gray-800 bg-gray-900/80 p-3 space-y-1 overflow-y-auto">
-                      <div className="flex items-center justify-between px-2 py-1 mb-1">
-                        <span className="text-[10px] font-extrabold uppercase text-gray-400">ملفات المشروع</span>
-                        <span className="text-[9px] bg-purple-900/50 text-purple-300 px-1.5 py-0.5 rounded font-mono">
-                          {selectedArtifactPreview.files?.length || 0} ملفاً
-                        </span>
-                      </div>
-                      {(selectedArtifactPreview.files || []).map((file, fIdx) => (
-                        <button
-                          key={fIdx}
-                          onClick={() => setActiveFileIndex(fIdx)}
-                          className={`w-full text-right px-2.5 py-2 rounded-xl flex items-center justify-between gap-2 truncate transition-colors ${
-                            activeFileIndex === fIdx ? 'bg-purple-900/40 text-purple-300 border border-purple-800/60 shadow-sm' : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800/50'
-                          }`}
-                        >
-                          <div className="flex items-center gap-2 truncate min-w-0">
-                            <FileCode className="w-3.5 h-3.5 shrink-0 text-indigo-400" />
-                            <span className="truncate text-xs font-mono" dir="ltr">{file.path}</span>
-                          </div>
-                          <span className="text-[9px] font-mono text-gray-500 uppercase px-1 rounded bg-gray-950/60 shrink-0">
-                            {file.language || 'txt'}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
 
-                    {/* Active File Editor/Viewer powered by NajeCodePane */}
-                    <div className="flex-1 flex flex-col min-w-0 bg-gray-950">
-                      <NajeCodePane
-                        code={selectedArtifactPreview.files?.[activeFileIndex]?.content || selectedArtifactPreview.data?.previewHtml || ''}
-                        language={selectedArtifactPreview.files?.[activeFileIndex]?.language || 'typescript'}
-                        fileName={selectedArtifactPreview.files?.[activeFileIndex]?.path || 'index.html'}
-                        title={selectedArtifactPreview.files?.[activeFileIndex]?.path || 'الملف المصدري'}
+                  {selectedCodeTab === 'preview' ? (
+                    <div className="flex-1 bg-white rounded-xl overflow-hidden border border-gray-200 dark:border-gray-800">
+                      <iframe
+                        srcDoc={selectedArtifactPreview.data?.previewHtml || sanitizeHtmlContent(selectedArtifactPreview.files?.find(f => f.path.endsWith('.html'))?.content || '')}
+                        className="w-full h-full border-0"
+                        title="Preview"
+                        sandbox="allow-scripts"
                       />
                     </div>
-                  </div>
-                )
-              )}
-
-              {/* Text & Web Grounding Live Search Citations Preview */}
-              {(selectedArtifactPreview.type === 'text' || selectedArtifactPreview.type === 'grounding_search') && (
-                <div className="space-y-6 max-w-3xl mx-auto p-4">
-                  <div className="p-6 rounded-2xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm space-y-4">
-                    <div className="flex items-center gap-2 pb-3 border-b border-gray-200 dark:border-gray-700">
-                      <Zap className="w-5 h-5 text-amber-500" />
-                      <h3 className="text-sm font-extrabold text-gray-900 dark:text-white">نتائج وتوصيات أبحاث السوق المباشرة</h3>
-                    </div>
-                    <div className="text-xs text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">
-                      {selectedArtifactPreview.data?.analysis || selectedArtifactPreview.data?.text || ''}
-                    </div>
-                  </div>
-
-                  {/* Google Search Live Citations Sources */}
-                  {(selectedArtifactPreview.sources || selectedArtifactPreview.data?.sources) && (
-                    <div className="p-5 rounded-2xl bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/40 space-y-3">
-                      <div className="flex items-center gap-2 text-xs font-extrabold text-indigo-900 dark:text-indigo-300">
-                        <ExternalLink className="w-4 h-4 text-indigo-600" />
-                        <span>مصادر وتوثيقات Google Search الحية (Live Verified Citations):</span>
-                      </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                        {(selectedArtifactPreview.sources || selectedArtifactPreview.data?.sources || []).map((source: any, sIdx: number) => (
-                          <a
-                            key={sIdx}
-                            href={source.uri}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="p-3 rounded-xl bg-white dark:bg-gray-900 border border-indigo-200/60 dark:border-indigo-800/50 hover:border-indigo-500 flex items-center justify-between text-xs font-semibold text-gray-900 dark:text-gray-200 hover:text-indigo-600 transition shadow-xs group"
+                  ) : (
+                    <div className="flex-1 flex min-h-0 overflow-hidden border border-gray-200 dark:border-gray-800 rounded-xl">
+                      <div className="w-56 border-l border-gray-200 dark:border-gray-800 overflow-y-auto p-2 space-y-1">
+                        {selectedArtifactPreview.files?.map((f, fIdx) => (
+                          <button
+                            key={fIdx}
+                            onClick={() => setActiveFileIndex(fIdx)}
+                            className={`w-full text-right px-2.5 py-1.5 rounded-lg text-xs font-mono truncate block ${activeFileIndex === fIdx ? 'bg-purple-600 text-white' : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300'}`}
+                            dir="ltr"
                           >
-                            <span className="truncate pr-2">{source.title || 'رابط المصدر المعتمد'}</span>
-                            <ArrowUpRight className="w-3.5 h-3.5 text-gray-400 group-hover:text-indigo-600 shrink-0" />
-                          </a>
+                            {f.path}
+                          </button>
                         ))}
                       </div>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Image Preview */}
-              {selectedArtifactPreview.type === 'image' && (
-                <div className="flex flex-col items-center justify-center p-6 space-y-4">
-                  <div className="max-h-[500px] rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-800 shadow-lg">
-                    <img src={selectedArtifactPreview.previewUrl || selectedArtifactPreview.url} alt={selectedArtifactPreview.title} className="w-full h-full object-contain" />
-                  </div>
-                  {selectedArtifactPreview.data?.promptUsed && (
-                    <div className="w-full max-w-xl p-3 bg-gray-50 dark:bg-gray-800 rounded-xl text-xs text-gray-600 dark:text-gray-300 font-mono">
-                      <span className="font-bold block text-gray-900 dark:text-white mb-1">Prompt Used:</span>
-                      {selectedArtifactPreview.data.promptUsed}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Audio Voiceover Preview */}
-              {selectedArtifactPreview.type === 'audio' && (
-                <div className="p-8 flex flex-col items-center justify-center space-y-6 max-w-lg mx-auto">
-                  <div className="w-16 h-16 rounded-3xl bg-emerald-500/10 flex items-center justify-center text-emerald-600">
-                    <Volume2 className="w-8 h-8" />
-                  </div>
-                  <div className="w-full bg-emerald-50/50 dark:bg-emerald-950/20 p-4 rounded-2xl border border-emerald-100 dark:border-emerald-900/40 text-center space-y-2">
-                    <p className="text-xs text-emerald-800 dark:text-emerald-200 font-medium italic">
-                      "{selectedArtifactPreview.data?.narrationText}"
-                    </p>
-                    <span className="text-[10px] text-gray-400 block">الصوت: {selectedArtifactPreview.data?.voice || 'Fenrir'}</span>
-                  </div>
-                  {selectedArtifactPreview.url && (
-                    <audio controls className="w-full" src={selectedArtifactPreview.url} />
-                  )}
-                </div>
-              )}
-
-              {/* PDF Document Chapters Reader */}
-              {selectedArtifactPreview.type === 'pdf' && (
-                <div className="space-y-4 max-w-2xl mx-auto p-4">
-                  <div className="text-center pb-4 border-b border-gray-200 dark:border-gray-800">
-                    <h2 className="text-lg font-extrabold text-gray-900 dark:text-white">{selectedArtifactPreview.data?.docTitle}</h2>
-                    {selectedArtifactPreview.data?.subtitle && (
-                      <p className="text-xs text-gray-500 mt-1">{selectedArtifactPreview.data.subtitle}</p>
-                    )}
-                  </div>
-                  <div className="space-y-6">
-                    {selectedArtifactPreview.data?.chapters?.map((chap: any, idx: number) => (
-                      <div key={idx} className="p-4 rounded-2xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 space-y-2">
-                        <h4 className="text-xs font-bold text-purple-600 dark:text-purple-400">{chap.chapterTitle}</h4>
-                        <div 
-                          className="text-xs leading-relaxed text-gray-700 dark:text-gray-300 space-y-2"
-                          dangerouslySetInnerHTML={{ __html: sanitizeHtmlContent(chap.contentHtml) }} 
-                        />
+                      <div className="flex-1 overflow-auto bg-gray-950 p-4 text-xs font-mono text-gray-200" dir="ltr">
+                        <pre>{selectedArtifactPreview.files?.[activeFileIndex]?.content}</pre>
                       </div>
-                    ))}
-                  </div>
+                    </div>
+                  )}
                 </div>
               )}
 
-              {/* Brand Palette */}
+              {selectedArtifactPreview.type === 'image' && selectedArtifactPreview.url && (
+                <div className="h-full flex items-center justify-center p-4">
+                  <img src={selectedArtifactPreview.url} alt={selectedArtifactPreview.title} className="max-h-full max-w-full rounded-2xl shadow-lg object-contain" />
+                </div>
+              )}
+
+              {selectedArtifactPreview.type === 'video' && selectedArtifactPreview.url && (
+                <div className="h-full flex items-center justify-center p-4 bg-black rounded-2xl">
+                  <video src={selectedArtifactPreview.url} controls className="max-h-full max-w-full rounded-xl" autoPlay />
+                </div>
+              )}
+
               {selectedArtifactPreview.type === 'brand_palette' && (
-                <div className="space-y-6 max-w-xl mx-auto p-4">
-                  <div className="text-center">
-                    <h2 className="text-base font-extrabold text-gray-900 dark:text-white">{selectedArtifactPreview.data?.brandName}</h2>
-                    <p className="text-xs text-gray-500 mt-1">{selectedArtifactPreview.data?.vision}</p>
-                  </div>
-                  <div className="grid grid-cols-3 gap-3">
-                    {selectedArtifactPreview.data?.colorPalette?.map((col: any, idx: number) => (
-                      <div key={idx} className="p-3 rounded-2xl border border-gray-200 dark:border-gray-800 flex flex-col items-center text-center gap-2">
-                        <div className="w-12 h-12 rounded-xl shadow-inner border border-black/10" style={{ backgroundColor: col.hex }} />
-                        <span className="text-xs font-bold text-gray-900 dark:text-white">{col.name}</span>
-                        <span className="text-[10px] font-mono text-gray-400">{col.hex}</span>
-                        <span className="text-[9px] text-gray-500">{col.usage}</span>
-                      </div>
-                    ))}
-                  </div>
+                <div className="p-6 space-y-6 max-w-2xl mx-auto">
+                  <h4 className="text-sm font-extrabold text-gray-900 dark:text-white">دليل ألوان الهوية البصرية المعتمدة</h4>
+                  {selectedArtifactPreview.data?.palette && (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                      {Object.entries(selectedArtifactPreview.data.palette).map(([k, hex]: any) => (
+                        <div key={k} className="p-3 bg-gray-50 dark:bg-gray-800 rounded-xl space-y-2">
+                          <div className="h-16 rounded-lg shadow-sm" style={{ backgroundColor: hex }} />
+                          <div className="flex justify-between items-center text-xs font-mono">
+                            <span className="text-gray-500">{k}</span>
+                            <span className="font-bold text-gray-900 dark:text-white">{hex}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {selectedArtifactPreview.data?.typography && (
+                    <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-xl text-xs space-y-2">
+                      <span className="font-bold text-gray-900 dark:text-white block">الخطوط والطباعة:</span>
+                      <p className="text-gray-600 dark:text-gray-300">{JSON.stringify(selectedArtifactPreview.data.typography)}</p>
+                    </div>
+                  )}
                 </div>
               )}
 
+              {selectedArtifactPreview.type === 'audio' && selectedArtifactPreview.url && (
+                <div className="h-full flex flex-col items-center justify-center p-8 space-y-4">
+                  <Volume2 className="w-16 h-16 text-emerald-600" />
+                  <audio src={selectedArtifactPreview.url} controls className="w-full max-w-md" />
+                </div>
+              )}
+
+              {selectedArtifactPreview.type === 'pdf' && (
+                <div className="p-6 space-y-4 max-w-3xl mx-auto">
+                  <h4 className="text-sm font-extrabold text-gray-900 dark:text-white">{selectedArtifactPreview.title}</h4>
+                  <div className="p-6 bg-gray-50 dark:bg-gray-800 rounded-2xl whitespace-pre-wrap text-xs sm:text-sm leading-relaxed text-gray-800 dark:text-gray-200">
+                    {selectedArtifactPreview.data?.content || 'محتوى الوثيقة الاستراتيجية...'}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
       )}
-
     </div>
   );
 }

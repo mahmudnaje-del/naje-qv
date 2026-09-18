@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { collection, query, where, getDocs, addDoc, onSnapshot, orderBy, deleteDoc, updateDoc, doc, getCountFromServer } from 'firebase/firestore';
+import { collection, query, where, getDocs, addDoc, onSnapshot, orderBy, deleteDoc, updateDoc, doc, setDoc, getCountFromServer } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAppStore } from '../store';
 import { Project, ChatSession, ProjectClassification, getClassificationLabel } from '../types';
@@ -13,7 +13,7 @@ import najeDocument from '../assets/icons/naje-document.svg';
 import { 
   Plus, Folder, ArrowLeft, Download, FileText, 
   Sparkles, Image as ImageIcon, Film, Star, ExternalLink, Calendar, Compass, X, AlertCircle, Trash2, Pencil
-, ChevronDown, Layout, Mic2, MessageSquare } from 'lucide-react';
+, ChevronDown, Layout, Mic2, MessageSquare, Code2, BookOpen, Bot } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
@@ -135,6 +135,57 @@ export default function Projects() {
   // Exports
   const [exportingId, setExportingId] = useState<string | null>(null);
   const [exportingPDFId, setExportingPDFId] = useState<string | null>(null);
+  const [directCreatingType, setDirectCreatingType] = useState<string | null>(null);
+
+  const handleDirectCreateChat = async (type: 'text' | 'voice' | 'image' | 'video' | 'ui' | 'najeDeveloper' | 'najeSource' | 'agent') => {
+    if (!user) {
+      toast.error('يرجى تسجيل الدخول أولاً للبدء');
+      return;
+    }
+    setDirectCreatingType(type);
+
+    try {
+      const newChatRef = doc(collection(db, 'chats'));
+      const chatId = newChatRef.id;
+
+      const chatData = {
+        ownerId: user.uid,
+        projectId: activeProjectId || '',
+        type,
+        title: type === 'ui' ? 'مساحة تصميم واجهات جديدة'
+             : type === 'voice' ? 'مساحة تسجيلات صوتية جديدة'
+             : type === 'text' ? 'مساحة تحليل نصوص جديدة'
+             : type === 'image' ? 'مساحة صور جديدة'
+             : type === 'video' ? 'مساحة فيديو جديدة'
+             : type === 'najeDeveloper' ? 'مساحة ناجي المطور'
+             : type === 'najeSource' ? 'مساحة ناجي من مصادرك'
+             : type === 'agent' ? 'مساحة وكيل ناجي'
+             : 'مساحة إبداعية جديدة',
+        createdAt: Date.now()
+      };
+
+      // Write in background
+      setDoc(newChatRef, chatData).catch(err => {
+        console.error("Error creating chat:", err);
+      });
+
+      // Navigate directly based on type without opening any menu
+      if (type === 'najeDeveloper') {
+        navigate(`/naje-developer?chatId=${chatId}${activeProjectId ? `&projectId=${activeProjectId}` : ''}`);
+      } else if (type === 'najeSource') {
+        navigate(`/naje-source?chatId=${chatId}${activeProjectId ? `&projectId=${activeProjectId}` : ''}`);
+      } else if (type === 'agent') {
+        navigate(`/naje-agent-core?chatId=${chatId}${activeProjectId ? `&projectId=${activeProjectId}` : ''}`);
+      } else {
+        navigate(`/chat/${chatId}`);
+      }
+    } catch (err) {
+      console.error('Error creating chat directly:', err);
+      toast.error('حدث خطأ أثناء فتح الدردشة.');
+    } finally {
+      setTimeout(() => setDirectCreatingType(null), 300);
+    }
+  };
 
   // Load projects and chats real-time
   useEffect(() => {
@@ -419,24 +470,34 @@ export default function Projects() {
             </div>
 
             {/* Quick Creation Shortcuts Grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-4 xl:grid-cols-8 gap-3">
               <button
-                onClick={() => setNewChatModalOpen(true)}
-                className="p-3.5 bg-white dark:bg-[#11141c] hover:bg-purple-50/50 dark:hover:bg-[#181d2a] border border-slate-200/80 dark:border-slate-800 rounded-2xl flex flex-col items-center text-center gap-2 transition cursor-pointer group shadow-sm hover:shadow-md hover:border-purple-300 dark:hover:border-purple-800"
+                onClick={() => handleDirectCreateChat('text')}
+                disabled={directCreatingType !== null}
+                className="p-3.5 bg-white dark:bg-[#11141c] hover:bg-purple-50/50 dark:hover:bg-[#181d2a] border border-slate-200/80 dark:border-slate-800 rounded-2xl flex flex-col items-center text-center gap-2 transition cursor-pointer group shadow-sm hover:shadow-md hover:border-purple-300 dark:hover:border-purple-800 active:scale-95 disabled:opacity-60"
+                title="فتح دردشة نصية مباشرة"
               >
                 <div className="w-9 h-9 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center group-hover:scale-110 transition-transform">
-                  <MessageSquare className="w-4 h-4" />
+                  {directCreatingType === 'text' ? <NajeSpinner className="w-4 h-4" /> : <MessageSquare className="w-4 h-4" />}
                 </div>
                 <span className="text-xs font-extrabold text-slate-900 dark:text-white">دردشة نصية</span>
               </button>
 
               <button
-                onClick={() => setNewChatModalOpen(true)}
-                className="p-3.5 bg-white dark:bg-[#11141c] hover:bg-emerald-50/50 dark:hover:bg-[#12221b] border border-emerald-500/30 dark:border-emerald-500/20 rounded-2xl flex flex-col items-center text-center gap-2 transition cursor-pointer group shadow-sm hover:shadow-md hover:border-emerald-400"
+                onClick={() => handleDirectCreateChat('voice')}
+                disabled={directCreatingType !== null}
+                className="p-3.5 bg-white dark:bg-[#11141c] hover:bg-emerald-50/50 dark:hover:bg-[#12221b] border border-emerald-500/30 dark:border-emerald-500/20 rounded-2xl flex flex-col items-center text-center gap-2 transition cursor-pointer group shadow-sm hover:shadow-md hover:border-emerald-400 active:scale-95 disabled:opacity-60"
+                title="فتح دردشة صوتية مباشرة"
               >
                 <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center group-hover:scale-110 transition-transform relative">
-                  <Mic2 className="w-4 h-4" />
-                  <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                  {directCreatingType === 'voice' ? (
+                    <NajeSpinner className="w-4 h-4" />
+                  ) : (
+                    <>
+                      <Mic2 className="w-4 h-4" />
+                      <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                    </>
+                  )}
                 </div>
                 <span className="text-xs font-extrabold text-slate-900 dark:text-white flex items-center gap-1">
                   <span>الدردشة الصوتية</span>
@@ -444,33 +505,75 @@ export default function Projects() {
               </button>
 
               <button
-                onClick={() => setNewChatModalOpen(true)}
-                className="p-3.5 bg-white dark:bg-[#11141c] hover:bg-pink-50/50 dark:hover:bg-[#22131e] border border-slate-200/80 dark:border-slate-800 rounded-2xl flex flex-col items-center text-center gap-2 transition cursor-pointer group shadow-sm hover:shadow-md hover:border-pink-300 dark:hover:border-pink-800"
+                onClick={() => handleDirectCreateChat('image')}
+                disabled={directCreatingType !== null}
+                className="p-3.5 bg-white dark:bg-[#11141c] hover:bg-pink-50/50 dark:hover:bg-[#22131e] border border-slate-200/80 dark:border-slate-800 rounded-2xl flex flex-col items-center text-center gap-2 transition cursor-pointer group shadow-sm hover:shadow-md hover:border-pink-300 dark:hover:border-pink-800 active:scale-95 disabled:opacity-60"
+                title="فتح مساحة توليد صور مباشرة"
               >
                 <div className="w-9 h-9 rounded-xl bg-pink-500/10 text-pink-600 dark:text-pink-400 flex items-center justify-center group-hover:scale-110 transition-transform">
-                  <ImageIcon className="w-4 h-4" />
+                  {directCreatingType === 'image' ? <NajeSpinner className="w-4 h-4" /> : <ImageIcon className="w-4 h-4" />}
                 </div>
                 <span className="text-xs font-extrabold text-slate-900 dark:text-white">توليد صور</span>
               </button>
 
               <button
-                onClick={() => setNewChatModalOpen(true)}
-                className="p-3.5 bg-white dark:bg-[#11141c] hover:bg-sky-50/50 dark:hover:bg-[#111f2c] border border-slate-200/80 dark:border-slate-800 rounded-2xl flex flex-col items-center text-center gap-2 transition cursor-pointer group shadow-sm hover:shadow-md hover:border-sky-300 dark:hover:border-sky-800"
+                onClick={() => handleDirectCreateChat('video')}
+                disabled={directCreatingType !== null}
+                className="p-3.5 bg-white dark:bg-[#11141c] hover:bg-sky-50/50 dark:hover:bg-[#111f2c] border border-slate-200/80 dark:border-slate-800 rounded-2xl flex flex-col items-center text-center gap-2 transition cursor-pointer group shadow-sm hover:shadow-md hover:border-sky-300 dark:hover:border-sky-800 active:scale-95 disabled:opacity-60"
+                title="فتح مساحة توليد فيديو مباشرة"
               >
                 <div className="w-9 h-9 rounded-xl bg-sky-500/10 text-sky-400 flex items-center justify-center group-hover:scale-110 transition-transform">
-                  <Film className="w-4 h-4" />
+                  {directCreatingType === 'video' ? <NajeSpinner className="w-4 h-4" /> : <Film className="w-4 h-4" />}
                 </div>
                 <span className="text-xs font-extrabold text-slate-900 dark:text-white">توليد فيديو</span>
               </button>
 
               <button
-                onClick={() => setNewChatModalOpen(true)}
-                className="p-3.5 bg-white dark:bg-[#11141c] hover:bg-amber-50/50 dark:hover:bg-[#251d12] border border-slate-200/80 dark:border-slate-800 rounded-2xl flex flex-col items-center text-center gap-2 transition cursor-pointer group shadow-sm hover:shadow-md hover:border-amber-300 dark:hover:border-amber-800 col-span-2 sm:col-span-1"
+                onClick={() => handleDirectCreateChat('ui')}
+                disabled={directCreatingType !== null}
+                className="p-3.5 bg-white dark:bg-[#11141c] hover:bg-amber-50/50 dark:hover:bg-[#251d12] border border-slate-200/80 dark:border-slate-800 rounded-2xl flex flex-col items-center text-center gap-2 transition cursor-pointer group shadow-sm hover:shadow-md hover:border-amber-300 dark:hover:border-amber-800 active:scale-95 disabled:opacity-60"
+                title="فتح مساحة تصميم واجهات مباشرة"
               >
                 <div className="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center group-hover:scale-110 transition-transform">
-                  <Layout className="w-4 h-4" />
+                  {directCreatingType === 'ui' ? <NajeSpinner className="w-4 h-4" /> : <Layout className="w-4 h-4" />}
                 </div>
                 <span className="text-xs font-extrabold text-slate-900 dark:text-white">تصميم واجهات</span>
+              </button>
+
+              <button
+                onClick={() => handleDirectCreateChat('najeDeveloper')}
+                disabled={directCreatingType !== null}
+                className="p-3.5 bg-white dark:bg-[#11141c] hover:bg-sky-50/50 dark:hover:bg-[#0c1e33] border border-sky-500/30 dark:border-sky-500/20 rounded-2xl flex flex-col items-center text-center gap-2 transition cursor-pointer group shadow-sm hover:shadow-md hover:border-sky-400 active:scale-95 disabled:opacity-60"
+                title="فتح مساحة ناجي المطور مباشرة"
+              >
+                <div className="w-9 h-9 rounded-xl bg-sky-500/10 text-sky-500 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  {directCreatingType === 'najeDeveloper' ? <NajeSpinner className="w-4 h-4" /> : <Code2 className="w-4 h-4" />}
+                </div>
+                <span className="text-xs font-extrabold text-slate-900 dark:text-white">ناجي المطور</span>
+              </button>
+
+              <button
+                onClick={() => handleDirectCreateChat('najeSource')}
+                disabled={directCreatingType !== null}
+                className="p-3.5 bg-white dark:bg-[#11141c] hover:bg-emerald-50/50 dark:hover:bg-[#0d231a] border border-emerald-500/30 dark:border-emerald-500/20 rounded-2xl flex flex-col items-center text-center gap-2 transition cursor-pointer group shadow-sm hover:shadow-md hover:border-emerald-400 active:scale-95 disabled:opacity-60"
+                title="فتح مساحة ناجي من مصادرك مباشرة"
+              >
+                <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  {directCreatingType === 'najeSource' ? <NajeSpinner className="w-4 h-4" /> : <BookOpen className="w-4 h-4" />}
+                </div>
+                <span className="text-xs font-extrabold text-slate-900 dark:text-white">ناجي من مصادرك</span>
+              </button>
+
+              <button
+                onClick={() => handleDirectCreateChat('agent')}
+                disabled={directCreatingType !== null}
+                className="p-3.5 bg-white dark:bg-[#11141c] hover:bg-purple-50/50 dark:hover:bg-[#1f1330] border border-purple-500/30 dark:border-purple-500/20 rounded-2xl flex flex-col items-center text-center gap-2 transition cursor-pointer group shadow-sm hover:shadow-md hover:border-purple-400 active:scale-95 disabled:opacity-60"
+                title="فتح مساحة وكيل ناجي مباشرة"
+              >
+                <div className="w-9 h-9 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  {directCreatingType === 'agent' ? <NajeSpinner className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
+                </div>
+                <span className="text-xs font-extrabold text-slate-900 dark:text-white">وكيل ناجي</span>
               </button>
             </div>
 
@@ -694,17 +797,126 @@ export default function Projects() {
             )}
 
             {/* Quick action: Create new Chat in this Project */}
-            <div className="bg-gradient-to-r from-purple-100/60 via-indigo-50/70 to-pink-50/50 dark:from-indigo-950/20 dark:to-purple-950/20 border border-purple-200/40 dark:border-indigo-500/10 p-5 rounded-3xl shadow-sm shadow-purple-500/5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div>
-                <h3 className="font-extrabold text-indigo-950 dark:text-white text-xs">هل ترغب بإنشاء محادثة جديدة لهذا المشروع؟</h3>
-                <p className="text-[10px] text-indigo-950/70 dark:text-purple-300 mt-1 font-semibold">ابدأ صياغة صور، فيديوهات، أو نصوص فوراً.</p>
+            <div className="bg-gradient-to-r from-purple-100/60 via-indigo-50/70 to-pink-50/50 dark:from-indigo-950/20 dark:to-purple-950/20 border border-purple-200/40 dark:border-indigo-500/10 p-5 rounded-3xl shadow-sm shadow-purple-500/5 flex flex-col gap-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <h3 className="font-extrabold text-indigo-950 dark:text-white text-xs">إنشاء محادثة جديدة داخل هذا المشروع مباشرة</h3>
+                  <p className="text-[10px] text-indigo-950/70 dark:text-purple-300 mt-1 font-semibold">اختر نوع المحادثة للبدء فوراً وبشكل مباشر:</p>
+                </div>
+                <button 
+                  onClick={() => setNewChatModalOpen(true)}
+                  className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-extrabold px-4 py-2 rounded-xl transition shadow-md shadow-indigo-500/20 cursor-pointer active:scale-95 flex items-center gap-1.5 self-start sm:self-auto"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>عرض جميع الخيارات</span>
+                </button>
               </div>
-              <button 
-                onClick={() => setNewChatModalOpen(true)}
-                className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-extrabold px-5 py-2.5 rounded-xl transition shadow-lg shadow-indigo-500/20 cursor-pointer active:scale-95"
-              >
-                + إنشاء دردشة جديدة بالمشروع
-              </button>
+
+              {/* Direct Shortcut Icons inside active project */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-4 xl:grid-cols-8 gap-2.5 pt-2 border-t border-purple-200/40 dark:border-indigo-500/10">
+                <button
+                  onClick={() => handleDirectCreateChat('text')}
+                  disabled={directCreatingType !== null}
+                  className="p-2.5 bg-white/90 dark:bg-[#11141c] hover:bg-purple-50/50 dark:hover:bg-[#181d2a] border border-slate-200/80 dark:border-slate-800 rounded-xl flex flex-col items-center text-center gap-1.5 transition cursor-pointer group shadow-xs hover:border-purple-300 dark:hover:border-purple-800 active:scale-95 disabled:opacity-60"
+                  title="فتح دردشة نصية مباشرة"
+                >
+                  <div className="w-7 h-7 rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    {directCreatingType === 'text' ? <NajeSpinner className="w-3.5 h-3.5" /> : <MessageSquare className="w-3.5 h-3.5" />}
+                  </div>
+                  <span className="text-[11px] font-bold text-slate-900 dark:text-white">دردشة نصية</span>
+                </button>
+
+                <button
+                  onClick={() => handleDirectCreateChat('voice')}
+                  disabled={directCreatingType !== null}
+                  className="p-2.5 bg-white/90 dark:bg-[#11141c] hover:bg-emerald-50/50 dark:hover:bg-[#12221b] border border-emerald-500/30 dark:border-emerald-500/20 rounded-xl flex flex-col items-center text-center gap-1.5 transition cursor-pointer group shadow-xs hover:border-emerald-400 active:scale-95 disabled:opacity-60"
+                  title="فتح دردشة صوتية مباشرة"
+                >
+                  <div className="w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center group-hover:scale-110 transition-transform relative">
+                    {directCreatingType === 'voice' ? (
+                      <NajeSpinner className="w-3.5 h-3.5" />
+                    ) : (
+                      <>
+                        <Mic2 className="w-3.5 h-3.5" />
+                        <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                      </>
+                    )}
+                  </div>
+                  <span className="text-[11px] font-bold text-slate-900 dark:text-white">صوتية</span>
+                </button>
+
+                <button
+                  onClick={() => handleDirectCreateChat('image')}
+                  disabled={directCreatingType !== null}
+                  className="p-2.5 bg-white/90 dark:bg-[#11141c] hover:bg-pink-50/50 dark:hover:bg-[#22131e] border border-slate-200/80 dark:border-slate-800 rounded-xl flex flex-col items-center text-center gap-1.5 transition cursor-pointer group shadow-xs hover:border-pink-300 dark:hover:border-pink-800 active:scale-95 disabled:opacity-60"
+                  title="فتح مساحة توليد صور مباشرة"
+                >
+                  <div className="w-7 h-7 rounded-lg bg-pink-500/10 text-pink-600 dark:text-pink-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    {directCreatingType === 'image' ? <NajeSpinner className="w-3.5 h-3.5" /> : <ImageIcon className="w-3.5 h-3.5" />}
+                  </div>
+                  <span className="text-[11px] font-bold text-slate-900 dark:text-white">توليد صور</span>
+                </button>
+
+                <button
+                  onClick={() => handleDirectCreateChat('video')}
+                  disabled={directCreatingType !== null}
+                  className="p-2.5 bg-white/90 dark:bg-[#11141c] hover:bg-sky-50/50 dark:hover:bg-[#111f2c] border border-slate-200/80 dark:border-slate-800 rounded-xl flex flex-col items-center text-center gap-1.5 transition cursor-pointer group shadow-xs hover:border-sky-300 dark:hover:border-sky-800 active:scale-95 disabled:opacity-60"
+                  title="فتح مساحة توليد فيديو مباشرة"
+                >
+                  <div className="w-7 h-7 rounded-lg bg-sky-500/10 text-sky-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    {directCreatingType === 'video' ? <NajeSpinner className="w-3.5 h-3.5" /> : <Film className="w-3.5 h-3.5" />}
+                  </div>
+                  <span className="text-[11px] font-bold text-slate-900 dark:text-white">توليد فيديو</span>
+                </button>
+
+                <button
+                  onClick={() => handleDirectCreateChat('ui')}
+                  disabled={directCreatingType !== null}
+                  className="p-2.5 bg-white/90 dark:bg-[#11141c] hover:bg-amber-50/50 dark:hover:bg-[#251d12] border border-slate-200/80 dark:border-slate-800 rounded-xl flex flex-col items-center text-center gap-1.5 transition cursor-pointer group shadow-xs hover:border-amber-300 dark:hover:border-amber-800 active:scale-95 disabled:opacity-60"
+                  title="فتح مساحة تصميم واجهات مباشرة"
+                >
+                  <div className="w-7 h-7 rounded-lg bg-amber-500/10 text-amber-500 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    {directCreatingType === 'ui' ? <NajeSpinner className="w-3.5 h-3.5" /> : <Layout className="w-3.5 h-3.5" />}
+                  </div>
+                  <span className="text-[11px] font-bold text-slate-900 dark:text-white">واجهات</span>
+                </button>
+
+                <button
+                  onClick={() => handleDirectCreateChat('najeDeveloper')}
+                  disabled={directCreatingType !== null}
+                  className="p-2.5 bg-white/90 dark:bg-[#11141c] hover:bg-sky-50/50 dark:hover:bg-[#0c1e33] border border-sky-500/30 dark:border-sky-500/20 rounded-xl flex flex-col items-center text-center gap-1.5 transition cursor-pointer group shadow-xs hover:border-sky-400 active:scale-95 disabled:opacity-60"
+                  title="فتح مساحة ناجي المطور مباشرة"
+                >
+                  <div className="w-7 h-7 rounded-lg bg-sky-500/10 text-sky-500 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    {directCreatingType === 'najeDeveloper' ? <NajeSpinner className="w-3.5 h-3.5" /> : <Code2 className="w-3.5 h-3.5" />}
+                  </div>
+                  <span className="text-[11px] font-bold text-slate-900 dark:text-white">ناجي المطور</span>
+                </button>
+
+                <button
+                  onClick={() => handleDirectCreateChat('najeSource')}
+                  disabled={directCreatingType !== null}
+                  className="p-2.5 bg-white/90 dark:bg-[#11141c] hover:bg-emerald-50/50 dark:hover:bg-[#0d231a] border border-emerald-500/30 dark:border-emerald-500/20 rounded-xl flex flex-col items-center text-center gap-1.5 transition cursor-pointer group shadow-xs hover:border-emerald-400 active:scale-95 disabled:opacity-60"
+                  title="فتح مساحة ناجي من مصادرك مباشرة"
+                >
+                  <div className="w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-500 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    {directCreatingType === 'najeSource' ? <NajeSpinner className="w-3.5 h-3.5" /> : <BookOpen className="w-3.5 h-3.5" />}
+                  </div>
+                  <span className="text-[11px] font-bold text-slate-900 dark:text-white">من مصادرك</span>
+                </button>
+
+                <button
+                  onClick={() => handleDirectCreateChat('agent')}
+                  disabled={directCreatingType !== null}
+                  className="p-2.5 bg-white/90 dark:bg-[#11141c] hover:bg-purple-50/50 dark:hover:bg-[#1f1330] border border-purple-500/30 dark:border-purple-500/20 rounded-xl flex flex-col items-center text-center gap-1.5 transition cursor-pointer group shadow-xs hover:border-purple-400 active:scale-95 disabled:opacity-60"
+                  title="فتح مساحة وكيل ناجي مباشرة"
+                >
+                  <div className="w-7 h-7 rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    {directCreatingType === 'agent' ? <NajeSpinner className="w-3.5 h-3.5" /> : <Bot className="w-3.5 h-3.5" />}
+                  </div>
+                  <span className="text-[11px] font-bold text-slate-900 dark:text-white">وكيل ناجي</span>
+                </button>
+              </div>
             </div>
 
             {/* Chats of this project */}
@@ -716,7 +928,8 @@ export default function Projects() {
                   <img src={najeEmptyChat} alt="لا توجد محادثات" className="w-44 h-32 mx-auto mb-2 object-contain" />
                   <p className="text-xs text-gray-800 dark:text-gray-400 ">لا توجد دردشات مسجلة داخل هذا المشروع حتى الآن.</p>
                   <button 
-                    onClick={() => setNewChatModalOpen(true)}
+                    onClick={() => handleDirectCreateChat('text')}
+                    disabled={directCreatingType !== null}
                     className="text-xs text-indigo-600 dark:text-indigo-400 hover:text-gray-900 dark:hover:text-white font-bold mt-2 cursor-pointer"
                   >
                     أنشئ دردشتك الأولى الآن &larr;
@@ -724,55 +937,79 @@ export default function Projects() {
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {activeProjectChats.map(c => (
-                    <div
-                      key={c.id}
-                      className="flex items-center justify-between p-4 naje-glass-card hover:-translate-y-0.5 duration-300 transition-all group shadow-md shadow-purple-500/[0.02] hover:shadow-lg hover:shadow-purple-500/10"
-                    >
-                      <Link to={`/chat/${c.id}`} className="flex-1 flex items-center gap-3">
-                        <div className="w-8 h-8 bg-purple-500/5 dark:bg-gray-900/80 rounded-lg flex items-center justify-center text-indigo-600 dark:text-indigo-400">
-                          {c.type === 'ui' ? <Layout className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> : c.type === 'image' ? <ImageIcon className="w-4 h-4 text-purple-600 dark:text-purple-400" /> : c.type === 'video' ? <Film className="w-4 h-4 text-pink-600 dark:text-pink-400" /> : <FileText className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />}
-                        </div>
-                        <div>
-                          <h4 className="font-extrabold text-xs text-indigo-950 dark:text-white group-hover:text-purple-600 dark:text-purple-400 transition-colors">{c.title}</h4>
-                          <span className="text-[10px] text-indigo-950/60 dark:text-purple-300/80 mt-1 block font-semibold">
-                            {c.type === 'ui' ? 'توليد واجهات تفاعلية' : c.type === 'text' ? 'دردشة عادية وتحليل نصوص' : c.type === 'image' ? 'توليد صور فنية' : 'توليد فيديو سينمائي'}
-                          </span>
-                        </div>
-                      </Link>
+                  {activeProjectChats.map(c => {
+                    const targetUrl = c.type === 'najeDeveloper'
+                      ? `/naje-developer?chatId=${c.id}`
+                      : c.type === 'najeSource'
+                      ? `/naje-source?chatId=${c.id}`
+                      : c.type === 'agent'
+                      ? `/naje-agent-core?chatId=${c.id}`
+                      : `/chat/${c.id}`;
+                    return (
+                        <div
+                          key={c.id}
+                          className="flex items-center justify-between p-4 naje-glass-card hover:-translate-y-0.5 duration-300 transition-all group shadow-md shadow-purple-500/[0.02] hover:shadow-lg hover:shadow-purple-500/10"
+                        >
+                          <Link to={targetUrl} className="flex-1 flex items-center gap-3">
+                            <div className="w-8 h-8 bg-purple-500/5 dark:bg-gray-900/80 rounded-lg flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+                              {c.type === 'ui' ? <Layout className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> : 
+                               c.type === 'image' ? <ImageIcon className="w-4 h-4 text-purple-600 dark:text-purple-400" /> : 
+                               c.type === 'video' ? <Film className="w-4 h-4 text-pink-600 dark:text-pink-400" /> : 
+                               c.type === 'voice' ? <Mic2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> :
+                               c.type === 'najeDeveloper' ? <Code2 className="w-4 h-4 text-sky-500" /> :
+                               c.type === 'najeSource' ? <BookOpen className="w-4 h-4 text-emerald-500" /> :
+                               c.type === 'agent' ? <Bot className="w-4 h-4 text-purple-600 dark:text-purple-400" /> :
+                               <FileText className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />}
+                            </div>
+                            <div>
+                              <h4 className="font-extrabold text-xs text-indigo-950 dark:text-white group-hover:text-purple-600 dark:text-purple-400 transition-colors">{c.title}</h4>
+                              <span className="text-[10px] text-indigo-950/60 dark:text-purple-300/80 mt-1 block font-semibold">
+                                {c.type === 'ui' ? 'توليد واجهات تفاعلية' : 
+                                 c.type === 'text' ? 'دردشة عادية وتحليل نصوص' : 
+                                 c.type === 'image' ? 'توليد صور فنية' : 
+                                 c.type === 'video' ? 'توليد فيديو سينمائي' :
+                                 c.type === 'voice' ? 'استوديو الصوتيات والتسجيلات' :
+                                 c.type === 'najeDeveloper' ? 'فحص وتطوير أرشيف الكود والبرمجيات' :
+                                 c.type === 'najeSource' ? 'استخلاص الإجابات من المصادر والمستندات' :
+                                 c.type === 'agent' ? 'نظام وكلاء متعددين: هوية بصرية وإعلانات ومشاريع' :
+                                 'دردشة'}
+                              </span>
+                            </div>
+                          </Link>
 
-                      <div className="flex items-center gap-2">
-                        <span className="text-[10px] text-gray-900 dark:text-gray-300 font-sans">{new Date(c.createdAt).toLocaleDateString('ar-EG')}</span>
-                        
-                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button
-                            onClick={(e) => {
-                              e.preventDefault();
-                              const newTitle = prompt('أدخل الاسم الجديد للدردشة:', c.title);
-                              if (newTitle && newTitle.trim() !== '') {
-                                handleRenameChat(c.id, newTitle.trim());
-                              }
-                            }}
-                            className="p-1.5 text-gray-800 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 rounded-lg transition cursor-pointer"
-                            title="تعديل الاسم"
-                          >
-                            <Pencil className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            onClick={(e) => { e.preventDefault(); setChatToDelete(c.id); }}
-                            className="p-1.5 text-gray-800 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-500/10 rounded-lg transition cursor-pointer"
-                            title="حذف الدردشة"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] text-gray-900 dark:text-gray-300 font-sans">{new Date(c.createdAt).toLocaleDateString('ar-EG')}</span>
+                            
+                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <button
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  const newTitle = prompt('أدخل الاسم الجديد للدردشة:', c.title);
+                                  if (newTitle && newTitle.trim() !== '') {
+                                    handleRenameChat(c.id, newTitle.trim());
+                                  }
+                                }}
+                                className="p-1.5 text-gray-800 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 rounded-lg transition cursor-pointer"
+                                title="تعديل الاسم"
+                              >
+                                <Pencil className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                onClick={(e) => { e.preventDefault(); setChatToDelete(c.id); }}
+                                className="p-1.5 text-gray-800 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-500/10 rounded-lg transition cursor-pointer"
+                                title="حذف الدردشة"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                            
+                            <Link to={targetUrl} className="mr-2">
+                              <ArrowLeft className="w-4 h-4 text-gray-900 dark:text-gray-300 group-hover:text-indigo-600 dark:text-indigo-400 group-hover:-translate-x-1 transition-all duration-200 rtl:rotate-180" />
+                            </Link>
+                          </div>
                         </div>
-                        
-                        <Link to={`/chat/${c.id}`} className="mr-2">
-                          <ArrowLeft className="w-4 h-4 text-gray-900 dark:text-gray-300 group-hover:text-indigo-600 dark:text-indigo-400 group-hover:-translate-x-1 transition-all duration-200 rtl:rotate-180" />
-                        </Link>
-                      </div>
-                    </div>
-                  ))}
+                      );
+                    })}
                 </div>
               )}
             </div>
