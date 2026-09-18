@@ -1108,70 +1108,93 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
         let done = false;
         let isFirstChunk = true;
         let msgIdToUpdate = '';
+        let streamBuffer = '';
+        let lastStreamError = '';
+
+        const processSseLine = (line: string) => {
+          if (!line.startsWith('data: ')) return;
+          const dataStr = line.replace('data: ', '').trim();
+          if (dataStr === '[DONE]') { done = true; return; }
+          let parsedChunk: any = null;
+          try {
+            parsedChunk = JSON.parse(dataStr);
+          } catch (e: any) {
+            console.error('Failed to parse stream chunk', dataStr, e);
+            return;
+          }
+
+          if (parsedChunk?.error) {
+            lastStreamError = parsedChunk.error;
+            throw new Error(parsedChunk.error);
+          }
+
+          if (parsedChunk.replaceContent) {
+            assistantContent = parsedChunk.replaceContent;
+            if (msgIdToUpdate) {
+              updateDoc(doc(db, 'messages', msgIdToUpdate), { content: assistantContent })
+                .catch(e => console.error('Failed to update message:', e));
+            }
+          } else if (parsedChunk.text) {
+            assistantContent += parsedChunk.text;
+            if (isFirstChunk) {
+              const docRef = doc(collection(db, 'messages'));
+              msgIdToUpdate = docRef.id;
+              isFirstChunk = false;
+              setDoc(docRef, stripUndefined({
+                ownerId: user?.uid, chatId, role: 'assistant', content: assistantContent, createdAt: Date.now()
+              })).catch(e => console.error('Failed to save message to db:', e));
+            } else if (msgIdToUpdate) {
+              updateDoc(doc(db, 'messages', msgIdToUpdate), { content: assistantContent })
+                .catch(e => console.error('Failed to update message:', e));
+            }
+          }
+          if (parsedChunk.searchSources && Array.isArray(parsedChunk.searchSources) && parsedChunk.searchSources.length > 0) {
+            if (msgIdToUpdate) {
+              updateDoc(doc(db, 'messages', msgIdToUpdate), { searchSources: parsedChunk.searchSources })
+                .catch(e => console.error('Failed to update searchSources:', e));
+            }
+          }
+          if (parsedChunk.triggerDocGeneration) {
+            triggerDocGeneration = parsedChunk.triggerDocGeneration;
+            triggerPrompt = parsedChunk.triggerPrompt || finalPrompt;
+            triggerEstimatedCount = parsedChunk.estimatedCount || 5;
+          }
+          if (parsedChunk.newBalance !== undefined) {
+            updateBalance(parsedChunk.newBalance);
+          }
+        };
 
         while (reader && !done) {
           const { value, done: doneReading } = await reader.read();
-          done = doneReading;
+          if (doneReading) {
+            done = true;
+          }
           if (value) {
-            const chunkValue = decoder.decode(value, { stream: true });
-            const lines = chunkValue.split('\n\n');
+            streamBuffer += decoder.decode(value, { stream: !doneReading });
+            const lines = streamBuffer.split('\n\n');
+            streamBuffer = lines.pop() || '';
             for (const line of lines) {
-              if (line.startsWith('data: ')) {
-                const dataStr = line.replace('data: ', '');
-                if (dataStr === '[DONE]') { done = true; break; }
-                let parsedChunk: any = null;
-                try {
-                  parsedChunk = JSON.parse(dataStr);
-                } catch (e: any) {
-                  console.error('Failed to parse stream chunk', dataStr, e);
-                  continue;
-                }
-
-                if (parsedChunk?.error) {
-                  throw new Error(parsedChunk.error);
-                }
-
-                if (parsedChunk.replaceContent) {
-                  assistantContent = parsedChunk.replaceContent;
-                  if (msgIdToUpdate) {
-                    updateDoc(doc(db, 'messages', msgIdToUpdate), { content: assistantContent })
-                      .catch(e => console.error('Failed to update message:', e));
-                  }
-                } else if (parsedChunk.text) {
-                  assistantContent += parsedChunk.text;
-                  if (isFirstChunk) {
-                    const docRef = doc(collection(db, 'messages'));
-                    msgIdToUpdate = docRef.id;
-                    isFirstChunk = false;
-                    setDoc(docRef, stripUndefined({
-                      ownerId: user?.uid, chatId, role: 'assistant', content: assistantContent, createdAt: Date.now()
-                    })).catch(e => console.error('Failed to save message to db:', e));
-                  } else if (msgIdToUpdate) {
-                    updateDoc(doc(db, 'messages', msgIdToUpdate), { content: assistantContent })
-                      .catch(e => console.error('Failed to update message:', e));
-                  }
-                }
-                if (parsedChunk.searchSources && Array.isArray(parsedChunk.searchSources) && parsedChunk.searchSources.length > 0) {
-                  if (msgIdToUpdate) {
-                    updateDoc(doc(db, 'messages', msgIdToUpdate), { searchSources: parsedChunk.searchSources })
-                      .catch(e => console.error('Failed to update searchSources:', e));
-                  }
-                }
-                if (parsedChunk.triggerDocGeneration) {
-                  triggerDocGeneration = parsedChunk.triggerDocGeneration;
-                  triggerPrompt = parsedChunk.triggerPrompt || finalPrompt;
-                  triggerEstimatedCount = parsedChunk.estimatedCount || 5;
-                }
-                if (parsedChunk.newBalance !== undefined) {
-                  updateBalance(parsedChunk.newBalance);
-                }
-              }
+              processSseLine(line);
+              if (done) break;
             }
           }
         }
 
+        if (streamBuffer.trim()) {
+          const lines = streamBuffer.split('\n\n');
+          for (const line of lines) {
+            processSseLine(line);
+          }
+        }
+
         if (!assistantContent.trim()) {
-          throw new Error('تعذّر قراءة رد النموذج.');
+          if (triggerDocGeneration) {
+            assistantContent = 'تم تجهيز مسودة المستند للمراجعة والإنشاء.';
+          } else if (lastStreamError) {
+            throw new Error(lastStreamError);
+          } else {
+            throw new Error('تعذّر قراءة رد النموذج.');
+          }
         }
 
         if (chat?.type === 'ui' && assistantContent && user?.uid && chatId) {

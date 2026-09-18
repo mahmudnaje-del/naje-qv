@@ -993,9 +993,9 @@ export default function TextChatPanel({
                  </div>
               )}
 
-              {/* Badges placed on their own row - fitted naturally on a single line with no scrollbar */}
-              <div className="flex items-center justify-between gap-1.5 sm:gap-2 px-2.5 sm:px-3 pt-2 empty:hidden relative z-30 max-w-full flex-nowrap overflow-hidden">
-                <div className="flex items-center gap-1.5 flex-nowrap min-w-0 shrink">
+              {/* Badges placed on their own row - fitted naturally on a single line with smooth scroll */}
+              <div className="flex items-center justify-between gap-1 sm:gap-2 px-2 sm:px-3 pt-1.5 empty:hidden relative z-30 max-w-full overflow-x-auto scrollbar-none pb-0.5">
+                <div className="flex items-center gap-1 sm:gap-1.5 flex-nowrap shrink-0">
                   {/* Text Model Tier Selector */}
                   {chat.type === 'text' && (
                     <NajeModelTierSelector
@@ -1019,14 +1019,14 @@ export default function TextChatPanel({
                   {/* Document Badge */}
                   {chat.type === 'text' && docType !== 'none' && (
                      <div 
-                        className="inline-flex items-center gap-1 sm:gap-1.5 bg-indigo-500/15 border border-indigo-500/25 hover:bg-indigo-500/25 px-2.5 py-1 rounded-xl text-[11px] font-bold text-indigo-600 dark:text-indigo-400 transition-all shadow-sm cursor-pointer whitespace-nowrap shrink-0"
+                        className="inline-flex items-center gap-1 sm:gap-1.5 bg-indigo-500/15 border border-indigo-500/25 hover:bg-indigo-500/25 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-xl text-[10px] sm:text-[11px] font-bold text-indigo-600 dark:text-indigo-400 transition-all shadow-sm cursor-pointer whitespace-nowrap shrink-0"
                         onClick={() => { setShowDocSettings(!showDocSettings); setShowImageSettings(false); setShowVideoSettings(false); }}
                      >
-                        <FileText className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 shrink-0" />
+                        <FileText className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-indigo-600 dark:text-indigo-400 shrink-0" />
                         <span>مستند: {docType === 'pdf_slides' ? 'شرائح PDF' : docType === 'pdf_doc' ? 'مستند PDF' : docType === 'docx' ? 'Word' : 'PowerPoint'} ({(docType === 'pptx' || docType === 'pdf_slides') ? `${slidesCount} شرائح` : `${pagesCount} صفحات (${paperSize.toUpperCase()})`})</span>
-                        <ChevronDown className="w-3 h-3 opacity-70 mr-0.5 shrink-0" />
+                        <ChevronDown className="w-2.5 h-2.5 sm:w-3 sm:h-3 opacity-70 mr-0.5 shrink-0" />
                         <button type="button" onClick={(e) => { e.stopPropagation(); setDocType('none'); }} className="hover:text-gray-900 dark:hover:text-white hover:bg-indigo-900/50 rounded-full p-0.5 transition-colors mr-0.5 shrink-0">
-                           <X className="w-3 h-3" />
+                           <X className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                         </button>
                      </div>
                   )}
@@ -1047,15 +1047,15 @@ export default function TextChatPanel({
                         type="button"
                         onClick={() => { setShowImageSettings(!showImageSettings); setShowDocSettings(false); setShowVideoSettings(false); }}
                         className={cn(
-                          "inline-flex items-center gap-1 sm:gap-1.5 px-2.5 py-1 rounded-xl text-[11px] font-bold transition-all shadow-sm cursor-pointer whitespace-nowrap shrink-0",
+                          "inline-flex items-center gap-1 sm:gap-1.5 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-xl text-[10px] sm:text-[11px] font-bold transition-all shadow-sm cursor-pointer whitespace-nowrap shrink-0",
                           showImageSettings 
                             ? "bg-indigo-600 text-white shadow-indigo-500/20" 
                             : "bg-gray-100/90 dark:bg-gray-800/90 hover:bg-gray-200/90 dark:hover:bg-gray-700/90 border border-gray-300/70 dark:border-gray-700/80 text-gray-700 dark:text-gray-300"
                         )}
                       >
-                        <ImageIcon className="w-3.5 h-3.5 shrink-0 text-indigo-500" />
+                        <ImageIcon className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0 text-indigo-500" />
                         <span>{imagePreset !== 'custom' ? (imagePreset === 'fb_cover' ? 'غلاف FB' : imagePreset === 'fb_post' ? 'منشور FB' : imagePreset === 'ig_square' ? '1:1 IG' : imagePreset === 'ig_portrait' ? '4:5 IG' : imagePreset === 'ig_story' ? '9:16 IG' : 'يوتيوب') : aspectRatio} • {imageQuality.toUpperCase()}</span>
-                        <ChevronDown className={cn("w-3 h-3 opacity-70 mr-0.5 shrink-0 transition-transform", showImageSettings && "rotate-180")} />
+                        <ChevronDown className={cn("w-2.5 h-2.5 sm:w-3 sm:h-3 opacity-70 mr-0.5 shrink-0 transition-transform", showImageSettings && "rotate-180")} />
                       </button>
                     </>
                   )}
@@ -1076,15 +1076,15 @@ export default function TextChatPanel({
                         type="button"
                         onClick={() => { setShowVideoSettings(!showVideoSettings); setShowDocSettings(false); setShowImageSettings(false); setShowVoiceSettings(false); }}
                         className={cn(
-                          "inline-flex items-center gap-1 sm:gap-1.5 px-2.5 py-1 rounded-xl text-[11px] font-bold transition-all shadow-sm cursor-pointer whitespace-nowrap shrink-0",
+                          "inline-flex items-center gap-1 sm:gap-1.5 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-xl text-[10px] sm:text-[11px] font-bold transition-all shadow-sm cursor-pointer whitespace-nowrap shrink-0",
                           showVideoSettings 
                             ? "bg-pink-600 text-white shadow-pink-500/20" 
                             : "bg-gray-100/90 dark:bg-gray-800/90 hover:bg-gray-200/90 dark:hover:bg-gray-700/90 border border-gray-300/70 dark:border-gray-700/80 text-gray-700 dark:text-gray-300"
                         )}
                       >
-                        <Film className="w-3.5 h-3.5 shrink-0 text-pink-500" />
+                        <Film className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0 text-pink-500" />
                         <span>{(aspectRatio === '9:16' ? '9:16' : '16:9')} • {videoResolution} • {videoDuration} ث</span>
-                        <ChevronDown className={cn("w-3 h-3 opacity-70 mr-0.5 shrink-0 transition-transform", showVideoSettings && "rotate-180")} />
+                        <ChevronDown className={cn("w-2.5 h-2.5 sm:w-3 sm:h-3 opacity-70 mr-0.5 shrink-0 transition-transform", showVideoSettings && "rotate-180")} />
                       </button>
                     </>
                   )}
@@ -1092,21 +1092,21 @@ export default function TextChatPanel({
                   {/* Voice Studio Model Badge */}
                   {chat.type === 'voice' && (
                      <div 
-                        className="inline-flex items-center gap-1 sm:gap-1.5 bg-emerald-500/15 border border-emerald-500/25 hover:bg-emerald-500/25 px-2.5 py-1 rounded-xl text-[11px] font-bold text-emerald-600 dark:text-emerald-400 shadow-sm cursor-pointer transition-colors whitespace-nowrap shrink-0"
+                        className="inline-flex items-center gap-1 sm:gap-1.5 bg-emerald-500/15 border border-emerald-500/25 hover:bg-emerald-500/25 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-xl text-[10px] sm:text-[11px] font-bold text-emerald-600 dark:text-emerald-400 shadow-sm cursor-pointer transition-colors whitespace-nowrap shrink-0"
                         onClick={() => { setShowVoiceSettings(!showVoiceSettings); setShowDocSettings(false); setShowImageSettings(false); setShowVideoSettings(false); }}
                      >
-                        <Mic2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                        <Mic2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-emerald-500 shrink-0" />
                         <span>Naje Voice {voiceTier === 'pro' ? 'Pro' : 'Core'} ({voiceMode === 'single' ? VOICES.find(v => v.id === selectedVoice)?.name : `${speaker1Name || 'المتحدث 1'} & ${speaker2Name || 'المتحدث 2'}`})</span>
-                        <ChevronDown className="w-3 h-3 opacity-70 mr-0.5 shrink-0" />
+                        <ChevronDown className="w-2.5 h-2.5 sm:w-3 sm:h-3 opacity-70 mr-0.5 shrink-0" />
                      </div>
                   )}
                 </div>
 
                 {/* Cost Indicator Badge placed on the exact same row */}
                 {getCalculatedCost() > 0 && (
-                  <div className="inline-flex items-center gap-1 bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-500/15 px-2.5 py-1 rounded-xl text-[11px] text-indigo-600 dark:text-indigo-400 font-bold tracking-tight shadow-sm ms-auto whitespace-nowrap shrink-0">
-                    <Sparkles className="w-3 h-3 text-indigo-600 dark:text-indigo-400 flex-shrink-0" />
-                    <span>تكلفة الطلب: {getCalculatedCost()} نقاط</span>
+                  <div className="inline-flex items-center gap-1 bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-500/15 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-xl text-[10px] sm:text-[11px] text-indigo-600 dark:text-indigo-400 font-bold tracking-tight shadow-sm ms-auto whitespace-nowrap shrink-0">
+                    <Sparkles className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-indigo-600 dark:text-indigo-400 flex-shrink-0" />
+                    <span><span className="hidden xs:inline sm:inline">تكلفة الطلب: </span>{getCalculatedCost()} نقاط</span>
                   </div>
                 )}
               </div>
@@ -1160,20 +1160,20 @@ export default function TextChatPanel({
               )}
 
               {/* F. Primary Message Input Bar with Integrated Controls */}
-              <div className="relative flex items-center gap-1 sm:gap-2 p-1.5 sm:p-2 bg-transparent">
+              <div className="relative flex items-center gap-1 sm:gap-1.5 p-1 sm:p-1.5 bg-transparent">
                 
                 {/* Left Controls inside Input Box - Grouped closely */}
-                <div className="flex items-center gap-0.5 sm:gap-1 pr-0.5 sm:pr-1 flex-shrink-0">
+                <div className="flex items-center gap-0.5 sm:gap-1 flex-shrink-0">
                   
                   {/* Brand Kit Studio Button */}
                   {(chat.type === 'design' || chat.type === 'image') && (
                     <button 
                       type="button" 
                       onClick={() => setIsBrandKitModalOpen(true)} 
-                      className="p-1.5 sm:p-2 rounded-xl transition flex items-center justify-center cursor-pointer bg-amber-500/10 border border-amber-500/30 text-amber-500 hover:bg-amber-500/20"
+                      className="w-7 h-7 sm:w-8.5 sm:h-8.5 rounded-lg sm:rounded-xl transition flex items-center justify-center cursor-pointer bg-amber-500/10 border border-amber-500/30 text-amber-500 hover:bg-amber-500/20 active:scale-95 shrink-0"
                       title="نموذج تصميم الهوية والشعار (Brand Kit Studio)"
                     >
-                      <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" />
+                      <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                     </button>
                   )}
 
@@ -1183,10 +1183,10 @@ export default function TextChatPanel({
                       <button 
                         type="button" 
                         onClick={() => setShowInfographicModal(true)} 
-                        className="p-1.5 sm:p-2 rounded-xl transition flex items-center justify-center cursor-pointer text-gray-800 dark:text-gray-400 hover:text-amber-500 hover:bg-amber-500/10"
+                        className="w-7 h-7 sm:w-8.5 sm:h-8.5 rounded-lg sm:rounded-xl transition flex items-center justify-center cursor-pointer text-gray-800 dark:text-gray-400 hover:text-amber-500 hover:bg-amber-500/10 active:scale-95 shrink-0"
                         title="استوديو الإنفوجرافيك — «المصمم» (عرض مرئي للبيانات والمقارنات)"
                       >
-                        <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5 text-amber-500" />
+                        <BarChart3 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-500" />
                       </button>
                     </>
                   )}
@@ -1197,14 +1197,14 @@ export default function TextChatPanel({
                       type="button" 
                       onClick={() => { setShowImageSettings(!showImageSettings); setShowDocSettings(false); setShowVideoSettings(false); }} 
                       className={cn(
-                        "p-1.5 sm:p-2 rounded-xl transition flex items-center justify-center cursor-pointer",
+                        "w-7 h-7 sm:w-8.5 sm:h-8.5 rounded-lg sm:rounded-xl transition flex items-center justify-center cursor-pointer active:scale-95 shrink-0",
                         showImageSettings
                           ? 'bg-indigo-600/10 border border-indigo-400 dark:border-indigo-500/20 text-indigo-600 dark:text-indigo-400' 
                           : 'text-gray-800 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:bg-gray-800/60'
                       )}
                       title="إعدادات الصورة"
                     >
-                      <Sliders className="w-4 h-4 sm:w-5 sm:h-5" />
+                      <Sliders className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                     </button>
                   )}
 
@@ -1214,14 +1214,14 @@ export default function TextChatPanel({
                       type="button" 
                       onClick={() => { setShowVideoSettings(!showVideoSettings); setShowDocSettings(false); setShowImageSettings(false); setShowVoiceSettings(false); }} 
                       className={cn(
-                        "p-1.5 sm:p-2 rounded-xl transition flex items-center justify-center cursor-pointer",
+                        "w-7 h-7 sm:w-8.5 sm:h-8.5 rounded-lg sm:rounded-xl transition flex items-center justify-center cursor-pointer active:scale-95 shrink-0",
                         showVideoSettings
                           ? 'bg-indigo-600/10 border border-indigo-400 dark:border-indigo-500/20 text-indigo-600 dark:text-indigo-400' 
                           : 'text-gray-800 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:bg-gray-800/60'
                       )}
                       title="إعدادات الفيديو"
                     >
-                      <Sliders className="w-4 h-4 sm:w-5 sm:h-5" />
+                      <Sliders className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                     </button>
                   )}
 
@@ -1231,21 +1231,21 @@ export default function TextChatPanel({
                       type="button" 
                       onClick={() => { setShowVoiceSettings(!showVoiceSettings); setShowDocSettings(false); setShowImageSettings(false); setShowVideoSettings(false); }} 
                       className={cn(
-                        "p-1.5 sm:p-2 rounded-xl transition flex items-center justify-center cursor-pointer",
+                        "w-7 h-7 sm:w-8.5 sm:h-8.5 rounded-lg sm:rounded-xl transition flex items-center justify-center cursor-pointer active:scale-95 shrink-0",
                         showVoiceSettings
                           ? 'bg-emerald-600/10 border border-emerald-400 dark:border-emerald-500/20 text-emerald-600 dark:text-emerald-400' 
                           : 'text-gray-800 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:bg-gray-800/60'
                       )}
                       title="إعدادات استوديو الصوت"
                     >
-                      <Sliders className="w-4 h-4 sm:w-5 sm:h-5" />
+                      <Sliders className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                     </button>
                   )}
 
                   {/* Paperclip button */}
                   {chat.type !== 'voice' && (
-                    <label className="cursor-pointer p-1.5 sm:p-2 rounded-xl text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800/60 transition flex items-center justify-center">
-                       <Paperclip className="w-4 h-4 sm:w-5 sm:h-5" />
+                    <label className="cursor-pointer w-7 h-7 sm:w-8.5 sm:h-8.5 rounded-lg sm:rounded-xl text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800/60 transition flex items-center justify-center active:scale-95 shrink-0" title="إرفاق ملف أو صورة">
+                       <Paperclip className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                        <input 
                          type="file" 
                          multiple 
@@ -1261,14 +1261,14 @@ export default function TextChatPanel({
                     type="button"
                     onClick={toggleListening}
                     className={cn(
-                      "p-1.5 sm:p-2 rounded-xl transition flex items-center justify-center cursor-pointer",
+                      "w-7 h-7 sm:w-8.5 sm:h-8.5 rounded-lg sm:rounded-xl transition flex items-center justify-center cursor-pointer active:scale-95 shrink-0",
                       isListening 
                         ? "bg-rose-500 text-white animate-pulse shadow-lg shadow-rose-500/20" 
                         : "text-gray-800 dark:text-gray-400 hover:text-gray-900 dark:text-white hover:bg-gray-100 dark:bg-gray-800/60"
                     )}
                     title={isListening ? "جاري الاستماع... اضغط للإيقاف" : "إملاء صوتي (الدردشة الصوتية)"}
                   >
-                    <Mic className="w-4 h-4 sm:w-5 sm:h-5" />
+                    <Mic className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   </button>
 
                   {/* Google Search Grounding Toggle Button */}
@@ -1277,14 +1277,14 @@ export default function TextChatPanel({
                       type="button"
                       onClick={() => setEnableSearchGrounding(prev => !prev)}
                       className={cn(
-                        "p-1.5 sm:p-2 rounded-xl transition flex items-center justify-center cursor-pointer gap-1.5 text-xs font-bold",
+                        "h-7 sm:h-8.5 px-1.5 sm:px-2 rounded-lg sm:rounded-xl transition flex items-center justify-center cursor-pointer gap-1 text-xs font-bold active:scale-95 shrink-0",
                         enableSearchGrounding 
                           ? "bg-indigo-600 text-white shadow-sm shadow-indigo-500/30" 
                           : "text-gray-800 dark:text-gray-400 hover:text-gray-900 dark:text-white hover:bg-gray-100 dark:bg-gray-800/60"
                       )}
                       title={enableSearchGrounding ? "البحث المباشر مفعل (Google Search Grounding)" : "تفعيل البحث المباشر في جوجل (Google Search)"}
                     >
-                      <Globe className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
+                      <Globe className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
                       <span className="hidden sm:inline text-[11px]">{enableSearchGrounding ? 'بحث مباشر' : 'بحث'}</span>
                     </button>
                   )}
@@ -1315,13 +1315,13 @@ export default function TextChatPanel({
                             ? "اكتب رسالتك هنا..." 
                             : `صف خيالك لـ Naje AI لتوليد ${chat.type === 'image' ? 'الصورة' : 'الفيديو'}...`
                     }
-                    className="w-full bg-transparent border-none py-1.5 sm:py-2.5 text-gray-900 dark:text-white outline-none resize-none min-h-[36px] sm:min-h-[44px] max-h-[80px] sm:max-h-[120px] overflow-y-auto leading-normal px-1 sm:px-2 text-xs sm:text-sm focus:ring-0 transition-[height] duration-150 ease-out scrollbar-none my-auto"
+                    className="w-full bg-transparent border-none py-1 sm:py-2 text-gray-900 dark:text-white outline-none resize-none min-h-[34px] sm:min-h-[40px] max-h-[80px] sm:max-h-[120px] overflow-y-auto leading-normal px-1 sm:px-2 text-xs sm:text-sm focus:ring-0 transition-[height] duration-150 ease-out scrollbar-none my-auto"
                     rows={1}
                   />
                 </div>
                 
                 {/* Right Controls Area with Send button */}
-                <div className="pl-1 flex items-center flex-shrink-0">
+                <div className="flex items-center flex-shrink-0">
                   {loading ? (
                     <button 
                       type="button" 
@@ -1329,26 +1329,26 @@ export default function TextChatPanel({
                         setLoading(false);
                         setIsJobCompleted(true);
                       }}
-                      className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center bg-white dark:bg-gray-900 border border-purple-200/40 dark:border-gray-800 text-black dark:text-white rounded-xl transition shadow-md cursor-pointer relative active:scale-95"
+                      className="w-7.5 h-7.5 sm:w-9 sm:h-9 flex items-center justify-center bg-white dark:bg-gray-900 border border-purple-200/40 dark:border-gray-800 text-black dark:text-white rounded-lg sm:rounded-xl transition shadow-md cursor-pointer relative active:scale-95"
                       title="إيقاف التوليد"
                     >
                       {/* Spinning Arc */}
-                      <div className="absolute inset-1.5 rounded-full border-2 border-transparent border-t-black dark:border-t-white animate-spin" />
+                      <div className="absolute inset-1 rounded-full border-2 border-transparent border-t-black dark:border-t-white animate-spin" />
                       {/* Stop Square */}
-                      <div className="w-2.5 h-2.5 bg-black dark:bg-white rounded-[2px]" />
+                      <div className="w-2 h-2 bg-black dark:bg-white rounded-[2px]" />
                     </button>
                   ) : (
                     <button 
                       type="submit" 
                       disabled={!input.trim() && files.length === 0} 
                       className={cn(
-                        "w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-xl transition shadow-md border cursor-pointer active:scale-95",
+                        "w-7.5 h-7.5 sm:w-9 sm:h-9 flex items-center justify-center rounded-lg sm:rounded-xl transition shadow-md border cursor-pointer active:scale-95",
                         (!input.trim() && files.length === 0)
                           ? "bg-black dark:bg-black text-gray-700 dark:text-gray-800 border-transparent cursor-not-allowed"
                           : "bg-white dark:bg-white text-black dark:text-black border-purple-200/50 dark:border-gray-800 shadow-md"
                       )}
                     >
-                      <ArrowUp className="w-4 h-4 sm:w-5 sm:h-5" strokeWidth={3} />
+                      <ArrowUp className="w-3.5 h-3.5 sm:w-4 sm:h-4" strokeWidth={2.5} />
                     </button>
                   )}
                 </div>

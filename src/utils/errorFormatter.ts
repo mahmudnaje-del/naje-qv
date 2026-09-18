@@ -213,6 +213,32 @@ export function parseAndCategorizeErrorSync(errorStr: string): FormattedError {
     };
   }
 
+  // 5.5 Model Stream Interruption / Read Failure / High Demand
+  if (
+    normalized.includes("تعذّر قراءة رد النموذج") ||
+    normalized.includes("قراءة رد النموذج") ||
+    normalized.includes("تعذّر إنشاء الملف") ||
+    normalized.includes("تعذّر إكمال استجابة النموذج") ||
+    normalized.includes("high demand") ||
+    normalized.includes("spikes in demand") ||
+    normalized.includes("stream ended") ||
+    normalized.includes("empty response")
+  ) {
+    console.error('[Naje Error - Classified as: model_stream_interrupted]', errorStr);
+    return {
+      title: "تعذّر استلام رد النموذج الذكي",
+      emoji: "cpu",
+      icon: "cpu",
+      intro: "نعتذر منك؛ واجه النموذج الذكي ضغطاً مؤقتاً أو حدث انقطاع أثناء تدفق الرد البرمجي.",
+      explanation: "يحدث هذا غالباً عندما تواجه واجهات الذكاء الاصطناعي السحابية ذروة طلب لحظية أو انقطاعاً في حزمة التدفق الحي قبل اكتمال الرد.",
+      solutions: [
+        "الضغط على زر إعادة المحاولة أو إرسال طلبك مرة أخرى.",
+        "تبسيط صياغة السؤال وإرساله في جملة مباشرة وواضحة.",
+        "تحديث الصفحة لتجديد جلسة المعالجة السحابية."
+      ]
+    };
+  }
+
   // 6. General / Unknown Technical Error
   console.error('[Naje Error - Classified as: unclassified]', errorStr);
   return {

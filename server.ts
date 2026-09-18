@@ -8013,20 +8013,47 @@ Return ONLY raw JSON, no markdown code fences.` }] }
             }
           }
 
-          const stream = await ai.models.generateContentStream({
-            model: selectedModelId,
-            contents,
-            config: {
-              systemInstruction: finalSystemInstruction,
-              tools: tools.length > 0 ? tools : undefined,
-              toolConfig: toolConfig,
-              maxOutputTokens: type === 'ui' ? OUTPUT_TOKEN_LIMITS.uiHtml : OUTPUT_TOKEN_LIMITS.chatResponse,
-              thinkingConfig: { thinkingLevel: requestedModelKey === 'lite' ? 'LOW' : requestedModelKey === 'max' ? 'HIGH' : 'MEDIUM' },
-              // Gemini 3.7 rejects deprecated sampling params and non-config fields
-              // (aspectRatio/quality are image-only). Strip them before spreading.
-              ...(() => { const { aspectRatio, quality, temperature, topP, topK, ...rest } = (config || {}); return rest; })()
+          let stream: any = null;
+          let streamModelUsed = selectedModelId;
+          const streamConfig = {
+            systemInstruction: finalSystemInstruction,
+            tools: tools.length > 0 ? tools : undefined,
+            toolConfig: toolConfig,
+            maxOutputTokens: type === 'ui' ? OUTPUT_TOKEN_LIMITS.uiHtml : OUTPUT_TOKEN_LIMITS.chatResponse,
+            thinkingConfig: { thinkingLevel: requestedModelKey === 'lite' ? 'LOW' : requestedModelKey === 'max' ? 'HIGH' : 'MEDIUM' },
+            // Gemini 3.7 rejects deprecated sampling params and non-config fields
+            // (aspectRatio/quality are image-only). Strip them before spreading.
+            ...(() => { const { aspectRatio, quality, temperature, topP, topK, ...rest } = (config || {}); return rest; })()
+          };
+
+          try {
+            stream = await ai.models.generateContentStream({
+              model: selectedModelId,
+              contents,
+              config: streamConfig
+            });
+          } catch (primaryStreamErr: any) {
+            console.warn(`[Stream Generation] Primary model "${selectedModelId}" stream initialization failed:`, primaryStreamErr?.message || primaryStreamErr);
+            const fallbackCandidate = selectedModelId !== 'gemini-3.1-flash-lite' && selectedModelId !== 'gemini-3.5-flash-lite'
+              ? resolveEngineModel(getNajeModel('lite'))
+              : 'gemini-3.6-flash';
+            if (fallbackCandidate && fallbackCandidate !== selectedModelId) {
+              console.log(`[Stream Generation] Retrying stream with fallback model "${fallbackCandidate}"...`);
+              try {
+                stream = await ai.models.generateContentStream({
+                  model: fallbackCandidate,
+                  contents,
+                  config: streamConfig
+                });
+                streamModelUsed = fallbackCandidate;
+              } catch (fallbackStreamErr: any) {
+                console.error(`[Stream Generation] Fallback model "${fallbackCandidate}" also failed:`, fallbackStreamErr?.message || fallbackStreamErr);
+                throw fallbackStreamErr;
+              }
+            } else {
+              throw primaryStreamErr;
             }
-          });
+          }
 
           let fullText = "";
           let functionCalls: any[] = [];
@@ -8034,42 +8061,69 @@ Return ONLY raw JSON, no markdown code fences.` }] }
           let planViolationDetected = false;
           let streamUsageMetadata: any = null;
           const maxOutputBytes = ((pricing.ui?.maxOutputKb || 400) * 1024);
-          for await (const chunk of stream) {
-            if (chunk.usageMetadata) {
-              streamUsageMetadata = chunk.usageMetadata;
-            }
-            if (chunk.functionCalls && chunk.functionCalls.length > 0) {
-              functionCalls.push(...chunk.functionCalls);
-            }
-            const candidate = chunk.candidates?.[0];
-            if (candidate?.groundingMetadata?.groundingChunks) {
-              for (const gChunk of candidate.groundingMetadata.groundingChunks) {
-                if (gChunk.web?.uri) {
-                  const url = gChunk.web.uri;
-                  const title = gChunk.web.title || url;
-                  if (!searchSources.some(s => s.url === url)) {
-                    searchSources.push({ title, url });
+
+          try {
+            for await (const chunk of stream) {
+              if (chunk.usageMetadata) {
+                streamUsageMetadata = chunk.usageMetadata;
+              }
+              if (chunk.functionCalls && chunk.functionCalls.length > 0) {
+                functionCalls.push(...chunk.functionCalls);
+              }
+              const candidate = chunk.candidates?.[0];
+              if (candidate?.groundingMetadata?.groundingChunks) {
+                for (const gChunk of candidate.groundingMetadata.groundingChunks) {
+                  if (gChunk.web?.uri) {
+                    const url = gChunk.web.uri;
+                    const title = gChunk.web.title || url;
+                    if (!searchSources.some(s => s.url === url)) {
+                      searchSources.push({ title, url });
+                    }
                   }
                 }
               }
-            }
-            const chunkText = chunk.text || "";
-            if (chunkText) {
-              fullText += chunkText;
+              const chunkText = chunk.text || "";
+              if (chunkText) {
+                fullText += chunkText;
 
-              // PART 1.1: Per-chunk Plan Mode Violation Check (stop immediately if HTML emitted)
-              if (type === 'ui' && isPlanMode && !planViolationDetected) {
-                if (/<!DOCTYPE html|<html[\s>]/i.test(fullText.slice(0, 300))) {
-                  planViolationDetected = true;
-                  console.warn(`[Plan Mode Violation] Detected HTML mid-stream, aborting generation. uid=${uid}`);
+                // PART 1.1: Per-chunk Plan Mode Violation Check (stop immediately if HTML emitted)
+                if (type === 'ui' && isPlanMode && !planViolationDetected) {
+                  if (/<!DOCTYPE html|<html[\s>]/i.test(fullText.slice(0, 300))) {
+                    planViolationDetected = true;
+                    console.warn(`[Plan Mode Violation] Detected HTML mid-stream, aborting generation. uid=${uid}`);
+                    break;
+                  }
+                }
+
+                res.write(`data: ${JSON.stringify({ text: chunkText })}\n\n`);
+                if (type === 'ui' && fullText.length > maxOutputBytes) {
                   break;
                 }
               }
+            }
+          } catch (streamIterErr: any) {
+            console.warn(`[Stream Chunk Iteration Warning] Stream interrupted mid-flight:`, streamIterErr?.message || streamIterErr);
+          }
 
-              res.write(`data: ${JSON.stringify({ text: chunkText })}\n\n`);
-              if (type === 'ui' && fullText.length > maxOutputBytes) {
-                break;
+          // If stream yielded zero text and no function calls, attempt a non-streaming backup generation
+          if (!fullText && functionCalls.length === 0 && !planViolationDetected) {
+            console.warn(`[Stream Generation] Model "${streamModelUsed}" yielded empty text. Attempting non-streaming backup generation...`);
+            try {
+              const backupModel = resolveEngineModel(getNajeModel('lite'));
+              const backupResp = await ai.models.generateContent({
+                model: backupModel,
+                contents,
+                config: {
+                  systemInstruction: finalSystemInstruction,
+                  maxOutputTokens: OUTPUT_TOKEN_LIMITS.chatResponse
+                }
+              });
+              if (backupResp.text) {
+                fullText = backupResp.text;
+                res.write(`data: ${JSON.stringify({ text: fullText })}\n\n`);
               }
+            } catch (backupErr: any) {
+              console.error("[Stream Generation] Backup generation failed:", backupErr?.message || backupErr);
             }
           }
 
@@ -8150,9 +8204,9 @@ Return the complete updated HTML document with real layout-changing mobile media
             !fullText ? false
             : (typeof fullText === 'string' ? (type === 'ui' ? fullText.length > 200 : fullText.length > 0) : !!fullText);
 
-          if (cost > 0 && !streamProducedArtifact) {
+          if (cost > 0 && !streamProducedArtifact && functionCalls.length === 0) {
             // generation was requested and priced, but nothing came out — do not charge
-            res.write(`data: ${JSON.stringify({ error: 'تعذّر إنشاء الملف. لم يتم خصم أي نقاط.' })}\n\n`);
+            res.write(`data: ${JSON.stringify({ error: 'تعذّر إكمال استجابة النموذج. لم يتم خصم أي نقاط.' })}\n\n`);
             res.end();
             return;
           }
@@ -8232,6 +8286,10 @@ Return the complete updated HTML document with real layout-changing mobile media
             const extractedType = String(docGenCall.args.docType).toLowerCase();
             const summaryPrompt = docGenCall.args.summary || prompt;
             const estimatedCount = Number(docGenCall.args.estimatedPageOrSlideCount) || 5;
+            if (!fullText) {
+              fullText = `لقد قمت بإعداد مسودة لإنشاء مستند (${extractedType.toUpperCase()})، يمكنك تأكيد البدء من الزر أدناه.`;
+              res.write(`data: ${JSON.stringify({ text: fullText })}\n\n`);
+            }
             res.write(`data: ${JSON.stringify({ triggerDocGeneration: extractedType, triggerPrompt: summaryPrompt, estimatedCount })}\n\n`);
           }
 

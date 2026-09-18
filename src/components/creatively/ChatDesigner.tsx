@@ -629,18 +629,21 @@ export function ChatDesigner({
             if (line.trim()) {
               try {
                 const chunk = JSON.parse(line);
+                if (chunk?.error) {
+                  lastStreamError = chunk.error;
+                }
                 if (chunk?.type === 'status') {
                   if (chunk.status === 'generating') {
                     setIsGeneratingMedia(true);
                   }
                 } else if (chunk?.type === 'result') {
                   const data = chunk.data;
-                  if (data.error) {
+                  if (data?.error) {
                     lastStreamError = data.error;
                     const formatted = await formatProfessionalError(new Error(data.error), { chatType: 'image' });
                     addMessage(sessionIdForRequest, { role: 'assistant', content: formatted });
                     hasAssistantReply = true;
-                  } else if (data.imageUrl) {
+                  } else if (data?.imageUrl) {
                     try {
                       await saveDesign(data.imageUrl);
                     } catch (e) {
@@ -650,7 +653,7 @@ export function ChatDesigner({
                     hasAssistantReply = true;
                     onDesignGenerated?.();
                     fetchLocalDesigns();
-                  } else if (data.videoOperationName) {
+                  } else if (data?.videoOperationName) {
                     addMessage(sessionIdForRequest, { 
                       role: 'assistant', 
                       content: data.reply, 
@@ -659,13 +662,21 @@ export function ChatDesigner({
                     hasAssistantReply = true;
                     onDesignGenerated?.();
                   } else {
-                    if (data.reply) hasAssistantReply = true;
-                    addMessage(sessionIdForRequest, { role: 'assistant', content: data.reply });
+                    if (data?.reply) hasAssistantReply = true;
+                    addMessage(sessionIdForRequest, { role: 'assistant', content: data?.reply || '' });
                   }
                 }
               } catch(e) {}
             }
           }
+        }
+
+        if (buffer.trim()) {
+          try {
+            const chunk = JSON.parse(buffer.trim());
+            if (chunk?.error) lastStreamError = chunk.error;
+            if (chunk?.data?.error) lastStreamError = chunk.data.error;
+          } catch (e) {}
         }
       }
 

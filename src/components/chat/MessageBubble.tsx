@@ -348,15 +348,15 @@ export default function MessageBubble({
               type="button"
               onClick={handleCopyMessage}
               className={cn(
-                "p-1.5 rounded-xl transition cursor-pointer active:scale-95 flex items-center gap-1",
+                "p-1 sm:p-1.5 rounded-lg sm:rounded-xl transition cursor-pointer active:scale-95 flex items-center gap-1",
                 copied ? "text-emerald-600 dark:text-emerald-400 bg-emerald-500/10" : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
               )}
               title={copied ? "تم النسخ" : "نسخ النص"}
             >
               {copied ? (
-                <Check className="w-4 h-4 text-emerald-500 stroke-[2.5]" />
+                <Check className="w-3.5 h-3.5 text-emerald-500 stroke-[2.5]" />
               ) : (
-                <Copy className="w-4 h-4" />
+                <Copy className="w-3.5 h-3.5" />
               )}
             </button>
 
@@ -366,25 +366,25 @@ export default function MessageBubble({
                 setActiveHistoryDocId(msg.id);
                 setActiveHistoryContent(msg.content);
               }}
-              className="p-1.5 rounded-xl text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white transition cursor-pointer active:scale-95"
+              className="p-1 sm:p-1.5 rounded-lg sm:rounded-xl text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white transition cursor-pointer active:scale-95"
               title="سجل التغييرات والإصدارات"
             >
-              <HistoryIcon className="w-4 h-4" />
+              <HistoryIcon className="w-3.5 h-3.5" />
             </button>
 
             <button
               type="button"
               onClick={() => handleFavorite(msg.id)}
               className={cn(
-                "p-1.5 rounded-xl transition cursor-pointer active:scale-95",
+                "p-1 sm:p-1.5 rounded-lg sm:rounded-xl transition cursor-pointer active:scale-95",
                 favorites.includes(msg.id) ? "text-amber-500 bg-amber-500/10" : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
               )}
               title={favorites.includes(msg.id) ? "محفوظة" : "حفظ في المفضلة"}
             >
-              <Star className={cn("w-4 h-4", favorites.includes(msg.id) && "fill-current")} />
+              <Star className={cn("w-3.5 h-3.5", favorites.includes(msg.id) && "fill-current")} />
             </button>
 
-            <div className="h-4 w-px bg-gray-200 dark:bg-gray-800 my-auto mx-0.5" />
+            <div className="h-3.5 w-px bg-gray-200 dark:bg-gray-800 my-auto mx-0.5" />
 
             <div className="flex items-center gap-0.5">
               <button
@@ -392,7 +392,7 @@ export default function MessageBubble({
                 onClick={() => openFeedback(msg.id, 'up')}
                 title="مفيد"
                 className={cn(
-                  "p-1.5 rounded-xl transition cursor-pointer active:scale-95",
+                  "p-1 sm:p-1.5 rounded-lg sm:rounded-xl transition cursor-pointer active:scale-95",
                   votedMessages[msg.id] === 'up' ? "text-indigo-600 dark:text-indigo-400 bg-indigo-500/10" : "text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-gray-100 dark:hover:bg-gray-800"
                 )}
               >
@@ -403,7 +403,7 @@ export default function MessageBubble({
                 onClick={() => openFeedback(msg.id, 'down')}
                 title="غير مفيد"
                 className={cn(
-                  "p-1.5 rounded-xl transition cursor-pointer active:scale-95",
+                  "p-1 sm:p-1.5 rounded-lg sm:rounded-xl transition cursor-pointer active:scale-95",
                   votedMessages[msg.id] === 'down' ? "text-rose-500 bg-rose-500/10" : "text-gray-500 hover:text-rose-500 hover:bg-gray-100 dark:hover:bg-gray-800"
                 )}
               >

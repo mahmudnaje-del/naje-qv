@@ -122,7 +122,7 @@ export default function NajeModelTierSelector({
         aria-haspopup="listbox"
         aria-expanded={open}
         className={cn(
-          "group flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[11px] font-bold transition-all cursor-pointer select-none",
+          "group flex items-center gap-1 sm:gap-1.5 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-xl text-[10px] sm:text-[11px] font-bold transition-all cursor-pointer select-none",
           "bg-gray-100/90 dark:bg-gray-800/90 hover:bg-gray-200/90 dark:hover:bg-gray-700/90",
           "border border-gray-300/70 dark:border-gray-700/80 shadow-sm",
           "text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/40",
@@ -130,9 +130,9 @@ export default function NajeModelTierSelector({
           disabled && "opacity-50 cursor-not-allowed pointer-events-none"
         )}
       >
-        <CurrentIcon className={cn("w-3.5 h-3.5 shrink-0 transition-transform group-hover:scale-110", currentTier.accentColor)} />
+        <CurrentIcon className={cn("w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0 transition-transform group-hover:scale-110", currentTier.accentColor)} />
         <span className="truncate whitespace-nowrap">{currentTier.label}</span>
-        <ChevronDown className={cn("w-3 h-3 text-gray-500 transition-transform duration-200 shrink-0", open && "rotate-180 text-indigo-600 dark:text-indigo-400")} />
+        <ChevronDown className={cn("w-2.5 h-2.5 sm:w-3 sm:h-3 text-gray-500 transition-transform duration-200 shrink-0", open && "rotate-180 text-indigo-600 dark:text-indigo-400")} />
       </button>
 
       {/* Pop-up Menu */}
@@ -358,7 +358,7 @@ export function NajeImageModelSelector({
         aria-haspopup="listbox"
         aria-expanded={open}
         className={cn(
-          "group flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[11px] font-bold transition-all cursor-pointer select-none",
+          "group flex items-center gap-1 sm:gap-1.5 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-xl text-[10px] sm:text-[11px] font-bold transition-all cursor-pointer select-none",
           "bg-indigo-500/10 dark:bg-indigo-950/50 hover:bg-indigo-500/20 dark:hover:bg-indigo-900/60",
           "border border-indigo-500/25 dark:border-indigo-500/30 shadow-sm",
           "text-indigo-700 dark:text-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/40",
@@ -366,9 +366,9 @@ export function NajeImageModelSelector({
           disabled && "opacity-50 cursor-not-allowed pointer-events-none"
         )}
       >
-        <CurrentIcon className={cn("w-3.5 h-3.5 shrink-0 transition-transform group-hover:scale-110", currentModel.accentColor)} />
+        <CurrentIcon className={cn("w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0 transition-transform group-hover:scale-110", currentModel.accentColor)} />
         <span className="truncate whitespace-nowrap">{currentModel.label}</span>
-        <ChevronDown className={cn("w-3 h-3 text-indigo-400 transition-transform duration-200 shrink-0", open && "rotate-180 text-indigo-600 dark:text-indigo-300")} />
+        <ChevronDown className={cn("w-2.5 h-2.5 sm:w-3 sm:h-3 text-indigo-400 transition-transform duration-200 shrink-0", open && "rotate-180 text-indigo-600 dark:text-indigo-300")} />
       </button>
 
       {/* Pop-up Menu */}
@@ -552,7 +552,7 @@ export function NajeVideoModelSelector({
         aria-haspopup="listbox"
         aria-expanded={open}
         className={cn(
-          "group flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[11px] font-bold transition-all cursor-pointer select-none",
+          "group flex items-center gap-1 sm:gap-1.5 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-xl text-[10px] sm:text-[11px] font-bold transition-all cursor-pointer select-none",
           "bg-pink-500/10 dark:bg-pink-950/50 hover:bg-pink-500/20 dark:hover:bg-pink-900/60",
           "border border-pink-500/25 dark:border-pink-500/30 shadow-sm",
           "text-pink-700 dark:text-pink-300 focus:outline-none focus:ring-2 focus:ring-pink-500/40",
@@ -560,9 +560,9 @@ export function NajeVideoModelSelector({
           disabled && "opacity-50 cursor-not-allowed pointer-events-none"
         )}
       >
-        <CurrentIcon className={cn("w-3.5 h-3.5 shrink-0 transition-transform group-hover:scale-110", currentModel.accentColor)} />
+        <CurrentIcon className={cn("w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0 transition-transform group-hover:scale-110", currentModel.accentColor)} />
         <span className="truncate whitespace-nowrap">{currentModel.label}</span>
-        <ChevronDown className={cn("w-3 h-3 text-pink-400 transition-transform duration-200 shrink-0", open && "rotate-180 text-pink-600 dark:text-pink-300")} />
+        <ChevronDown className={cn("w-2.5 h-2.5 sm:w-3 sm:h-3 text-pink-400 transition-transform duration-200 shrink-0", open && "rotate-180 text-pink-600 dark:text-pink-300")} />
       </button>
 
       {/* Pop-up Menu */}
