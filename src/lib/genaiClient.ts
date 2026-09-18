@@ -3,11 +3,15 @@ import { GoogleGenAI } from '@google/genai';
 const configProjectId = 'gen-lang-client-0549025293';
 
 const getEnvVar = (name: string): string => {
-  if (typeof process !== 'undefined' && process.env && process.env[name]) {
-    return process.env[name] as string;
-  }
-  if (typeof import.meta !== 'undefined' && (import.meta as any).env) {
-    return (import.meta as any).env[name] || (import.meta as any).env[`VITE_${name}`] || '';
+  try {
+    if (typeof process !== 'undefined' && process.env) {
+      const direct = process.env[name];
+      if (direct) return String(direct);
+      const vite = process.env[`VITE_${name}`];
+      if (vite) return String(vite);
+    }
+  } catch {
+    /* ignore */
   }
   return '';
 };
@@ -27,5 +31,3 @@ export function createGenAIClient(): GoogleGenAI {
   const apiKey = getEnvVar('GEMINI_API_KEY') || getEnvVar('VITE_GEMINI_API_KEY') || '';
   return new GoogleGenAI({ apiKey });
 }
-
-

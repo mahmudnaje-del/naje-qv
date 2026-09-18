@@ -17,6 +17,9 @@ update_*.*
 test.*
 test_*.*
 test-*.*
+.grok/
+artifacts/
+attachments/
 
 # Explicitly ensure production bundle and config are included for Cloud Run
 !dist/
@@ -25,5 +28,3 @@ test-*.*
 !server.js
 !Procfile
 !firebase-applet-config.json
-
-

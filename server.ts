@@ -1,8 +1,7 @@
 import fs from "fs";
 import dns from "dns";
 import http from "http";
-import { URL, fileURLToPath } from "url";
-import { NajeEngine } from './src/lib/naje-engine';
+import { URL } from "url";
 import { pcmToWav, parseSampleRateFromMimeType } from "./src/lib/audioContainer";
 import { generateMaximumCreativity } from "./src/lib/creativeEngine";
 import express from "express";
@@ -11,19 +10,11 @@ import path from "path";
 // Cross-runtime helpers for ESM and CJS bundle execution
 const getAppDirname = () => {
   if (typeof __dirname !== "undefined") return __dirname;
-  try {
-    return path.dirname(fileURLToPath(import.meta.url));
-  } catch {
-    return process.cwd();
-  }
+  return process.cwd();
 };
 const getAppFilename = () => {
   if (typeof __filename !== "undefined") return __filename;
-  try {
-    return fileURLToPath(import.meta.url);
-  } catch {
-    return path.join(process.cwd(), "server.ts");
-  }
+  return path.join(process.cwd(), "server.ts");
 };
 const appDirname = getAppDirname();
 const appFilename = getAppFilename();
@@ -39,18 +30,25 @@ import { FALLBACK_DEFAULTS, SEED_ENDPOINTS, OUTPUT_TOKEN_LIMITS } from './src/li
 import { getNajeModel, resolveEngineModel } from './src/lib/modelEnvConfig';
 import { getAgentToolCost } from './src/lib/agentPricing';
 import { buildPersonaInstruction, criticReviewRequest, getThinkingConfig } from './src/lib/councilOfMinds';
-import ffmpeg from 'fluent-ffmpeg';
-import ffmpegStatic from 'ffmpeg-static';
 import os from 'os';
 import { buildInitialPlan, splitDuration, VideoPlan, ShotPlan } from './src/lib/videoOrchestrator';
 import { unpackSiteZip, buildFileTree, buildCodeContext, WorkspaceFile } from './src/lib/workspaceZip';
 import { calcVoicePointsCost, spokenTextFromVoiceScript } from './src/lib/voicePricing';
 
-
-if (ffmpegStatic) {
-  ffmpeg.setFfmpegPath(ffmpegStatic);
+let ffmpegMod: any = null;
+async function getFfmpeg() {
+  if (ffmpegMod) return ffmpegMod;
+  const ffmpeg = (await import('fluent-ffmpeg')).default;
+  const ffmpegStatic = (await import('ffmpeg-static')).default;
+  if (ffmpegStatic) ffmpeg.setFfmpegPath(ffmpegStatic as string);
+  ffmpegMod = ffmpeg;
+  return ffmpeg;
 }
 
+async function getNajeEngineCtor() {
+  const mod = await import('./src/lib/naje-engine');
+  return mod.NajeEngine;
+}
 
 /** Visible model text only — never use response.text when functionCall parts exist
  *  (the SDK warns and concatenates, which is how empty chat replies leak through). */
@@ -2104,6 +2102,75 @@ async function setDocRest(collectionPath: string, docId: string, dataObj: any, _
   return { id: docId, ...dataObj };
 }
 
+function asNumericBalance(value: any): number | null {
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (typeof value === 'string' && value.trim() !== '') {
+    const n = Number(value);
+    if (Number.isFinite(n)) return n;
+  }
+  return null;
+}
+
+async function grantStarterBalanceIfAbsent(
+  uid: string,
+  token: string,
+  existingDoc: any
+): Promise<{ balance: number; doc: any }> {
+  const existing = asNumericBalance(existingDoc?.balance);
+  if (existing !== null) {
+    inMemoryBalances.set(uid, existing);
+    return { balance: existing, doc: existingDoc };
+  }
+
+  const fieldPresent = existingDoc && Object.prototype.hasOwnProperty.call(existingDoc, 'balance');
+  if (fieldPresent) {
+    const fallback = inMemoryBalances.get(uid);
+    return {
+      balance: typeof fallback === 'number' ? fallback : 0,
+      doc: existingDoc
+    };
+  }
+
+  const starter = 5;
+  if (isDbAdminAvailable) {
+    try {
+      const ref = dbAdmin.collection('users').doc(uid);
+      const granted = await dbAdmin.runTransaction(async (tx: any) => {
+        const snap = await tx.get(ref);
+        if (!snap.exists) return null;
+        const data = snap.data() || {};
+        const cur = asNumericBalance(data.balance);
+        if (cur !== null) return cur;
+        if (Object.prototype.hasOwnProperty.call(data, 'balance')) return 0;
+        tx.set(ref, { balance: starter }, { merge: true });
+        return starter;
+      });
+      if (typeof granted === 'number') {
+        inMemoryBalances.set(uid, granted);
+        return { balance: granted, doc: { ...existingDoc, balance: granted } };
+      }
+    } catch (e: any) {
+      console.warn('[grantStarterBalanceIfAbsent] transaction note:', e?.message || e);
+    }
+  }
+
+  if (token && !isDbAdminAvailable && existingDoc && !Object.prototype.hasOwnProperty.call(existingDoc, 'balance')) {
+    try {
+      await updateDocFieldsRest('users', uid, { balance: starter }, ['balance'], token);
+      inMemoryBalances.set(uid, starter);
+      return { balance: starter, doc: { ...existingDoc, balance: starter } };
+    } catch (e: any) {
+      console.warn('[grantStarterBalanceIfAbsent] REST grant note:', e?.message || e);
+    }
+  }
+
+  const fallback = inMemoryBalances.get(uid);
+  return {
+    balance: typeof fallback === 'number' ? fallback : 0,
+    doc: existingDoc
+  };
+}
+
 async function getUserDocAndBalance(uid: string, token: string, decodedToken?: any): Promise<{ balance: number; doc: any }> {
   const adminEmail = process.env.ADMIN_EMAIL ? process.env.ADMIN_EMAIL.trim().toLowerCase() : '';
   const userEmail = (decodedToken?.email || '').trim().toLowerCase();
@@ -2119,9 +2186,7 @@ async function getUserDocAndBalance(uid: string, token: string, decodedToken?: a
           userDoc.isAdmin = true;
           userDoc.canAddAdmins = true;
         }
-        const bal = typeof userDoc.balance === 'number' ? userDoc.balance : 5;
-        inMemoryBalances.set(uid, bal);
-        return { balance: bal, doc: userDoc };
+        return grantStarterBalanceIfAbsent(uid, token, userDoc);
       }
     } catch (e) {
       // ignore REST error
@@ -2141,9 +2206,7 @@ async function getUserDocAndBalance(uid: string, token: string, decodedToken?: a
           data.isAdmin = true;
           data.canAddAdmins = true;
         }
-        const bal = typeof data?.balance === 'number' ? data.balance : 5;
-        inMemoryBalances.set(uid, bal);
-        return { balance: bal, doc: data };
+        return grantStarterBalanceIfAbsent(uid, token, data);
       }
       confirmedAbsent = true; // read succeeded AND the doc genuinely does not exist
     } catch (e) {
@@ -2152,10 +2215,13 @@ async function getUserDocAndBalance(uid: string, token: string, decodedToken?: a
   }
 
   if (!confirmedAbsent) {
-    // Could not confirm a new user. Return resilient fallback without overwriting database.
-    const fallbackBal = inMemoryBalances.get(uid) ?? 5;
-    inMemoryBalances.set(uid, fallbackBal);
-    return { balance: fallbackBal, doc: { uid, isAdmin: isEnvAdmin, canAddAdmins: isEnvAdmin, balance: fallbackBal } };
+    // Could not confirm a new user. Return display fallback WITHOUT caching 5
+    // into the ledger (that cache was later written back and wiped real balances).
+    const fallbackBal = inMemoryBalances.get(uid);
+    return {
+      balance: typeof fallbackBal === 'number' ? fallbackBal : 0,
+      doc: { uid, isAdmin: isEnvAdmin, canAddAdmins: isEnvAdmin, balance: typeof fallbackBal === 'number' ? fallbackBal : 0 }
+    };
   }
 
   // Genuinely new user: use .create() so a race can never clobber an existing document.
@@ -2181,7 +2247,7 @@ async function getUserDocAndBalance(uid: string, token: string, decodedToken?: a
         const snap2 = await dbAdmin.collection("users").doc(uid).get();
         if (snap2.exists) {
           const d = snap2.data();
-          return { balance: typeof d?.balance === 'number' ? d.balance : 5, doc: d };
+          return grantStarterBalanceIfAbsent(uid, token, d);
         }
       } catch {}
       return { balance: defaultBalance, doc: initialUserData };
@@ -2189,6 +2255,7 @@ async function getUserDocAndBalance(uid: string, token: string, decodedToken?: a
   }
   return { balance: defaultBalance, doc: initialUserData };
 }
+
 
 // Resilient atomic balance mutation.
 // Handles Admin SDK, Firestore REST adapter, and cached in-memory ledger.
@@ -2210,12 +2277,10 @@ async function mutateBalanceAtomic(
       const result = await dbAdmin.runTransaction(async (tx) => {
         const snap = await tx.get(userRef);
         let current: number;
-        if (snap.exists && typeof (snap.data() as any)?.balance === 'number') {
-          current = Number((snap.data() as any).balance);
-        } else if (inMemoryBalances.has(uid)) {
-          current = inMemoryBalances.get(uid)!;
+        if (snap.exists && asNumericBalance((snap.data() as any)?.balance) !== null) {
+          current = asNumericBalance((snap.data() as any).balance)!;
         } else {
-          // Missing user doc/balance and no prior success cached — cannot determine balance
+          // Existing doc with no numeric balance, or missing doc: never invent a starter balance and write it.
           return { ok: false, newBalance: 0, reason: 'ERROR' as const };
         }
 
@@ -2249,17 +2314,11 @@ async function mutateBalanceAtomic(
   if (effectiveToken) {
     try {
       const userDoc = await getDocRest("users", uid, effectiveToken);
-      let current: number | null = null;
-      if (userDoc && typeof userDoc.balance === 'number') {
-        current = userDoc.balance;
-      } else if (inMemoryBalances.has(uid)) {
-        current = inMemoryBalances.get(uid)!;
-      }
-
-      if (current === null) {
-        // Missing user doc/balance and no prior cached balance
+      const restBal = userDoc ? asNumericBalance(userDoc.balance) : null;
+      if (restBal === null) {
         return { ok: false, newBalance: 0, reason: 'ERROR' };
       }
+      let current: number = restBal;
 
       const next = parseFloat((current + delta).toFixed(4));
 
@@ -2611,11 +2670,13 @@ setInterval(() => {
   }
 }, 10 * 60 * 1000);
 
-async function startServer() {
-  const app = express();
+export async function startServer(existingApp?: express.Express) {
+  const app = existingApp || express();
+  const alreadyListening = Boolean(existingApp);
   const activeUserTasks = new Set<string>();
   // PORT MUST BE HARDCODED TO 3000 FOR CLOUD RUN & REVERSE PROXY
   const PORT = 3000;
+
 
   const ALLOWED_ORIGINS = new Set([
     'https://naje-ai.qelvaai.com',
@@ -2660,6 +2721,41 @@ async function startServer() {
   app.get(['/api/health', '/health', '/healthz', '/_ah/health', '/_health', '/ping', '/livez', '/readyz'], (req, res) => {
     res.status(200).json({ status: "ok", timestamp: Date.now() });
   });
+
+  // Bind ports immediately so Studio's 10s health probe succeeds even while
+  // remaining routes are still being registered.
+  let seedExecuted = false;
+  const executeSeeds = () => {
+    if (!seedExecuted) {
+      seedExecuted = true;
+      seedModelEndpointsIfMissing().catch(() => {});
+      seedFormatPresetsIfMissing().catch(() => {});
+    }
+  };
+  const bindPort = (port: number, role: string) => {
+    const srv = http.createServer(app);
+    srv.setTimeout(600000);
+    srv.keepAliveTimeout = 600000;
+    srv.headersTimeout = 601000;
+    srv.on('error', (err: any) => {
+      if (err.code === 'EADDRINUSE') {
+        console.log(`[Port Notice] ${role} port ${port} already bound or in use by proxy.`);
+      } else {
+        console.error(`[Port Error] ${role} listener error on ${port}:`, err?.message || err);
+      }
+    });
+    srv.listen(port, "0.0.0.0", () => {
+      console.log(`[Server] ${role} active on http://0.0.0.0:${port}`);
+    });
+    return srv;
+  };
+  const envPortEarly = process.env.PORT ? parseInt(process.env.PORT, 10) : 8080;
+  const ingressPortEarly = (envPortEarly && !isNaN(envPortEarly)) ? envPortEarly : 8080;
+  if (!alreadyListening) {
+    bindPort(ingressPortEarly, "Cloud Run Ingress");
+    if (ingressPortEarly !== 3000) bindPort(3000, "App Port (3000)");
+  }
+
 
   // Proxy Firebase Auth Handler requests so custom domain (e.g. naje-ai.qelvaai.com) can serve /__/auth/handler and /__/auth/action natively
   app.all(['/__/auth/*', '/__/auth'], async (req, res) => {
@@ -2945,6 +3041,7 @@ async function generateSingleVeoShot(ai: any, params: {
 
 
 async function extractFirstFrameFromFile(videoPath: string, outputPath: string): Promise<Buffer> {
+  const ffmpeg = await getFfmpeg();
   return new Promise((resolve, reject) => {
     ffmpeg(videoPath).seekInput(0).frames(1).output(outputPath)
       .on('end', async () => { try { resolve(await fs.promises.readFile(outputPath)); } catch(e){ reject(e); } })
@@ -3174,6 +3271,7 @@ async function startPromotedJob(jobId: string, uid: string) {
 }
 
 async function extractLastFrameFromFile(videoPath: string, outputPath: string, durationSec: number): Promise<Buffer> {
+  const ffmpeg = await getFfmpeg();
   return new Promise((resolve, reject) => {
     const seekTime = Math.max(0, durationSec - 0.15);
     ffmpeg(videoPath)
@@ -3208,6 +3306,7 @@ async function extractLastFrameFromFile(videoPath: string, outputPath: string, d
 }
 
 async function concatenateVideoFiles(videoPaths: string[], outputPath: string): Promise<string> {
+  const ffmpeg = await getFfmpeg();
   return new Promise((resolve, reject) => {
     const listPath = `${outputPath}.concat.txt`;
     const listContent = videoPaths.map(p => `file '${p.replace(/'/g, "'\\''")}'`).join('\n');
@@ -7257,6 +7356,7 @@ ${speaker2Name}: لا والله، الجو مش صافي وفي تراب.`
           }, token).catch(e => console.error("Firestore job update failed:", e));
         }
 
+        const NajeEngine = await getNajeEngineCtor();
         const naje = new NajeEngine(process.env.GEMINI_API_KEY!);
         // Respect the user's requested size with hard ceilings: Presentation/slides max MAX_SLIDES, Word/PDF max MAX_PAGES.
         const requestedSlides = parseInt(slidesCount) || 0;
@@ -7350,6 +7450,7 @@ ${speaker2Name}: لا والله، الجو مش صافي وفي تراب.`
           const slideWriterModel = await getModelEndpointId('slide_writer', getNajeModel('personas'), token);
           const slideAuditorModel = await getModelEndpointId('document_engine', getNajeModel('personas'), token);
 
+          const NajeEngine = await getNajeEngineCtor();
           const naje = new NajeEngine(process.env.GEMINI_API_KEY!);
           totalSteps = sections.length + 2;
           
@@ -11574,51 +11675,21 @@ ${sourceBlock}`;
     next(err);
   });
 
-  // Robust Cloud Run & Sandbox Multi-Port Listener
-  // 1. Port 3000 is always bound for AI Studio sandbox / Nginx proxy & container loopback.
-  // 2. process.env.PORT (defaults to 8080 on Cloud Run) is always bound for live Cloud Run ingress traffic.
-  let seedExecuted = false;
-  const executeSeeds = () => {
-    if (!seedExecuted) {
-      seedExecuted = true;
-      seedModelEndpointsIfMissing().catch(() => {});
-      seedFormatPresetsIfMissing().catch(() => {});
-    }
-  };
-
-  const bindPort = (port: number, role: string) => {
-    const srv = http.createServer(app);
-    srv.setTimeout(600000);
-    srv.keepAliveTimeout = 600000;
-    srv.headersTimeout = 601000;
-
-    srv.on('error', (err: any) => {
-      if (err.code === 'EADDRINUSE') {
-        console.log(`[Port Notice] ${role} port ${port} already bound or in use by proxy.`);
-      } else {
-        console.error(`[Port Error] ${role} listener error on port ${port}:`, err?.message || err);
-      }
-    });
-
-    srv.listen(port, "0.0.0.0", () => {
-      console.log(`[Server] ${role} active on http://0.0.0.0:${port}`);
-      executeSeeds();
-    });
-
-    return srv;
-  };
-
-  // Robust Cloud Run & Sandbox Ingress Listener:
-  // 1. In production or Cloud Run, process.env.PORT (typically 8080) is the required ingress port.
-  // 2. Port 3000 is also bound to ensure full compatibility with AI Studio dev proxy / internal ingress.
-  const envPort = process.env.PORT ? parseInt(process.env.PORT, 10) : 8080;
-  const ingressPort = (envPort && !isNaN(envPort)) ? envPort : 8080;
-
-  bindPort(ingressPort, "Cloud Run Ingress");
-
-  if (ingressPort !== 3000) {
-    bindPort(3000, "App Port (3000)");
-  }
+  executeSeeds();
 }
 
-startServer();
+function shouldAutoStartServer(): boolean {
+  const entry = (process.argv[1] || '').replace(/\\/g, '/');
+  return (
+    entry.endsWith('/server.ts') ||
+    entry.endsWith('/server.cjs') ||
+    entry.endsWith('/dist/server.cjs')
+  );
+}
+
+if (shouldAutoStartServer()) {
+  startServer().catch((err) => {
+    console.error('[Server] fatal start error:', err);
+  });
+}
+

@@ -134,7 +134,12 @@ export const useAppStore = create<AppState>((set) => ({
               registerForPushNotifications(firebaseUser.uid).catch(() => {});
             }
           } else {
-            // Check system capacity limit before creating new user doc
+            // Cached "missing" is not proof the user is new. Writing balance:5 here
+            // is what wiped real balances when Studio served a frontend-only copy.
+            if (snapshot.metadata.fromCache) {
+              return;
+            }
+
             try {
               const statusSnap = await getDoc(doc(db, 'config', 'system_status')).catch(() => null);
               if (statusSnap && statusSnap.exists()) {
@@ -171,22 +176,18 @@ export const useAppStore = create<AppState>((set) => ({
               console.error('Error checking user limit:', limitErr);
             }
 
-            // Values here MUST match the firestore.rules constraints exactly,
-            // otherwise creation is rejected.
             const fallbackName = firebaseUser.displayName || (firebaseUser.email ? firebaseUser.email.split('@')[0] : '');
+            // NEVER write balance / isAdmin / hasRecharged from the client.
             const newUser: any = {
               uid: firebaseUser.uid,
               email: firebaseUser.email || '',
               displayName: fallbackName,
-              balance: 5,
-              isAdmin: false,
-              canAddAdmins: false,
               hasAcceptedTerms: false,
               hasCompletedOnboarding: false,
             };
             try {
-              await setDoc(userRef, newUser);
-              set({ user: newUser, loadingAuth: false, activeProjectId: null });
+              await setDoc(userRef, newUser, { merge: true });
+              set({ user: { ...newUser, balance: typeof snapshot.data()?.balance === 'number' ? snapshot.data()!.balance : 0 }, loadingAuth: false, activeProjectId: null });
             } catch (e) {
               console.error('Failed to create user document:', e);
               set({ loadingAuth: false });
@@ -194,17 +195,16 @@ export const useAppStore = create<AppState>((set) => ({
           }
         }, (error) => {
           console.error("Failed to load user profile via snapshot:", error);
-          // Fallback if offline or failed
-          set({ 
+          set({
             user: {
               uid: firebaseUser.uid,
               email: firebaseUser.email || '',
               displayName: firebaseUser.displayName || 'User',
-              balance: firebaseUser.email === 'google-play-console@qelvaai.com' ? 15 : 0,
+              balance: 0,
               isAdmin: false,
               emailVerified: Boolean(firebaseUser.emailVerified)
-            }, 
-            loadingAuth: false 
+            },
+            loadingAuth: false
           });
         });
       } else {

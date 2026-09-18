@@ -34,157 +34,34 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
 ));
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-// src/lib/pptx-design.ts
-function textOpts(str, base) {
-  const rtl = isArabic(str);
-  return { ...base, rtlMode: rtl, align: base.align ?? (rtl ? "right" : "left") };
+// src/lib/audioContainer.ts
+function pcmToWav(pcmData, sampleRate, numChannels = 1, bitsPerSample = 16) {
+  const byteRate = sampleRate * numChannels * (bitsPerSample / 8);
+  const blockAlign = numChannels * (bitsPerSample / 8);
+  const dataSize = pcmData.length;
+  const header = Buffer.alloc(44);
+  header.write("RIFF", 0, "ascii");
+  header.writeUInt32LE(36 + dataSize, 4);
+  header.write("WAVE", 8, "ascii");
+  header.write("fmt ", 12, "ascii");
+  header.writeUInt32LE(16, 16);
+  header.writeUInt16LE(1, 20);
+  header.writeUInt16LE(numChannels, 22);
+  header.writeUInt32LE(sampleRate, 24);
+  header.writeUInt32LE(byteRate, 28);
+  header.writeUInt16LE(blockAlign, 32);
+  header.writeUInt16LE(bitsPerSample, 34);
+  header.write("data", 36, "ascii");
+  header.writeUInt32LE(dataSize, 40);
+  return Buffer.concat([header, pcmData]);
 }
-function pixelMotif(slide, x, y, cols, rows, size, gap, color, transparency) {
-  for (let i = 0; i < cols; i++) {
-    for (let j = 0; j < rows; j++) {
-      if ((i * 7 + j * 3) % 4 === 0) continue;
-      slide.addShape("rect", {
-        x: x + i * (size + gap),
-        y: y + j * (size + gap),
-        w: size,
-        h: size,
-        fill: { color, transparency: transparency + (i + j) % 3 * 12 },
-        line: { type: "none" }
-      });
-    }
-  }
+function parseSampleRateFromMimeType(mimeType, fallback = 24e3) {
+  if (!mimeType) return fallback;
+  const match = mimeType.match(/rate=(\d+)/i);
+  return match ? parseInt(match[1], 10) : fallback;
 }
-function card(slide, o) {
-  slide.addShape("roundRect", {
-    x: o.x,
-    y: o.y,
-    w: o.w,
-    h: o.h,
-    rectRadius: o.r ?? 0.12,
-    fill: { color: o.fill },
-    line: { type: "none" }
-  });
-}
-function badge(slide, x, y, d, label, fill, txtColor, transparency = 0) {
-  slide.addShape("ellipse", { x, y, w: d, h: d, fill: { color: fill, transparency }, line: { type: "none" } });
-  if (label) {
-    slide.addText(label, textOpts(label, {
-      x,
-      y,
-      w: d,
-      h: d,
-      align: "center",
-      valign: "middle",
-      fontSize: 14,
-      bold: true,
-      color: txtColor,
-      margin: 0
-      // margin: 0 — see rule 7
-    }));
-  }
-}
-function cardHeight(bodyText, cardW, fontSize) {
-  const charsPerLine = Math.floor((cardW - 0.6) * 96 / (fontSize * 0.52));
-  const lines = Math.max(1, Math.ceil(bodyText.length / charsPerLine));
-  return 1.1 + lines * (fontSize * 1.32 / 72);
-}
-function fitFontSize(text, w, h, desired, min) {
-  const isAr = isArabic(text);
-  const ratio = isAr ? 0.52 * 1.15 : 0.52;
-  for (let fs6 = desired; fs6 >= min; fs6 -= 0.5) {
-    const charsPerLine = Math.floor(w * 96 / (fs6 * ratio));
-    const lines = Math.ceil(text.length / Math.max(1, charsPerLine));
-    if (lines * (fs6 * 1.32 / 72) <= h - 0.08) return fs6;
-  }
-  return min;
-}
-function assertFits(text, w, h, desired, min) {
-  const fs6 = fitFontSize(text, w, h, desired, min);
-  const isAr = isArabic(text);
-  const ratio = isAr ? 0.52 * 1.15 : 0.52;
-  const charsPerLine = Math.floor(w * 96 / (fs6 * ratio));
-  const maxLines = Math.floor((h - 0.08) / (fs6 * 1.32 / 72));
-  const maxChars = maxLines * charsPerLine;
-  if (fs6 === min && text.length > maxChars) {
-    let truncated = text.slice(0, maxChars);
-    const lastSpace = truncated.lastIndexOf(" ");
-    if (lastSpace > 0) truncated = truncated.slice(0, lastSpace);
-    return { text: truncated + "\u2026", fs: fs6 };
-  }
-  return { text, fs: fs6 };
-}
-var DARK_LUXE, COORDS;
-var init_pptx_design = __esm({
-  "src/lib/pptx-design.ts"() {
-    init_naje_engine();
-    DARK_LUXE = {
-      bg: "0E0F13",
-      bgAlt: "141620",
-      card: "1B1D28",
-      card2: "232634",
-      accent: "D4AF37",
-      accent2: "8B5CF6",
-      text: "F4F4F7",
-      muted: "9EA0B0",
-      faint: "6B6D7C"
-    };
-    COORDS = {
-      WIDTH: 13.333,
-      HEIGHT: 7.5,
-      MARGIN: 0.6,
-      USABLE_W: 12.133,
-      USABLE_H: 6.3,
-      TITLE_Y: 0.75,
-      TITLE_H: 0.75,
-      BODY_START: 1.85,
-      EYEBROW_Y: 0.42,
-      EYEBROW_H: 0.3,
-      COLS: {
-        C2_W: 5.92,
-        C2_X: [0.6, 6.81],
-        C3_W: 3.84,
-        C3_X: [0.6, 4.74, 8.89],
-        C4_W: 2.83,
-        C4_X: [0.6, 3.73, 6.85, 9.98],
-        C5_W: 2.23,
-        C5_X: [0.6, 3.08, 5.56, 8.05, 10.53],
-        FULL: 12.13,
-        FULL_X: 0.6
-      }
-    };
-  }
-});
-
-// src/lib/genaiClient.ts
-function createGenAIClient() {
-  if (USE_VERTEX_AI) {
-    return new import_genai.GoogleGenAI({
-      vertexai: true,
-      project: PROJECT_ID,
-      location: VERTEX_LOCATION
-    });
-  }
-  return new import_genai.GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY || "" });
-}
-var import_genai, import_fs, import_path, configProjectId, PROJECT_ID, USE_VERTEX_AI, VERTEX_LOCATION;
-var init_genaiClient = __esm({
-  "src/lib/genaiClient.ts"() {
-    import_genai = require("@google/genai");
-    import_fs = __toESM(require("fs"), 1);
-    import_path = __toESM(require("path"), 1);
-    configProjectId = "gen-lang-client-0549025293";
-    try {
-      const configPath = import_path.default.join(process.cwd(), "firebase-applet-config.json");
-      if (import_fs.default.existsSync(configPath)) {
-        const configRaw = import_fs.default.readFileSync(configPath, "utf8");
-        const parsed = JSON.parse(configRaw);
-        if (parsed.projectId) configProjectId = parsed.projectId;
-      }
-    } catch (e) {
-    }
-    PROJECT_ID = process.env.GOOGLE_CLOUD_PROJECT || process.env.GCP_PROJECT || configProjectId;
-    USE_VERTEX_AI = process.env.NAJE_USE_VERTEX_AI === "true";
-    VERTEX_LOCATION = process.env.VERTEX_AI_LOCATION || "global";
+var init_audioContainer = __esm({
+  "src/lib/audioContainer.ts"() {
   }
 });
 
@@ -297,7 +174,1294 @@ var init_modelEnvConfig = __esm({
   }
 });
 
+// src/lib/modelRegistry.ts
+var OUTPUT_TOKEN_LIMITS, SEED_ENDPOINTS, FALLBACK_MODEL_DEFAULTS, FALLBACK_DEFAULTS;
+var init_modelRegistry = __esm({
+  "src/lib/modelRegistry.ts"() {
+    init_modelEnvConfig();
+    OUTPUT_TOKEN_LIMITS = {
+      criticReview: 4096,
+      // الناقد's structured JSON verdict — short by design
+      classification: 4096,
+      // Intent classification and safety guardrails
+      memorySummary: 4096,
+      // Project memory item concise summarization
+      imageCompiler: 4096,
+      // compileImagePrompt / applyCreativeLayers — prompt text compilation
+      videoCompiler: 8192,
+      // compileVideoPrompt / auditVideoPrompt — shot lists and script directions
+      documentChunk: 32e3,
+      // document_writer/slide_writer — comprehensive chapters / slide batch
+      documentSection: 16e3,
+      // individual section audit & refinement
+      slideJson: 8192,
+      // presentation slide JSON structure
+      fullstackContractSynthesis: 16e3,
+      // Phase 2 — signatures, type definitions, and contract interfaces
+      fullstackFileGeneration: 6e4,
+      // Phase 3 — complete individual code files (close to 65,535 capacity)
+      fullstackAudit: 16e3,
+      // Phase 4/6 — structured lint and semantic audit findings
+      agentPlan: 8192,
+      // generateAgentProposal & planner function-calling
+      agentAudit: 8192,
+      // auditAgentStepResult verification
+      voiceScript: 8192,
+      // dialogue script structuring in agentExecutor
+      audioSpeech: 8192,
+      // TTS audio generation tokens
+      mediaAnalysis: 8192,
+      // Multimodal OCR / image / audio inspection
+      webGrounding: 16e3,
+      // Google Search grounded research synthesis
+      textChat: 32e3,
+      // conversational chat and deep thinking responses
+      chatResponse: 32e3,
+      // standard chat response ceiling
+      uiBuilder: 32e3,
+      // UI components & interactive widgets generation
+      uiPlan: 8192,
+      // UI generation architecture & layout planning
+      uiHtml: 32e3
+      // full-page interactive UI HTML output
+    };
+    SEED_ENDPOINTS = [
+      // TEXT / CORE TIERS (User-Facing Text Models — Token Metered)
+      {
+        id: "tier_lite",
+        featureGroup: "text",
+        labelAr: "Naje Lite (\u0646\u0635 \u062E\u0641\u064A\u0641)",
+        modelId: getNajeModel("lite"),
+        fallbackModelId: getNajeModel("lite"),
+        paramNotes: "\u0627\u0633\u062A\u062C\u0627\u0628\u0629 \u0633\u0631\u064A\u0639\u0629 \u062C\u062F\u0627\u064B \u0648\u0627\u0633\u062A\u0647\u0644\u0627\u0643 \u062A\u0648\u0643\u0646\u0632 \u0645\u0646\u062E\u0641\u0636",
+        maxOutputTokens: 32e3,
+        pricingType: "per_token",
+        inputPointsPer1k: 0.1,
+        outputPointsPer1k: 0.1,
+        inputPointsPerBlock: 0.1,
+        inputTokenBlockSize: 1e3,
+        outputPointsPerBlock: 0.1,
+        outputTokenBlockSize: 1e3,
+        audioInputPointsPer1k: 0.2,
+        realCostPer: { unit: "per_1m_input_tokens", usd: 0.25 },
+        pointsPrice: 0,
+        isBackground: false
+      },
+      {
+        id: "tier_core",
+        featureGroup: "text",
+        labelAr: "Naje Core (\u0646\u0635 \u0642\u064A\u0627\u0633\u064A)",
+        modelId: getNajeModel("core"),
+        fallbackModelId: getNajeModel("lite"),
+        paramNotes: "\u0645\u062A\u0648\u0627\u0632\u0646 \u0648\u0630\u0643\u064A (\u0627\u0644\u0646\u0645\u0648\u0630\u062C \u0627\u0644\u0627\u0641\u062A\u0631\u0627\u0636\u064A \u0644\u0644\u0630\u0643\u0627\u0621 \u0627\u0644\u0645\u062A\u0637\u0648\u0631)",
+        maxOutputTokens: 32e3,
+        pricingType: "per_token",
+        inputPointsPer1k: 0.1,
+        outputPointsPer1k: 0.1,
+        inputPointsPerBlock: 0.1,
+        inputTokenBlockSize: 1e3,
+        outputPointsPerBlock: 0.1,
+        outputTokenBlockSize: 1e3,
+        audioInputPointsPer1k: 0.2,
+        realCostPer: { unit: "per_1m_input_tokens", usd: 1.25 },
+        pointsPrice: 0,
+        isBackground: false
+      },
+      {
+        id: "tier_max",
+        featureGroup: "text",
+        labelAr: "Naje Pro (\u062A\u0641\u0643\u064A\u0631 \u0639\u0645\u064A\u0642)",
+        modelId: getNajeModel("pro"),
+        fallbackModelId: getNajeModel("core"),
+        paramNotes: "\u0623\u0639\u0644\u0649 \u062F\u0642\u0629 \u0627\u0633\u062A\u062F\u0644\u0627\u0644\u064A\u0629 \u0648\u062A\u0641\u0643\u064A\u0631 \u062A\u062D\u0644\u064A\u0644\u064A \u0645\u062A\u0642\u062F\u0645",
+        maxOutputTokens: 32e3,
+        pricingType: "per_token",
+        inputPointsPer1k: 0.1,
+        outputPointsPer1k: 0.1,
+        inputPointsPerBlock: 0.1,
+        inputTokenBlockSize: 1e3,
+        outputPointsPerBlock: 0.1,
+        outputTokenBlockSize: 1e3,
+        audioInputPointsPer1k: 0.2,
+        realCostPer: { unit: "per_1m_input_tokens", usd: 2 },
+        pointsPrice: 0,
+        isBackground: false
+      },
+      // BACKGROUND & INTERNAL COGNITIVE SERVICES (Council & Pipelines — Token Metered)
+      {
+        id: "critic_review",
+        featureGroup: "text",
+        labelAr: "\u0627\u0644\u0646\u0627\u0642\u062F \u2014 \u0645\u0631\u0627\u062C\u0639\u0629 \u0648\u062A\u062F\u0642\u064A\u0642 \u0627\u0644\u0637\u0644\u0628\u0627\u062A \u0642\u0628\u0644 \u0627\u0644\u062A\u0646\u0641\u064A\u0630",
+        modelId: getNajeModel("personas"),
+        fallbackModelId: getNajeModel("personas"),
+        paramNotes: "\u0641\u062D\u0635 \u0645\u0633\u0628\u0642 \u0644\u0644\u063A\u0645\u0648\u0636 \u0648\u0627\u0644\u062A\u0646\u0627\u0642\u0636\u0627\u062A \u0648\u062A\u0635\u062D\u064A\u062D\u0647\u0627",
+        maxOutputTokens: 4096,
+        pricingType: "per_token",
+        inputPointsPer1k: 0.1,
+        outputPointsPer1k: 0.1,
+        realCostPer: { unit: "per_1m_input_tokens", usd: 0.25 },
+        pointsPrice: 0,
+        isBackground: true
+      },
+      {
+        id: "creative_council",
+        featureGroup: "text",
+        labelAr: "\u0645\u062C\u0644\u0633 \u0639\u0642\u0648\u0644 \u0646\u0627\u062C\u064A \u2014 \u0627\u0644\u062A\u0648\u062C\u064A\u0647 \u0627\u0644\u0625\u0628\u062F\u0627\u0639\u064A \u0648\u0627\u0644\u0637\u0628\u0642\u0627\u062A",
+        modelId: getNajeModel("personas"),
+        fallbackModelId: getNajeModel("personas"),
+        paramNotes: "\u0627\u0644\u0645\u0635\u0648\u0651\u0631\u060C \u0627\u0644\u0645\u062E\u0631\u062C\u060C \u0627\u0644\u0643\u0627\u062A\u0628\u060C \u0645\u0647\u0646\u062F\u0633 \u0627\u0644\u0635\u0648\u062A\u064A\u0627\u062A (\u0634\u062E\u0635\u064A\u0627\u062A \u0646\u0627\u062C\u064A)",
+        maxOutputTokens: 8192,
+        pricingType: "per_token",
+        inputPointsPer1k: 0.1,
+        outputPointsPer1k: 0.1,
+        realCostPer: { unit: "per_1m_input_tokens", usd: 0.25 },
+        pointsPrice: 0,
+        isBackground: true
+      },
+      {
+        id: "agent_planner",
+        featureGroup: "text",
+        labelAr: "\u0645\u062E\u0637\u0637 \u0627\u0644\u0648\u0643\u0644\u0627\u0621 \u0627\u0644\u0630\u0643\u064A (Agent Planner)",
+        modelId: getNajeModel("personas"),
+        fallbackModelId: getNajeModel("personas"),
+        paramNotes: "\u062A\u0641\u0643\u064A\u0643 \u0627\u0644\u0645\u0647\u0627\u0645 \u0648\u0628\u0646\u0627\u0621 \u062E\u0637\u0637 \u0627\u0644\u0648\u0643\u064A\u0644 \u0648\u062A\u0639\u062F\u064A\u0644\u0647\u0627 (\u0634\u062E\u0635\u064A\u0629 \u0627\u0644\u0648\u0643\u064A\u0644)",
+        maxOutputTokens: 8192,
+        pricingType: "per_token",
+        inputPointsPer1k: 0.1,
+        outputPointsPer1k: 0.1,
+        realCostPer: { unit: "per_1m_input_tokens", usd: 0.25 },
+        pointsPrice: 0,
+        isBackground: true
+      },
+      {
+        id: "agent_auditor",
+        featureGroup: "text",
+        labelAr: "\u0645\u062F\u0642\u0642 \u062E\u0637\u0648\u0627\u062A \u0627\u0644\u0648\u0643\u064A\u0644 (Agent Step Auditor)",
+        modelId: getNajeModel("personas"),
+        fallbackModelId: getNajeModel("personas"),
+        paramNotes: "\u0627\u0644\u062A\u062D\u0642\u0642 \u0627\u0644\u0627\u0633\u062A\u0631\u0627\u062A\u064A\u062C\u064A \u0648\u0636\u0628\u0637 \u0627\u0644\u062C\u0648\u062F\u0629 \u0644\u0643\u0644 \u062E\u0637\u0648\u0629 (\u0634\u062E\u0635\u064A\u0629 \u0627\u0644\u0648\u0643\u064A\u0644)",
+        maxOutputTokens: 8192,
+        pricingType: "per_token",
+        inputPointsPer1k: 0.1,
+        outputPointsPer1k: 0.1,
+        realCostPer: { unit: "per_1m_input_tokens", usd: 0.25 },
+        pointsPrice: 0,
+        isBackground: true
+      },
+      {
+        id: "agent_narrator",
+        featureGroup: "text",
+        labelAr: "\u0633\u0627\u0631\u062F \u0625\u0646\u062C\u0627\u0632\u0627\u062A \u0627\u0644\u0648\u0643\u064A\u0644 (Agent Step Narrator)",
+        modelId: getNajeModel("personas"),
+        fallbackModelId: getNajeModel("personas"),
+        paramNotes: "\u0635\u064A\u0627\u063A\u0629 \u062A\u0623\u0643\u064A\u062F \u0625\u0646\u062C\u0627\u0632 \u0627\u0644\u062E\u0637\u0648\u0627\u062A \u0628\u0635\u0648\u062A \u0646\u0627\u062C\u064A \u0627\u0644\u0637\u0628\u064A\u0639\u064A (\u0634\u062E\u0635\u064A\u0629 \u0627\u0644\u0648\u0643\u064A\u0644)",
+        maxOutputTokens: 4096,
+        pricingType: "per_token",
+        inputPointsPer1k: 0.1,
+        outputPointsPer1k: 0.1,
+        realCostPer: { unit: "per_1m_input_tokens", usd: 0.25 },
+        pointsPrice: 0,
+        isBackground: true
+      },
+      {
+        id: "fullstack_builder",
+        featureGroup: "ui",
+        labelAr: "\u0627\u0644\u0646\u0633\u0651\u0627\u062C \u2014 \u0645\u0647\u0646\u062F\u0633 \u0627\u0644\u0623\u0646\u0638\u0645\u0629 \u0627\u0644\u0645\u062A\u0643\u0627\u0645\u0644\u0629 (Fullstack Engineer)",
+        modelId: getNajeModel("pro"),
+        fallbackModelId: getNajeModel("core"),
+        paramNotes: "\u062A\u0648\u0644\u064A\u062F \u0645\u0644\u0641\u0627\u062A \u0627\u0644\u0628\u0631\u0645\u062C\u0629 \u0648\u0627\u0644\u0623\u0646\u0638\u0645\u0629 \u0627\u0644\u0643\u0627\u0645\u0644\u0629 (Phase 3)",
+        maxOutputTokens: 6e4,
+        pricingType: "per_token",
+        inputPointsPer1k: 0.1,
+        outputPointsPer1k: 0.1,
+        realCostPer: { unit: "per_1m_input_tokens", usd: 2 },
+        pointsPrice: 0,
+        isBackground: false
+      },
+      {
+        id: "fullstack_auditor",
+        featureGroup: "ui",
+        labelAr: "\u0627\u0644\u0646\u0633\u0651\u0627\u062C \u2014 \u0645\u062F\u0642\u0642 \u0627\u0644\u062C\u0648\u062F\u0629 \u0648\u0627\u0644\u0623\u0646\u0638\u0645\u0629 (Fullstack Auditor)",
+        modelId: getNajeModel("personas"),
+        fallbackModelId: getNajeModel("personas"),
+        paramNotes: "\u0627\u0644\u062A\u062F\u0642\u064A\u0642 \u0627\u0644\u0645\u0639\u0645\u0627\u0631\u064A \u0648\u0627\u0644\u0628\u0631\u0645\u062C\u064A \u0648\u0641\u062D\u0635 \u0627\u0644\u062A\u0648\u0627\u0641\u0642 (\u0634\u062E\u0635\u064A\u0629 \u0627\u0644\u0645\u062F\u0642\u0642)",
+        maxOutputTokens: 16e3,
+        pricingType: "per_token",
+        inputPointsPer1k: 0.1,
+        outputPointsPer1k: 0.1,
+        realCostPer: { unit: "per_1m_input_tokens", usd: 0.25 },
+        pointsPrice: 0,
+        isBackground: true
+      },
+      {
+        id: "image_prompt_compiler",
+        featureGroup: "image",
+        labelAr: "\u0645\u062C\u0645\u0651\u0639 \u0623\u0648\u0627\u0645\u0631 \u0627\u0644\u0635\u0648\u0631 (Image Prompt Compiler)",
+        modelId: getNajeModel("personas"),
+        fallbackModelId: getNajeModel("personas"),
+        paramNotes: "\u0647\u064A\u0643\u0644\u0629 \u0648\u0625\u062B\u0631\u0627\u0621 \u0623\u0648\u0627\u0645\u0631 \u062A\u0648\u0644\u064A\u062F \u0627\u0644\u0635\u0648\u0631 \u0627\u0644\u0627\u062D\u062A\u0631\u0627\u0641\u064A\u0629 (\u0634\u062E\u0635\u064A\u0629 \u0627\u0644\u0645\u0635\u0648\u0631)",
+        maxOutputTokens: 4096,
+        pricingType: "per_token",
+        inputPointsPer1k: 0.1,
+        outputPointsPer1k: 0.1,
+        realCostPer: { unit: "per_1m_input_tokens", usd: 0.25 },
+        pointsPrice: 0,
+        isBackground: true
+      },
+      {
+        id: "video_prompt_compiler",
+        featureGroup: "video",
+        labelAr: "\u0645\u062E\u0631\u062C \u0648\u0645\u0634\u0631\u0641 \u0633\u064A\u0646\u0627\u0631\u064A\u0648 \u0627\u0644\u0641\u064A\u062F\u064A\u0648 (Video Director)",
+        modelId: getNajeModel("personas"),
+        fallbackModelId: getNajeModel("personas"),
+        paramNotes: "\u062A\u0635\u0645\u064A\u0645 \u0644\u0642\u0637\u0627\u062A \u0648\u0633\u064A\u0646\u0627\u0631\u064A\u0648 \u0648\u062D\u0631\u0643\u0627\u062A \u0627\u0644\u0643\u0627\u0645\u064A\u0631\u0627 (\u0634\u062E\u0635\u064A\u0629 \u0627\u0644\u0645\u062E\u0631\u062C)",
+        maxOutputTokens: 8192,
+        pricingType: "per_token",
+        inputPointsPer1k: 0.1,
+        outputPointsPer1k: 0.1,
+        realCostPer: { unit: "per_1m_input_tokens", usd: 0.25 },
+        pointsPrice: 0,
+        isBackground: true
+      },
+      {
+        id: "image_auditor",
+        featureGroup: "image",
+        labelAr: "\u0645\u062F\u0642\u0642 \u062C\u0648\u062F\u0629 \u0648\u062A\u0637\u0627\u0628\u0642 \u0627\u0644\u0635\u0648\u0631 (Image Verifier)",
+        modelId: getNajeModel("personas"),
+        fallbackModelId: getNajeModel("personas"),
+        paramNotes: "\u0641\u062D\u0635 \u0645\u062E\u0631\u062C\u0627\u062A \u0627\u0644\u0635\u0648\u0631 \u0648\u0645\u0642\u0627\u0631\u0646\u062A\u0647\u0627 \u0628\u0627\u0644\u0637\u0644\u0628 \u0627\u0644\u0623\u0635\u0644\u064A (\u0634\u062E\u0635\u064A\u0629 \u0627\u0644\u0641\u0627\u062D\u0635)",
+        maxOutputTokens: 4096,
+        pricingType: "per_token",
+        inputPointsPer1k: 0.1,
+        outputPointsPer1k: 0.1,
+        realCostPer: { unit: "per_1m_input_tokens", usd: 0.25 },
+        pointsPrice: 0,
+        isBackground: true
+      },
+      // UI STUDIO & DOCUMENTS
+      {
+        id: "ui_builder",
+        featureGroup: "ui",
+        labelAr: "\u0627\u0633\u062A\u0648\u062F\u064A\u0648 \u0627\u0644\u0648\u0627\u062C\u0647\u0627\u062A UI Studio",
+        modelId: getNajeModel("core"),
+        fallbackModelId: getNajeModel("personas"),
+        paramNotes: "\u062A\u0648\u0644\u064A\u062F \u0627\u0644\u0645\u0643\u0648\u0646\u0627\u062A \u0627\u0644\u062A\u0641\u0627\u0639\u0644\u064A\u0629 \u0648\u062A\u0635\u0645\u064A\u0645 \u0627\u0644\u0635\u0641\u062D\u0627\u062A",
+        maxOutputTokens: 32e3,
+        pricingType: "per_token",
+        inputPointsPer1k: 0.1,
+        outputPointsPer1k: 0.1,
+        realCostPer: { unit: "per_1m_input_tokens", usd: 1.25 },
+        pointsPrice: 0,
+        isBackground: false
+      },
+      {
+        id: "document_engine",
+        featureGroup: "document",
+        labelAr: "\u0645\u062D\u0631\u0643 \u062A\u062F\u0642\u064A\u0642 \u0627\u0644\u0645\u0633\u062A\u0646\u062F\u0627\u062A \u0648\u0627\u0644\u0634\u0631\u0627\u0626\u062D (Auditor)",
+        modelId: getNajeModel("personas"),
+        fallbackModelId: getNajeModel("personas"),
+        paramNotes: "\u0645\u0631\u0627\u062C\u0639\u0629 \u0648\u062A\u062F\u0642\u064A\u0642 \u062C\u0648\u062F\u0629 \u0648\u062A\u0646\u0627\u0633\u0642 \u0627\u0644\u0645\u0633\u062A\u0646\u062F\u0627\u062A \u0648\u0627\u0644\u0634\u0631\u0627\u0626\u062D (\u0634\u062E\u0635\u064A\u0629 \u0627\u0644\u0643\u0627\u062A\u0628)",
+        maxOutputTokens: 16e3,
+        pricingType: "per_token",
+        inputPointsPer1k: 0.1,
+        outputPointsPer1k: 0.1,
+        realCostPer: { unit: "per_1m_input_tokens", usd: 0.25 },
+        pointsPrice: 0,
+        isBackground: true
+      },
+      {
+        id: "document_writer",
+        featureGroup: "document",
+        labelAr: "\u0643\u0627\u062A\u0628 \u0627\u0644\u0645\u0633\u062A\u0646\u062F\u0627\u062A (Document Writer)",
+        modelId: getNajeModel("personas"),
+        fallbackModelId: getNajeModel("personas"),
+        paramNotes: "\u062A\u0648\u0644\u064A\u062F \u0648\u0635\u064A\u0627\u063A\u0629 \u0623\u0642\u0633\u0627\u0645 \u0627\u0644\u0645\u0633\u062A\u0646\u062F\u0627\u062A \u0648\u0627\u0644\u062A\u0642\u0627\u0631\u064A\u0631 (\u0634\u062E\u0635\u064A\u0629 \u0627\u0644\u0643\u0627\u062A\u0628)",
+        maxOutputTokens: 32e3,
+        pricingType: "per_token",
+        inputPointsPer1k: 0.1,
+        outputPointsPer1k: 0.1,
+        realCostPer: { unit: "per_1m_input_tokens", usd: 0.25 },
+        pointsPrice: 0,
+        isBackground: false
+      },
+      {
+        id: "slide_writer",
+        featureGroup: "document",
+        labelAr: "\u0643\u0627\u062A\u0628 \u0627\u0644\u0634\u0631\u0627\u0626\u062D (Slide Writer)",
+        modelId: getNajeModel("personas"),
+        fallbackModelId: getNajeModel("personas"),
+        paramNotes: "\u062A\u0648\u0644\u064A\u062F \u0648\u062A\u0623\u0644\u064A\u0641 \u0645\u062D\u062A\u0648\u0649 \u0627\u0644\u0639\u0631\u0648\u0636 \u0627\u0644\u062A\u0642\u062F\u064A\u0645\u064A\u0629 (\u0634\u062E\u0635\u064A\u0629 \u0627\u0644\u0643\u0627\u062A\u0628)",
+        maxOutputTokens: 32e3,
+        pricingType: "per_token",
+        inputPointsPer1k: 0.1,
+        outputPointsPer1k: 0.1,
+        realCostPer: { unit: "per_1m_input_tokens", usd: 0.25 },
+        pointsPrice: 0,
+        isBackground: false
+      },
+      {
+        id: "doc_standard",
+        featureGroup: "document",
+        labelAr: "\u0645\u0633\u062A\u0646\u062F \u2014 A4 (\u0644\u0643\u0644 \u0635\u0641\u062D\u0629)",
+        modelId: getNajeModel("core"),
+        fallbackModelId: getNajeModel("personas"),
+        paramNotes: "\u062A\u0648\u0644\u064A\u062F \u0648\u062A\u0635\u062F\u064A\u0631 \u0635\u0641\u062D\u0627\u062A A4 \u0627\u0644\u0631\u0633\u0645\u064A\u0629",
+        maxOutputTokens: 32e3,
+        pricingType: "per_generation",
+        realCostPer: { unit: "per_page", usd: 3e-3 },
+        pointsPrice: 0.15,
+        isBackground: false
+      },
+      {
+        id: "doc_a5",
+        featureGroup: "document",
+        labelAr: "\u0645\u0633\u062A\u0646\u062F \u2014 A5 (\u0644\u0643\u0644 \u0635\u0641\u062D\u0629)",
+        modelId: getNajeModel("core"),
+        fallbackModelId: getNajeModel("personas"),
+        paramNotes: "\u062A\u0648\u0644\u064A\u062F \u0648\u062A\u0635\u062F\u064A\u0631 \u0635\u0641\u062D\u0627\u062A A5 \u0627\u0644\u0645\u0635\u063A\u0631\u0629",
+        maxOutputTokens: 32e3,
+        pricingType: "per_generation",
+        realCostPer: { unit: "per_page", usd: 2e-3 },
+        pointsPrice: 0.1,
+        isBackground: false
+      },
+      {
+        id: "doc_slides",
+        featureGroup: "document",
+        labelAr: "\u0639\u0631\u0636 \u062A\u0642\u062F\u064A\u0645\u064A \u2014 \u0634\u0631\u0627\u0626\u062D (\u0644\u0643\u0644 \u0634\u0631\u064A\u062D\u0629)",
+        modelId: getNajeModel("core"),
+        fallbackModelId: getNajeModel("personas"),
+        paramNotes: "\u062A\u0648\u0644\u064A\u062F \u0648\u062A\u0635\u062F\u064A\u0631 \u0634\u0631\u0627\u0626\u062D \u0627\u0644\u0639\u0631\u0636 \u0627\u0644\u062A\u0642\u062F\u064A\u0645\u064A PPTX/PDF",
+        maxOutputTokens: 32e3,
+        pricingType: "per_generation",
+        realCostPer: { unit: "per_slide", usd: 4e-3 },
+        pointsPrice: 0.2,
+        isBackground: false
+      },
+      {
+        id: "infographic_designer",
+        featureGroup: "document",
+        labelAr: "\u0627\u0644\u0645\u0635\u0645\u0645 \u2014 \u0645\u062D\u0631\u0643 \u0627\u0644\u0625\u0646\u0641\u0648\u062C\u0631\u0627\u0641\u064A\u0643 (Infographic Engine)",
+        modelId: getNajeModel("personas"),
+        fallbackModelId: getNajeModel("personas"),
+        paramNotes: "\u0631\u0633\u0645 \u0628\u064A\u0627\u0646\u064A \u0648\u062A\u0635\u0645\u064A\u0645 \u0625\u0646\u0641\u0648\u062C\u0631\u0627\u0641\u064A\u0643 \u0628\u0635\u0631\u064A \u0648\u062A\u0635\u062F\u064A\u0631\u0647 \u0639\u0628\u0631 Puppeteer (PNG + PDF)",
+        maxOutputTokens: 16e3,
+        pricingType: "per_generation",
+        realCostPer: { unit: "per_render", usd: 5e-3 },
+        pointsPrice: 0.5,
+        isBackground: false
+      },
+      // IMAGE GENERATION (Flat Per-Unit Pricing)
+      {
+        id: "image_lite",
+        featureGroup: "image",
+        labelAr: "\u0635\u0648\u0631\u0629 \u2014 Naje Imagen Lite",
+        modelId: "nano-banana-2-lite",
+        fallbackModelId: getNajeModel("image_lite"),
+        paramNotes: "\u062E\u0641\u064A\u0641 \u0648\u0633\u0631\u064A\u0639 (0.5 \u0646\u0642\u0637\u0629 \u0627\u0641\u062A\u0631\u0627\u0636\u064A\u0627\u064B)",
+        maxOutputTokens: 4096,
+        pricingType: "per_generation",
+        realCostPer: { unit: "per_image", usd: 0.01 },
+        pointsPrice: 0.5,
+        isBackground: false
+      },
+      {
+        id: "image_spectra",
+        featureGroup: "image",
+        labelAr: "\u0635\u0648\u0631\u0629 \u2014 Naje Imagen",
+        modelId: "nano-banana-2",
+        fallbackModelId: getNajeModel("image_core"),
+        paramNotes: "\u062A\u0648\u0627\u0632\u0646 \u0642\u064A\u0627\u0633\u064A (\u0646\u0642\u0637\u0629 \u0648\u0627\u062D\u062F\u0629 \u0627\u0641\u062A\u0631\u0627\u0636\u064A\u0627\u064B)",
+        maxOutputTokens: 4096,
+        pricingType: "per_generation",
+        realCostPer: { unit: "per_image", usd: 0.02 },
+        pointsPrice: 1,
+        isBackground: false
+      },
+      {
+        id: "image_addon",
+        featureGroup: "image",
+        labelAr: "\u0625\u0636\u0627\u0641\u0629 \u062F\u0645\u062C \u0627\u0644\u0635\u0648\u0631 \u0627\u0644\u0645\u0631\u062C\u0639\u064A\u0629 (Addon)",
+        modelId: getNajeModel("personas"),
+        fallbackModelId: getNajeModel("personas"),
+        paramNotes: "\u062A\u0643\u0644\u0641\u0629 \u062F\u0645\u062C \u0643\u0644 \u0635\u0648\u0631\u0629 \u0645\u0631\u062C\u0639\u064A\u0629 \u0625\u0636\u0627\u0641\u064A\u0629",
+        maxOutputTokens: 4096,
+        pricingType: "per_generation",
+        realCostPer: { unit: "per_image", usd: 2e-3 },
+        pointsPrice: 0.1,
+        isBackground: false
+      },
+      {
+        id: "image_fast",
+        featureGroup: "image",
+        labelAr: "\u0635\u0648\u0631\u0629 \u2014 Naje Imagen Lite (\u0633\u0631\u064A\u0639\u0629)",
+        modelId: "nano-banana-2-lite",
+        fallbackModelId: getNajeModel("image_lite"),
+        paramNotes: "\u062A\u0648\u0644\u064A\u062F \u0641\u0648\u0631\u064A \u062E\u0641\u064A\u0641",
+        maxOutputTokens: 4096,
+        pricingType: "per_generation",
+        realCostPer: { unit: "per_image", usd: 0.04 },
+        pointsPrice: 3,
+        isBackground: false
+      },
+      {
+        id: "image_standard",
+        featureGroup: "image",
+        labelAr: "\u0635\u0648\u0631\u0629 \u2014 Naje Imagen \u0627\u0644\u0645\u0639\u064A\u0627\u0631\u064A\u0629",
+        modelId: "nano-banana-2",
+        fallbackModelId: getNajeModel("image_core"),
+        paramNotes: "1024x1024 \u062F\u0642\u0629 \u0642\u064A\u0627\u0633\u064A\u0629",
+        maxOutputTokens: 4096,
+        pricingType: "per_generation",
+        realCostPer: { unit: "per_image", usd: 0.067 },
+        pointsPrice: 5,
+        isBackground: false
+      },
+      {
+        id: "image_hd",
+        featureGroup: "image",
+        labelAr: "\u0635\u0648\u0631\u0629 \u2014 Naje Imagen Pro (\u0639\u0627\u0644\u064A\u0629 \u0627\u0644\u062F\u0642\u0629)",
+        modelId: "nano-banana-pro",
+        fallbackModelId: getNajeModel("image_pro"),
+        paramNotes: "2048x2048 \u062F\u0642\u0629 \u0641\u0627\u0626\u0642\u0629",
+        maxOutputTokens: 4096,
+        pricingType: "per_generation",
+        realCostPer: { unit: "per_image", usd: 0.101 },
+        pointsPrice: 10,
+        isBackground: false
+      },
+      {
+        id: "image_pro",
+        featureGroup: "image",
+        labelAr: "\u0635\u0648\u0631\u0629 \u2014 Naje Imagen Pro (\u0627\u0644\u0627\u062D\u062A\u0631\u0627\u0641\u064A\u0629)",
+        modelId: "nano-banana-pro",
+        fallbackModelId: getNajeModel("image_pro"),
+        paramNotes: "\u062C\u0648\u062F\u0629 \u0641\u0627\u0626\u0642\u0629 \u0645\u0639 \u062A\u062D\u0643\u0645 \u0628\u0627\u0644\u0641\u0631\u0634\u0627\u0629 \u0648\u0627\u0644\u0637\u0628\u0642\u0627\u062A",
+        maxOutputTokens: 4096,
+        pricingType: "per_generation",
+        realCostPer: { unit: "per_image", usd: 0.134 },
+        pointsPrice: 12,
+        isBackground: false
+      },
+      // VIDEO GENERATION (Flat Per-Unit Pricing)
+      {
+        id: "video_standard",
+        envVarKey: "NAJE_MODEL_VIDEO_CORE",
+        featureGroup: "video",
+        labelAr: "\u0641\u064A\u062F\u064A\u0648 \u2014 Naje Video",
+        modelId: getNajeModel("video_core"),
+        fallbackModelId: getNajeModel("video_core"),
+        paramNotes: "720p \u0633\u064A\u0646\u0645\u0627\u0626\u064A \u0642\u064A\u0627\u0633\u064A",
+        maxOutputTokens: 8192,
+        pricingType: "per_generation",
+        realCostPer: { unit: "per_second", usd: 0.05 },
+        pointsPrice: 20,
+        isBackground: false,
+        supportedDurations: [4, 6, 8],
+        supportsImageInput: true
+      },
+      {
+        id: "video_veo_lite",
+        envVarKey: "NAJE_MODEL_VIDEO_CORE",
+        featureGroup: "video",
+        labelAr: "\u0641\u064A\u062F\u064A\u0648 \u2014 Naje Video (Lite)",
+        modelId: getNajeModel("video_core"),
+        fallbackModelId: getNajeModel("video_core"),
+        paramNotes: "720p @ 5s",
+        maxOutputTokens: 8192,
+        pricingType: "per_generation",
+        realCostPer: { unit: "per_second", usd: 0.05 },
+        pointsPrice: 25,
+        isBackground: false,
+        supportedDurations: [4, 6, 8],
+        supportsImageInput: true
+      },
+      {
+        id: "video_omni",
+        envVarKey: "NAJE_MODEL_VIDEO_PRO",
+        featureGroup: "video",
+        labelAr: "\u0641\u064A\u062F\u064A\u0648 \u2014 Naje Video Pro",
+        modelId: getNajeModel("video_pro"),
+        fallbackModelId: getNajeModel("video_pro"),
+        paramNotes: "Naje Video Pro Multimodal Video",
+        maxOutputTokens: 8192,
+        pricingType: "per_generation",
+        realCostPer: { unit: "per_second", usd: 0.05 },
+        isUnconfirmedCost: true,
+        pointsPrice: 20,
+        isBackground: false,
+        supportedDurations: [5, 10],
+        supportsImageInput: true
+      },
+      // VOICE TTS (Per-character pricing — admin sets Naje points per letter)
+      {
+        id: "voice_tts",
+        featureGroup: "voice",
+        labelAr: "\u062A\u0633\u062C\u064A\u0644 \u0635\u0648\u062A\u064A \u2014 Naje Voice Core (\u0627\u0644\u0623\u0633\u0627\u0633\u064A)",
+        modelId: getNajeModel("voice_core"),
+        fallbackModelId: getNajeModel("voice_core"),
+        paramNotes: "\u062A\u062D\u0648\u064A\u0644 \u0627\u0644\u0646\u0635 \u0625\u0644\u0649 \u0635\u0648\u062A \u2014 \u0627\u0644\u062A\u0633\u0639\u064A\u0631: \u0646\u0642\u0627\u0637 \u0646\u0627\u062C\u064A \u0644\u0643\u0644 \u062D\u0631\u0641",
+        maxOutputTokens: 8192,
+        pricingType: "per_character",
+        realCostPer: { unit: "per_1m_audio_tokens", usd: 20 },
+        isUnconfirmedCost: true,
+        pointsPrice: 0.01,
+        isBackground: false
+      },
+      {
+        id: "voice_tts_pro",
+        featureGroup: "voice",
+        labelAr: "\u062A\u0633\u062C\u064A\u0644 \u0635\u0648\u062A\u064A \u2014 Naje Voice Pro (\u0627\u0644\u0627\u062D\u062A\u0631\u0627\u0641\u064A \u0627\u0644\u0641\u0627\u0626\u0642)",
+        modelId: getNajeModel("voice_pro"),
+        fallbackModelId: getNajeModel("voice_core"),
+        paramNotes: "\u0623\u0639\u0644\u0649 \u062F\u0642\u0629 \u0648\u0646\u0642\u0627\u0621 \u2014 \u0627\u0644\u062A\u0633\u0639\u064A\u0631: \u0646\u0642\u0627\u0637 \u0646\u0627\u062C\u064A \u0644\u0643\u0644 \u062D\u0631\u0641",
+        maxOutputTokens: 16384,
+        pricingType: "per_character",
+        realCostPer: { unit: "per_1m_audio_tokens", usd: 40 },
+        isUnconfirmedCost: true,
+        pointsPrice: 0.02,
+        isBackground: false
+      },
+      {
+        id: "voice_tts_standard",
+        featureGroup: "voice",
+        labelAr: "\u062A\u0633\u062C\u064A\u0644 \u0635\u0648\u062A\u064A \u2014 \u062D\u0648\u0627\u0631 \u0645\u062A\u0639\u062F\u062F \u0627\u0644\u0623\u0635\u0648\u0627\u062A (Core)",
+        modelId: getNajeModel("voice_core"),
+        fallbackModelId: getNajeModel("voice_core"),
+        paramNotes: "\u062D\u0648\u0627\u0631 \u0628\u064A\u0646 \u0634\u062E\u0635\u064A\u0627\u062A \u2014 \u0646\u0642\u0627\u0637 \u0644\u0643\u0644 \u062D\u0631\u0641 \u0645\u0646\u0637\u0648\u0642",
+        maxOutputTokens: 8192,
+        pricingType: "per_character",
+        realCostPer: { unit: "per_1m_audio_tokens", usd: 20 },
+        isUnconfirmedCost: true,
+        pointsPrice: 0.01,
+        isBackground: false
+      },
+      // TEXT TIER ENDPOINT ALIASES
+      {
+        id: "text_lite",
+        featureGroup: "text",
+        labelAr: "\u0646\u0635 \u062E\u0641\u064A\u0641 (Lite Tier)",
+        modelId: getNajeModel("lite"),
+        fallbackModelId: getNajeModel("lite"),
+        paramNotes: "\u0645\u062D\u0627\u062F\u062B\u0629 \u0633\u0631\u064A\u0639\u0629 \u0648\u0627\u0633\u062A\u0647\u0644\u0627\u0643 \u0627\u0642\u062A\u0635\u0627\u062F\u064A",
+        maxOutputTokens: 32e3,
+        pricingType: "per_token",
+        inputPointsPer1k: 0.1,
+        outputPointsPer1k: 0.1,
+        realCostPer: { unit: "per_1m_input_tokens", usd: 0.25 },
+        pointsPrice: 0,
+        isBackground: false
+      },
+      {
+        id: "text_core",
+        featureGroup: "text",
+        labelAr: "\u0646\u0635 \u0642\u064A\u0627\u0633\u064A (Core Tier)",
+        modelId: getNajeModel("core"),
+        fallbackModelId: getNajeModel("lite"),
+        paramNotes: "\u0645\u062D\u0627\u062F\u062B\u0629 \u0645\u062A\u0648\u0627\u0632\u0646\u0629 \u0630\u0643\u064A\u0629 \u0648\u0633\u0631\u064A\u0639\u0629",
+        maxOutputTokens: 32e3,
+        pricingType: "per_token",
+        inputPointsPer1k: 0.1,
+        outputPointsPer1k: 0.1,
+        realCostPer: { unit: "per_1m_input_tokens", usd: 1.25 },
+        pointsPrice: 0,
+        isBackground: false
+      },
+      {
+        id: "text_max",
+        featureGroup: "text",
+        labelAr: "\u0646\u0635 \u0627\u0633\u062A\u062F\u0644\u0627\u0644\u064A (Pro Tier)",
+        modelId: getNajeModel("pro"),
+        fallbackModelId: getNajeModel("core"),
+        paramNotes: "\u062A\u0641\u0643\u064A\u0631 \u062A\u062D\u0644\u064A\u0644\u064A \u0639\u0645\u064A\u0642 \u0648\u0645\u0639\u0627\u0644\u062C\u0629 \u0645\u0639\u0642\u062F\u0629",
+        maxOutputTokens: 32e3,
+        pricingType: "per_token",
+        inputPointsPer1k: 0.1,
+        outputPointsPer1k: 0.1,
+        realCostPer: { unit: "per_1m_input_tokens", usd: 2 },
+        pointsPrice: 0,
+        isBackground: false
+      },
+      {
+        id: "ui_standard",
+        featureGroup: "ui",
+        labelAr: "\u0648\u0627\u062C\u0647\u0627\u062A \u2014 \u0627\u0644\u0642\u064A\u0627\u0633\u064A",
+        modelId: getNajeModel("core"),
+        fallbackModelId: getNajeModel("lite"),
+        paramNotes: "\u062A\u0648\u0644\u064A\u062F \u0643\u0648\u062F \u0648\u0627\u062C\u0647\u0627\u062A \u0627\u0644\u0645\u0633\u062A\u062E\u062F\u0645",
+        maxOutputTokens: 32e3,
+        pricingType: "per_token",
+        inputPointsPer1k: 0.1,
+        outputPointsPer1k: 0.1,
+        realCostPer: { unit: "per_1m_input_tokens", usd: 1.25 },
+        pointsPrice: 0,
+        isBackground: false
+      }
+    ];
+    FALLBACK_MODEL_DEFAULTS = {
+      tier_lite: getNajeModel("lite"),
+      tier_core: getNajeModel("core"),
+      tier_max: getNajeModel("pro"),
+      text_lite: getNajeModel("lite"),
+      text_core: getNajeModel("core"),
+      text_max: getNajeModel("pro"),
+      critic_review: getNajeModel("personas"),
+      creative_council: getNajeModel("personas"),
+      agent_planner: getNajeModel("personas"),
+      agent_auditor: getNajeModel("personas"),
+      agent_narrator: getNajeModel("personas"),
+      fullstack_builder: getNajeModel("pro"),
+      fullstack_auditor: getNajeModel("personas"),
+      image_prompt_compiler: getNajeModel("personas"),
+      video_prompt_compiler: getNajeModel("personas"),
+      image_auditor: getNajeModel("personas"),
+      image_standard: getNajeModel("image_core"),
+      image_hd: getNajeModel("image_pro"),
+      image_pro: getNajeModel("image_pro"),
+      image_fast: getNajeModel("image_lite"),
+      image_lite: getNajeModel("image_lite"),
+      image_spectra: getNajeModel("image_core"),
+      image_addon: getNajeModel("personas"),
+      video_veo_lite: getNajeModel("video_core"),
+      video_standard: getNajeModel("video_core"),
+      video_omni: getNajeModel("video_pro"),
+      video_hd: getNajeModel("video_pro"),
+      ui_builder: getNajeModel("core"),
+      ui_standard: getNajeModel("core"),
+      voice_tts: getNajeModel("voice_core"),
+      voice_tts_core: getNajeModel("voice_core"),
+      voice_tts_pro: getNajeModel("voice_pro"),
+      voice_tts_standard: getNajeModel("voice_core"),
+      document_engine: getNajeModel("personas"),
+      doc_standard: getNajeModel("core"),
+      doc_a5: getNajeModel("core"),
+      doc_slides: getNajeModel("core"),
+      document_writer: getNajeModel("personas"),
+      slide_writer: getNajeModel("personas"),
+      infographic_designer: getNajeModel("personas")
+    };
+    FALLBACK_DEFAULTS = {
+      tier_lite: getNajeModel("lite"),
+      tier_core: getNajeModel("core"),
+      tier_max: getNajeModel("pro"),
+      text_lite: getNajeModel("lite"),
+      text_core: getNajeModel("core"),
+      text_max: getNajeModel("pro"),
+      critic_review: getNajeModel("personas"),
+      creative_council: getNajeModel("personas"),
+      agent_planner: getNajeModel("personas"),
+      agent_auditor: getNajeModel("personas"),
+      agent_narrator: getNajeModel("personas"),
+      fullstack_builder: getNajeModel("pro"),
+      fullstack_auditor: getNajeModel("personas"),
+      image_prompt_compiler: getNajeModel("personas"),
+      video_prompt_compiler: getNajeModel("personas"),
+      image_auditor: getNajeModel("personas"),
+      image_standard: getNajeModel("image_core"),
+      image_hd: getNajeModel("image_pro"),
+      image_pro: getNajeModel("image_pro"),
+      image_fast: getNajeModel("image_lite"),
+      image_lite: getNajeModel("image_lite"),
+      image_spectra: getNajeModel("image_core"),
+      image_addon: getNajeModel("personas"),
+      video_veo_lite: getNajeModel("video_core"),
+      video_standard: getNajeModel("video_core"),
+      video_omni: getNajeModel("video_pro"),
+      ui_builder: getNajeModel("core"),
+      ui_standard: getNajeModel("core"),
+      voice_tts: getNajeModel("voice_core"),
+      voice_tts_core: getNajeModel("voice_core"),
+      voice_tts_pro: getNajeModel("voice_pro"),
+      voice_tts_standard: getNajeModel("voice_core"),
+      document_engine: getNajeModel("personas"),
+      doc_standard: getNajeModel("core"),
+      doc_a5: getNajeModel("core"),
+      doc_slides: getNajeModel("core"),
+      document_writer: getNajeModel("personas"),
+      slide_writer: getNajeModel("personas"),
+      infographic_designer: getNajeModel("personas")
+    };
+  }
+});
+
+// src/lib/geminiCaching.ts
+async function getOrCreateExplicitCache(ai5, key, model, systemInstructionText, ttlSeconds = 3600) {
+  const existing = activeCaches.get(key);
+  const now = Date.now();
+  if (existing && existing.model === model && existing.expiresAt > now + 3e5) {
+    return existing.cacheName;
+  }
+  if (!systemInstructionText || systemInstructionText.length < 16e3) {
+    return null;
+  }
+  try {
+    if (ai5 && ai5.caches && typeof ai5.caches.create === "function") {
+      const cacheResponse = await ai5.caches.create({
+        model,
+        config: {
+          displayName: `naje_${key}_cache`,
+          systemInstruction: systemInstructionText,
+          ttl: `${ttlSeconds}s`
+        }
+      });
+      if (cacheResponse && cacheResponse.name) {
+        activeCaches.set(key, {
+          cacheName: cacheResponse.name,
+          model,
+          expiresAt: now + ttlSeconds * 1e3
+        });
+        console.log(`[Context Caching] Created explicit cache for '${key}' (${cacheResponse.name}) with TTL ${ttlSeconds}s`);
+        return cacheResponse.name;
+      }
+    }
+  } catch (err) {
+    console.warn(`[Context Caching] Explicit cache creation bypassed for '${key}':`, err?.message || err);
+  }
+  return null;
+}
+function getCriticCachedInstruction() {
+  const personaCore = `\u0645\u0647\u0645\u062A\u0643: \u0641\u062D\u0635 \u0627\u0644\u0637\u0644\u0628 \u0628\u062F\u0642\u0629 \u0634\u062F\u064A\u062F\u0629 \u0642\u0628\u0644 \u0623\u064A \u0625\u0646\u062A\u0627\u062C \u0641\u0639\u0644\u064A\u060C \u0648\u0627\u0643\u062A\u0634\u0627\u0641 \u0623\u064A \u063A\u0645\u0648\u0636 \u0623\u0648 \u062A\u0646\u0627\u0642\u0636 \u0623\u0648 \u0646\u0642\u0635 \u0628\u0627\u0644\u0633\u064A\u0627\u0642 \u0642\u062F \u064A\u0636\u0639\u0641 \u062C\u0648\u062F\u0629 \u0627\u0644\u0646\u062A\u064A\u062C\u0629 \u0627\u0644\u0646\u0647\u0627\u0626\u064A\u0629\u060C \u0648\u0627\u0642\u062A\u0631\u0627\u062D \u062D\u0644\u0648\u0644 \u0648\u0627\u0636\u062D\u0629 \u0648\u0645\u062D\u062F\u062F\u0629.
+
+\u0642\u0648\u0627\u0639\u062F \u0635\u0627\u0631\u0645\u0629:
+1. \u0644\u0627 \u062A\u0631\u0641\u0636 \u0637\u0644\u0628\u0627\u062A \u063A\u0627\u0645\u0636\u0629 \u2014 \u0623\u0635\u0644\u062D\u0647\u0627 \u0628\u0646\u0641\u0633\u0643 \u062D\u064A\u062B\u0645\u0627 \u0643\u0627\u0646 \u0627\u0644\u0625\u0635\u0644\u0627\u062D \u0648\u0627\u0636\u062D\u0627\u064B \u0648\u0645\u0646\u0637\u0642\u064A\u0627\u064B \u0648\u0639\u0632\u0651\u0632 \u0627\u0644\u0628\u0631\u0648\u0645\u0628\u062A (enrichedPrompt) \u0628\u0627\u0644\u062A\u0641\u0627\u0635\u064A\u0644 \u0627\u0644\u0627\u062D\u062A\u0631\u0627\u0641\u064A\u0629 \u0627\u0644\u0645\u0633\u062A\u0646\u062A\u062C\u0629.
+2. \u0641\u0642\u0637 \u0625\u0630\u0627 \u0643\u0627\u0646 \u0627\u0644\u0646\u0642\u0635 \u062C\u0648\u0647\u0631\u064A\u0627\u064B \u0648\u0644\u0627 \u064A\u0645\u0643\u0646 \u0627\u0633\u062A\u0646\u062A\u0627\u062C\u0647 \u0628\u062B\u0642\u0629 (\u0645\u062B\u0644: \u062A\u0646\u0627\u0642\u0636 \u0635\u0631\u064A\u062D \u0628\u0627\u0644\u0637\u0644\u0628\u060C \u0623\u0648 \u0637\u0644\u0628 \u0628\u0631\u0645\u062C\u064A \u0647\u0627\u0626\u0644 \u063A\u064A\u0631 \u0645\u062D\u062F\u062F \u0627\u0644\u0646\u0637\u0627\u0642 \u0645\u062B\u0644 "\u0627\u0628\u0646\u064A \u0641\u064A\u0633\u0628\u0648\u0643 \u0643\u0627\u0645\u0644"\u060C \u0623\u0648 \u0637\u0644\u0628 \u062D\u0648\u0627\u0631 \u0635\u0648\u062A\u064A \u064A\u0641\u062A\u0642\u0631 \u0644\u0623\u0633\u0637\u0631 \u0627\u0644\u0645\u062A\u062D\u062F\u062B\u064A\u0646) \u0635\u0646\u0651\u0641 \u0627\u0644\u062D\u0627\u0644\u0629 needs_clarification \u0648\u0635\u0650\u063A \u0633\u0624\u0627\u0644\u0627\u064B \u062A\u0648\u0636\u064A\u062D\u064A\u0627\u064B \u0645\u0647\u0630\u0628\u0627\u064B \u0648\u0645\u0628\u0627\u0634\u0631\u0627\u064B \u0641\u064A \u062D\u0642\u0644 clarificationQuestion \u0628\u0635\u0648\u062A \u0646\u0627\u062C\u064A \u0627\u0644\u0645\u0639\u062A\u0627\u062F \u062F\u0648\u0646 \u0630\u0643\u0631 \u0623\u064A \u0645\u0635\u0637\u0644\u062D\u0627\u062A \u062F\u0627\u062E\u0644\u064A\u0629 \u0623\u0648 \u0645\u062C\u0627\u0644\u0633.
+3. \u0645\u0647\u0645\u062A\u0643 \u062C\u0648\u062F\u0629 \u0625\u0628\u062F\u0627\u0639\u064A\u0629 \u0648\u0645\u0639\u0645\u0627\u0631\u064A\u0629 \u0648\u0647\u064A\u0643\u0644\u064A\u0629.`;
+  return `${NAJE_CORE_IDENTITY_SHARED}
+
+---
+
+${buildPersonaInstruction("\u0627\u0644\u0646\u0627\u0642\u062F", personaCore)}`;
+}
+var NAJE_CORE_IDENTITY_SHARED, activeCaches;
+var init_geminiCaching = __esm({
+  "src/lib/geminiCaching.ts"() {
+    init_councilOfMinds();
+    NAJE_CORE_IDENTITY_SHARED = `\u0623\u0646\u062A "\u0646\u0627\u062C\u064A" (Naje AI) \u2014 \u0645\u0646\u0635\u0629 \u0630\u0643\u0627\u0621 \u0627\u0635\u0637\u0646\u0627\u0639\u064A \u062A\u0648\u0644\u064A\u062F\u064A\u0629 \u0639\u0631\u0628\u064A\u0629 \u0623\u0648\u0644\u0627\u064B.
+
+\u0647\u0648\u064A\u062A\u0643:
+- \u0627\u0633\u0645\u0643 \u0646\u0627\u062C\u064A. \u0644\u063A\u062A\u0643 \u0627\u0644\u0623\u0633\u0627\u0633\u064A\u0629 \u0627\u0644\u0639\u0631\u0628\u064A\u0629 (\u0628\u0627\u0644\u0644\u0647\u062C\u0629 \u0627\u0644\u0623\u0631\u062F\u0646\u064A\u0629 \u0639\u0646\u062F \u0627\u0644\u062D\u062F\u064A\u062B \u0628\u0634\u0643\u0644 \u0648\u062F\u0651\u064A)\u060C \u0648\u062A\u062F\u0639\u0645 \u0643\u0644 \u0627\u0644\u0644\u063A\u0627\u062A.
+- \u0634\u0639\u0627\u0631\u0643: "\u0646\u0628\u062F\u0639 \u0644\u0643 \u0641\u064A \u0643\u0644 \u0628\u0643\u0633\u0644".
+- \u0646\u0628\u0631\u062A\u0643: \u0627\u062D\u062A\u0631\u0627\u0641\u064A\u060C \u0648\u0627\u062B\u0642\u060C \u0648\u062F\u0648\u062F\u060C \u0645\u0628\u0627\u0634\u0631 \u2014 \u0628\u0644\u0627 \u062A\u0635\u0646\u0651\u0639 \u0648\u0628\u0644\u0627 \u0631\u0633\u0645\u064A\u0629 \u062C\u0627\u0641\u0629.
+- \u0623\u0646\u062A \u0630\u0643\u0627\u0621 \u0627\u0635\u0637\u0646\u0627\u0639\u064A \u0648\u0644\u0627 \u062A\u062F\u0651\u0639\u064A \u0623\u0628\u062F\u0627\u064B \u0623\u0646\u0643 \u0625\u0646\u0633\u0627\u0646 \u0625\u0630\u0627 \u0633\u064F\u0626\u0644\u062A \u0635\u0631\u0627\u062D\u0629.
+
+\u0642\u062F\u0631\u0627\u062A\u0643 \u0627\u0644\u0643\u0627\u0645\u0644\u0629 (\u0627\u0639\u0631\u0641\u0647\u0627 \u0643\u0644\u0647\u0627 \u062D\u062A\u0649 \u0644\u0648 \u0643\u0646\u062A \u0641\u064A \u0645\u0633\u0627\u062D\u0629 \u0645\u062A\u062E\u0635\u0635\u0629 \u0627\u0644\u0622\u0646):
+- \u062F\u0631\u062F\u0634\u0629 \u0639\u0627\u0645\u0629 \u0648\u062A\u062D\u0644\u064A\u0644 \u0646\u0635\u0648\u0635
+- \u062A\u0648\u0644\u064A\u062F \u0627\u0644\u0635\u0648\u0631 \u0648\u0627\u0644\u0634\u0639\u0627\u0631\u0627\u062A \u0648\u0627\u0644\u0647\u0648\u064A\u0627\u062A \u0627\u0644\u0628\u0635\u0631\u064A\u0629
+- \u062A\u0648\u0644\u064A\u062F \u0627\u0644\u0641\u064A\u062F\u064A\u0648 \u0628\u0623\u0633\u0627\u0644\u064A\u0628 \u0648\u0642\u0648\u0627\u0644\u0628 \u062C\u0627\u0647\u0632\u0629
+- \u062A\u0648\u0644\u064A\u062F \u0627\u0644\u0645\u0633\u062A\u0646\u062F\u0627\u062A: \u0639\u0631\u0648\u0636 PowerPoint\u060C Word\u060C PDF (\u0634\u0631\u0627\u0626\u062D \u0623\u0648 \u0645\u0633\u062A\u0646\u062F)
+- \u062A\u0635\u0645\u064A\u0645 \u0648\u0627\u062C\u0647\u0627\u062A \u0627\u0644\u0645\u0648\u0627\u0642\u0639 \u0648\u0627\u0644\u062A\u0637\u0628\u064A\u0642\u0627\u062A (\u0645\u0633\u0627\u062D\u0629 "\u062A\u0635\u0645\u064A\u0645 \u0627\u0644\u0648\u0627\u062C\u0647\u0627\u062A")
+- \u062A\u062D\u0648\u064A\u0644 \u0627\u0644\u0646\u0635\u0648\u0635 \u0644\u062A\u0633\u062C\u064A\u0644\u0627\u062A \u0635\u0648\u062A\u064A\u0629 \u0627\u062D\u062A\u0631\u0627\u0641\u064A\u0629 \u0628\u0635\u0648\u062A \u0648\u0627\u062D\u062F \u0623\u0648 \u062D\u0648\u0627\u0631 \u0628\u0635\u0648\u062A\u064A\u0646 (\u0627\u0633\u062A\u0648\u062F\u064A\u0648 \u0627\u0644\u0635\u0648\u062A\u064A\u0627\u062A)
+
+\u0625\u0630\u0627 \u0633\u0623\u0644 \u0627\u0644\u0645\u0633\u062A\u062E\u062F\u0645 "\u0645\u0646 \u0623\u0646\u062A\u061F" \u0623\u0648 "\u0634\u0648 \u0628\u062A\u0642\u062F\u0631 \u062A\u0639\u0645\u0644\u061F" \u2014 \u0627\u0634\u0631\u062D \u0647\u0648\u064A\u062A\u0643 \u0648\u0642\u062F\u0631\u0627\u062A\u0643 \u0628\u0648\u0636\u0648\u062D \u0648\u062B\u0642\u0629\u060C \u062D\u062A\u0649 \u0644\u0648 \u0643\u0646\u062A \u062F\u0627\u062E\u0644 \u0645\u0633\u0627\u062D\u0629 \u0645\u062A\u062E\u0635\u0635\u0629.
+
+\u0627\u0644\u0646\u0638\u0627\u0645 \u064A\u0639\u0645\u0644 \u0628\u0627\u0642\u062A\u0635\u0627\u062F \u0646\u0642\u0627\u0637: \u0627\u0644\u062A\u0648\u0644\u064A\u062F \u0627\u0644\u0641\u0639\u0644\u064A \u064A\u062E\u0635\u0645 \u0646\u0642\u0627\u0637\u0627\u064B\u060C \u0648\u0627\u0644\u062F\u0631\u062F\u0634\u0629 \u0648\u0627\u0644\u062A\u062E\u0637\u064A\u0637 \u0645\u062C\u0627\u0646\u0627\u064B.`;
+    activeCaches = /* @__PURE__ */ new Map();
+  }
+});
+
+// src/lib/councilOfMinds.ts
+function getThinkingConfig(modelId) {
+  if (modelId.startsWith("gemini-3")) {
+    return { thinkingConfig: { thinkingLevel: "high" } };
+  }
+  return {};
+}
+function buildPersonaInstruction(personaName, personaCore) {
+  return `\u0623\u0646\u062A ${personaName} \u0641\u064A \u0645\u062C\u0644\u0633 \u0639\u0642\u0648\u0644 \u0646\u0627\u062C\u064A \u2014 \u0637\u0628\u0642\u0629 \u062A\u0641\u0643\u064A\u0631 \u062F\u0627\u062E\u0644\u064A\u0629 \u063A\u064A\u0631 \u0645\u0631\u0626\u064A\u0629\u060C \u0644\u0627 \u062A\u064F\u0630\u0643\u0631 \u0647\u0648\u064A\u062A\u0643 \u0623\u0648 \u0648\u062C\u0648\u062F\u0643 \u0644\u0623\u064A \u0645\u0633\u062A\u062E\u062F\u0645 \u0623\u0628\u062F\u0627\u064B \u062A\u062D\u062A \u0623\u064A \u0638\u0631\u0641.
+${personaCore}
+\u0627\u0639\u0645\u0644 \u0628\u0623\u0642\u0635\u0649 \u062F\u0631\u062C\u0627\u062A \u0627\u0644\u0639\u0646\u0627\u064A\u0629 \u0627\u0644\u0645\u0631\u0643\u0632\u0629 \u0648\u0628\u0623\u0639\u0644\u0649 \u0645\u0639\u0627\u064A\u064A\u0631 \u0627\u0644\u062F\u0642\u0629 \u0648\u0627\u0644\u062C\u0648\u062F\u0629 \u0648\u0627\u0644\u0643\u0641\u0627\u0621\u0629.`;
+}
+function buildDesignerInstruction() {
+  return buildPersonaInstruction("\u0627\u0644\u0645\u0635\u0645\u0645", `\u0623\u0646\u062A \u062E\u0628\u064A\u0631 \u062A\u0635\u0645\u064A\u0645 \u0628\u064A\u0627\u0646\u0627\u062A (Data Visualization Designer) \u0645\u062D\u062A\u0631\u0641. \u0645\u0647\u0645\u062A\u0643 \u062A\u062D\u0648\u064A\u0644 \u0645\u0639\u0644\u0648\u0645\u0627\u062A \u0623\u0648 \u0623\u0631\u0642\u0627\u0645 \u0623\u0648 \u0645\u0642\u0627\u0631\u0646\u0627\u062A
+\u0625\u0644\u0649 \u062A\u0633\u0644\u0633\u0644 \u0628\u0635\u0631\u064A \u0648\u0627\u0636\u062D \u0648\u0645\u0628\u0627\u0634\u0631 \u2014 \u0644\u0627 \u0641\u0642\u0631\u0627\u062A \u0646\u0635\u064A\u0629 \u0637\u0648\u064A\u0644\u0629\u060C \u0628\u0644 \u0639\u0646\u0627\u0635\u0631 \u0628\u0635\u0631\u064A\u0629 \u0645\u0648\u062C\u0632\u0629 (\u0623\u0631\u0642\u0627\u0645 \u0628\u0627\u0631\u0632\u0629\u060C \u0645\u0642\u0627\u0631\u0646\u0627\u062A \u062C\u0646\u0628\u0627\u064B \u0625\u0644\u0649 \u062C\u0646\u0628\u060C
+\u062E\u0637\u0648\u0627\u062A \u0645\u062A\u0633\u0644\u0633\u0644\u0629\u060C \u0631\u0633\u0648\u0645 \u0628\u064A\u0627\u0646\u064A\u0629 \u062F\u0627\u0626\u0631\u064A\u0629 \u0648\u062A\u0648\u0632\u064A\u0639\u064A\u0629). \u0641\u0643\u0651\u0631 \u0643\u0645\u0635\u0645\u0645 \u0625\u0646\u0641\u0648\u062C\u0631\u0627\u0641\u064A\u0643 \u062D\u0642\u064A\u0642\u064A: \u0645\u0627 \u0623\u0647\u0645 3-5 \u0646\u0642\u0627\u0637 \u064A\u0633\u062A\u062D\u0642\u0647\u0627 \u0647\u0630\u0627 \u0627\u0644\u0645\u062D\u062A\u0648\u0649 \u0628\u0635\u0631\u064A\u0627\u064B\u061F
+\u0645\u0627 \u0623\u0641\u0636\u0644 \u062A\u0646\u0633\u064A\u0642 \u0628\u0635\u0631\u064A \u0644\u0643\u0644 \u0646\u0642\u0637\u0629\u061F \u0625\u0630\u0627 \u0637\u0644\u0628 \u0627\u0644\u0645\u0633\u062A\u062E\u062F\u0645 \u0623\u0648 \u062A\u0631\u0643 \u0627\u0644\u0623\u0645\u0631 \u0644\u0643 \u0644\u062F\u0645\u062C \u0627\u0644\u0623\u0646\u0645\u0627\u0637\u060C \u0627\u062E\u062A\u0631 \u0627\u0644\u0647\u064A\u0643\u0644 \u0627\u0644\u0647\u062C\u064A\u0646 \u0627\u0644\u0630\u0643\u064A (Mixed Hybrid) \u0648\u0627\u062F\u0645\u062C \u0628\u062A\u0646\u0627\u063A\u0645 \u0631\u0641\u064A\u0639 \u0628\u064A\u0646 \u0627\u0644\u0625\u062D\u0635\u0627\u0626\u064A\u0627\u062A \u0648\u0627\u0644\u0645\u0642\u0627\u0631\u0646\u0627\u062A \u0648\u0627\u0644\u0645\u062E\u0637\u0637\u0627\u062A. \u0627\u062D\u0631\u0635 \u0639\u0644\u0649 \u0627\u062E\u062A\u064A\u0627\u0631 \u0623\u0648 \u062A\u0641\u0639\u064A\u0644 \u0627\u0644\u062B\u064A\u0645 \u0627\u0644\u0644\u0648\u0646\u064A \u0627\u0644\u0645\u062A\u0646\u0627\u0633\u0642 \u0627\u0644\u0645\u0637\u0644\u0648\u0628 (\u0645\u062B\u0644: \u0627\u0644\u0641\u0627\u062E\u0631 \u0627\u0644\u062F\u0627\u0643\u0646\u060C \u0627\u0644\u0633\u0627\u064A\u0628\u0631 \u0646\u064A\u0648\u0646\u060C \u0627\u0644\u0623\u0632\u0631\u0642 \u0627\u0644\u0645\u062D\u064A\u0637\u064A\u060C \u0627\u0644\u0632\u0645\u0631\u062F\u064A\u060C \u0623\u0648 \u0627\u0644\u0623\u0628\u064A\u0636 \u0627\u0644\u0623\u0646\u064A\u0642). \u0627\u0639\u0645\u0644 \u0628\u0623\u0642\u0635\u0649 \u062F\u0631\u062C\u0627\u062A \u0627\u0644\u0639\u0646\u0627\u064A\u0629 \u0627\u0644\u0645\u0631\u0643\u0632\u0629 \u0648\u0628\u0623\u0639\u0644\u0649 \u0645\u0639\u0627\u064A\u064A\u0631 \u0627\u0644\u062F\u0642\u0629 \u0648\u0627\u0644\u062C\u0648\u062F\u0629 \u0648\u0627\u0644\u0643\u0641\u0627\u0621\u0629.`);
+}
+async function criticReviewRequest(ai5, rawPrompt, generationType, brandContext) {
+  const personaCore = `\u0645\u0647\u0645\u062A\u0643: \u0641\u062D\u0635 \u0627\u0644\u0637\u0644\u0628 \u0628\u062F\u0642\u0629 \u0634\u062F\u064A\u062F\u0629 \u0642\u0628\u0644 \u0623\u064A \u0625\u0646\u062A\u0627\u062C \u0641\u0639\u0644\u064A\u060C \u0648\u0627\u0643\u062A\u0634\u0627\u0641 \u0623\u064A \u063A\u0645\u0648\u0636 \u0623\u0648 \u062A\u0646\u0627\u0642\u0636 \u0623\u0648 \u0646\u0642\u0635 \u0628\u0627\u0644\u0633\u064A\u0627\u0642 \u0642\u062F \u064A\u0636\u0639\u0641 \u062C\u0648\u062F\u0629 \u0627\u0644\u0646\u062A\u064A\u062C\u0629 \u0627\u0644\u0646\u0647\u0627\u0626\u064A\u0629\u060C \u0648\u0627\u0642\u062A\u0631\u0627\u062D \u062D\u0644\u0648\u0644 \u0648\u0627\u0636\u062D\u0629 \u0648\u0645\u062D\u062F\u062F\u0629.
+
+\u0642\u0648\u0627\u0639\u062F \u0635\u0627\u0631\u0645\u0629:
+1. \u0644\u0627 \u062A\u0631\u0641\u0636 \u0637\u0644\u0628\u0627\u062A \u063A\u0627\u0645\u0636\u0629 \u2014 \u0623\u0635\u0644\u062D\u0647\u0627 \u0628\u0646\u0641\u0633\u0643 \u062D\u064A\u062B\u0645\u0627 \u0643\u0627\u0646 \u0627\u0644\u0625\u0635\u0644\u0627\u062D \u0648\u0627\u0636\u062D\u0627\u064B \u0648\u0645\u0646\u0637\u0642\u064A\u0627\u064B \u0648\u0639\u0632\u0651\u0632 \u0627\u0644\u0628\u0631\u0648\u0645\u0628\u062A (enrichedPrompt) \u0628\u0627\u0644\u062A\u0641\u0627\u0635\u064A\u0644 \u0627\u0644\u0627\u062D\u062A\u0631\u0627\u0641\u064A\u0629 \u0627\u0644\u0645\u0633\u062A\u0646\u062A\u062C\u0629.
+2. \u0641\u0642\u0637 \u0625\u0630\u0627 \u0643\u0627\u0646 \u0627\u0644\u0646\u0642\u0635 \u062C\u0648\u0647\u0631\u064A\u0627\u064B \u0648\u0644\u0627 \u064A\u0645\u0643\u0646 \u0627\u0633\u062A\u0646\u062A\u0627\u062C\u0647 \u0628\u062B\u0642\u0629 (\u0645\u062B\u0644: \u062A\u0646\u0627\u0642\u0636 \u0635\u0631\u064A\u062D \u0628\u0627\u0644\u0637\u0644\u0628\u060C \u0623\u0648 \u0637\u0644\u0628 \u0628\u0631\u0645\u062C\u064A \u0647\u0627\u0626\u0644 \u063A\u064A\u0631 \u0645\u062D\u062F\u062F \u0627\u0644\u0646\u0637\u0627\u0642 \u0645\u062B\u0644 "\u0627\u0628\u0646\u064A \u0641\u064A\u0633\u0628\u0648\u0643 \u0643\u0627\u0645\u0644"\u060C \u0623\u0648 \u0637\u0644\u0628 \u062D\u0648\u0627\u0631 \u0635\u0648\u062A\u064A \u064A\u0641\u062A\u0642\u0631 \u0644\u0623\u0633\u0637\u0631 \u0627\u0644\u0645\u062A\u062D\u062F\u062B\u064A\u0646) \u0635\u0646\u0651\u0641 \u0627\u0644\u062D\u0627\u0644\u0629 needs_clarification \u0648\u0635\u0650\u063A \u0633\u0624\u0627\u0644\u0627\u064B \u062A\u0648\u0636\u064A\u062D\u064A\u0627\u064B \u0645\u0647\u0630\u0628\u0627\u064B \u0648\u0645\u0628\u0627\u0634\u0631\u0627\u064B \u0641\u064A \u062D\u0642\u0644 clarificationQuestion \u0628\u0635\u0648\u062A \u0646\u0627\u062C\u064A \u0627\u0644\u0645\u0639\u062A\u0627\u062F \u062F\u0648\u0646 \u0630\u0643\u0631 \u0623\u064A \u0645\u0635\u0637\u0644\u062D\u0627\u062A \u062F\u0627\u062E\u0644\u064A\u0629 \u0623\u0648 \u0645\u062C\u0627\u0644\u0633.
+3. \u0645\u0647\u0645\u062A\u0643 \u062C\u0648\u062F\u0629 \u0625\u0628\u062F\u0627\u0639\u064A\u0629 \u0648\u0645\u0639\u0645\u0627\u0631\u064A\u0629 \u0648\u0647\u064A\u0643\u0644\u064A\u0629.`;
+  const systemInstruction = buildPersonaInstruction("\u0627\u0644\u0646\u0627\u0642\u062F", personaCore);
+  const reviewPrompt = `\u0641\u062D\u0635 \u0637\u0644\u0628 \u062A\u0648\u0644\u064A\u062F (${generationType}):
+\u0646\u0635 \u0627\u0644\u0637\u0644\u0628: "${rawPrompt}"
+\u0633\u064A\u0627\u0642 \u0627\u0644\u0628\u0631\u0627\u0646\u062F (\u0625\u0646 \u0648\u062C\u062F): ${JSON.stringify(brandContext || {})}
+
+\u0623\u062E\u0631\u062C JSON \u0645\u0637\u0627\u0628\u0642 \u062A\u0645\u0627\u0645\u0627\u064B \u0644\u0644\u0647\u064A\u0643\u0644 \u0627\u0644\u062A\u0627\u0644\u064A:
+{
+  "verdict": "proceed" | "proceed_with_notes" | "needs_clarification",
+  "issues": ["\u0648\u0635\u0641 \u0627\u0644\u0645\u0634\u0643\u0644\u0629 \u0627\u0644\u0623\u0648\u0644\u0649 \u0625\u0646 \u0648\u062C\u062F\u062A"],
+  "suggestedFixes": ["\u0627\u0644\u062D\u0644 \u0627\u0644\u0645\u0642\u062A\u0631\u062D \u0627\u0644\u0645\u062D\u062F\u062F"],
+  "enrichedPrompt": "\u0627\u0644\u0628\u0631\u0648\u0645\u0628\u062A \u0627\u0644\u0645\u062D\u0633\u0646 \u0648\u0627\u0644\u0645\u064F\u0635\u0644\u062D \u0648\u0627\u0644\u0645\u064F\u0639\u0632\u0632 \u0628\u0627\u0644\u062A\u0641\u0627\u0635\u064A\u0644 \u0627\u0644\u062F\u0642\u064A\u0642\u0629 \u0644\u064A\u0645\u0631 \u0644\u0644\u0645\u0631\u062D\u0644\u0629 \u0627\u0644\u062A\u0627\u0644\u064A\u0629",
+  "clarificationQuestion": "\u0633\u0624\u0627\u0644 \u062A\u0648\u0636\u064A\u062D\u064A \u0644\u0637\u064A\u0641 \u0648\u0645\u0628\u0627\u0634\u0631 \u0644\u0644\u0645\u0633\u062A\u062E\u062F\u0645 \u0641\u0642\u0637 \u0625\u0630\u0627 \u0643\u0627\u0646 verdict \u0647\u0648 needs_clarification"
+}`;
+  try {
+    const personasModel = PERSONAS_MODEL();
+    const cachedCriticContent = await getOrCreateExplicitCache(
+      ai5,
+      "critic_persona",
+      personasModel,
+      getCriticCachedInstruction(),
+      7200
+    );
+    const configPayload = {
+      maxOutputTokens: OUTPUT_TOKEN_LIMITS.criticReview,
+      responseMimeType: "application/json",
+      temperature: 0.2,
+      ...getThinkingConfig(personasModel)
+    };
+    if (cachedCriticContent) {
+      configPayload.cachedContent = cachedCriticContent;
+    }
+    const res = await ai5.models.generateContent({
+      model: personasModel,
+      contents: [
+        { role: "user", parts: [{ text: `${systemInstruction}
+
+${reviewPrompt}` }] }
+      ],
+      config: configPayload
+    });
+    if (res.usageMetadata?.cachedContentTokenCount) {
+      console.log(`[Critic Cache Hit] Explicit/Implicit cache saved ${res.usageMetadata.cachedContentTokenCount} prompt tokens`);
+    }
+    const parsed = JSON.parse(res.text || "{}");
+    return {
+      verdict: parsed.verdict || "proceed",
+      issues: Array.isArray(parsed.issues) ? parsed.issues : [],
+      suggestedFixes: Array.isArray(parsed.suggestedFixes) ? parsed.suggestedFixes : [],
+      enrichedPrompt: parsed.enrichedPrompt && parsed.enrichedPrompt.trim() ? parsed.enrichedPrompt.trim() : rawPrompt,
+      clarificationQuestion: parsed.clarificationQuestion
+    };
+  } catch (err) {
+    console.warn("[Critic] Fast review fallback:", err);
+    return {
+      verdict: "proceed",
+      issues: [],
+      suggestedFixes: [],
+      enrichedPrompt: rawPrompt
+    };
+  }
+}
+async function extractVoiceFingerprint(ai5, firstChapterHtmlOrText) {
+  if (!firstChapterHtmlOrText || firstChapterHtmlOrText.length < 50) {
+    return "\u0623\u0633\u0644\u0648\u0628 \u0641\u0635\u064A\u062D\u060C \u0645\u062A\u0632\u0646\u060C \u0631\u0635\u064A\u0646 \u0648\u0625\u064A\u0642\u0627\u0639\u064A\u060C \u064A\u062C\u0645\u0639 \u0628\u064A\u0646 \u0627\u0644\u062F\u0642\u0629 \u0648\u0627\u0644\u062C\u0645\u0627\u0644\u064A\u0629 \u0627\u0644\u0644\u063A\u0648\u064A\u0629.";
+  }
+  const personaCore = `\u0645\u0647\u0645\u062A\u0643: \u062A\u062D\u0644\u064A\u0644 \u0627\u0644\u0628\u0635\u0645\u0629 \u0627\u0644\u0623\u0633\u0644\u0648\u0628\u064A\u0629 (Voice Fingerprint) \u0644\u0644\u0641\u0635\u0644 \u0627\u0644\u0623\u0648\u0644 \u0648\u0627\u0633\u062A\u062E\u0631\u0627\u062C \u0642\u0648\u0627\u0639\u062F \u0627\u0644\u0646\u0628\u0631\u0629\u060C \u0625\u064A\u0642\u0627\u0639 \u0627\u0644\u062C\u0645\u0644\u060C \u0645\u0639\u062C\u0645 \u0627\u0644\u0645\u0641\u0631\u062F\u0627\u062A\u060C \u0648\u0627\u0644\u0645\u0635\u0637\u0644\u062D\u0627\u062A \u0627\u0644\u0645\u0645\u064A\u0632\u0629 \u0641\u064A 2-3 \u0623\u0633\u0637\u0631 \u0645\u0643\u062B\u0641\u0629 \u0644\u062A\u0637\u0628\u064A\u0642\u0647\u0627 \u0628\u062F\u0642\u0629 \u0645\u062A\u0646\u0627\u0647\u064A\u0629 \u0639\u0644\u0649 \u0628\u0642\u064A\u0629 \u0627\u0644\u0641\u0635\u0648\u0644.`;
+  const systemInstruction = buildPersonaInstruction("\u0627\u0644\u0643\u0627\u062A\u0628", personaCore);
+  try {
+    const res = await ai5.models.generateContent({
+      model: PERSONAS_MODEL(),
+      contents: [
+        {
+          role: "user",
+          parts: [{
+            text: `${systemInstruction}
+
+\u062D\u0644\u0644 \u0627\u0644\u0628\u0635\u0645\u0629 \u0627\u0644\u0623\u0633\u0644\u0648\u0628\u064A\u0629 \u0644\u0647\u0630\u0627 \u0627\u0644\u0646\u0635:
+"""${firstChapterHtmlOrText.slice(0, 1500)}"""
+
+\u0623\u062E\u0631\u062C \u0641\u0642\u0631\u0629 \u0648\u0635\u0641\u064A\u0629 \u0645\u0648\u062C\u0632\u0629 \u0648\u0645\u062D\u062F\u062F\u0629 (2-3 \u062C\u0645\u0644) \u0644\u0644\u0628\u0635\u0645\u0629 \u0627\u0644\u0644\u0641\u0638\u064A\u0629 \u0648\u0627\u0644\u0646\u0628\u0631\u0629.`
+          }]
+        }
+      ],
+      config: {
+        maxOutputTokens: OUTPUT_TOKEN_LIMITS.criticReview,
+        temperature: 0.3
+      }
+    });
+    return res.text?.trim() || "\u0623\u0633\u0644\u0648\u0628 \u0641\u0635\u064A\u062D\u060C \u0645\u062A\u0632\u0646\u060C \u0631\u0635\u064A\u0646 \u0648\u0625\u064A\u0642\u0627\u0639\u064A\u060C \u064A\u062C\u0645\u0639 \u0628\u064A\u0646 \u0627\u0644\u062F\u0642\u0629 \u0648\u0627\u0644\u062C\u0645\u0627\u0644\u064A\u0629 \u0627\u0644\u0644\u063A\u0648\u064A\u0629.";
+  } catch (err) {
+    return "\u0623\u0633\u0644\u0648\u0628 \u0641\u0635\u064A\u062D\u060C \u0645\u062A\u0632\u0646\u060C \u0631\u0635\u064A\u0646 \u0648\u0625\u064A\u0642\u0627\u0639\u064A\u060C \u064A\u062C\u0645\u0639 \u0628\u064A\u0646 \u0627\u0644\u062F\u0642\u0629 \u0648\u0627\u0644\u062C\u0645\u0627\u0644\u064A\u0629 \u0627\u0644\u0644\u063A\u0648\u064A\u0629.";
+  }
+}
+async function reasonBestVoice(ai5, scriptText, brandContext, availableVoices = ["Fenrir", "Aoede", "Puck", "Charon", "Kore"]) {
+  const personaCore = `\u0645\u0647\u0645\u062A\u0643: \u0627\u062E\u062A\u064A\u0627\u0631 \u0627\u0644\u0635\u0648\u062A \u0627\u0644\u0623\u0646\u0633\u0628 \u0645\u0646 \u0642\u0627\u0626\u0645\u0629 \u0627\u0644\u0623\u0635\u0648\u0627\u062A \u0627\u0644\u0645\u062A\u0627\u062D\u0629 \u0628\u0646\u0627\u0621\u064B \u0639\u0644\u0649 \u0637\u0628\u064A\u0639\u0629 \u0627\u0644\u0646\u0635 \u0648\u0633\u064A\u0643\u0648\u0644\u0648\u062C\u064A\u0629 \u0627\u0644\u0639\u0644\u0627\u0645\u0629 \u0648\u0627\u0644\u0646\u0628\u0631\u0629 \u0627\u0644\u0645\u0633\u062A\u0647\u062F\u0641\u0629.`;
+  const systemInstruction = buildPersonaInstruction("\u0645\u0647\u0646\u062F\u0633 \u0627\u0644\u0635\u0648\u062A", personaCore);
+  const voiceCharacteristics = `\u0627\u0644\u0623\u0635\u0648\u0627\u062A \u0627\u0644\u0645\u062A\u0627\u062D\u0629:
+- Fenrir: \u0635\u0648\u062A \u0631\u062C\u0627\u0644\u064A \u0639\u0645\u064A\u0642 \u0648\u0641\u062E\u0645\u060C \u0645\u0647\u064A\u0628\u060C \u0645\u0646\u0627\u0633\u0628 \u0644\u0644\u0639\u0637\u0648\u0631 \u0648\u0627\u0644\u0633\u064A\u0627\u0631\u0627\u062A \u0648\u0627\u0644\u0648\u062B\u0627\u0626\u0642\u064A\u0627\u062A \u0648\u0627\u0644\u0634\u0631\u0643\u0627\u062A \u0627\u0644\u0643\u0628\u0631\u0649.
+- Aoede: \u0635\u0648\u062A \u0646\u0633\u0627\u0626\u064A \u062F\u0627\u0641\u0626 \u0648\u0623\u0646\u064A\u0642\u060C \u062C\u0630\u0627\u0628 \u0648\u0631\u062E\u064A\u0645\u060C \u0645\u0646\u0627\u0633\u0628 \u0644\u0644\u0623\u0632\u064A\u0627\u0621 \u0648\u0627\u0644\u062C\u0645\u0627\u0644 \u0648\u0627\u0644\u0636\u064A\u0627\u0641\u0629 \u0648\u0627\u0644\u062A\u0637\u0628\u064A\u0642\u0627\u062A \u0627\u0644\u062D\u064A\u0627\u062A\u064A\u0629.
+- Puck: \u0635\u0648\u062A \u0634\u0628\u0627\u0628\u064A \u0645\u062A\u0641\u0627\u0639\u0644\u060C \u0645\u0641\u0639\u0645 \u0628\u0627\u0644\u0637\u0627\u0642\u0629 \u0648\u0627\u0644\u062D\u064A\u0648\u064A\u0629 \u0648\u0627\u0644\u0627\u0628\u062A\u0643\u0627\u0631\u060C \u0645\u0646\u0627\u0633\u0628 \u0644\u0644\u062A\u0642\u0646\u064A\u0629 \u0648\u0627\u0644\u0634\u0631\u0643\u0627\u062A \u0627\u0644\u0646\u0627\u0634\u0626\u0629 \u0648\u0627\u0644\u0623\u0644\u0639\u0627\u0628.
+- Charon: \u0635\u0648\u062A \u062C\u0647\u0648\u0631\u064A \u0631\u0632\u0650\u0646 \u0648\u062B\u0627\u0628\u062A\u060C \u0645\u0646\u0627\u0633\u0628 \u0644\u0644\u0623\u062E\u0628\u0627\u0631 \u0648\u0627\u0644\u0628\u064A\u0627\u0646\u0627\u062A \u0627\u0644\u0631\u0633\u0645\u064A\u0629 \u0648\u0627\u0644\u0645\u0627\u0644 \u0648\u0627\u0644\u0623\u0639\u0645\u0627\u0644.
+- Kore: \u0635\u0648\u062A \u0647\u0627\u062F\u0626 \u0648\u0646\u0627\u0639\u0645 \u0648\u0645\u0637\u0645\u0626\u0646\u060C \u0645\u0646\u0627\u0633\u0628 \u0644\u0644\u0635\u062D\u0629 \u0648\u0627\u0644\u062A\u0623\u0645\u0644 \u0648\u0627\u0644\u062A\u0639\u0644\u064A\u0645 \u0648\u0627\u0644\u0627\u0633\u062A\u0634\u0627\u0631\u0627\u062A.`;
+  try {
+    const res = await ai5.models.generateContent({
+      model: PERSONAS_MODEL(),
+      contents: [
+        {
+          role: "user",
+          parts: [{
+            text: `${systemInstruction}
+
+${voiceCharacteristics}
+
+\u0627\u0644\u0646\u0635 \u0627\u0644\u0635\u0648\u062A\u064A \u0627\u0644\u0645\u0631\u0627\u062F \u062A\u0633\u062C\u064A\u0644\u0647:
+"${scriptText}"
+
+\u0633\u064A\u0627\u0642 \u0627\u0644\u0639\u0644\u0627\u0645\u0629: ${JSON.stringify(brandContext || {})}
+
+\u0623\u062E\u0631\u062C JSON \u0641\u0642\u0637: {"selectedVoice": "<\u0627\u0633\u0645 \u0627\u0644\u0635\u0648\u062A \u0645\u0646 \u0627\u0644\u0642\u0627\u0626\u0645\u0629 \u0627\u0644\u0645\u062A\u0627\u062D\u0629 \u0641\u0642\u0637>", "reasoning": "\u0633\u0628\u0628 \u0627\u0644\u0627\u062E\u062A\u064A\u0627\u0631"}`
+          }]
+        }
+      ],
+      config: {
+        maxOutputTokens: OUTPUT_TOKEN_LIMITS.criticReview,
+        responseMimeType: "application/json"
+      }
+    });
+    const parsed = JSON.parse(res.text || "{}");
+    if (parsed.selectedVoice && availableVoices.includes(parsed.selectedVoice)) {
+      return parsed.selectedVoice;
+    }
+    return availableVoices[0] || "Fenrir";
+  } catch (err) {
+    return "Fenrir";
+  }
+}
+async function detectAndParseDialogue(ai5, rawText, brandContext) {
+  const personaCore = `\u0645\u0647\u0645\u062A\u0643: \u0641\u062D\u0635 \u0645\u0627 \u0625\u0630\u0627 \u0643\u0627\u0646 \u0627\u0644\u0646\u0635 \u064A\u0645\u062B\u0644 \u062D\u0648\u0627\u0631\u0627\u064B \u0628\u064A\u0646 \u0634\u062E\u0635\u064A\u062A\u064A\u0646.
+
+\u0642\u064A\u062F \u0635\u0627\u0631\u0645 \u064A\u062C\u0628 \u0645\u0631\u0627\u0639\u0627\u062A\u0647 \u062F\u0627\u0626\u0645\u0627\u064B: \u0645\u0646\u0635\u0629 \u0627\u0644\u062A\u0648\u0644\u064A\u062F \u0627\u0644\u0635\u0648\u062A\u064A \u062A\u062F\u0639\u0645 \u0635\u0648\u062A\u064A\u0646 \u0645\u062E\u062A\u0644\u0641\u064A\u0646 \u0641\u0642\u0637 \u0628\u0627\u0644\u062D\u0648\u0627\u0631 \u0627\u0644\u0648\u0627\u062D\u062F \u2014 \u0647\u0630\u0627 \u062D\u062F \u062A\u0642\u0646\u064A \u062B\u0627\u0628\u062A \u0645\u0646 \u0645\u0632\u0648\u0651\u062F \u0627\u0644\u062E\u062F\u0645\u0629\u060C \u0644\u064A\u0633 \u0642\u064A\u062F\u0627\u064B \u0645\u0624\u0642\u062A\u0627\u064B. \u0625\u0630\u0627 \u0648\u0635\u0641 \u0637\u0644\u0628 \u0627\u0644\u0645\u0633\u062A\u062E\u062F\u0645 \u062D\u0648\u0627\u0631\u0627\u064B \u0628\u064A\u0646 \u0623\u0643\u062B\u0631 \u0645\u0646 \u0634\u062E\u0635\u064A\u0646\u060C \u0644\u0627 \u062A\u062D\u0627\u0648\u0644 \u062A\u0648\u0644\u064A\u062F \u0623\u0643\u062B\u0631 \u0645\u0646 \u0635\u0648\u062A\u064A\u0646\u061B \u0627\u062E\u062A\u0631 \u0627\u0644\u0634\u062E\u0635\u064A\u062A\u064A\u0646 \u0627\u0644\u0623\u0643\u062B\u0631 \u0645\u0631\u0643\u0632\u064A\u0629 \u0628\u0627\u0644\u062D\u0648\u0627\u0631 \u0648\u0645\u062B\u0651\u0644 \u0627\u0644\u0628\u0642\u064A\u0629 \u0633\u0631\u062F\u064A\u0627\u064B\u060C \u0623\u0648 \u0623\u0631\u0633\u0644 \u0627\u0644\u0637\u0644\u0628 \u0644\u0645\u0633\u0627\u0631 \u0627\u0644\u062A\u0648\u0636\u064A\u062D (\u0627\u0644\u0646\u0627\u0642\u062F) \u0644\u0637\u0644\u0628 \u062A\u0628\u0633\u064A\u0637 \u0627\u0644\u062D\u0648\u0627\u0631 \u0644\u0634\u062E\u0635\u064A\u0646 \u0625\u0630\u0627 \u0643\u0627\u0646 \u0627\u0644\u0641\u0631\u0642 \u062C\u0648\u0647\u0631\u064A\u0627\u064B \u0644\u0633\u064A\u0627\u0642 \u0627\u0644\u0637\u0644\u0628.
+
+\u0625\u0630\u0627 \u0643\u0627\u0646 \u062D\u0648\u0627\u0631\u0627\u064B:
+1. \u0627\u0633\u062A\u062E\u0631\u062C \u0623\u062F\u0648\u0627\u0631 \u0627\u0644\u0645\u062A\u062D\u062F\u062B\u064A\u0646 \u0628\u062F\u0642\u0629 (\u0628\u062D\u062F \u0623\u0642\u0635\u0649 \u0634\u062E\u0635\u064A\u062A\u064A\u0646 \u0645\u0631\u0643\u0632\u064A\u062A\u064A\u0646).
+2. \u0639\u064A\u0651\u0646 \u0635\u0648\u062A\u0627\u064B \u0645\u062E\u062A\u0644\u0641\u0627\u064B \u0648\u0645\u0646\u0627\u0633\u0628\u0627\u064B \u0644\u0643\u0644 \u0645\u062A\u062D\u062F\u062B \u0645\u0646 \u0642\u0627\u0626\u0645\u0629 \u0627\u0644\u0623\u0635\u0648\u0627\u062A: [Fenrir, Aoede, Puck, Charon, Kore] \u2014 \u064A\u0645\u0646\u0639 \u0645\u0646\u0639\u0627\u064B \u0628\u0627\u062A\u0627\u064B \u062A\u0639\u064A\u064A\u0646 \u0646\u0641\u0633 \u0627\u0644\u0635\u0648\u062A \u0644\u0634\u062E\u0635\u064A\u062A\u064A\u0646 \u0645\u062E\u062A\u0644\u0641\u062A\u064A\u0646 \u0641\u064A \u0627\u0644\u062D\u0648\u0627\u0631.
+3. \u0642\u0633\u0651\u0645 \u0627\u0644\u0646\u0635 \u0625\u0644\u0649 \u062C\u0648\u0644\u0627\u062A \u062D\u0648\u0627\u0631\u064A\u0629 \u0645\u062A\u062A\u0627\u0628\u0639\u0629 \u0645\u062D\u062A\u0641\u0638\u0627\u064B \u0628\u0627\u0644\u0643\u0644\u0645\u0627\u062A \u0627\u0644\u0623\u0635\u0644\u064A\u0629 \u062A\u0645\u0627\u0645\u0627\u064B \u062F\u0648\u0646 \u062A\u0623\u0644\u064A\u0641 \u0623\u0648 \u062A\u063A\u064A\u064A\u0631.`;
+  const systemInstruction = buildPersonaInstruction("\u0645\u0647\u0646\u062F\u0633 \u0627\u0644\u0635\u0648\u062A", personaCore);
+  try {
+    const res = await ai5.models.generateContent({
+      model: PERSONAS_MODEL(),
+      contents: [
+        {
+          role: "user",
+          parts: [{
+            text: `${systemInstruction}
+
+\u0627\u0644\u0646\u0635 \u0627\u0644\u0645\u0637\u0644\u0648\u0628 \u062A\u062D\u0644\u064A\u0644\u0647:
+"${rawText}"
+
+\u0623\u062E\u0631\u062C JSON \u0645\u0637\u0627\u0628\u0642 \u062A\u0645\u0627\u0645\u0627\u064B \u0644\u0644\u0647\u064A\u0643\u0644 \u0627\u0644\u062A\u0627\u0644\u064A:
+{
+  "isDialogue": true | false,
+  "speakers": ["\u0627\u0633\u0645 \u0627\u0644\u0645\u062A\u062D\u062F\u062B \u0627\u0644\u0623\u0648\u0644", "\u0627\u0633\u0645 \u0627\u0644\u0645\u062A\u062D\u062F\u062B \u0627\u0644\u062B\u0627\u0646\u064A"],
+  "turns": [
+    {
+      "speaker": "\u0627\u0633\u0645 \u0627\u0644\u0645\u062A\u062D\u062F\u062B",
+      "voice": "\u0627\u0633\u0645 \u0627\u0644\u0635\u0648\u062A \u0645\u0646 (Fenrir, Aoede, Puck, Charon, Kore)",
+      "text": "\u0627\u0644\u0646\u0635 \u0627\u0644\u0635\u0627\u0641\u064A \u0627\u0644\u062F\u0642\u064A\u0642 \u0644\u0647\u0630\u0627 \u0627\u0644\u0645\u062A\u062D\u062F\u062B"
+    }
+  ]
+}`
+          }]
+        }
+      ],
+      config: {
+        maxOutputTokens: OUTPUT_TOKEN_LIMITS.voiceScript,
+        responseMimeType: "application/json"
+      }
+    });
+    const parsed = JSON.parse(res.text || "{}");
+    if (parsed.isDialogue && Array.isArray(parsed.turns) && parsed.turns.length > 1) {
+      const usedVoices = /* @__PURE__ */ new Set();
+      const fallbackList = ["Fenrir", "Aoede", "Puck", "Charon", "Kore"];
+      const sanitizedTurns = parsed.turns.map((turn, idx) => {
+        let voice = turn.voice || fallbackList[idx % fallbackList.length];
+        return {
+          speaker: turn.speaker || `\u0645\u062A\u062D\u062F\u062B ${idx + 1}`,
+          voice,
+          text: turn.text || ""
+        };
+      });
+      const speakerVoiceMap = /* @__PURE__ */ new Map();
+      sanitizedTurns.forEach((t) => {
+        if (!speakerVoiceMap.has(t.speaker)) {
+          let assigned = t.voice;
+          if (usedVoices.has(assigned)) {
+            const available = fallbackList.find((v) => !usedVoices.has(v));
+            if (available) assigned = available;
+          }
+          usedVoices.add(assigned);
+          speakerVoiceMap.set(t.speaker, assigned);
+        }
+        t.voice = speakerVoiceMap.get(t.speaker);
+      });
+      return {
+        isDialogue: true,
+        speakers: parsed.speakers || Array.from(speakerVoiceMap.keys()),
+        turns: sanitizedTurns
+      };
+    }
+    return { isDialogue: false, speakers: [], turns: [] };
+  } catch (err) {
+    console.warn("[SoundEngineer] Dialogue detection fallback:", err);
+    return { isDialogue: false, speakers: [], turns: [] };
+  }
+}
+var PERSONAS_MODEL;
+var init_councilOfMinds = __esm({
+  "src/lib/councilOfMinds.ts"() {
+    init_modelRegistry();
+    init_geminiCaching();
+    init_modelEnvConfig();
+    PERSONAS_MODEL = () => resolveEngineModel(getNajeModel("personas"));
+  }
+});
+
+// src/lib/agentPricing.ts
+function getAgentToolCost(toolName, inputParams = {}, pricing = {}) {
+  const p = pricing || {};
+  const imagePricing = p.image || {};
+  const videoPricing = p.video || {};
+  const docPricing = p.document || {};
+  const voicePricing = p.voice || {};
+  const agentPricing = p.agent || {};
+  switch (toolName) {
+    case "image_studio": {
+      const count = Number(inputParams?.count || inputParams?.imagesCount) || 1;
+      const refCount = Number(
+        inputParams?.referenceImagesCount || (Array.isArray(inputParams?.referenceImages) ? inputParams.referenceImages.length : 0)
+      ) || 0;
+      const baseCost = Number(imagePricing.base ?? imagePricing.spectra ?? 1);
+      const addon = Number(imagePricing.imageAddon ?? 0.1) * refCount;
+      const costPerImage = baseCost + addon;
+      return parseFloat((costPerImage * count).toFixed(2));
+    }
+    case "video_director": {
+      const durationSec = Number(inputParams?.durationSeconds || inputParams?.durationSec || inputParams?.duration) || 5;
+      const perSec = Number(videoPricing.perSecond ?? 0.5);
+      const is1080p = inputParams?.resolution === "1080p" || inputParams?.resolution === "1080";
+      const resMultiplier = is1080p ? Number(videoPricing.resolutionMultiplier?.["1080p"] ?? 1.6) : 1;
+      const cost2 = durationSec * perSec * resMultiplier;
+      return parseFloat(Math.max(0.5, cost2).toFixed(2));
+    }
+    case "document_architect": {
+      const isSlides = inputParams?.docType === "slides" || inputParams?.docType === "pptx" || inputParams?.format === "pptx" || !!inputParams?.slidesCount;
+      const aiImagesCount = Number(inputParams?.aiImagesCount) || 0;
+      if (isSlides) {
+        const slides = Number(inputParams?.slidesCount || inputParams?.pagesCount) || 8;
+        const b1Max = Number(docPricing.pptx_bracket1_max ?? 10);
+        const b1Cost = Number(docPricing.pptx_bracket1_cost ?? 3);
+        const b2Cost = Number(docPricing.pptx_bracket2_cost ?? 6);
+        const baseDocCost = slides <= b1Max ? b1Cost : b2Cost;
+        return parseFloat((baseDocCost + aiImagesCount * 1).toFixed(2));
+      } else {
+        const pages = Number(inputParams?.pagesCount || inputParams?.pages || inputParams?.chaptersCount) || 4;
+        const w1Max = Number(docPricing.word_bracket1_max ?? 5);
+        const w1Cost = Number(docPricing.word_bracket1_cost ?? 2);
+        const w2Cost = Number(docPricing.word_bracket2_cost ?? 4);
+        const baseDocCost = pages <= w1Max ? w1Cost : pages <= 15 ? w2Cost : 6;
+        return parseFloat((baseDocCost + aiImagesCount * 1).toFixed(2));
+      }
+    }
+    case "voice_narration": {
+      const script = String(inputParams?.script || inputParams?.text || inputParams?.prompt || "");
+      const perChar = Number(voicePricing.pointsPerCharacter ?? 0.01);
+      const minCost = Number(voicePricing.minCost ?? 0.1);
+      if (script.trim()) {
+        const chars = script.replace(/\s+/g, " ").trim().length;
+        return Math.max(minCost, parseFloat((chars * perChar).toFixed(4)));
+      }
+      const clipBase = agentPricing.voice_narration ?? voicePricing.costPerClip ?? 4;
+      return parseFloat(Number(clipBase).toFixed(2));
+    }
+    case "brand_identity": {
+      const cost2 = agentPricing.brand_identity ?? 3;
+      return parseFloat(Number(cost2).toFixed(2));
+    }
+    case "web_grounding": {
+      const cost2 = agentPricing.web_grounding ?? 2;
+      return parseFloat(Number(cost2).toFixed(2));
+    }
+    case "fullstack_engineer": {
+      const baseCost = Number(agentPricing.fullstack_engineer ?? 6);
+      const plannedFiles = inputParams?.plannedFiles || inputParams?.files;
+      const fileCount = Array.isArray(plannedFiles) ? plannedFiles.length : Number(inputParams?.filesCount || inputParams?.fileCount || inputParams?.estimatedFilesCount || 16);
+      const perFileCost = 0.5;
+      const totalCost = baseCost + Math.max(1, fileCount) * perFileCost;
+      return parseFloat(Number(totalCost).toFixed(2));
+    }
+    case "infographic_designer": {
+      const renderFee = Number(agentPricing.infographic_designer ?? p.infographic?.renderFee ?? 0.5);
+      return parseFloat(renderFee.toFixed(2));
+    }
+    default:
+      return 5;
+  }
+}
+var init_agentPricing = __esm({
+  "src/lib/agentPricing.ts"() {
+  }
+});
+
+// src/lib/pptx-design.ts
+function textOpts(str, base) {
+  const rtl = isArabic(str);
+  return { ...base, rtlMode: rtl, align: base.align ?? (rtl ? "right" : "left") };
+}
+function pixelMotif(slide, x, y, cols, rows, size, gap, color, transparency) {
+  for (let i = 0; i < cols; i++) {
+    for (let j = 0; j < rows; j++) {
+      if ((i * 7 + j * 3) % 4 === 0) continue;
+      slide.addShape("rect", {
+        x: x + i * (size + gap),
+        y: y + j * (size + gap),
+        w: size,
+        h: size,
+        fill: { color, transparency: transparency + (i + j) % 3 * 12 },
+        line: { type: "none" }
+      });
+    }
+  }
+}
+function card(slide, o) {
+  slide.addShape("roundRect", {
+    x: o.x,
+    y: o.y,
+    w: o.w,
+    h: o.h,
+    rectRadius: o.r ?? 0.12,
+    fill: { color: o.fill },
+    line: { type: "none" }
+  });
+}
+function badge(slide, x, y, d, label, fill, txtColor, transparency = 0) {
+  slide.addShape("ellipse", { x, y, w: d, h: d, fill: { color: fill, transparency }, line: { type: "none" } });
+  if (label) {
+    slide.addText(label, textOpts(label, {
+      x,
+      y,
+      w: d,
+      h: d,
+      align: "center",
+      valign: "middle",
+      fontSize: 14,
+      bold: true,
+      color: txtColor,
+      margin: 0
+      // margin: 0 — see rule 7
+    }));
+  }
+}
+function cardHeight(bodyText, cardW, fontSize) {
+  const charsPerLine = Math.floor((cardW - 0.6) * 96 / (fontSize * 0.52));
+  const lines = Math.max(1, Math.ceil(bodyText.length / charsPerLine));
+  return 1.1 + lines * (fontSize * 1.32 / 72);
+}
+function fitFontSize(text, w, h, desired, min) {
+  const isAr = isArabic(text);
+  const ratio = isAr ? 0.52 * 1.15 : 0.52;
+  for (let fs5 = desired; fs5 >= min; fs5 -= 0.5) {
+    const charsPerLine = Math.floor(w * 96 / (fs5 * ratio));
+    const lines = Math.ceil(text.length / Math.max(1, charsPerLine));
+    if (lines * (fs5 * 1.32 / 72) <= h - 0.08) return fs5;
+  }
+  return min;
+}
+function assertFits(text, w, h, desired, min) {
+  const fs5 = fitFontSize(text, w, h, desired, min);
+  const isAr = isArabic(text);
+  const ratio = isAr ? 0.52 * 1.15 : 0.52;
+  const charsPerLine = Math.floor(w * 96 / (fs5 * ratio));
+  const maxLines = Math.floor((h - 0.08) / (fs5 * 1.32 / 72));
+  const maxChars = maxLines * charsPerLine;
+  if (fs5 === min && text.length > maxChars) {
+    let truncated = text.slice(0, maxChars);
+    const lastSpace = truncated.lastIndexOf(" ");
+    if (lastSpace > 0) truncated = truncated.slice(0, lastSpace);
+    return { text: truncated + "\u2026", fs: fs5 };
+  }
+  return { text, fs: fs5 };
+}
+var DARK_LUXE, COORDS;
+var init_pptx_design = __esm({
+  "src/lib/pptx-design.ts"() {
+    init_naje_engine();
+    DARK_LUXE = {
+      bg: "0E0F13",
+      bgAlt: "141620",
+      card: "1B1D28",
+      card2: "232634",
+      accent: "D4AF37",
+      accent2: "8B5CF6",
+      text: "F4F4F7",
+      muted: "9EA0B0",
+      faint: "6B6D7C"
+    };
+    COORDS = {
+      WIDTH: 13.333,
+      HEIGHT: 7.5,
+      MARGIN: 0.6,
+      USABLE_W: 12.133,
+      USABLE_H: 6.3,
+      TITLE_Y: 0.75,
+      TITLE_H: 0.75,
+      BODY_START: 1.85,
+      EYEBROW_Y: 0.42,
+      EYEBROW_H: 0.3,
+      COLS: {
+        C2_W: 5.92,
+        C2_X: [0.6, 6.81],
+        C3_W: 3.84,
+        C3_X: [0.6, 4.74, 8.89],
+        C4_W: 2.83,
+        C4_X: [0.6, 3.73, 6.85, 9.98],
+        C5_W: 2.23,
+        C5_X: [0.6, 3.08, 5.56, 8.05, 10.53],
+        FULL: 12.13,
+        FULL_X: 0.6
+      }
+    };
+  }
+});
+
+// src/lib/genaiClient.ts
+function createGenAIClient() {
+  if (USE_VERTEX_AI) {
+    return new import_genai.GoogleGenAI({
+      vertexai: true,
+      project: PROJECT_ID,
+      location: VERTEX_LOCATION
+    });
+  }
+  const apiKey = getEnvVar("GEMINI_API_KEY") || getEnvVar("VITE_GEMINI_API_KEY") || "";
+  return new import_genai.GoogleGenAI({ apiKey });
+}
+var import_genai, configProjectId, getEnvVar, PROJECT_ID, USE_VERTEX_AI, VERTEX_LOCATION;
+var init_genaiClient = __esm({
+  "src/lib/genaiClient.ts"() {
+    import_genai = require("@google/genai");
+    configProjectId = "gen-lang-client-0549025293";
+    getEnvVar = (name) => {
+      try {
+        if (typeof process !== "undefined" && process.env) {
+          const direct = process.env[name];
+          if (direct) return String(direct);
+          const vite = process.env[`VITE_${name}`];
+          if (vite) return String(vite);
+        }
+      } catch {
+      }
+      return "";
+    };
+    PROJECT_ID = getEnvVar("GOOGLE_CLOUD_PROJECT") || getEnvVar("GCP_PROJECT") || configProjectId;
+    USE_VERTEX_AI = getEnvVar("NAJE_USE_VERTEX_AI") === "true";
+    VERTEX_LOCATION = getEnvVar("VERTEX_AI_LOCATION") || "global";
+  }
+});
+
 // src/lib/naje-engine.ts
+var naje_engine_exports = {};
+__export(naje_engine_exports, {
+  NajeEngine: () => NajeEngine,
+  NajeOutlineSchema: () => NajeOutlineSchema,
+  NajeSlideContentSchema: () => NajeSlideContentSchema,
+  NajeSlideSchema: () => NajeSlideSchema,
+  NajeThemeSchema: () => NajeThemeSchema,
+  fetchRealPhotography: () => fetchRealPhotography,
+  isArabic: () => isArabic
+});
 async function getPptxGenCtor() {
   const mod = await import("pptxgenjs");
   return mod.default || mod;
@@ -307,9 +1471,9 @@ async function renderIconToPngBase64(iconName, hexColor) {
     const sharpModule = await import("sharp");
     const sharp2 = sharpModule.default || sharpModule;
     const safeIconName = iconName && /^[a-z0-9-]+$/.test(iconName) ? iconName : "sparkles";
-    const iconPath = import_path2.default.resolve(process.cwd(), "node_modules/lucide-static/icons", `${safeIconName}.svg`);
-    if (!import_fs2.default.existsSync(iconPath)) return null;
-    let svg = import_fs2.default.readFileSync(iconPath, "utf-8");
+    const iconPath = import_path.default.resolve(process.cwd(), "node_modules/lucide-static/icons", `${safeIconName}.svg`);
+    if (!import_fs.default.existsSync(iconPath)) return null;
+    let svg = import_fs.default.readFileSync(iconPath, "utf-8");
     svg = svg.replace(/stroke="currentColor"/g, `stroke="#${hexColor}"`);
     const buffer = await sharp2(Buffer.from(svg)).resize(256, 256).png().toBuffer();
     return buffer.toString("base64");
@@ -364,7 +1528,7 @@ async function fetchImageBuffer(url, timeoutMs = 5e3) {
     return null;
   }
 }
-var import_genai2, import_zod, import_path2, import_fs2, NajeThemeSchema, NajeSlideContentSchema, NajeSlideSchema, geminiSlideSchema, NajeOutlineSchema, geminiOutlineSchema, NajeEngine;
+var import_genai2, import_zod, import_path, import_fs, NajeThemeSchema, NajeSlideContentSchema, NajeSlideSchema, geminiSlideSchema, NajeOutlineSchema, geminiOutlineSchema, NajeEngine;
 var init_naje_engine = __esm({
   "src/lib/naje-engine.ts"() {
     init_pptx_design();
@@ -372,8 +1536,8 @@ var init_naje_engine = __esm({
     init_genaiClient();
     init_modelEnvConfig();
     import_zod = require("zod");
-    import_path2 = __toESM(require("path"), 1);
-    import_fs2 = __toESM(require("fs"), 1);
+    import_path = __toESM(require("path"), 1);
+    import_fs = __toESM(require("fs"), 1);
     NajeThemeSchema = import_zod.z.object({
       background: import_zod.z.string(),
       title: import_zod.z.string(),
@@ -1039,1151 +2203,6 @@ CRITICAL IMAGE RULE: 'content.aiImagePrompt' is REQUIRED. It MUST be a concrete,
   }
 });
 
-// src/lib/audioContainer.ts
-function pcmToWav(pcmData, sampleRate, numChannels = 1, bitsPerSample = 16) {
-  const byteRate = sampleRate * numChannels * (bitsPerSample / 8);
-  const blockAlign = numChannels * (bitsPerSample / 8);
-  const dataSize = pcmData.length;
-  const header = Buffer.alloc(44);
-  header.write("RIFF", 0, "ascii");
-  header.writeUInt32LE(36 + dataSize, 4);
-  header.write("WAVE", 8, "ascii");
-  header.write("fmt ", 12, "ascii");
-  header.writeUInt32LE(16, 16);
-  header.writeUInt16LE(1, 20);
-  header.writeUInt16LE(numChannels, 22);
-  header.writeUInt32LE(sampleRate, 24);
-  header.writeUInt32LE(byteRate, 28);
-  header.writeUInt16LE(blockAlign, 32);
-  header.writeUInt16LE(bitsPerSample, 34);
-  header.write("data", 36, "ascii");
-  header.writeUInt32LE(dataSize, 40);
-  return Buffer.concat([header, pcmData]);
-}
-function parseSampleRateFromMimeType(mimeType, fallback = 24e3) {
-  if (!mimeType) return fallback;
-  const match = mimeType.match(/rate=(\d+)/i);
-  return match ? parseInt(match[1], 10) : fallback;
-}
-var init_audioContainer = __esm({
-  "src/lib/audioContainer.ts"() {
-  }
-});
-
-// src/lib/modelRegistry.ts
-var OUTPUT_TOKEN_LIMITS, SEED_ENDPOINTS, FALLBACK_MODEL_DEFAULTS, FALLBACK_DEFAULTS;
-var init_modelRegistry = __esm({
-  "src/lib/modelRegistry.ts"() {
-    init_modelEnvConfig();
-    OUTPUT_TOKEN_LIMITS = {
-      criticReview: 4096,
-      // الناقد's structured JSON verdict — short by design
-      classification: 4096,
-      // Intent classification and safety guardrails
-      memorySummary: 4096,
-      // Project memory item concise summarization
-      imageCompiler: 4096,
-      // compileImagePrompt / applyCreativeLayers — prompt text compilation
-      videoCompiler: 8192,
-      // compileVideoPrompt / auditVideoPrompt — shot lists and script directions
-      documentChunk: 32e3,
-      // document_writer/slide_writer — comprehensive chapters / slide batch
-      documentSection: 16e3,
-      // individual section audit & refinement
-      slideJson: 8192,
-      // presentation slide JSON structure
-      fullstackContractSynthesis: 16e3,
-      // Phase 2 — signatures, type definitions, and contract interfaces
-      fullstackFileGeneration: 6e4,
-      // Phase 3 — complete individual code files (close to 65,535 capacity)
-      fullstackAudit: 16e3,
-      // Phase 4/6 — structured lint and semantic audit findings
-      agentPlan: 8192,
-      // generateAgentProposal & planner function-calling
-      agentAudit: 8192,
-      // auditAgentStepResult verification
-      voiceScript: 8192,
-      // dialogue script structuring in agentExecutor
-      audioSpeech: 8192,
-      // TTS audio generation tokens
-      mediaAnalysis: 8192,
-      // Multimodal OCR / image / audio inspection
-      webGrounding: 16e3,
-      // Google Search grounded research synthesis
-      textChat: 32e3,
-      // conversational chat and deep thinking responses
-      chatResponse: 32e3,
-      // standard chat response ceiling
-      uiBuilder: 32e3,
-      // UI components & interactive widgets generation
-      uiPlan: 8192,
-      // UI generation architecture & layout planning
-      uiHtml: 32e3
-      // full-page interactive UI HTML output
-    };
-    SEED_ENDPOINTS = [
-      // TEXT / CORE TIERS (User-Facing Text Models — Token Metered)
-      {
-        id: "tier_lite",
-        featureGroup: "text",
-        labelAr: "Naje Lite (\u0646\u0635 \u062E\u0641\u064A\u0641)",
-        modelId: getNajeModel("lite"),
-        fallbackModelId: getNajeModel("lite"),
-        paramNotes: "\u0627\u0633\u062A\u062C\u0627\u0628\u0629 \u0633\u0631\u064A\u0639\u0629 \u062C\u062F\u0627\u064B \u0648\u0627\u0633\u062A\u0647\u0644\u0627\u0643 \u062A\u0648\u0643\u0646\u0632 \u0645\u0646\u062E\u0641\u0636",
-        maxOutputTokens: 32e3,
-        pricingType: "per_token",
-        inputPointsPer1k: 0.1,
-        outputPointsPer1k: 0.1,
-        inputPointsPerBlock: 0.1,
-        inputTokenBlockSize: 1e3,
-        outputPointsPerBlock: 0.1,
-        outputTokenBlockSize: 1e3,
-        audioInputPointsPer1k: 0.2,
-        realCostPer: { unit: "per_1m_input_tokens", usd: 0.25 },
-        pointsPrice: 0,
-        isBackground: false
-      },
-      {
-        id: "tier_core",
-        featureGroup: "text",
-        labelAr: "Naje Core (\u0646\u0635 \u0642\u064A\u0627\u0633\u064A)",
-        modelId: getNajeModel("core"),
-        fallbackModelId: getNajeModel("lite"),
-        paramNotes: "\u0645\u062A\u0648\u0627\u0632\u0646 \u0648\u0630\u0643\u064A (\u0627\u0644\u0646\u0645\u0648\u0630\u062C \u0627\u0644\u0627\u0641\u062A\u0631\u0627\u0636\u064A \u0644\u0644\u0630\u0643\u0627\u0621 \u0627\u0644\u0645\u062A\u0637\u0648\u0631)",
-        maxOutputTokens: 32e3,
-        pricingType: "per_token",
-        inputPointsPer1k: 0.1,
-        outputPointsPer1k: 0.1,
-        inputPointsPerBlock: 0.1,
-        inputTokenBlockSize: 1e3,
-        outputPointsPerBlock: 0.1,
-        outputTokenBlockSize: 1e3,
-        audioInputPointsPer1k: 0.2,
-        realCostPer: { unit: "per_1m_input_tokens", usd: 1.25 },
-        pointsPrice: 0,
-        isBackground: false
-      },
-      {
-        id: "tier_max",
-        featureGroup: "text",
-        labelAr: "Naje Pro (\u062A\u0641\u0643\u064A\u0631 \u0639\u0645\u064A\u0642)",
-        modelId: getNajeModel("pro"),
-        fallbackModelId: getNajeModel("core"),
-        paramNotes: "\u0623\u0639\u0644\u0649 \u062F\u0642\u0629 \u0627\u0633\u062A\u062F\u0644\u0627\u0644\u064A\u0629 \u0648\u062A\u0641\u0643\u064A\u0631 \u062A\u062D\u0644\u064A\u0644\u064A \u0645\u062A\u0642\u062F\u0645",
-        maxOutputTokens: 32e3,
-        pricingType: "per_token",
-        inputPointsPer1k: 0.1,
-        outputPointsPer1k: 0.1,
-        inputPointsPerBlock: 0.1,
-        inputTokenBlockSize: 1e3,
-        outputPointsPerBlock: 0.1,
-        outputTokenBlockSize: 1e3,
-        audioInputPointsPer1k: 0.2,
-        realCostPer: { unit: "per_1m_input_tokens", usd: 2 },
-        pointsPrice: 0,
-        isBackground: false
-      },
-      // BACKGROUND & INTERNAL COGNITIVE SERVICES (Council & Pipelines — Token Metered)
-      {
-        id: "critic_review",
-        featureGroup: "text",
-        labelAr: "\u0627\u0644\u0646\u0627\u0642\u062F \u2014 \u0645\u0631\u0627\u062C\u0639\u0629 \u0648\u062A\u062F\u0642\u064A\u0642 \u0627\u0644\u0637\u0644\u0628\u0627\u062A \u0642\u0628\u0644 \u0627\u0644\u062A\u0646\u0641\u064A\u0630",
-        modelId: getNajeModel("personas"),
-        fallbackModelId: getNajeModel("personas"),
-        paramNotes: "\u0641\u062D\u0635 \u0645\u0633\u0628\u0642 \u0644\u0644\u063A\u0645\u0648\u0636 \u0648\u0627\u0644\u062A\u0646\u0627\u0642\u0636\u0627\u062A \u0648\u062A\u0635\u062D\u064A\u062D\u0647\u0627",
-        maxOutputTokens: 4096,
-        pricingType: "per_token",
-        inputPointsPer1k: 0.1,
-        outputPointsPer1k: 0.1,
-        realCostPer: { unit: "per_1m_input_tokens", usd: 0.25 },
-        pointsPrice: 0,
-        isBackground: true
-      },
-      {
-        id: "creative_council",
-        featureGroup: "text",
-        labelAr: "\u0645\u062C\u0644\u0633 \u0639\u0642\u0648\u0644 \u0646\u0627\u062C\u064A \u2014 \u0627\u0644\u062A\u0648\u062C\u064A\u0647 \u0627\u0644\u0625\u0628\u062F\u0627\u0639\u064A \u0648\u0627\u0644\u0637\u0628\u0642\u0627\u062A",
-        modelId: getNajeModel("personas"),
-        fallbackModelId: getNajeModel("personas"),
-        paramNotes: "\u0627\u0644\u0645\u0635\u0648\u0651\u0631\u060C \u0627\u0644\u0645\u062E\u0631\u062C\u060C \u0627\u0644\u0643\u0627\u062A\u0628\u060C \u0645\u0647\u0646\u062F\u0633 \u0627\u0644\u0635\u0648\u062A\u064A\u0627\u062A (\u0634\u062E\u0635\u064A\u0627\u062A \u0646\u0627\u062C\u064A)",
-        maxOutputTokens: 8192,
-        pricingType: "per_token",
-        inputPointsPer1k: 0.1,
-        outputPointsPer1k: 0.1,
-        realCostPer: { unit: "per_1m_input_tokens", usd: 0.25 },
-        pointsPrice: 0,
-        isBackground: true
-      },
-      {
-        id: "agent_planner",
-        featureGroup: "text",
-        labelAr: "\u0645\u062E\u0637\u0637 \u0627\u0644\u0648\u0643\u0644\u0627\u0621 \u0627\u0644\u0630\u0643\u064A (Agent Planner)",
-        modelId: getNajeModel("personas"),
-        fallbackModelId: getNajeModel("personas"),
-        paramNotes: "\u062A\u0641\u0643\u064A\u0643 \u0627\u0644\u0645\u0647\u0627\u0645 \u0648\u0628\u0646\u0627\u0621 \u062E\u0637\u0637 \u0627\u0644\u0648\u0643\u064A\u0644 \u0648\u062A\u0639\u062F\u064A\u0644\u0647\u0627 (\u0634\u062E\u0635\u064A\u0629 \u0627\u0644\u0648\u0643\u064A\u0644)",
-        maxOutputTokens: 8192,
-        pricingType: "per_token",
-        inputPointsPer1k: 0.1,
-        outputPointsPer1k: 0.1,
-        realCostPer: { unit: "per_1m_input_tokens", usd: 0.25 },
-        pointsPrice: 0,
-        isBackground: true
-      },
-      {
-        id: "agent_auditor",
-        featureGroup: "text",
-        labelAr: "\u0645\u062F\u0642\u0642 \u062E\u0637\u0648\u0627\u062A \u0627\u0644\u0648\u0643\u064A\u0644 (Agent Step Auditor)",
-        modelId: getNajeModel("personas"),
-        fallbackModelId: getNajeModel("personas"),
-        paramNotes: "\u0627\u0644\u062A\u062D\u0642\u0642 \u0627\u0644\u0627\u0633\u062A\u0631\u0627\u062A\u064A\u062C\u064A \u0648\u0636\u0628\u0637 \u0627\u0644\u062C\u0648\u062F\u0629 \u0644\u0643\u0644 \u062E\u0637\u0648\u0629 (\u0634\u062E\u0635\u064A\u0629 \u0627\u0644\u0648\u0643\u064A\u0644)",
-        maxOutputTokens: 8192,
-        pricingType: "per_token",
-        inputPointsPer1k: 0.1,
-        outputPointsPer1k: 0.1,
-        realCostPer: { unit: "per_1m_input_tokens", usd: 0.25 },
-        pointsPrice: 0,
-        isBackground: true
-      },
-      {
-        id: "agent_narrator",
-        featureGroup: "text",
-        labelAr: "\u0633\u0627\u0631\u062F \u0625\u0646\u062C\u0627\u0632\u0627\u062A \u0627\u0644\u0648\u0643\u064A\u0644 (Agent Step Narrator)",
-        modelId: getNajeModel("personas"),
-        fallbackModelId: getNajeModel("personas"),
-        paramNotes: "\u0635\u064A\u0627\u063A\u0629 \u062A\u0623\u0643\u064A\u062F \u0625\u0646\u062C\u0627\u0632 \u0627\u0644\u062E\u0637\u0648\u0627\u062A \u0628\u0635\u0648\u062A \u0646\u0627\u062C\u064A \u0627\u0644\u0637\u0628\u064A\u0639\u064A (\u0634\u062E\u0635\u064A\u0629 \u0627\u0644\u0648\u0643\u064A\u0644)",
-        maxOutputTokens: 4096,
-        pricingType: "per_token",
-        inputPointsPer1k: 0.1,
-        outputPointsPer1k: 0.1,
-        realCostPer: { unit: "per_1m_input_tokens", usd: 0.25 },
-        pointsPrice: 0,
-        isBackground: true
-      },
-      {
-        id: "fullstack_builder",
-        featureGroup: "ui",
-        labelAr: "\u0627\u0644\u0646\u0633\u0651\u0627\u062C \u2014 \u0645\u0647\u0646\u062F\u0633 \u0627\u0644\u0623\u0646\u0638\u0645\u0629 \u0627\u0644\u0645\u062A\u0643\u0627\u0645\u0644\u0629 (Fullstack Engineer)",
-        modelId: getNajeModel("pro"),
-        fallbackModelId: getNajeModel("core"),
-        paramNotes: "\u062A\u0648\u0644\u064A\u062F \u0645\u0644\u0641\u0627\u062A \u0627\u0644\u0628\u0631\u0645\u062C\u0629 \u0648\u0627\u0644\u0623\u0646\u0638\u0645\u0629 \u0627\u0644\u0643\u0627\u0645\u0644\u0629 (Phase 3)",
-        maxOutputTokens: 6e4,
-        pricingType: "per_token",
-        inputPointsPer1k: 0.1,
-        outputPointsPer1k: 0.1,
-        realCostPer: { unit: "per_1m_input_tokens", usd: 2 },
-        pointsPrice: 0,
-        isBackground: false
-      },
-      {
-        id: "fullstack_auditor",
-        featureGroup: "ui",
-        labelAr: "\u0627\u0644\u0646\u0633\u0651\u0627\u062C \u2014 \u0645\u062F\u0642\u0642 \u0627\u0644\u062C\u0648\u062F\u0629 \u0648\u0627\u0644\u0623\u0646\u0638\u0645\u0629 (Fullstack Auditor)",
-        modelId: getNajeModel("personas"),
-        fallbackModelId: getNajeModel("personas"),
-        paramNotes: "\u0627\u0644\u062A\u062F\u0642\u064A\u0642 \u0627\u0644\u0645\u0639\u0645\u0627\u0631\u064A \u0648\u0627\u0644\u0628\u0631\u0645\u062C\u064A \u0648\u0641\u062D\u0635 \u0627\u0644\u062A\u0648\u0627\u0641\u0642 (\u0634\u062E\u0635\u064A\u0629 \u0627\u0644\u0645\u062F\u0642\u0642)",
-        maxOutputTokens: 16e3,
-        pricingType: "per_token",
-        inputPointsPer1k: 0.1,
-        outputPointsPer1k: 0.1,
-        realCostPer: { unit: "per_1m_input_tokens", usd: 0.25 },
-        pointsPrice: 0,
-        isBackground: true
-      },
-      {
-        id: "image_prompt_compiler",
-        featureGroup: "image",
-        labelAr: "\u0645\u062C\u0645\u0651\u0639 \u0623\u0648\u0627\u0645\u0631 \u0627\u0644\u0635\u0648\u0631 (Image Prompt Compiler)",
-        modelId: getNajeModel("personas"),
-        fallbackModelId: getNajeModel("personas"),
-        paramNotes: "\u0647\u064A\u0643\u0644\u0629 \u0648\u0625\u062B\u0631\u0627\u0621 \u0623\u0648\u0627\u0645\u0631 \u062A\u0648\u0644\u064A\u062F \u0627\u0644\u0635\u0648\u0631 \u0627\u0644\u0627\u062D\u062A\u0631\u0627\u0641\u064A\u0629 (\u0634\u062E\u0635\u064A\u0629 \u0627\u0644\u0645\u0635\u0648\u0631)",
-        maxOutputTokens: 4096,
-        pricingType: "per_token",
-        inputPointsPer1k: 0.1,
-        outputPointsPer1k: 0.1,
-        realCostPer: { unit: "per_1m_input_tokens", usd: 0.25 },
-        pointsPrice: 0,
-        isBackground: true
-      },
-      {
-        id: "video_prompt_compiler",
-        featureGroup: "video",
-        labelAr: "\u0645\u062E\u0631\u062C \u0648\u0645\u0634\u0631\u0641 \u0633\u064A\u0646\u0627\u0631\u064A\u0648 \u0627\u0644\u0641\u064A\u062F\u064A\u0648 (Video Director)",
-        modelId: getNajeModel("personas"),
-        fallbackModelId: getNajeModel("personas"),
-        paramNotes: "\u062A\u0635\u0645\u064A\u0645 \u0644\u0642\u0637\u0627\u062A \u0648\u0633\u064A\u0646\u0627\u0631\u064A\u0648 \u0648\u062D\u0631\u0643\u0627\u062A \u0627\u0644\u0643\u0627\u0645\u064A\u0631\u0627 (\u0634\u062E\u0635\u064A\u0629 \u0627\u0644\u0645\u062E\u0631\u062C)",
-        maxOutputTokens: 8192,
-        pricingType: "per_token",
-        inputPointsPer1k: 0.1,
-        outputPointsPer1k: 0.1,
-        realCostPer: { unit: "per_1m_input_tokens", usd: 0.25 },
-        pointsPrice: 0,
-        isBackground: true
-      },
-      {
-        id: "image_auditor",
-        featureGroup: "image",
-        labelAr: "\u0645\u062F\u0642\u0642 \u062C\u0648\u062F\u0629 \u0648\u062A\u0637\u0627\u0628\u0642 \u0627\u0644\u0635\u0648\u0631 (Image Verifier)",
-        modelId: getNajeModel("personas"),
-        fallbackModelId: getNajeModel("personas"),
-        paramNotes: "\u0641\u062D\u0635 \u0645\u062E\u0631\u062C\u0627\u062A \u0627\u0644\u0635\u0648\u0631 \u0648\u0645\u0642\u0627\u0631\u0646\u062A\u0647\u0627 \u0628\u0627\u0644\u0637\u0644\u0628 \u0627\u0644\u0623\u0635\u0644\u064A (\u0634\u062E\u0635\u064A\u0629 \u0627\u0644\u0641\u0627\u062D\u0635)",
-        maxOutputTokens: 4096,
-        pricingType: "per_token",
-        inputPointsPer1k: 0.1,
-        outputPointsPer1k: 0.1,
-        realCostPer: { unit: "per_1m_input_tokens", usd: 0.25 },
-        pointsPrice: 0,
-        isBackground: true
-      },
-      // UI STUDIO & DOCUMENTS
-      {
-        id: "ui_builder",
-        featureGroup: "ui",
-        labelAr: "\u0627\u0633\u062A\u0648\u062F\u064A\u0648 \u0627\u0644\u0648\u0627\u062C\u0647\u0627\u062A UI Studio",
-        modelId: getNajeModel("core"),
-        fallbackModelId: getNajeModel("personas"),
-        paramNotes: "\u062A\u0648\u0644\u064A\u062F \u0627\u0644\u0645\u0643\u0648\u0646\u0627\u062A \u0627\u0644\u062A\u0641\u0627\u0639\u0644\u064A\u0629 \u0648\u062A\u0635\u0645\u064A\u0645 \u0627\u0644\u0635\u0641\u062D\u0627\u062A",
-        maxOutputTokens: 32e3,
-        pricingType: "per_token",
-        inputPointsPer1k: 0.1,
-        outputPointsPer1k: 0.1,
-        realCostPer: { unit: "per_1m_input_tokens", usd: 1.25 },
-        pointsPrice: 0,
-        isBackground: false
-      },
-      {
-        id: "document_engine",
-        featureGroup: "document",
-        labelAr: "\u0645\u062D\u0631\u0643 \u062A\u062F\u0642\u064A\u0642 \u0627\u0644\u0645\u0633\u062A\u0646\u062F\u0627\u062A \u0648\u0627\u0644\u0634\u0631\u0627\u0626\u062D (Auditor)",
-        modelId: getNajeModel("personas"),
-        fallbackModelId: getNajeModel("personas"),
-        paramNotes: "\u0645\u0631\u0627\u062C\u0639\u0629 \u0648\u062A\u062F\u0642\u064A\u0642 \u062C\u0648\u062F\u0629 \u0648\u062A\u0646\u0627\u0633\u0642 \u0627\u0644\u0645\u0633\u062A\u0646\u062F\u0627\u062A \u0648\u0627\u0644\u0634\u0631\u0627\u0626\u062D (\u0634\u062E\u0635\u064A\u0629 \u0627\u0644\u0643\u0627\u062A\u0628)",
-        maxOutputTokens: 16e3,
-        pricingType: "per_token",
-        inputPointsPer1k: 0.1,
-        outputPointsPer1k: 0.1,
-        realCostPer: { unit: "per_1m_input_tokens", usd: 0.25 },
-        pointsPrice: 0,
-        isBackground: true
-      },
-      {
-        id: "document_writer",
-        featureGroup: "document",
-        labelAr: "\u0643\u0627\u062A\u0628 \u0627\u0644\u0645\u0633\u062A\u0646\u062F\u0627\u062A (Document Writer)",
-        modelId: getNajeModel("personas"),
-        fallbackModelId: getNajeModel("personas"),
-        paramNotes: "\u062A\u0648\u0644\u064A\u062F \u0648\u0635\u064A\u0627\u063A\u0629 \u0623\u0642\u0633\u0627\u0645 \u0627\u0644\u0645\u0633\u062A\u0646\u062F\u0627\u062A \u0648\u0627\u0644\u062A\u0642\u0627\u0631\u064A\u0631 (\u0634\u062E\u0635\u064A\u0629 \u0627\u0644\u0643\u0627\u062A\u0628)",
-        maxOutputTokens: 32e3,
-        pricingType: "per_token",
-        inputPointsPer1k: 0.1,
-        outputPointsPer1k: 0.1,
-        realCostPer: { unit: "per_1m_input_tokens", usd: 0.25 },
-        pointsPrice: 0,
-        isBackground: false
-      },
-      {
-        id: "slide_writer",
-        featureGroup: "document",
-        labelAr: "\u0643\u0627\u062A\u0628 \u0627\u0644\u0634\u0631\u0627\u0626\u062D (Slide Writer)",
-        modelId: getNajeModel("personas"),
-        fallbackModelId: getNajeModel("personas"),
-        paramNotes: "\u062A\u0648\u0644\u064A\u062F \u0648\u062A\u0623\u0644\u064A\u0641 \u0645\u062D\u062A\u0648\u0649 \u0627\u0644\u0639\u0631\u0648\u0636 \u0627\u0644\u062A\u0642\u062F\u064A\u0645\u064A\u0629 (\u0634\u062E\u0635\u064A\u0629 \u0627\u0644\u0643\u0627\u062A\u0628)",
-        maxOutputTokens: 32e3,
-        pricingType: "per_token",
-        inputPointsPer1k: 0.1,
-        outputPointsPer1k: 0.1,
-        realCostPer: { unit: "per_1m_input_tokens", usd: 0.25 },
-        pointsPrice: 0,
-        isBackground: false
-      },
-      {
-        id: "doc_standard",
-        featureGroup: "document",
-        labelAr: "\u0645\u0633\u062A\u0646\u062F \u2014 A4 (\u0644\u0643\u0644 \u0635\u0641\u062D\u0629)",
-        modelId: getNajeModel("core"),
-        fallbackModelId: getNajeModel("personas"),
-        paramNotes: "\u062A\u0648\u0644\u064A\u062F \u0648\u062A\u0635\u062F\u064A\u0631 \u0635\u0641\u062D\u0627\u062A A4 \u0627\u0644\u0631\u0633\u0645\u064A\u0629",
-        maxOutputTokens: 32e3,
-        pricingType: "per_generation",
-        realCostPer: { unit: "per_page", usd: 3e-3 },
-        pointsPrice: 0.15,
-        isBackground: false
-      },
-      {
-        id: "doc_a5",
-        featureGroup: "document",
-        labelAr: "\u0645\u0633\u062A\u0646\u062F \u2014 A5 (\u0644\u0643\u0644 \u0635\u0641\u062D\u0629)",
-        modelId: getNajeModel("core"),
-        fallbackModelId: getNajeModel("personas"),
-        paramNotes: "\u062A\u0648\u0644\u064A\u062F \u0648\u062A\u0635\u062F\u064A\u0631 \u0635\u0641\u062D\u0627\u062A A5 \u0627\u0644\u0645\u0635\u063A\u0631\u0629",
-        maxOutputTokens: 32e3,
-        pricingType: "per_generation",
-        realCostPer: { unit: "per_page", usd: 2e-3 },
-        pointsPrice: 0.1,
-        isBackground: false
-      },
-      {
-        id: "doc_slides",
-        featureGroup: "document",
-        labelAr: "\u0639\u0631\u0636 \u062A\u0642\u062F\u064A\u0645\u064A \u2014 \u0634\u0631\u0627\u0626\u062D (\u0644\u0643\u0644 \u0634\u0631\u064A\u062D\u0629)",
-        modelId: getNajeModel("core"),
-        fallbackModelId: getNajeModel("personas"),
-        paramNotes: "\u062A\u0648\u0644\u064A\u062F \u0648\u062A\u0635\u062F\u064A\u0631 \u0634\u0631\u0627\u0626\u062D \u0627\u0644\u0639\u0631\u0636 \u0627\u0644\u062A\u0642\u062F\u064A\u0645\u064A PPTX/PDF",
-        maxOutputTokens: 32e3,
-        pricingType: "per_generation",
-        realCostPer: { unit: "per_slide", usd: 4e-3 },
-        pointsPrice: 0.2,
-        isBackground: false
-      },
-      {
-        id: "infographic_designer",
-        featureGroup: "document",
-        labelAr: "\u0627\u0644\u0645\u0635\u0645\u0645 \u2014 \u0645\u062D\u0631\u0643 \u0627\u0644\u0625\u0646\u0641\u0648\u062C\u0631\u0627\u0641\u064A\u0643 (Infographic Engine)",
-        modelId: getNajeModel("personas"),
-        fallbackModelId: getNajeModel("personas"),
-        paramNotes: "\u0631\u0633\u0645 \u0628\u064A\u0627\u0646\u064A \u0648\u062A\u0635\u0645\u064A\u0645 \u0625\u0646\u0641\u0648\u062C\u0631\u0627\u0641\u064A\u0643 \u0628\u0635\u0631\u064A \u0648\u062A\u0635\u062F\u064A\u0631\u0647 \u0639\u0628\u0631 Puppeteer (PNG + PDF)",
-        maxOutputTokens: 16e3,
-        pricingType: "per_generation",
-        realCostPer: { unit: "per_render", usd: 5e-3 },
-        pointsPrice: 0.5,
-        isBackground: false
-      },
-      // IMAGE GENERATION (Flat Per-Unit Pricing)
-      {
-        id: "image_lite",
-        featureGroup: "image",
-        labelAr: "\u0635\u0648\u0631\u0629 \u2014 Naje Imagen Lite",
-        modelId: "nano-banana-2-lite",
-        fallbackModelId: getNajeModel("image_lite"),
-        paramNotes: "\u062E\u0641\u064A\u0641 \u0648\u0633\u0631\u064A\u0639 (0.5 \u0646\u0642\u0637\u0629 \u0627\u0641\u062A\u0631\u0627\u0636\u064A\u0627\u064B)",
-        maxOutputTokens: 4096,
-        pricingType: "per_generation",
-        realCostPer: { unit: "per_image", usd: 0.01 },
-        pointsPrice: 0.5,
-        isBackground: false
-      },
-      {
-        id: "image_spectra",
-        featureGroup: "image",
-        labelAr: "\u0635\u0648\u0631\u0629 \u2014 Naje Imagen",
-        modelId: "nano-banana-2",
-        fallbackModelId: getNajeModel("image_core"),
-        paramNotes: "\u062A\u0648\u0627\u0632\u0646 \u0642\u064A\u0627\u0633\u064A (\u0646\u0642\u0637\u0629 \u0648\u0627\u062D\u062F\u0629 \u0627\u0641\u062A\u0631\u0627\u0636\u064A\u0627\u064B)",
-        maxOutputTokens: 4096,
-        pricingType: "per_generation",
-        realCostPer: { unit: "per_image", usd: 0.02 },
-        pointsPrice: 1,
-        isBackground: false
-      },
-      {
-        id: "image_addon",
-        featureGroup: "image",
-        labelAr: "\u0625\u0636\u0627\u0641\u0629 \u062F\u0645\u062C \u0627\u0644\u0635\u0648\u0631 \u0627\u0644\u0645\u0631\u062C\u0639\u064A\u0629 (Addon)",
-        modelId: getNajeModel("personas"),
-        fallbackModelId: getNajeModel("personas"),
-        paramNotes: "\u062A\u0643\u0644\u0641\u0629 \u062F\u0645\u062C \u0643\u0644 \u0635\u0648\u0631\u0629 \u0645\u0631\u062C\u0639\u064A\u0629 \u0625\u0636\u0627\u0641\u064A\u0629",
-        maxOutputTokens: 4096,
-        pricingType: "per_generation",
-        realCostPer: { unit: "per_image", usd: 2e-3 },
-        pointsPrice: 0.1,
-        isBackground: false
-      },
-      {
-        id: "image_fast",
-        featureGroup: "image",
-        labelAr: "\u0635\u0648\u0631\u0629 \u2014 Naje Imagen Lite (\u0633\u0631\u064A\u0639\u0629)",
-        modelId: "nano-banana-2-lite",
-        fallbackModelId: getNajeModel("image_lite"),
-        paramNotes: "\u062A\u0648\u0644\u064A\u062F \u0641\u0648\u0631\u064A \u062E\u0641\u064A\u0641",
-        maxOutputTokens: 4096,
-        pricingType: "per_generation",
-        realCostPer: { unit: "per_image", usd: 0.04 },
-        pointsPrice: 3,
-        isBackground: false
-      },
-      {
-        id: "image_standard",
-        featureGroup: "image",
-        labelAr: "\u0635\u0648\u0631\u0629 \u2014 Naje Imagen \u0627\u0644\u0645\u0639\u064A\u0627\u0631\u064A\u0629",
-        modelId: "nano-banana-2",
-        fallbackModelId: getNajeModel("image_core"),
-        paramNotes: "1024x1024 \u062F\u0642\u0629 \u0642\u064A\u0627\u0633\u064A\u0629",
-        maxOutputTokens: 4096,
-        pricingType: "per_generation",
-        realCostPer: { unit: "per_image", usd: 0.067 },
-        pointsPrice: 5,
-        isBackground: false
-      },
-      {
-        id: "image_hd",
-        featureGroup: "image",
-        labelAr: "\u0635\u0648\u0631\u0629 \u2014 Naje Imagen Pro (\u0639\u0627\u0644\u064A\u0629 \u0627\u0644\u062F\u0642\u0629)",
-        modelId: "nano-banana-pro",
-        fallbackModelId: getNajeModel("image_pro"),
-        paramNotes: "2048x2048 \u062F\u0642\u0629 \u0641\u0627\u0626\u0642\u0629",
-        maxOutputTokens: 4096,
-        pricingType: "per_generation",
-        realCostPer: { unit: "per_image", usd: 0.101 },
-        pointsPrice: 10,
-        isBackground: false
-      },
-      {
-        id: "image_pro",
-        featureGroup: "image",
-        labelAr: "\u0635\u0648\u0631\u0629 \u2014 Naje Imagen Pro (\u0627\u0644\u0627\u062D\u062A\u0631\u0627\u0641\u064A\u0629)",
-        modelId: "nano-banana-pro",
-        fallbackModelId: getNajeModel("image_pro"),
-        paramNotes: "\u062C\u0648\u062F\u0629 \u0641\u0627\u0626\u0642\u0629 \u0645\u0639 \u062A\u062D\u0643\u0645 \u0628\u0627\u0644\u0641\u0631\u0634\u0627\u0629 \u0648\u0627\u0644\u0637\u0628\u0642\u0627\u062A",
-        maxOutputTokens: 4096,
-        pricingType: "per_generation",
-        realCostPer: { unit: "per_image", usd: 0.134 },
-        pointsPrice: 12,
-        isBackground: false
-      },
-      // VIDEO GENERATION (Flat Per-Unit Pricing)
-      {
-        id: "video_standard",
-        envVarKey: "NAJE_MODEL_VIDEO_CORE",
-        featureGroup: "video",
-        labelAr: "\u0641\u064A\u062F\u064A\u0648 \u2014 Naje Video",
-        modelId: getNajeModel("video_core"),
-        fallbackModelId: getNajeModel("video_core"),
-        paramNotes: "720p \u0633\u064A\u0646\u0645\u0627\u0626\u064A \u0642\u064A\u0627\u0633\u064A",
-        maxOutputTokens: 8192,
-        pricingType: "per_generation",
-        realCostPer: { unit: "per_second", usd: 0.05 },
-        pointsPrice: 20,
-        isBackground: false,
-        supportedDurations: [4, 6, 8],
-        supportsImageInput: true
-      },
-      {
-        id: "video_veo_lite",
-        envVarKey: "NAJE_MODEL_VIDEO_CORE",
-        featureGroup: "video",
-        labelAr: "\u0641\u064A\u062F\u064A\u0648 \u2014 Naje Video (Lite)",
-        modelId: getNajeModel("video_core"),
-        fallbackModelId: getNajeModel("video_core"),
-        paramNotes: "720p @ 5s",
-        maxOutputTokens: 8192,
-        pricingType: "per_generation",
-        realCostPer: { unit: "per_second", usd: 0.05 },
-        pointsPrice: 25,
-        isBackground: false,
-        supportedDurations: [4, 6, 8],
-        supportsImageInput: true
-      },
-      {
-        id: "video_omni",
-        envVarKey: "NAJE_MODEL_VIDEO_PRO",
-        featureGroup: "video",
-        labelAr: "\u0641\u064A\u062F\u064A\u0648 \u2014 Naje Video Pro",
-        modelId: getNajeModel("video_pro"),
-        fallbackModelId: getNajeModel("video_pro"),
-        paramNotes: "Naje Video Pro Multimodal Video",
-        maxOutputTokens: 8192,
-        pricingType: "per_generation",
-        realCostPer: { unit: "per_second", usd: 0.05 },
-        isUnconfirmedCost: true,
-        pointsPrice: 20,
-        isBackground: false,
-        supportedDurations: [5, 10],
-        supportsImageInput: true
-      },
-      // VOICE TTS (Flat Per-Unit Pricing)
-      {
-        id: "voice_tts",
-        featureGroup: "voice",
-        labelAr: "\u062A\u0633\u062C\u064A\u0644 \u0635\u0648\u062A\u064A \u2014 Naje Voice Core (\u0627\u0644\u0623\u0633\u0627\u0633\u064A)",
-        modelId: getNajeModel("voice_core"),
-        fallbackModelId: getNajeModel("voice_core"),
-        paramNotes: "\u062A\u062D\u0648\u064A\u0644 \u0627\u0644\u0646\u0635 \u0625\u0644\u0649 \u0635\u0648\u062A \u0628\u0634\u0631\u064A \u0645\u062A\u0646\u0627\u0633\u0642 \u0648\u0633\u0631\u064A\u0639 (Core)",
-        maxOutputTokens: 8192,
-        pricingType: "per_generation",
-        realCostPer: { unit: "per_1m_audio_tokens", usd: 20 },
-        isUnconfirmedCost: true,
-        pointsPrice: 2,
-        isBackground: false
-      },
-      {
-        id: "voice_tts_pro",
-        featureGroup: "voice",
-        labelAr: "\u062A\u0633\u062C\u064A\u0644 \u0635\u0648\u062A\u064A \u2014 Naje Voice Pro (\u0627\u0644\u0627\u062D\u062A\u0631\u0627\u0641\u064A \u0627\u0644\u0641\u0627\u0626\u0642)",
-        modelId: getNajeModel("voice_pro"),
-        fallbackModelId: getNajeModel("voice_core"),
-        paramNotes: "\u0623\u0639\u0644\u0649 \u062F\u0642\u0629 \u0648\u0646\u0642\u0627\u0621 \u0635\u0648\u062A\u064A \u0648\u0645\u0639\u0627\u0644\u062C\u0629 \u0646\u0628\u0631\u0627\u062A \u0645\u062A\u0642\u062F\u0645\u0629 (Pro)",
-        maxOutputTokens: 16384,
-        pricingType: "per_generation",
-        realCostPer: { unit: "per_1m_audio_tokens", usd: 40 },
-        isUnconfirmedCost: true,
-        pointsPrice: 4,
-        isBackground: false
-      },
-      {
-        id: "voice_tts_standard",
-        featureGroup: "voice",
-        labelAr: "\u062A\u0633\u062C\u064A\u0644 \u0635\u0648\u062A\u064A \u2014 \u062D\u0648\u0627\u0631 \u0645\u062A\u0639\u062F\u062F \u0627\u0644\u0623\u0635\u0648\u0627\u062A (Core)",
-        modelId: getNajeModel("voice_core"),
-        fallbackModelId: getNajeModel("voice_core"),
-        paramNotes: "\u062D\u0648\u0627\u0631 \u0628\u064A\u0646 \u0634\u062E\u0635\u064A\u0627\u062A \u0645\u062A\u0639\u062F\u062F\u0629",
-        maxOutputTokens: 8192,
-        pricingType: "per_generation",
-        realCostPer: { unit: "per_1m_audio_tokens", usd: 20 },
-        isUnconfirmedCost: true,
-        pointsPrice: 2,
-        isBackground: false
-      },
-      // TEXT TIER ENDPOINT ALIASES
-      {
-        id: "text_lite",
-        featureGroup: "text",
-        labelAr: "\u0646\u0635 \u062E\u0641\u064A\u0641 (Lite Tier)",
-        modelId: getNajeModel("lite"),
-        fallbackModelId: getNajeModel("lite"),
-        paramNotes: "\u0645\u062D\u0627\u062F\u062B\u0629 \u0633\u0631\u064A\u0639\u0629 \u0648\u0627\u0633\u062A\u0647\u0644\u0627\u0643 \u0627\u0642\u062A\u0635\u0627\u062F\u064A",
-        maxOutputTokens: 32e3,
-        pricingType: "per_token",
-        inputPointsPer1k: 0.1,
-        outputPointsPer1k: 0.1,
-        realCostPer: { unit: "per_1m_input_tokens", usd: 0.25 },
-        pointsPrice: 0,
-        isBackground: false
-      },
-      {
-        id: "text_core",
-        featureGroup: "text",
-        labelAr: "\u0646\u0635 \u0642\u064A\u0627\u0633\u064A (Core Tier)",
-        modelId: getNajeModel("core"),
-        fallbackModelId: getNajeModel("lite"),
-        paramNotes: "\u0645\u062D\u0627\u062F\u062B\u0629 \u0645\u062A\u0648\u0627\u0632\u0646\u0629 \u0630\u0643\u064A\u0629 \u0648\u0633\u0631\u064A\u0639\u0629",
-        maxOutputTokens: 32e3,
-        pricingType: "per_token",
-        inputPointsPer1k: 0.1,
-        outputPointsPer1k: 0.1,
-        realCostPer: { unit: "per_1m_input_tokens", usd: 1.25 },
-        pointsPrice: 0,
-        isBackground: false
-      },
-      {
-        id: "text_max",
-        featureGroup: "text",
-        labelAr: "\u0646\u0635 \u0627\u0633\u062A\u062F\u0644\u0627\u0644\u064A (Pro Tier)",
-        modelId: getNajeModel("pro"),
-        fallbackModelId: getNajeModel("core"),
-        paramNotes: "\u062A\u0641\u0643\u064A\u0631 \u062A\u062D\u0644\u064A\u0644\u064A \u0639\u0645\u064A\u0642 \u0648\u0645\u0639\u0627\u0644\u062C\u0629 \u0645\u0639\u0642\u062F\u0629",
-        maxOutputTokens: 32e3,
-        pricingType: "per_token",
-        inputPointsPer1k: 0.1,
-        outputPointsPer1k: 0.1,
-        realCostPer: { unit: "per_1m_input_tokens", usd: 2 },
-        pointsPrice: 0,
-        isBackground: false
-      },
-      {
-        id: "ui_standard",
-        featureGroup: "ui",
-        labelAr: "\u0648\u0627\u062C\u0647\u0627\u062A \u2014 \u0627\u0644\u0642\u064A\u0627\u0633\u064A",
-        modelId: getNajeModel("core"),
-        fallbackModelId: getNajeModel("lite"),
-        paramNotes: "\u062A\u0648\u0644\u064A\u062F \u0643\u0648\u062F \u0648\u0627\u062C\u0647\u0627\u062A \u0627\u0644\u0645\u0633\u062A\u062E\u062F\u0645",
-        maxOutputTokens: 32e3,
-        pricingType: "per_token",
-        inputPointsPer1k: 0.1,
-        outputPointsPer1k: 0.1,
-        realCostPer: { unit: "per_1m_input_tokens", usd: 1.25 },
-        pointsPrice: 0,
-        isBackground: false
-      }
-    ];
-    FALLBACK_MODEL_DEFAULTS = {
-      tier_lite: getNajeModel("lite"),
-      tier_core: getNajeModel("core"),
-      tier_max: getNajeModel("pro"),
-      text_lite: getNajeModel("lite"),
-      text_core: getNajeModel("core"),
-      text_max: getNajeModel("pro"),
-      critic_review: getNajeModel("personas"),
-      creative_council: getNajeModel("personas"),
-      agent_planner: getNajeModel("personas"),
-      agent_auditor: getNajeModel("personas"),
-      agent_narrator: getNajeModel("personas"),
-      fullstack_builder: getNajeModel("pro"),
-      fullstack_auditor: getNajeModel("personas"),
-      image_prompt_compiler: getNajeModel("personas"),
-      video_prompt_compiler: getNajeModel("personas"),
-      image_auditor: getNajeModel("personas"),
-      image_standard: getNajeModel("image_core"),
-      image_hd: getNajeModel("image_pro"),
-      image_pro: getNajeModel("image_pro"),
-      image_fast: getNajeModel("image_lite"),
-      image_lite: getNajeModel("image_lite"),
-      image_spectra: getNajeModel("image_core"),
-      image_addon: getNajeModel("personas"),
-      video_veo_lite: getNajeModel("video_core"),
-      video_standard: getNajeModel("video_core"),
-      video_omni: getNajeModel("video_pro"),
-      video_hd: getNajeModel("video_pro"),
-      ui_builder: getNajeModel("core"),
-      ui_standard: getNajeModel("core"),
-      voice_tts: getNajeModel("voice_core"),
-      voice_tts_core: getNajeModel("voice_core"),
-      voice_tts_pro: getNajeModel("voice_pro"),
-      voice_tts_standard: getNajeModel("voice_core"),
-      document_engine: getNajeModel("personas"),
-      doc_standard: getNajeModel("core"),
-      doc_a5: getNajeModel("core"),
-      doc_slides: getNajeModel("core"),
-      document_writer: getNajeModel("personas"),
-      slide_writer: getNajeModel("personas"),
-      infographic_designer: getNajeModel("personas")
-    };
-    FALLBACK_DEFAULTS = {
-      tier_lite: getNajeModel("lite"),
-      tier_core: getNajeModel("core"),
-      tier_max: getNajeModel("pro"),
-      text_lite: getNajeModel("lite"),
-      text_core: getNajeModel("core"),
-      text_max: getNajeModel("pro"),
-      critic_review: getNajeModel("personas"),
-      creative_council: getNajeModel("personas"),
-      agent_planner: getNajeModel("personas"),
-      agent_auditor: getNajeModel("personas"),
-      agent_narrator: getNajeModel("personas"),
-      fullstack_builder: getNajeModel("pro"),
-      fullstack_auditor: getNajeModel("personas"),
-      image_prompt_compiler: getNajeModel("personas"),
-      video_prompt_compiler: getNajeModel("personas"),
-      image_auditor: getNajeModel("personas"),
-      image_standard: getNajeModel("image_core"),
-      image_hd: getNajeModel("image_pro"),
-      image_pro: getNajeModel("image_pro"),
-      image_fast: getNajeModel("image_lite"),
-      image_lite: getNajeModel("image_lite"),
-      image_spectra: getNajeModel("image_core"),
-      image_addon: getNajeModel("personas"),
-      video_veo_lite: getNajeModel("video_core"),
-      video_standard: getNajeModel("video_core"),
-      video_omni: getNajeModel("video_pro"),
-      ui_builder: getNajeModel("core"),
-      ui_standard: getNajeModel("core"),
-      voice_tts: getNajeModel("voice_core"),
-      voice_tts_core: getNajeModel("voice_core"),
-      voice_tts_pro: getNajeModel("voice_pro"),
-      voice_tts_standard: getNajeModel("voice_core"),
-      document_engine: getNajeModel("personas"),
-      doc_standard: getNajeModel("core"),
-      doc_a5: getNajeModel("core"),
-      doc_slides: getNajeModel("core"),
-      document_writer: getNajeModel("personas"),
-      slide_writer: getNajeModel("personas"),
-      infographic_designer: getNajeModel("personas")
-    };
-  }
-});
-
-// src/lib/geminiCaching.ts
-async function getOrCreateExplicitCache(ai5, key, model, systemInstructionText, ttlSeconds = 3600) {
-  const existing = activeCaches.get(key);
-  const now = Date.now();
-  if (existing && existing.model === model && existing.expiresAt > now + 3e5) {
-    return existing.cacheName;
-  }
-  if (!systemInstructionText || systemInstructionText.length < 16e3) {
-    return null;
-  }
-  try {
-    if (ai5 && ai5.caches && typeof ai5.caches.create === "function") {
-      const cacheResponse = await ai5.caches.create({
-        model,
-        config: {
-          displayName: `naje_${key}_cache`,
-          systemInstruction: systemInstructionText,
-          ttl: `${ttlSeconds}s`
-        }
-      });
-      if (cacheResponse && cacheResponse.name) {
-        activeCaches.set(key, {
-          cacheName: cacheResponse.name,
-          model,
-          expiresAt: now + ttlSeconds * 1e3
-        });
-        console.log(`[Context Caching] Created explicit cache for '${key}' (${cacheResponse.name}) with TTL ${ttlSeconds}s`);
-        return cacheResponse.name;
-      }
-    }
-  } catch (err) {
-    console.warn(`[Context Caching] Explicit cache creation bypassed for '${key}':`, err?.message || err);
-  }
-  return null;
-}
-function getCriticCachedInstruction() {
-  const personaCore = `\u0645\u0647\u0645\u062A\u0643: \u0641\u062D\u0635 \u0627\u0644\u0637\u0644\u0628 \u0628\u062F\u0642\u0629 \u0634\u062F\u064A\u062F\u0629 \u0642\u0628\u0644 \u0623\u064A \u0625\u0646\u062A\u0627\u062C \u0641\u0639\u0644\u064A\u060C \u0648\u0627\u0643\u062A\u0634\u0627\u0641 \u0623\u064A \u063A\u0645\u0648\u0636 \u0623\u0648 \u062A\u0646\u0627\u0642\u0636 \u0623\u0648 \u0646\u0642\u0635 \u0628\u0627\u0644\u0633\u064A\u0627\u0642 \u0642\u062F \u064A\u0636\u0639\u0641 \u062C\u0648\u062F\u0629 \u0627\u0644\u0646\u062A\u064A\u062C\u0629 \u0627\u0644\u0646\u0647\u0627\u0626\u064A\u0629\u060C \u0648\u0627\u0642\u062A\u0631\u0627\u062D \u062D\u0644\u0648\u0644 \u0648\u0627\u0636\u062D\u0629 \u0648\u0645\u062D\u062F\u062F\u0629.
-
-\u0642\u0648\u0627\u0639\u062F \u0635\u0627\u0631\u0645\u0629:
-1. \u0644\u0627 \u062A\u0631\u0641\u0636 \u0637\u0644\u0628\u0627\u062A \u063A\u0627\u0645\u0636\u0629 \u2014 \u0623\u0635\u0644\u062D\u0647\u0627 \u0628\u0646\u0641\u0633\u0643 \u062D\u064A\u062B\u0645\u0627 \u0643\u0627\u0646 \u0627\u0644\u0625\u0635\u0644\u0627\u062D \u0648\u0627\u0636\u062D\u0627\u064B \u0648\u0645\u0646\u0637\u0642\u064A\u0627\u064B \u0648\u0639\u0632\u0651\u0632 \u0627\u0644\u0628\u0631\u0648\u0645\u0628\u062A (enrichedPrompt) \u0628\u0627\u0644\u062A\u0641\u0627\u0635\u064A\u0644 \u0627\u0644\u0627\u062D\u062A\u0631\u0627\u0641\u064A\u0629 \u0627\u0644\u0645\u0633\u062A\u0646\u062A\u062C\u0629.
-2. \u0641\u0642\u0637 \u0625\u0630\u0627 \u0643\u0627\u0646 \u0627\u0644\u0646\u0642\u0635 \u062C\u0648\u0647\u0631\u064A\u0627\u064B \u0648\u0644\u0627 \u064A\u0645\u0643\u0646 \u0627\u0633\u062A\u0646\u062A\u0627\u062C\u0647 \u0628\u062B\u0642\u0629 (\u0645\u062B\u0644: \u062A\u0646\u0627\u0642\u0636 \u0635\u0631\u064A\u062D \u0628\u0627\u0644\u0637\u0644\u0628\u060C \u0623\u0648 \u0637\u0644\u0628 \u0628\u0631\u0645\u062C\u064A \u0647\u0627\u0626\u0644 \u063A\u064A\u0631 \u0645\u062D\u062F\u062F \u0627\u0644\u0646\u0637\u0627\u0642 \u0645\u062B\u0644 "\u0627\u0628\u0646\u064A \u0641\u064A\u0633\u0628\u0648\u0643 \u0643\u0627\u0645\u0644"\u060C \u0623\u0648 \u0637\u0644\u0628 \u062D\u0648\u0627\u0631 \u0635\u0648\u062A\u064A \u064A\u0641\u062A\u0642\u0631 \u0644\u0623\u0633\u0637\u0631 \u0627\u0644\u0645\u062A\u062D\u062F\u062B\u064A\u0646) \u0635\u0646\u0651\u0641 \u0627\u0644\u062D\u0627\u0644\u0629 needs_clarification \u0648\u0635\u0650\u063A \u0633\u0624\u0627\u0644\u0627\u064B \u062A\u0648\u0636\u064A\u062D\u064A\u0627\u064B \u0645\u0647\u0630\u0628\u0627\u064B \u0648\u0645\u0628\u0627\u0634\u0631\u0627\u064B \u0641\u064A \u062D\u0642\u0644 clarificationQuestion \u0628\u0635\u0648\u062A \u0646\u0627\u062C\u064A \u0627\u0644\u0645\u0639\u062A\u0627\u062F \u062F\u0648\u0646 \u0630\u0643\u0631 \u0623\u064A \u0645\u0635\u0637\u0644\u062D\u0627\u062A \u062F\u0627\u062E\u0644\u064A\u0629 \u0623\u0648 \u0645\u062C\u0627\u0644\u0633.
-3. \u0645\u0647\u0645\u062A\u0643 \u062C\u0648\u062F\u0629 \u0625\u0628\u062F\u0627\u0639\u064A\u0629 \u0648\u0645\u0639\u0645\u0627\u0631\u064A\u0629 \u0648\u0647\u064A\u0643\u0644\u064A\u0629.`;
-  return `${NAJE_CORE_IDENTITY_SHARED}
-
----
-
-${buildPersonaInstruction("\u0627\u0644\u0646\u0627\u0642\u062F", personaCore)}`;
-}
-var NAJE_CORE_IDENTITY_SHARED, activeCaches;
-var init_geminiCaching = __esm({
-  "src/lib/geminiCaching.ts"() {
-    init_councilOfMinds();
-    NAJE_CORE_IDENTITY_SHARED = `\u0623\u0646\u062A "\u0646\u0627\u062C\u064A" (Naje AI) \u2014 \u0645\u0646\u0635\u0629 \u0630\u0643\u0627\u0621 \u0627\u0635\u0637\u0646\u0627\u0639\u064A \u062A\u0648\u0644\u064A\u062F\u064A\u0629 \u0639\u0631\u0628\u064A\u0629 \u0623\u0648\u0644\u0627\u064B.
-
-\u0647\u0648\u064A\u062A\u0643:
-- \u0627\u0633\u0645\u0643 \u0646\u0627\u062C\u064A. \u0644\u063A\u062A\u0643 \u0627\u0644\u0623\u0633\u0627\u0633\u064A\u0629 \u0627\u0644\u0639\u0631\u0628\u064A\u0629 (\u0628\u0627\u0644\u0644\u0647\u062C\u0629 \u0627\u0644\u0623\u0631\u062F\u0646\u064A\u0629 \u0639\u0646\u062F \u0627\u0644\u062D\u062F\u064A\u062B \u0628\u0634\u0643\u0644 \u0648\u062F\u0651\u064A)\u060C \u0648\u062A\u062F\u0639\u0645 \u0643\u0644 \u0627\u0644\u0644\u063A\u0627\u062A.
-- \u0634\u0639\u0627\u0631\u0643: "\u0646\u0628\u062F\u0639 \u0644\u0643 \u0641\u064A \u0643\u0644 \u0628\u0643\u0633\u0644".
-- \u0646\u0628\u0631\u062A\u0643: \u0627\u062D\u062A\u0631\u0627\u0641\u064A\u060C \u0648\u0627\u062B\u0642\u060C \u0648\u062F\u0648\u062F\u060C \u0645\u0628\u0627\u0634\u0631 \u2014 \u0628\u0644\u0627 \u062A\u0635\u0646\u0651\u0639 \u0648\u0628\u0644\u0627 \u0631\u0633\u0645\u064A\u0629 \u062C\u0627\u0641\u0629.
-- \u0623\u0646\u062A \u0630\u0643\u0627\u0621 \u0627\u0635\u0637\u0646\u0627\u0639\u064A \u0648\u0644\u0627 \u062A\u062F\u0651\u0639\u064A \u0623\u0628\u062F\u0627\u064B \u0623\u0646\u0643 \u0625\u0646\u0633\u0627\u0646 \u0625\u0630\u0627 \u0633\u064F\u0626\u0644\u062A \u0635\u0631\u0627\u062D\u0629.
-
-\u0642\u062F\u0631\u0627\u062A\u0643 \u0627\u0644\u0643\u0627\u0645\u0644\u0629 (\u0627\u0639\u0631\u0641\u0647\u0627 \u0643\u0644\u0647\u0627 \u062D\u062A\u0649 \u0644\u0648 \u0643\u0646\u062A \u0641\u064A \u0645\u0633\u0627\u062D\u0629 \u0645\u062A\u062E\u0635\u0635\u0629 \u0627\u0644\u0622\u0646):
-- \u062F\u0631\u062F\u0634\u0629 \u0639\u0627\u0645\u0629 \u0648\u062A\u062D\u0644\u064A\u0644 \u0646\u0635\u0648\u0635
-- \u062A\u0648\u0644\u064A\u062F \u0627\u0644\u0635\u0648\u0631 \u0648\u0627\u0644\u0634\u0639\u0627\u0631\u0627\u062A \u0648\u0627\u0644\u0647\u0648\u064A\u0627\u062A \u0627\u0644\u0628\u0635\u0631\u064A\u0629
-- \u062A\u0648\u0644\u064A\u062F \u0627\u0644\u0641\u064A\u062F\u064A\u0648 \u0628\u0623\u0633\u0627\u0644\u064A\u0628 \u0648\u0642\u0648\u0627\u0644\u0628 \u062C\u0627\u0647\u0632\u0629
-- \u062A\u0648\u0644\u064A\u062F \u0627\u0644\u0645\u0633\u062A\u0646\u062F\u0627\u062A: \u0639\u0631\u0648\u0636 PowerPoint\u060C Word\u060C PDF (\u0634\u0631\u0627\u0626\u062D \u0623\u0648 \u0645\u0633\u062A\u0646\u062F)
-- \u062A\u0635\u0645\u064A\u0645 \u0648\u0627\u062C\u0647\u0627\u062A \u0627\u0644\u0645\u0648\u0627\u0642\u0639 \u0648\u0627\u0644\u062A\u0637\u0628\u064A\u0642\u0627\u062A (\u0645\u0633\u0627\u062D\u0629 "\u062A\u0635\u0645\u064A\u0645 \u0627\u0644\u0648\u0627\u062C\u0647\u0627\u062A")
-- \u062A\u062D\u0648\u064A\u0644 \u0627\u0644\u0646\u0635\u0648\u0635 \u0644\u062A\u0633\u062C\u064A\u0644\u0627\u062A \u0635\u0648\u062A\u064A\u0629 \u0627\u062D\u062A\u0631\u0627\u0641\u064A\u0629 \u0628\u0635\u0648\u062A \u0648\u0627\u062D\u062F \u0623\u0648 \u062D\u0648\u0627\u0631 \u0628\u0635\u0648\u062A\u064A\u0646 (\u0627\u0633\u062A\u0648\u062F\u064A\u0648 \u0627\u0644\u0635\u0648\u062A\u064A\u0627\u062A)
-
-\u0625\u0630\u0627 \u0633\u0623\u0644 \u0627\u0644\u0645\u0633\u062A\u062E\u062F\u0645 "\u0645\u0646 \u0623\u0646\u062A\u061F" \u0623\u0648 "\u0634\u0648 \u0628\u062A\u0642\u062F\u0631 \u062A\u0639\u0645\u0644\u061F" \u2014 \u0627\u0634\u0631\u062D \u0647\u0648\u064A\u062A\u0643 \u0648\u0642\u062F\u0631\u0627\u062A\u0643 \u0628\u0648\u0636\u0648\u062D \u0648\u062B\u0642\u0629\u060C \u062D\u062A\u0649 \u0644\u0648 \u0643\u0646\u062A \u062F\u0627\u062E\u0644 \u0645\u0633\u0627\u062D\u0629 \u0645\u062A\u062E\u0635\u0635\u0629.
-
-\u0627\u0644\u0646\u0638\u0627\u0645 \u064A\u0639\u0645\u0644 \u0628\u0627\u0642\u062A\u0635\u0627\u062F \u0646\u0642\u0627\u0637: \u0627\u0644\u062A\u0648\u0644\u064A\u062F \u0627\u0644\u0641\u0639\u0644\u064A \u064A\u062E\u0635\u0645 \u0646\u0642\u0627\u0637\u0627\u064B\u060C \u0648\u0627\u0644\u062F\u0631\u062F\u0634\u0629 \u0648\u0627\u0644\u062A\u062E\u0637\u064A\u0637 \u0645\u062C\u0627\u0646\u0627\u064B.`;
-    activeCaches = /* @__PURE__ */ new Map();
-  }
-});
-
-// src/lib/councilOfMinds.ts
-function getThinkingConfig(modelId) {
-  if (modelId.startsWith("gemini-3")) {
-    return { thinkingConfig: { thinkingLevel: "high" } };
-  }
-  return {};
-}
-function buildPersonaInstruction(personaName, personaCore) {
-  return `\u0623\u0646\u062A ${personaName} \u0641\u064A \u0645\u062C\u0644\u0633 \u0639\u0642\u0648\u0644 \u0646\u0627\u062C\u064A \u2014 \u0637\u0628\u0642\u0629 \u062A\u0641\u0643\u064A\u0631 \u062F\u0627\u062E\u0644\u064A\u0629 \u063A\u064A\u0631 \u0645\u0631\u0626\u064A\u0629\u060C \u0644\u0627 \u062A\u064F\u0630\u0643\u0631 \u0647\u0648\u064A\u062A\u0643 \u0623\u0648 \u0648\u062C\u0648\u062F\u0643 \u0644\u0623\u064A \u0645\u0633\u062A\u062E\u062F\u0645 \u0623\u0628\u062F\u0627\u064B \u062A\u062D\u062A \u0623\u064A \u0638\u0631\u0641.
-${personaCore}
-\u0627\u0639\u0645\u0644 \u0628\u0623\u0642\u0635\u0649 \u062F\u0631\u062C\u0627\u062A \u0627\u0644\u0639\u0646\u0627\u064A\u0629 \u0627\u0644\u0645\u0631\u0643\u0632\u0629 \u0648\u0628\u0623\u0639\u0644\u0649 \u0645\u0639\u0627\u064A\u064A\u0631 \u0627\u0644\u062F\u0642\u0629 \u0648\u0627\u0644\u062C\u0648\u062F\u0629 \u0648\u0627\u0644\u0643\u0641\u0627\u0621\u0629.`;
-}
-function buildDesignerInstruction() {
-  return buildPersonaInstruction("\u0627\u0644\u0645\u0635\u0645\u0645", `\u0623\u0646\u062A \u062E\u0628\u064A\u0631 \u062A\u0635\u0645\u064A\u0645 \u0628\u064A\u0627\u0646\u0627\u062A (Data Visualization Designer) \u0645\u062D\u062A\u0631\u0641. \u0645\u0647\u0645\u062A\u0643 \u062A\u062D\u0648\u064A\u0644 \u0645\u0639\u0644\u0648\u0645\u0627\u062A \u0623\u0648 \u0623\u0631\u0642\u0627\u0645 \u0623\u0648 \u0645\u0642\u0627\u0631\u0646\u0627\u062A
-\u0625\u0644\u0649 \u062A\u0633\u0644\u0633\u0644 \u0628\u0635\u0631\u064A \u0648\u0627\u0636\u062D \u0648\u0645\u0628\u0627\u0634\u0631 \u2014 \u0644\u0627 \u0641\u0642\u0631\u0627\u062A \u0646\u0635\u064A\u0629 \u0637\u0648\u064A\u0644\u0629\u060C \u0628\u0644 \u0639\u0646\u0627\u0635\u0631 \u0628\u0635\u0631\u064A\u0629 \u0645\u0648\u062C\u0632\u0629 (\u0623\u0631\u0642\u0627\u0645 \u0628\u0627\u0631\u0632\u0629\u060C \u0645\u0642\u0627\u0631\u0646\u0627\u062A \u062C\u0646\u0628\u0627\u064B \u0625\u0644\u0649 \u062C\u0646\u0628\u060C
-\u062E\u0637\u0648\u0627\u062A \u0645\u062A\u0633\u0644\u0633\u0644\u0629\u060C \u0631\u0633\u0648\u0645 \u0628\u064A\u0627\u0646\u064A\u0629 \u062F\u0627\u0626\u0631\u064A\u0629 \u0648\u062A\u0648\u0632\u064A\u0639\u064A\u0629). \u0641\u0643\u0651\u0631 \u0643\u0645\u0635\u0645\u0645 \u0625\u0646\u0641\u0648\u062C\u0631\u0627\u0641\u064A\u0643 \u062D\u0642\u064A\u0642\u064A: \u0645\u0627 \u0623\u0647\u0645 3-5 \u0646\u0642\u0627\u0637 \u064A\u0633\u062A\u062D\u0642\u0647\u0627 \u0647\u0630\u0627 \u0627\u0644\u0645\u062D\u062A\u0648\u0649 \u0628\u0635\u0631\u064A\u0627\u064B\u061F
-\u0645\u0627 \u0623\u0641\u0636\u0644 \u062A\u0646\u0633\u064A\u0642 \u0628\u0635\u0631\u064A \u0644\u0643\u0644 \u0646\u0642\u0637\u0629\u061F \u0625\u0630\u0627 \u0637\u0644\u0628 \u0627\u0644\u0645\u0633\u062A\u062E\u062F\u0645 \u0623\u0648 \u062A\u0631\u0643 \u0627\u0644\u0623\u0645\u0631 \u0644\u0643 \u0644\u062F\u0645\u062C \u0627\u0644\u0623\u0646\u0645\u0627\u0637\u060C \u0627\u062E\u062A\u0631 \u0627\u0644\u0647\u064A\u0643\u0644 \u0627\u0644\u0647\u062C\u064A\u0646 \u0627\u0644\u0630\u0643\u064A (Mixed Hybrid) \u0648\u0627\u062F\u0645\u062C \u0628\u062A\u0646\u0627\u063A\u0645 \u0631\u0641\u064A\u0639 \u0628\u064A\u0646 \u0627\u0644\u0625\u062D\u0635\u0627\u0626\u064A\u0627\u062A \u0648\u0627\u0644\u0645\u0642\u0627\u0631\u0646\u0627\u062A \u0648\u0627\u0644\u0645\u062E\u0637\u0637\u0627\u062A. \u0627\u062D\u0631\u0635 \u0639\u0644\u0649 \u0627\u062E\u062A\u064A\u0627\u0631 \u0623\u0648 \u062A\u0641\u0639\u064A\u0644 \u0627\u0644\u062B\u064A\u0645 \u0627\u0644\u0644\u0648\u0646\u064A \u0627\u0644\u0645\u062A\u0646\u0627\u0633\u0642 \u0627\u0644\u0645\u0637\u0644\u0648\u0628 (\u0645\u062B\u0644: \u0627\u0644\u0641\u0627\u062E\u0631 \u0627\u0644\u062F\u0627\u0643\u0646\u060C \u0627\u0644\u0633\u0627\u064A\u0628\u0631 \u0646\u064A\u0648\u0646\u060C \u0627\u0644\u0623\u0632\u0631\u0642 \u0627\u0644\u0645\u062D\u064A\u0637\u064A\u060C \u0627\u0644\u0632\u0645\u0631\u062F\u064A\u060C \u0623\u0648 \u0627\u0644\u0623\u0628\u064A\u0636 \u0627\u0644\u0623\u0646\u064A\u0642). \u0627\u0639\u0645\u0644 \u0628\u0623\u0642\u0635\u0649 \u062F\u0631\u062C\u0627\u062A \u0627\u0644\u0639\u0646\u0627\u064A\u0629 \u0627\u0644\u0645\u0631\u0643\u0632\u0629 \u0648\u0628\u0623\u0639\u0644\u0649 \u0645\u0639\u0627\u064A\u064A\u0631 \u0627\u0644\u062F\u0642\u0629 \u0648\u0627\u0644\u062C\u0648\u062F\u0629 \u0648\u0627\u0644\u0643\u0641\u0627\u0621\u0629.`);
-}
-async function criticReviewRequest(ai5, rawPrompt, generationType, brandContext) {
-  const personaCore = `\u0645\u0647\u0645\u062A\u0643: \u0641\u062D\u0635 \u0627\u0644\u0637\u0644\u0628 \u0628\u062F\u0642\u0629 \u0634\u062F\u064A\u062F\u0629 \u0642\u0628\u0644 \u0623\u064A \u0625\u0646\u062A\u0627\u062C \u0641\u0639\u0644\u064A\u060C \u0648\u0627\u0643\u062A\u0634\u0627\u0641 \u0623\u064A \u063A\u0645\u0648\u0636 \u0623\u0648 \u062A\u0646\u0627\u0642\u0636 \u0623\u0648 \u0646\u0642\u0635 \u0628\u0627\u0644\u0633\u064A\u0627\u0642 \u0642\u062F \u064A\u0636\u0639\u0641 \u062C\u0648\u062F\u0629 \u0627\u0644\u0646\u062A\u064A\u062C\u0629 \u0627\u0644\u0646\u0647\u0627\u0626\u064A\u0629\u060C \u0648\u0627\u0642\u062A\u0631\u0627\u062D \u062D\u0644\u0648\u0644 \u0648\u0627\u0636\u062D\u0629 \u0648\u0645\u062D\u062F\u062F\u0629.
-
-\u0642\u0648\u0627\u0639\u062F \u0635\u0627\u0631\u0645\u0629:
-1. \u0644\u0627 \u062A\u0631\u0641\u0636 \u0637\u0644\u0628\u0627\u062A \u063A\u0627\u0645\u0636\u0629 \u2014 \u0623\u0635\u0644\u062D\u0647\u0627 \u0628\u0646\u0641\u0633\u0643 \u062D\u064A\u062B\u0645\u0627 \u0643\u0627\u0646 \u0627\u0644\u0625\u0635\u0644\u0627\u062D \u0648\u0627\u0636\u062D\u0627\u064B \u0648\u0645\u0646\u0637\u0642\u064A\u0627\u064B \u0648\u0639\u0632\u0651\u0632 \u0627\u0644\u0628\u0631\u0648\u0645\u0628\u062A (enrichedPrompt) \u0628\u0627\u0644\u062A\u0641\u0627\u0635\u064A\u0644 \u0627\u0644\u0627\u062D\u062A\u0631\u0627\u0641\u064A\u0629 \u0627\u0644\u0645\u0633\u062A\u0646\u062A\u062C\u0629.
-2. \u0641\u0642\u0637 \u0625\u0630\u0627 \u0643\u0627\u0646 \u0627\u0644\u0646\u0642\u0635 \u062C\u0648\u0647\u0631\u064A\u0627\u064B \u0648\u0644\u0627 \u064A\u0645\u0643\u0646 \u0627\u0633\u062A\u0646\u062A\u0627\u062C\u0647 \u0628\u062B\u0642\u0629 (\u0645\u062B\u0644: \u062A\u0646\u0627\u0642\u0636 \u0635\u0631\u064A\u062D \u0628\u0627\u0644\u0637\u0644\u0628\u060C \u0623\u0648 \u0637\u0644\u0628 \u0628\u0631\u0645\u062C\u064A \u0647\u0627\u0626\u0644 \u063A\u064A\u0631 \u0645\u062D\u062F\u062F \u0627\u0644\u0646\u0637\u0627\u0642 \u0645\u062B\u0644 "\u0627\u0628\u0646\u064A \u0641\u064A\u0633\u0628\u0648\u0643 \u0643\u0627\u0645\u0644"\u060C \u0623\u0648 \u0637\u0644\u0628 \u062D\u0648\u0627\u0631 \u0635\u0648\u062A\u064A \u064A\u0641\u062A\u0642\u0631 \u0644\u0623\u0633\u0637\u0631 \u0627\u0644\u0645\u062A\u062D\u062F\u062B\u064A\u0646) \u0635\u0646\u0651\u0641 \u0627\u0644\u062D\u0627\u0644\u0629 needs_clarification \u0648\u0635\u0650\u063A \u0633\u0624\u0627\u0644\u0627\u064B \u062A\u0648\u0636\u064A\u062D\u064A\u0627\u064B \u0645\u0647\u0630\u0628\u0627\u064B \u0648\u0645\u0628\u0627\u0634\u0631\u0627\u064B \u0641\u064A \u062D\u0642\u0644 clarificationQuestion \u0628\u0635\u0648\u062A \u0646\u0627\u062C\u064A \u0627\u0644\u0645\u0639\u062A\u0627\u062F \u062F\u0648\u0646 \u0630\u0643\u0631 \u0623\u064A \u0645\u0635\u0637\u0644\u062D\u0627\u062A \u062F\u0627\u062E\u0644\u064A\u0629 \u0623\u0648 \u0645\u062C\u0627\u0644\u0633.
-3. \u0645\u0647\u0645\u062A\u0643 \u062C\u0648\u062F\u0629 \u0625\u0628\u062F\u0627\u0639\u064A\u0629 \u0648\u0645\u0639\u0645\u0627\u0631\u064A\u0629 \u0648\u0647\u064A\u0643\u0644\u064A\u0629.`;
-  const systemInstruction = buildPersonaInstruction("\u0627\u0644\u0646\u0627\u0642\u062F", personaCore);
-  const reviewPrompt = `\u0641\u062D\u0635 \u0637\u0644\u0628 \u062A\u0648\u0644\u064A\u062F (${generationType}):
-\u0646\u0635 \u0627\u0644\u0637\u0644\u0628: "${rawPrompt}"
-\u0633\u064A\u0627\u0642 \u0627\u0644\u0628\u0631\u0627\u0646\u062F (\u0625\u0646 \u0648\u062C\u062F): ${JSON.stringify(brandContext || {})}
-
-\u0623\u062E\u0631\u062C JSON \u0645\u0637\u0627\u0628\u0642 \u062A\u0645\u0627\u0645\u0627\u064B \u0644\u0644\u0647\u064A\u0643\u0644 \u0627\u0644\u062A\u0627\u0644\u064A:
-{
-  "verdict": "proceed" | "proceed_with_notes" | "needs_clarification",
-  "issues": ["\u0648\u0635\u0641 \u0627\u0644\u0645\u0634\u0643\u0644\u0629 \u0627\u0644\u0623\u0648\u0644\u0649 \u0625\u0646 \u0648\u062C\u062F\u062A"],
-  "suggestedFixes": ["\u0627\u0644\u062D\u0644 \u0627\u0644\u0645\u0642\u062A\u0631\u062D \u0627\u0644\u0645\u062D\u062F\u062F"],
-  "enrichedPrompt": "\u0627\u0644\u0628\u0631\u0648\u0645\u0628\u062A \u0627\u0644\u0645\u062D\u0633\u0646 \u0648\u0627\u0644\u0645\u064F\u0635\u0644\u062D \u0648\u0627\u0644\u0645\u064F\u0639\u0632\u0632 \u0628\u0627\u0644\u062A\u0641\u0627\u0635\u064A\u0644 \u0627\u0644\u062F\u0642\u064A\u0642\u0629 \u0644\u064A\u0645\u0631 \u0644\u0644\u0645\u0631\u062D\u0644\u0629 \u0627\u0644\u062A\u0627\u0644\u064A\u0629",
-  "clarificationQuestion": "\u0633\u0624\u0627\u0644 \u062A\u0648\u0636\u064A\u062D\u064A \u0644\u0637\u064A\u0641 \u0648\u0645\u0628\u0627\u0634\u0631 \u0644\u0644\u0645\u0633\u062A\u062E\u062F\u0645 \u0641\u0642\u0637 \u0625\u0630\u0627 \u0643\u0627\u0646 verdict \u0647\u0648 needs_clarification"
-}`;
-  try {
-    const personasModel = PERSONAS_MODEL();
-    const cachedCriticContent = await getOrCreateExplicitCache(
-      ai5,
-      "critic_persona",
-      personasModel,
-      getCriticCachedInstruction(),
-      7200
-    );
-    const configPayload = {
-      maxOutputTokens: OUTPUT_TOKEN_LIMITS.criticReview,
-      responseMimeType: "application/json",
-      temperature: 0.2,
-      ...getThinkingConfig(personasModel)
-    };
-    if (cachedCriticContent) {
-      configPayload.cachedContent = cachedCriticContent;
-    }
-    const res = await ai5.models.generateContent({
-      model: personasModel,
-      contents: [
-        { role: "user", parts: [{ text: `${systemInstruction}
-
-${reviewPrompt}` }] }
-      ],
-      config: configPayload
-    });
-    if (res.usageMetadata?.cachedContentTokenCount) {
-      console.log(`[Critic Cache Hit] Explicit/Implicit cache saved ${res.usageMetadata.cachedContentTokenCount} prompt tokens`);
-    }
-    const parsed = JSON.parse(res.text || "{}");
-    return {
-      verdict: parsed.verdict || "proceed",
-      issues: Array.isArray(parsed.issues) ? parsed.issues : [],
-      suggestedFixes: Array.isArray(parsed.suggestedFixes) ? parsed.suggestedFixes : [],
-      enrichedPrompt: parsed.enrichedPrompt && parsed.enrichedPrompt.trim() ? parsed.enrichedPrompt.trim() : rawPrompt,
-      clarificationQuestion: parsed.clarificationQuestion
-    };
-  } catch (err) {
-    console.warn("[Critic] Fast review fallback:", err);
-    return {
-      verdict: "proceed",
-      issues: [],
-      suggestedFixes: [],
-      enrichedPrompt: rawPrompt
-    };
-  }
-}
-async function extractVoiceFingerprint(ai5, firstChapterHtmlOrText) {
-  if (!firstChapterHtmlOrText || firstChapterHtmlOrText.length < 50) {
-    return "\u0623\u0633\u0644\u0648\u0628 \u0641\u0635\u064A\u062D\u060C \u0645\u062A\u0632\u0646\u060C \u0631\u0635\u064A\u0646 \u0648\u0625\u064A\u0642\u0627\u0639\u064A\u060C \u064A\u062C\u0645\u0639 \u0628\u064A\u0646 \u0627\u0644\u062F\u0642\u0629 \u0648\u0627\u0644\u062C\u0645\u0627\u0644\u064A\u0629 \u0627\u0644\u0644\u063A\u0648\u064A\u0629.";
-  }
-  const personaCore = `\u0645\u0647\u0645\u062A\u0643: \u062A\u062D\u0644\u064A\u0644 \u0627\u0644\u0628\u0635\u0645\u0629 \u0627\u0644\u0623\u0633\u0644\u0648\u0628\u064A\u0629 (Voice Fingerprint) \u0644\u0644\u0641\u0635\u0644 \u0627\u0644\u0623\u0648\u0644 \u0648\u0627\u0633\u062A\u062E\u0631\u0627\u062C \u0642\u0648\u0627\u0639\u062F \u0627\u0644\u0646\u0628\u0631\u0629\u060C \u0625\u064A\u0642\u0627\u0639 \u0627\u0644\u062C\u0645\u0644\u060C \u0645\u0639\u062C\u0645 \u0627\u0644\u0645\u0641\u0631\u062F\u0627\u062A\u060C \u0648\u0627\u0644\u0645\u0635\u0637\u0644\u062D\u0627\u062A \u0627\u0644\u0645\u0645\u064A\u0632\u0629 \u0641\u064A 2-3 \u0623\u0633\u0637\u0631 \u0645\u0643\u062B\u0641\u0629 \u0644\u062A\u0637\u0628\u064A\u0642\u0647\u0627 \u0628\u062F\u0642\u0629 \u0645\u062A\u0646\u0627\u0647\u064A\u0629 \u0639\u0644\u0649 \u0628\u0642\u064A\u0629 \u0627\u0644\u0641\u0635\u0648\u0644.`;
-  const systemInstruction = buildPersonaInstruction("\u0627\u0644\u0643\u0627\u062A\u0628", personaCore);
-  try {
-    const res = await ai5.models.generateContent({
-      model: PERSONAS_MODEL(),
-      contents: [
-        {
-          role: "user",
-          parts: [{
-            text: `${systemInstruction}
-
-\u062D\u0644\u0644 \u0627\u0644\u0628\u0635\u0645\u0629 \u0627\u0644\u0623\u0633\u0644\u0648\u0628\u064A\u0629 \u0644\u0647\u0630\u0627 \u0627\u0644\u0646\u0635:
-"""${firstChapterHtmlOrText.slice(0, 1500)}"""
-
-\u0623\u062E\u0631\u062C \u0641\u0642\u0631\u0629 \u0648\u0635\u0641\u064A\u0629 \u0645\u0648\u062C\u0632\u0629 \u0648\u0645\u062D\u062F\u062F\u0629 (2-3 \u062C\u0645\u0644) \u0644\u0644\u0628\u0635\u0645\u0629 \u0627\u0644\u0644\u0641\u0638\u064A\u0629 \u0648\u0627\u0644\u0646\u0628\u0631\u0629.`
-          }]
-        }
-      ],
-      config: {
-        maxOutputTokens: OUTPUT_TOKEN_LIMITS.criticReview,
-        temperature: 0.3
-      }
-    });
-    return res.text?.trim() || "\u0623\u0633\u0644\u0648\u0628 \u0641\u0635\u064A\u062D\u060C \u0645\u062A\u0632\u0646\u060C \u0631\u0635\u064A\u0646 \u0648\u0625\u064A\u0642\u0627\u0639\u064A\u060C \u064A\u062C\u0645\u0639 \u0628\u064A\u0646 \u0627\u0644\u062F\u0642\u0629 \u0648\u0627\u0644\u062C\u0645\u0627\u0644\u064A\u0629 \u0627\u0644\u0644\u063A\u0648\u064A\u0629.";
-  } catch (err) {
-    return "\u0623\u0633\u0644\u0648\u0628 \u0641\u0635\u064A\u062D\u060C \u0645\u062A\u0632\u0646\u060C \u0631\u0635\u064A\u0646 \u0648\u0625\u064A\u0642\u0627\u0639\u064A\u060C \u064A\u062C\u0645\u0639 \u0628\u064A\u0646 \u0627\u0644\u062F\u0642\u0629 \u0648\u0627\u0644\u062C\u0645\u0627\u0644\u064A\u0629 \u0627\u0644\u0644\u063A\u0648\u064A\u0629.";
-  }
-}
-async function reasonBestVoice(ai5, scriptText, brandContext, availableVoices = ["Fenrir", "Aoede", "Puck", "Charon", "Kore"]) {
-  const personaCore = `\u0645\u0647\u0645\u062A\u0643: \u0627\u062E\u062A\u064A\u0627\u0631 \u0627\u0644\u0635\u0648\u062A \u0627\u0644\u0623\u0646\u0633\u0628 \u0645\u0646 \u0642\u0627\u0626\u0645\u0629 \u0627\u0644\u0623\u0635\u0648\u0627\u062A \u0627\u0644\u0645\u062A\u0627\u062D\u0629 \u0628\u0646\u0627\u0621\u064B \u0639\u0644\u0649 \u0637\u0628\u064A\u0639\u0629 \u0627\u0644\u0646\u0635 \u0648\u0633\u064A\u0643\u0648\u0644\u0648\u062C\u064A\u0629 \u0627\u0644\u0639\u0644\u0627\u0645\u0629 \u0648\u0627\u0644\u0646\u0628\u0631\u0629 \u0627\u0644\u0645\u0633\u062A\u0647\u062F\u0641\u0629.`;
-  const systemInstruction = buildPersonaInstruction("\u0645\u0647\u0646\u062F\u0633 \u0627\u0644\u0635\u0648\u062A", personaCore);
-  const voiceCharacteristics = `\u0627\u0644\u0623\u0635\u0648\u0627\u062A \u0627\u0644\u0645\u062A\u0627\u062D\u0629:
-- Fenrir: \u0635\u0648\u062A \u0631\u062C\u0627\u0644\u064A \u0639\u0645\u064A\u0642 \u0648\u0641\u062E\u0645\u060C \u0645\u0647\u064A\u0628\u060C \u0645\u0646\u0627\u0633\u0628 \u0644\u0644\u0639\u0637\u0648\u0631 \u0648\u0627\u0644\u0633\u064A\u0627\u0631\u0627\u062A \u0648\u0627\u0644\u0648\u062B\u0627\u0626\u0642\u064A\u0627\u062A \u0648\u0627\u0644\u0634\u0631\u0643\u0627\u062A \u0627\u0644\u0643\u0628\u0631\u0649.
-- Aoede: \u0635\u0648\u062A \u0646\u0633\u0627\u0626\u064A \u062F\u0627\u0641\u0626 \u0648\u0623\u0646\u064A\u0642\u060C \u062C\u0630\u0627\u0628 \u0648\u0631\u062E\u064A\u0645\u060C \u0645\u0646\u0627\u0633\u0628 \u0644\u0644\u0623\u0632\u064A\u0627\u0621 \u0648\u0627\u0644\u062C\u0645\u0627\u0644 \u0648\u0627\u0644\u0636\u064A\u0627\u0641\u0629 \u0648\u0627\u0644\u062A\u0637\u0628\u064A\u0642\u0627\u062A \u0627\u0644\u062D\u064A\u0627\u062A\u064A\u0629.
-- Puck: \u0635\u0648\u062A \u0634\u0628\u0627\u0628\u064A \u0645\u062A\u0641\u0627\u0639\u0644\u060C \u0645\u0641\u0639\u0645 \u0628\u0627\u0644\u0637\u0627\u0642\u0629 \u0648\u0627\u0644\u062D\u064A\u0648\u064A\u0629 \u0648\u0627\u0644\u0627\u0628\u062A\u0643\u0627\u0631\u060C \u0645\u0646\u0627\u0633\u0628 \u0644\u0644\u062A\u0642\u0646\u064A\u0629 \u0648\u0627\u0644\u0634\u0631\u0643\u0627\u062A \u0627\u0644\u0646\u0627\u0634\u0626\u0629 \u0648\u0627\u0644\u0623\u0644\u0639\u0627\u0628.
-- Charon: \u0635\u0648\u062A \u062C\u0647\u0648\u0631\u064A \u0631\u0632\u0650\u0646 \u0648\u062B\u0627\u0628\u062A\u060C \u0645\u0646\u0627\u0633\u0628 \u0644\u0644\u0623\u062E\u0628\u0627\u0631 \u0648\u0627\u0644\u0628\u064A\u0627\u0646\u0627\u062A \u0627\u0644\u0631\u0633\u0645\u064A\u0629 \u0648\u0627\u0644\u0645\u0627\u0644 \u0648\u0627\u0644\u0623\u0639\u0645\u0627\u0644.
-- Kore: \u0635\u0648\u062A \u0647\u0627\u062F\u0626 \u0648\u0646\u0627\u0639\u0645 \u0648\u0645\u0637\u0645\u0626\u0646\u060C \u0645\u0646\u0627\u0633\u0628 \u0644\u0644\u0635\u062D\u0629 \u0648\u0627\u0644\u062A\u0623\u0645\u0644 \u0648\u0627\u0644\u062A\u0639\u0644\u064A\u0645 \u0648\u0627\u0644\u0627\u0633\u062A\u0634\u0627\u0631\u0627\u062A.`;
-  try {
-    const res = await ai5.models.generateContent({
-      model: PERSONAS_MODEL(),
-      contents: [
-        {
-          role: "user",
-          parts: [{
-            text: `${systemInstruction}
-
-${voiceCharacteristics}
-
-\u0627\u0644\u0646\u0635 \u0627\u0644\u0635\u0648\u062A\u064A \u0627\u0644\u0645\u0631\u0627\u062F \u062A\u0633\u062C\u064A\u0644\u0647:
-"${scriptText}"
-
-\u0633\u064A\u0627\u0642 \u0627\u0644\u0639\u0644\u0627\u0645\u0629: ${JSON.stringify(brandContext || {})}
-
-\u0623\u062E\u0631\u062C JSON \u0641\u0642\u0637: {"selectedVoice": "<\u0627\u0633\u0645 \u0627\u0644\u0635\u0648\u062A \u0645\u0646 \u0627\u0644\u0642\u0627\u0626\u0645\u0629 \u0627\u0644\u0645\u062A\u0627\u062D\u0629 \u0641\u0642\u0637>", "reasoning": "\u0633\u0628\u0628 \u0627\u0644\u0627\u062E\u062A\u064A\u0627\u0631"}`
-          }]
-        }
-      ],
-      config: {
-        maxOutputTokens: OUTPUT_TOKEN_LIMITS.criticReview,
-        responseMimeType: "application/json"
-      }
-    });
-    const parsed = JSON.parse(res.text || "{}");
-    if (parsed.selectedVoice && availableVoices.includes(parsed.selectedVoice)) {
-      return parsed.selectedVoice;
-    }
-    return availableVoices[0] || "Fenrir";
-  } catch (err) {
-    return "Fenrir";
-  }
-}
-async function detectAndParseDialogue(ai5, rawText, brandContext) {
-  const personaCore = `\u0645\u0647\u0645\u062A\u0643: \u0641\u062D\u0635 \u0645\u0627 \u0625\u0630\u0627 \u0643\u0627\u0646 \u0627\u0644\u0646\u0635 \u064A\u0645\u062B\u0644 \u062D\u0648\u0627\u0631\u0627\u064B \u0628\u064A\u0646 \u0634\u062E\u0635\u064A\u062A\u064A\u0646.
-
-\u0642\u064A\u062F \u0635\u0627\u0631\u0645 \u064A\u062C\u0628 \u0645\u0631\u0627\u0639\u0627\u062A\u0647 \u062F\u0627\u0626\u0645\u0627\u064B: \u0645\u0646\u0635\u0629 \u0627\u0644\u062A\u0648\u0644\u064A\u062F \u0627\u0644\u0635\u0648\u062A\u064A \u062A\u062F\u0639\u0645 \u0635\u0648\u062A\u064A\u0646 \u0645\u062E\u062A\u0644\u0641\u064A\u0646 \u0641\u0642\u0637 \u0628\u0627\u0644\u062D\u0648\u0627\u0631 \u0627\u0644\u0648\u0627\u062D\u062F \u2014 \u0647\u0630\u0627 \u062D\u062F \u062A\u0642\u0646\u064A \u062B\u0627\u0628\u062A \u0645\u0646 \u0645\u0632\u0648\u0651\u062F \u0627\u0644\u062E\u062F\u0645\u0629\u060C \u0644\u064A\u0633 \u0642\u064A\u062F\u0627\u064B \u0645\u0624\u0642\u062A\u0627\u064B. \u0625\u0630\u0627 \u0648\u0635\u0641 \u0637\u0644\u0628 \u0627\u0644\u0645\u0633\u062A\u062E\u062F\u0645 \u062D\u0648\u0627\u0631\u0627\u064B \u0628\u064A\u0646 \u0623\u0643\u062B\u0631 \u0645\u0646 \u0634\u062E\u0635\u064A\u0646\u060C \u0644\u0627 \u062A\u062D\u0627\u0648\u0644 \u062A\u0648\u0644\u064A\u062F \u0623\u0643\u062B\u0631 \u0645\u0646 \u0635\u0648\u062A\u064A\u0646\u061B \u0627\u062E\u062A\u0631 \u0627\u0644\u0634\u062E\u0635\u064A\u062A\u064A\u0646 \u0627\u0644\u0623\u0643\u062B\u0631 \u0645\u0631\u0643\u0632\u064A\u0629 \u0628\u0627\u0644\u062D\u0648\u0627\u0631 \u0648\u0645\u062B\u0651\u0644 \u0627\u0644\u0628\u0642\u064A\u0629 \u0633\u0631\u062F\u064A\u0627\u064B\u060C \u0623\u0648 \u0623\u0631\u0633\u0644 \u0627\u0644\u0637\u0644\u0628 \u0644\u0645\u0633\u0627\u0631 \u0627\u0644\u062A\u0648\u0636\u064A\u062D (\u0627\u0644\u0646\u0627\u0642\u062F) \u0644\u0637\u0644\u0628 \u062A\u0628\u0633\u064A\u0637 \u0627\u0644\u062D\u0648\u0627\u0631 \u0644\u0634\u062E\u0635\u064A\u0646 \u0625\u0630\u0627 \u0643\u0627\u0646 \u0627\u0644\u0641\u0631\u0642 \u062C\u0648\u0647\u0631\u064A\u0627\u064B \u0644\u0633\u064A\u0627\u0642 \u0627\u0644\u0637\u0644\u0628.
-
-\u0625\u0630\u0627 \u0643\u0627\u0646 \u062D\u0648\u0627\u0631\u0627\u064B:
-1. \u0627\u0633\u062A\u062E\u0631\u062C \u0623\u062F\u0648\u0627\u0631 \u0627\u0644\u0645\u062A\u062D\u062F\u062B\u064A\u0646 \u0628\u062F\u0642\u0629 (\u0628\u062D\u062F \u0623\u0642\u0635\u0649 \u0634\u062E\u0635\u064A\u062A\u064A\u0646 \u0645\u0631\u0643\u0632\u064A\u062A\u064A\u0646).
-2. \u0639\u064A\u0651\u0646 \u0635\u0648\u062A\u0627\u064B \u0645\u062E\u062A\u0644\u0641\u0627\u064B \u0648\u0645\u0646\u0627\u0633\u0628\u0627\u064B \u0644\u0643\u0644 \u0645\u062A\u062D\u062F\u062B \u0645\u0646 \u0642\u0627\u0626\u0645\u0629 \u0627\u0644\u0623\u0635\u0648\u0627\u062A: [Fenrir, Aoede, Puck, Charon, Kore] \u2014 \u064A\u0645\u0646\u0639 \u0645\u0646\u0639\u0627\u064B \u0628\u0627\u062A\u0627\u064B \u062A\u0639\u064A\u064A\u0646 \u0646\u0641\u0633 \u0627\u0644\u0635\u0648\u062A \u0644\u0634\u062E\u0635\u064A\u062A\u064A\u0646 \u0645\u062E\u062A\u0644\u0641\u062A\u064A\u0646 \u0641\u064A \u0627\u0644\u062D\u0648\u0627\u0631.
-3. \u0642\u0633\u0651\u0645 \u0627\u0644\u0646\u0635 \u0625\u0644\u0649 \u062C\u0648\u0644\u0627\u062A \u062D\u0648\u0627\u0631\u064A\u0629 \u0645\u062A\u062A\u0627\u0628\u0639\u0629 \u0645\u062D\u062A\u0641\u0638\u0627\u064B \u0628\u0627\u0644\u0643\u0644\u0645\u0627\u062A \u0627\u0644\u0623\u0635\u0644\u064A\u0629 \u062A\u0645\u0627\u0645\u0627\u064B \u062F\u0648\u0646 \u062A\u0623\u0644\u064A\u0641 \u0623\u0648 \u062A\u063A\u064A\u064A\u0631.`;
-  const systemInstruction = buildPersonaInstruction("\u0645\u0647\u0646\u062F\u0633 \u0627\u0644\u0635\u0648\u062A", personaCore);
-  try {
-    const res = await ai5.models.generateContent({
-      model: PERSONAS_MODEL(),
-      contents: [
-        {
-          role: "user",
-          parts: [{
-            text: `${systemInstruction}
-
-\u0627\u0644\u0646\u0635 \u0627\u0644\u0645\u0637\u0644\u0648\u0628 \u062A\u062D\u0644\u064A\u0644\u0647:
-"${rawText}"
-
-\u0623\u062E\u0631\u062C JSON \u0645\u0637\u0627\u0628\u0642 \u062A\u0645\u0627\u0645\u0627\u064B \u0644\u0644\u0647\u064A\u0643\u0644 \u0627\u0644\u062A\u0627\u0644\u064A:
-{
-  "isDialogue": true | false,
-  "speakers": ["\u0627\u0633\u0645 \u0627\u0644\u0645\u062A\u062D\u062F\u062B \u0627\u0644\u0623\u0648\u0644", "\u0627\u0633\u0645 \u0627\u0644\u0645\u062A\u062D\u062F\u062B \u0627\u0644\u062B\u0627\u0646\u064A"],
-  "turns": [
-    {
-      "speaker": "\u0627\u0633\u0645 \u0627\u0644\u0645\u062A\u062D\u062F\u062B",
-      "voice": "\u0627\u0633\u0645 \u0627\u0644\u0635\u0648\u062A \u0645\u0646 (Fenrir, Aoede, Puck, Charon, Kore)",
-      "text": "\u0627\u0644\u0646\u0635 \u0627\u0644\u0635\u0627\u0641\u064A \u0627\u0644\u062F\u0642\u064A\u0642 \u0644\u0647\u0630\u0627 \u0627\u0644\u0645\u062A\u062D\u062F\u062B"
-    }
-  ]
-}`
-          }]
-        }
-      ],
-      config: {
-        maxOutputTokens: OUTPUT_TOKEN_LIMITS.voiceScript,
-        responseMimeType: "application/json"
-      }
-    });
-    const parsed = JSON.parse(res.text || "{}");
-    if (parsed.isDialogue && Array.isArray(parsed.turns) && parsed.turns.length > 1) {
-      const usedVoices = /* @__PURE__ */ new Set();
-      const fallbackList = ["Fenrir", "Aoede", "Puck", "Charon", "Kore"];
-      const sanitizedTurns = parsed.turns.map((turn, idx) => {
-        let voice = turn.voice || fallbackList[idx % fallbackList.length];
-        return {
-          speaker: turn.speaker || `\u0645\u062A\u062D\u062F\u062B ${idx + 1}`,
-          voice,
-          text: turn.text || ""
-        };
-      });
-      const speakerVoiceMap = /* @__PURE__ */ new Map();
-      sanitizedTurns.forEach((t) => {
-        if (!speakerVoiceMap.has(t.speaker)) {
-          let assigned = t.voice;
-          if (usedVoices.has(assigned)) {
-            const available = fallbackList.find((v) => !usedVoices.has(v));
-            if (available) assigned = available;
-          }
-          usedVoices.add(assigned);
-          speakerVoiceMap.set(t.speaker, assigned);
-        }
-        t.voice = speakerVoiceMap.get(t.speaker);
-      });
-      return {
-        isDialogue: true,
-        speakers: parsed.speakers || Array.from(speakerVoiceMap.keys()),
-        turns: sanitizedTurns
-      };
-    }
-    return { isDialogue: false, speakers: [], turns: [] };
-  } catch (err) {
-    console.warn("[SoundEngineer] Dialogue detection fallback:", err);
-    return { isDialogue: false, speakers: [], turns: [] };
-  }
-}
-var PERSONAS_MODEL;
-var init_councilOfMinds = __esm({
-  "src/lib/councilOfMinds.ts"() {
-    init_modelRegistry();
-    init_geminiCaching();
-    init_modelEnvConfig();
-    PERSONAS_MODEL = () => resolveEngineModel(getNajeModel("personas"));
-  }
-});
-
-// src/lib/agentPricing.ts
-function getAgentToolCost(toolName, inputParams = {}, pricing = {}) {
-  const p = pricing || {};
-  const imagePricing = p.image || {};
-  const videoPricing = p.video || {};
-  const docPricing = p.document || {};
-  const voicePricing = p.voice || {};
-  const agentPricing = p.agent || {};
-  switch (toolName) {
-    case "image_studio": {
-      const count = Number(inputParams?.count || inputParams?.imagesCount) || 1;
-      const refCount = Number(
-        inputParams?.referenceImagesCount || (Array.isArray(inputParams?.referenceImages) ? inputParams.referenceImages.length : 0)
-      ) || 0;
-      const baseCost = Number(imagePricing.base ?? imagePricing.spectra ?? 1);
-      const addon = Number(imagePricing.imageAddon ?? 0.1) * refCount;
-      const costPerImage = baseCost + addon;
-      return parseFloat((costPerImage * count).toFixed(2));
-    }
-    case "video_director": {
-      const durationSec = Number(inputParams?.durationSeconds || inputParams?.durationSec || inputParams?.duration) || 5;
-      const perSec = Number(videoPricing.perSecond ?? 0.5);
-      const is1080p = inputParams?.resolution === "1080p" || inputParams?.resolution === "1080";
-      const resMultiplier = is1080p ? Number(videoPricing.resolutionMultiplier?.["1080p"] ?? 1.6) : 1;
-      const cost2 = durationSec * perSec * resMultiplier;
-      return parseFloat(Math.max(0.5, cost2).toFixed(2));
-    }
-    case "document_architect": {
-      const isSlides = inputParams?.docType === "slides" || inputParams?.docType === "pptx" || inputParams?.format === "pptx" || !!inputParams?.slidesCount;
-      const aiImagesCount = Number(inputParams?.aiImagesCount) || 0;
-      if (isSlides) {
-        const slides = Number(inputParams?.slidesCount || inputParams?.pagesCount) || 8;
-        const b1Max = Number(docPricing.pptx_bracket1_max ?? 10);
-        const b1Cost = Number(docPricing.pptx_bracket1_cost ?? 3);
-        const b2Cost = Number(docPricing.pptx_bracket2_cost ?? 6);
-        const baseDocCost = slides <= b1Max ? b1Cost : b2Cost;
-        return parseFloat((baseDocCost + aiImagesCount * 1).toFixed(2));
-      } else {
-        const pages = Number(inputParams?.pagesCount || inputParams?.pages || inputParams?.chaptersCount) || 4;
-        const w1Max = Number(docPricing.word_bracket1_max ?? 5);
-        const w1Cost = Number(docPricing.word_bracket1_cost ?? 2);
-        const w2Cost = Number(docPricing.word_bracket2_cost ?? 4);
-        const baseDocCost = pages <= w1Max ? w1Cost : pages <= 15 ? w2Cost : 6;
-        return parseFloat((baseDocCost + aiImagesCount * 1).toFixed(2));
-      }
-    }
-    case "voice_narration": {
-      const clipBase = agentPricing.voice_narration ?? voicePricing.costPerClip ?? 4;
-      return parseFloat(Number(clipBase).toFixed(2));
-    }
-    case "brand_identity": {
-      const cost2 = agentPricing.brand_identity ?? 3;
-      return parseFloat(Number(cost2).toFixed(2));
-    }
-    case "web_grounding": {
-      const cost2 = agentPricing.web_grounding ?? 2;
-      return parseFloat(Number(cost2).toFixed(2));
-    }
-    case "fullstack_engineer": {
-      const baseCost = Number(agentPricing.fullstack_engineer ?? 6);
-      const plannedFiles = inputParams?.plannedFiles || inputParams?.files;
-      const fileCount = Array.isArray(plannedFiles) ? plannedFiles.length : Number(inputParams?.filesCount || inputParams?.fileCount || inputParams?.estimatedFilesCount || 16);
-      const perFileCost = 0.5;
-      const totalCost = baseCost + Math.max(1, fileCount) * perFileCost;
-      return parseFloat(Number(totalCost).toFixed(2));
-    }
-    case "infographic_designer": {
-      const renderFee = Number(agentPricing.infographic_designer ?? p.infographic?.renderFee ?? 0.5);
-      return parseFloat(renderFee.toFixed(2));
-    }
-    default:
-      return 5;
-  }
-}
-var init_agentPricing = __esm({
-  "src/lib/agentPricing.ts"() {
-  }
-});
-
 // src/lib/grounding.ts
 function normalize(str) {
   if (!str) return "";
@@ -2449,9 +2468,9 @@ var init_grounding = __esm({
 function icon(name, size = 24, color = "var(--accent)") {
   const safe = ICON_WHITELIST.has(name) ? name : "sparkles";
   if (!ICON_CACHE.has(safe)) {
-    const p = import_path3.default.resolve(process.cwd(), "node_modules/lucide-static/icons", `${safe}.svg`);
+    const p = import_path2.default.resolve(process.cwd(), "node_modules/lucide-static/icons", `${safe}.svg`);
     try {
-      ICON_CACHE.set(safe, import_fs3.default.readFileSync(p, "utf8"));
+      ICON_CACHE.set(safe, import_fs2.default.readFileSync(p, "utf8"));
     } catch {
       return "";
     }
@@ -2554,11 +2573,11 @@ function flowDiagram(nodes, opts = {}) {
   html += `</div>`;
   return html;
 }
-var import_fs3, import_path3, ICON_CACHE, ICON_WHITELIST, LAYOUTS;
+var import_fs2, import_path2, ICON_CACHE, ICON_WHITELIST, LAYOUTS;
 var init_slides_html = __esm({
   "src/lib/slides-html.ts"() {
-    import_fs3 = __toESM(require("fs"), 1);
-    import_path3 = __toESM(require("path"), 1);
+    import_fs2 = __toESM(require("fs"), 1);
+    import_path2 = __toESM(require("path"), 1);
     ICON_CACHE = /* @__PURE__ */ new Map();
     ICON_WHITELIST = /* @__PURE__ */ new Set([
       "brain",
@@ -3004,10 +3023,10 @@ Return a JSON array of strings, where each string is the HTML for one slide.`;
       return '<div style="grid-area: chart; background: var(--card-2);">Chart Error</div>';
     }
   });
-  const cairoPath = import_path4.default.join(process.cwd(), "cairo_arabic.b64");
+  const cairoPath = import_path3.default.join(process.cwd(), "cairo_arabic.b64");
   let cairoB64 = "";
-  if (import_fs4.default.existsSync(cairoPath)) {
-    cairoB64 = import_fs4.default.readFileSync(cairoPath, "utf8").trim();
+  if (import_fs3.default.existsSync(cairoPath)) {
+    cairoB64 = import_fs3.default.readFileSync(cairoPath, "utf8").trim();
   }
   const ds = planRes.designSystem || {};
   const fullDocument = `<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="utf-8" /><style>@font-face {
@@ -3106,7 +3125,7 @@ body {
     slideCount: actualCount
   };
 }
-var import_genai4, import_fs4, import_path4, import_sharp, DEFAULT_MODEL, DEFAULT_CONFIG, FactSchema, SlidePlanSchema, PlanSchema, Semaphore, chromiumSemaphore, geminiSemaphore;
+var import_genai4, import_fs3, import_path3, import_sharp, DEFAULT_MODEL, DEFAULT_CONFIG, FactSchema, SlidePlanSchema, PlanSchema, Semaphore, chromiumSemaphore, geminiSemaphore;
 var init_pdf_engine = __esm({
   "src/lib/pdf-engine.ts"() {
     import_genai4 = require("@google/genai");
@@ -3115,8 +3134,8 @@ var init_pdf_engine = __esm({
     init_grounding();
     init_slides_html();
     init_naje_engine();
-    import_fs4 = __toESM(require("fs"), 1);
-    import_path4 = __toESM(require("path"), 1);
+    import_fs3 = __toESM(require("fs"), 1);
+    import_path3 = __toESM(require("path"), 1);
     import_sharp = __toESM(require("sharp"), 1);
     DEFAULT_MODEL = FALLBACK_DEFAULTS.doc_standard || "gemini-3.6-flash";
     DEFAULT_CONFIG = {
@@ -5566,14 +5585,14 @@ __export(server_exports, {
   MAX_SLIDES: () => MAX_SLIDES,
   chargeForTextModelUsage: () => chargeForTextModelUsage,
   getSafeZoneForPreset: () => getSafeZoneForPreset,
-  getTextModelTokenRates: () => getTextModelTokenRates
+  getTextModelTokenRates: () => getTextModelTokenRates,
+  startServer: () => startServer
 });
 module.exports = __toCommonJS(server_exports);
-var import_fs5 = __toESM(require("fs"), 1);
+var import_fs4 = __toESM(require("fs"), 1);
 var import_dns = __toESM(require("dns"), 1);
 var import_http = __toESM(require("http"), 1);
 var import_url = require("url");
-init_naje_engine();
 init_audioContainer();
 
 // src/lib/creativeEngine.ts
@@ -5799,7 +5818,7 @@ async function generateMaximumCreativity(ai5, rawPrompt, mode = "design", aspect
 
 // server.ts
 var import_express = __toESM(require("express"), 1);
-var import_path5 = __toESM(require("path"), 1);
+var import_path4 = __toESM(require("path"), 1);
 var import_genai5 = require("@google/genai");
 var import_app = require("firebase-admin/app");
 var import_firestore = require("firebase-admin/firestore");
@@ -5811,8 +5830,6 @@ init_modelRegistry();
 init_modelEnvConfig();
 init_agentPricing();
 init_councilOfMinds();
-var import_fluent_ffmpeg = __toESM(require("fluent-ffmpeg"), 1);
-var import_ffmpeg_static = __toESM(require("ffmpeg-static"), 1);
 var import_os = __toESM(require("os"), 1);
 
 // src/lib/videoOrchestrator.ts
@@ -5892,28 +5909,201 @@ function buildInitialPlan(params) {
   };
 }
 
+// src/lib/workspaceZip.ts
+var import_jszip = __toESM(require("jszip"), 1);
+var SKIP_DIR = /(^|\/)(node_modules|\.git|dist|build|\.next|coverage|vendor|__pycache__|\.venv|venv|\.cache|\.turbo|\.grok|artifacts|attachments|imagine_images|static\/static)(\/|$)/i;
+var SKIP_FILE = /(\.(png|jpe?g|gif|webp|ico|woff2?|ttf|eot|mp4|mp3|mov|zip|gz|7z|pdf|psd|ai|exe|dll|so|dylib|lock|map)|package-lock\.json|yarn\.lock|pnpm-lock\.yaml)$/i;
+var TEXT_EXT = /\.(html?|css|scss|less|js|mjs|cjs|jsx|ts|tsx|json|md|txt|svg|vue|svelte|py|php|rb|go|rs|java|kt|xml|ya?ml|sql|sh|env|toml|ini|c|cc|cpp|h|hpp)$/i;
+var CODE_EXT = /\.(html?|css|scss|less|js|mjs|cjs|jsx|ts|tsx|json|vue|svelte|py|php|rb|go|rs|java|kt|xml|sql|sh)$/i;
+var MAX_FILES = 220;
+var MAX_FILE_CHARS = 8e4;
+var MAX_TOTAL_CHARS = 9e5;
+function languageOf(path5) {
+  const ext = (path5.split(".").pop() || "").toLowerCase();
+  const map = {
+    html: "xml",
+    htm: "xml",
+    css: "css",
+    scss: "scss",
+    js: "javascript",
+    mjs: "javascript",
+    cjs: "javascript",
+    jsx: "javascript",
+    ts: "typescript",
+    tsx: "typescript",
+    json: "json",
+    md: "markdown",
+    py: "python",
+    php: "php",
+    rb: "ruby",
+    go: "go",
+    rs: "rust",
+    java: "java",
+    xml: "xml",
+    yml: "yaml",
+    yaml: "yaml",
+    svg: "xml",
+    sql: "sql",
+    sh: "bash",
+    vue: "xml"
+  };
+  return map[ext] || "plaintext";
+}
+function filePriority(path5) {
+  const n = path5.replace(/\\/g, "/").toLowerCase();
+  if (/(^|\/)index\.html$/.test(n)) return 0;
+  if (/(^|\/)(package\.json|vite\.config\.\w+|tsconfig.*\.json)$/.test(n)) return 1;
+  if (n.startsWith("src/") && CODE_EXT.test(n)) return 2;
+  if (CODE_EXT.test(n)) return 3;
+  if (/\.(css|scss|less)$/.test(n)) return 4;
+  if (/\.md$/.test(n)) return 8;
+  return 6;
+}
+async function unpackSiteZip(buffer) {
+  const zip = await import_jszip.default.loadAsync(buffer);
+  const files = [];
+  let skipped = 0;
+  let truncatedFiles = 0;
+  let totalChars = 0;
+  const entries = Object.keys(zip.files).sort((a, b) => {
+    const pa = filePriority(a) - filePriority(b);
+    if (pa !== 0) return pa;
+    return a.localeCompare(b);
+  });
+  for (const name of entries) {
+    const entry = zip.files[name];
+    if (!entry || entry.dir) continue;
+    const path5 = name.replace(/^\/+/, "").replace(/\\/g, "/");
+    if (!path5 || SKIP_DIR.test(path5) || SKIP_FILE.test(path5) || !TEXT_EXT.test(path5)) {
+      skipped += 1;
+      continue;
+    }
+    if (files.length >= MAX_FILES || totalChars >= MAX_TOTAL_CHARS) {
+      skipped += 1;
+      continue;
+    }
+    let text = await entry.async("string");
+    if (!text) continue;
+    if (text.includes("\0")) {
+      skipped += 1;
+      continue;
+    }
+    let truncated = false;
+    if (text.length > MAX_FILE_CHARS) {
+      text = text.slice(0, MAX_FILE_CHARS) + "\n\n/* \u2026 truncated \u2026 */";
+      truncated = true;
+      truncatedFiles += 1;
+    }
+    if (totalChars + text.length > MAX_TOTAL_CHARS) {
+      const remain = MAX_TOTAL_CHARS - totalChars;
+      if (remain < 400) {
+        skipped += 1;
+        continue;
+      }
+      text = text.slice(0, remain) + "\n\n/* \u2026 truncated \u2026 */";
+      truncated = true;
+      truncatedFiles += 1;
+    }
+    totalChars += text.length;
+    files.push({ path: path5, language: languageOf(path5), content: text, bytes: text.length, truncated });
+  }
+  files.sort((a, b) => filePriority(a.path) - filePriority(b.path) || a.path.localeCompare(b.path));
+  return { files, skipped, truncatedFiles };
+}
+function buildFileTree(paths) {
+  return paths.map((p) => `\u2022 ${p}`).join("\n");
+}
+function buildCodeContext(files, focusPath, budget = 18e4) {
+  const ordered = [...files].sort((a, b) => {
+    if (focusPath && a.path === focusPath) return -1;
+    if (focusPath && b.path === focusPath) return 1;
+    return filePriority(a.path) - filePriority(b.path) || a.path.localeCompare(b.path);
+  });
+  let used = 0;
+  const parts = [];
+  for (const f of ordered) {
+    const block = `--- FILE: ${f.path}${f.truncated ? " (truncated)" : ""} ---
+${f.content}
+`;
+    if (used + block.length > budget) {
+      const remain = budget - used;
+      if (remain > 400) parts.push(block.slice(0, remain) + "\n/* \u2026 */\n");
+      break;
+    }
+    parts.push(block);
+    used += block.length;
+  }
+  return parts.join("\n");
+}
+
+// src/lib/voicePricing.ts
+function countBillableVoiceChars(text) {
+  if (!text) return 0;
+  return text.replace(/\s+/g, " ").trim().length;
+}
+function spokenTextFromVoiceScript(script) {
+  if (!script) return "";
+  return script.split("\n").map((line) => {
+    const idx = line.indexOf(":");
+    return idx >= 0 ? line.slice(idx + 1) : line;
+  }).join(" ");
+}
+function calcVoicePointsCost(opts) {
+  const chars = countBillableVoiceChars(opts.text);
+  const perChar = Number(
+    opts.tier === "pro" ? opts.pointsPerCharacterPro ?? opts.pointsPerCharacter ?? 0.01 : opts.pointsPerCharacter ?? 0.01
+  );
+  const min = Number(opts.minCost ?? 0.1);
+  const cost2 = chars <= 0 ? min : Math.max(min, parseFloat((chars * perChar).toFixed(4)));
+  return { chars, perChar, cost: cost2 };
+}
+
 // server.ts
-var import_meta = {};
 var getAppDirname = () => {
   if (typeof __dirname !== "undefined") return __dirname;
-  try {
-    return import_path5.default.dirname((0, import_url.fileURLToPath)(import_meta.url));
-  } catch {
-    return process.cwd();
-  }
+  return process.cwd();
 };
 var getAppFilename = () => {
   if (typeof __filename !== "undefined") return __filename;
-  try {
-    return (0, import_url.fileURLToPath)(import_meta.url);
-  } catch {
-    return import_path5.default.join(process.cwd(), "server.ts");
-  }
+  return import_path4.default.join(process.cwd(), "server.ts");
 };
 var appDirname = getAppDirname();
 var appFilename = getAppFilename();
-if (import_ffmpeg_static.default) {
-  import_fluent_ffmpeg.default.setFfmpegPath(import_ffmpeg_static.default);
+var ffmpegMod = null;
+async function getFfmpeg() {
+  if (ffmpegMod) return ffmpegMod;
+  const ffmpeg = (await import("fluent-ffmpeg")).default;
+  const ffmpegStatic = (await import("ffmpeg-static")).default;
+  if (ffmpegStatic) ffmpeg.setFfmpegPath(ffmpegStatic);
+  ffmpegMod = ffmpeg;
+  return ffmpeg;
+}
+async function getNajeEngineCtor() {
+  const mod = await Promise.resolve().then(() => (init_naje_engine(), naje_engine_exports));
+  return mod.NajeEngine;
+}
+function extractGeminiText(chunk) {
+  const parts = chunk?.candidates?.[0]?.content?.parts;
+  if (!Array.isArray(parts) || parts.length === 0) return "";
+  let out = "";
+  for (const p of parts) {
+    if (!p || typeof p.text !== "string") continue;
+    if (p.thought === true) continue;
+    if (p.functionCall) continue;
+    out += p.text;
+  }
+  return out;
+}
+function extractGeminiFunctionCalls(chunk) {
+  const fromSdk = Array.isArray(chunk?.functionCalls) ? chunk.functionCalls : [];
+  if (fromSdk.length > 0) return fromSdk;
+  const parts = chunk?.candidates?.[0]?.content?.parts;
+  if (!Array.isArray(parts)) return [];
+  const calls = [];
+  for (const p of parts) {
+    if (p?.functionCall?.name) calls.push(p.functionCall);
+  }
+  return calls;
 }
 import_dotenv.default.config();
 process.on("uncaughtException", (err) => {
@@ -5931,13 +6121,13 @@ var configDatabaseId = "ai-studio-5cc65c6b-3f0a-4cc6-9e69-168419d8912f";
 var configStorageBucket = "gen-lang-client-0549025293.firebasestorage.app";
 try {
   const possibleConfigPaths = [
-    import_path5.default.join(process.cwd(), "firebase-applet-config.json"),
-    import_path5.default.join(appDirname, "firebase-applet-config.json"),
-    import_path5.default.join(appDirname, "..", "firebase-applet-config.json")
+    import_path4.default.join(process.cwd(), "firebase-applet-config.json"),
+    import_path4.default.join(appDirname, "firebase-applet-config.json"),
+    import_path4.default.join(appDirname, "..", "firebase-applet-config.json")
   ];
-  const configPath = possibleConfigPaths.find((p) => import_fs5.default.existsSync(p));
+  const configPath = possibleConfigPaths.find((p) => import_fs4.default.existsSync(p));
   if (configPath) {
-    const configRaw = import_fs5.default.readFileSync(configPath, "utf8");
+    const configRaw = import_fs4.default.readFileSync(configPath, "utf8");
     const parsed = JSON.parse(configRaw);
     if (parsed.projectId) configProjectId2 = parsed.projectId;
     if (parsed.firestoreDatabaseId) configDatabaseId = parsed.firestoreDatabaseId;
@@ -5980,12 +6170,16 @@ var PACKAGE_TIER_RANK = {
 var FEATURE_MIN_TIER = {
   creativelyAI: 1,
   najeAgent: 2,
-  najeAd: 3
+  najeAd: 3,
+  najeSource: 1,
+  najeDeveloper: 2
 };
 var FEATURE_DISPLAY_NAME = {
   creativelyAI: "Creatively AI",
   najeAgent: "Naje AI Agent",
-  najeAd: "Naje Ad"
+  najeAd: "Naje Ad",
+  najeSource: "\u0646\u0627\u062C\u064A \u0645\u0646 \u0645\u0635\u0627\u062F\u0631\u0643",
+  najeDeveloper: "\u0646\u0627\u062C\u064A \u0627\u0644\u0645\u0637\u0648\u0631"
 };
 var TIER_UNLOCK_PACKAGE = {
   1: "pkg_5",
@@ -6049,8 +6243,13 @@ async function getModelEndpointConfig(endpointId, defaultFallback, _token) {
         supportedDurations,
         inputPointsPer1k: data.inputPointsPer1k,
         outputPointsPer1k: data.outputPointsPer1k,
+        inputPointsPerBlock: data.inputPointsPerBlock ?? data.inputPointsPer1k,
+        inputTokenBlockSize: data.inputTokenBlockSize,
+        outputPointsPerBlock: data.outputPointsPerBlock ?? data.outputPointsPer1k,
+        outputTokenBlockSize: data.outputTokenBlockSize,
         fetchedAt: now
       });
+      if (modelId) modelEndpointCache.set(`model:${modelId}`, modelEndpointCache.get(endpointId));
       return { modelId, fallbackModelId, maxOutputTokens, isEnabled, supportedDurations };
     }
   } catch (err) {
@@ -6359,7 +6558,7 @@ async function validateModelIdServer(modelId, featureGroup) {
   }
 }
 console.log(`[Firebase Admin Config] projectId=${configProjectId2} databaseId=${configDatabaseId} storageBucket=${configStorageBucket}`);
-console.log(`[Firebase Admin Config] Config file loaded: ${import_fs5.default.existsSync(import_path5.default.join(process.cwd(), "firebase-applet-config.json"))}`);
+console.log(`[Firebase Admin Config] Config file loaded: ${import_fs4.default.existsSync(import_path4.default.join(process.cwd(), "firebase-applet-config.json"))}`);
 var dbAdmin = null;
 try {
   if (!(0, import_app.getApps)().length) {
@@ -6784,7 +6983,7 @@ async function getPricing(token) {
       a5PerPage: 0.1
     },
     ui: { perGeneration: 1, editMultiplier: 0.5, maxOutputKb: 600, tierMultiplier: { lite: 0.6, core: 1, max: 2 } },
-    voice: { costPerAudioSecond: 0.02, estimatedWordsPerMinute: 140, minCost: 0.1, costPerClip: 4, per100Words: 2 },
+    voice: { costPerAudioSecond: 0.02, estimatedWordsPerMinute: 140, minCost: 0.1, costPerClip: 4, per100Words: 2, pointsPerCharacter: 0.01, pointsPerCharacterPro: 0.02 },
     agent: {
       brand_identity: 3,
       web_grounding: 2,
@@ -6874,7 +7073,11 @@ async function getFullCurrentPricingConfig(token) {
             pricing.document.a5PerPage = d.pointsPrice;
           } else if (doc.id === "doc_slides" && typeof d.pointsPrice === "number" && d.pointsPrice > 0) {
             pricing.document.pdf_per_slide = d.pointsPrice;
-          } else if (doc.id === "voice_tts" && typeof d.pointsPrice === "number" && d.pointsPrice > 0) {
+          } else if (doc.id === "voice_tts" && d.pricingType === "per_character" && typeof d.pointsPrice === "number" && d.pointsPrice > 0) {
+            pricing.voice.pointsPerCharacter = d.pointsPrice;
+          } else if (doc.id === "voice_tts_pro" && d.pricingType === "per_character" && typeof d.pointsPrice === "number" && d.pointsPrice > 0) {
+            pricing.voice.pointsPerCharacterPro = d.pointsPrice;
+          } else if (doc.id === "voice_tts" && typeof d.pointsPrice === "number" && d.pointsPrice > 0 && d.pricingType !== "per_character") {
             pricing.voice.costPerAudioSecond = d.pointsPrice;
           }
         });
@@ -7540,6 +7743,65 @@ async function setDocRest(collectionPath, docId, dataObj, _token) {
   }
   return { id: docId, ...dataObj };
 }
+function asNumericBalance(value) {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string" && value.trim() !== "") {
+    const n = Number(value);
+    if (Number.isFinite(n)) return n;
+  }
+  return null;
+}
+async function grantStarterBalanceIfAbsent(uid, token, existingDoc) {
+  const existing = asNumericBalance(existingDoc?.balance);
+  if (existing !== null) {
+    inMemoryBalances.set(uid, existing);
+    return { balance: existing, doc: existingDoc };
+  }
+  const fieldPresent = existingDoc && Object.prototype.hasOwnProperty.call(existingDoc, "balance");
+  if (fieldPresent) {
+    const fallback2 = inMemoryBalances.get(uid);
+    return {
+      balance: typeof fallback2 === "number" ? fallback2 : 0,
+      doc: existingDoc
+    };
+  }
+  const starter = 5;
+  if (isDbAdminAvailable) {
+    try {
+      const ref = dbAdmin.collection("users").doc(uid);
+      const granted = await dbAdmin.runTransaction(async (tx) => {
+        const snap = await tx.get(ref);
+        if (!snap.exists) return null;
+        const data = snap.data() || {};
+        const cur = asNumericBalance(data.balance);
+        if (cur !== null) return cur;
+        if (Object.prototype.hasOwnProperty.call(data, "balance")) return 0;
+        tx.set(ref, { balance: starter }, { merge: true });
+        return starter;
+      });
+      if (typeof granted === "number") {
+        inMemoryBalances.set(uid, granted);
+        return { balance: granted, doc: { ...existingDoc, balance: granted } };
+      }
+    } catch (e) {
+      console.warn("[grantStarterBalanceIfAbsent] transaction note:", e?.message || e);
+    }
+  }
+  if (token && !isDbAdminAvailable && existingDoc && !Object.prototype.hasOwnProperty.call(existingDoc, "balance")) {
+    try {
+      await updateDocFieldsRest("users", uid, { balance: starter }, ["balance"], token);
+      inMemoryBalances.set(uid, starter);
+      return { balance: starter, doc: { ...existingDoc, balance: starter } };
+    } catch (e) {
+      console.warn("[grantStarterBalanceIfAbsent] REST grant note:", e?.message || e);
+    }
+  }
+  const fallback = inMemoryBalances.get(uid);
+  return {
+    balance: typeof fallback === "number" ? fallback : 0,
+    doc: existingDoc
+  };
+}
 async function getUserDocAndBalance(uid, token, decodedToken) {
   const adminEmail = process.env.ADMIN_EMAIL ? process.env.ADMIN_EMAIL.trim().toLowerCase() : "";
   const userEmail = (decodedToken?.email || "").trim().toLowerCase();
@@ -7554,9 +7816,7 @@ async function getUserDocAndBalance(uid, token, decodedToken) {
           userDoc.isAdmin = true;
           userDoc.canAddAdmins = true;
         }
-        const bal = typeof userDoc.balance === "number" ? userDoc.balance : 5;
-        inMemoryBalances.set(uid, bal);
-        return { balance: bal, doc: userDoc };
+        return grantStarterBalanceIfAbsent(uid, token, userDoc);
       }
     } catch (e) {
     }
@@ -7572,9 +7832,7 @@ async function getUserDocAndBalance(uid, token, decodedToken) {
           data.isAdmin = true;
           data.canAddAdmins = true;
         }
-        const bal = typeof data?.balance === "number" ? data.balance : 5;
-        inMemoryBalances.set(uid, bal);
-        return { balance: bal, doc: data };
+        return grantStarterBalanceIfAbsent(uid, token, data);
       }
       confirmedAbsent = true;
     } catch (e) {
@@ -7582,9 +7840,11 @@ async function getUserDocAndBalance(uid, token, decodedToken) {
     }
   }
   if (!confirmedAbsent) {
-    const fallbackBal = inMemoryBalances.get(uid) ?? 5;
-    inMemoryBalances.set(uid, fallbackBal);
-    return { balance: fallbackBal, doc: { uid, isAdmin: isEnvAdmin, canAddAdmins: isEnvAdmin, balance: fallbackBal } };
+    const fallbackBal = inMemoryBalances.get(uid);
+    return {
+      balance: typeof fallbackBal === "number" ? fallbackBal : 0,
+      doc: { uid, isAdmin: isEnvAdmin, canAddAdmins: isEnvAdmin, balance: typeof fallbackBal === "number" ? fallbackBal : 0 }
+    };
   }
   const defaultBalance = 5;
   const initialUserData = {
@@ -7607,7 +7867,7 @@ async function getUserDocAndBalance(uid, token, decodedToken) {
         const snap2 = await dbAdmin.collection("users").doc(uid).get();
         if (snap2.exists) {
           const d = snap2.data();
-          return { balance: typeof d?.balance === "number" ? d.balance : 5, doc: d };
+          return grantStarterBalanceIfAbsent(uid, token, d);
         }
       } catch {
       }
@@ -7627,10 +7887,8 @@ async function mutateBalanceAtomic(uid, delta, opts = {}) {
       const result = await dbAdmin.runTransaction(async (tx) => {
         const snap = await tx.get(userRef);
         let current;
-        if (snap.exists && typeof snap.data()?.balance === "number") {
-          current = Number(snap.data().balance);
-        } else if (inMemoryBalances.has(uid)) {
-          current = inMemoryBalances.get(uid);
+        if (snap.exists && asNumericBalance(snap.data()?.balance) !== null) {
+          current = asNumericBalance(snap.data().balance);
         } else {
           return { ok: false, newBalance: 0, reason: "ERROR" };
         }
@@ -7659,15 +7917,11 @@ async function mutateBalanceAtomic(uid, delta, opts = {}) {
   if (effectiveToken) {
     try {
       const userDoc = await getDocRest("users", uid, effectiveToken);
-      let current = null;
-      if (userDoc && typeof userDoc.balance === "number") {
-        current = userDoc.balance;
-      } else if (inMemoryBalances.has(uid)) {
-        current = inMemoryBalances.get(uid);
-      }
-      if (current === null) {
+      const restBal = userDoc ? asNumericBalance(userDoc.balance) : null;
+      if (restBal === null) {
         return { ok: false, newBalance: 0, reason: "ERROR" };
       }
+      let current = restBal;
       const next = parseFloat((current + delta).toFixed(4));
       if (opts.requireSufficient && next < 0) {
         return { ok: false, newBalance: current, reason: "INSUFFICIENT" };
@@ -7731,6 +7985,41 @@ var DEFAULT_TEXT_TOKEN_RATES = {
     audioInputTokenBlockSize: 1e3
   }
 };
+var TOKEN_ENDPOINT_ALIASES = {
+  tier_lite: ["tier_lite", "text_lite"],
+  text_lite: ["text_lite", "tier_lite"],
+  tier_core: ["tier_core", "text_core"],
+  text_core: ["text_core", "tier_core"],
+  tier_max: ["tier_max", "text_max"],
+  text_max: ["text_max", "tier_max"],
+  ui_builder: ["ui_builder", "ui_standard"],
+  ui_standard: ["ui_standard", "ui_builder"]
+};
+var CACHED_INPUT_RATE_MULT = 0.25;
+function ratesFromEndpointLike(data, fallback) {
+  if (!data) return null;
+  const inputBlock = data.inputPointsPerBlock ?? data.inputPointsPer1k;
+  const outputBlock = data.outputPointsPerBlock ?? data.outputPointsPer1k;
+  if (inputBlock === void 0 && outputBlock === void 0) return null;
+  return {
+    inputPointsPerBlock: Number(inputBlock ?? fallback.inputPointsPerBlock),
+    inputTokenBlockSize: Number(data.inputTokenBlockSize > 0 ? data.inputTokenBlockSize : 1e3),
+    outputPointsPerBlock: Number(outputBlock ?? fallback.outputPointsPerBlock),
+    outputTokenBlockSize: Number(data.outputTokenBlockSize > 0 ? data.outputTokenBlockSize : 1e3),
+    audioInputPointsPerBlock: data.audioInputPointsPerBlock ?? data.audioInputPointsPer1k ?? fallback.audioInputPointsPerBlock,
+    audioInputTokenBlockSize: data.audioInputTokenBlockSize > 0 ? data.audioInputTokenBlockSize : 1e3
+  };
+}
+function extractGeminiUsage(usageMetadata) {
+  const inputTokens = Number(usageMetadata?.promptTokenCount || 0);
+  const candidates = Number(usageMetadata?.candidatesTokenCount || 0);
+  const thoughtsTokens = Number(usageMetadata?.thoughtsTokenCount || 0);
+  const cachedTokens = Number(usageMetadata?.cachedContentTokenCount || 0);
+  const total = Number(usageMetadata?.totalTokenCount || 0);
+  const thoughtsLookExtra = thoughtsTokens > 0 && (total === 0 || total >= inputTokens + candidates + thoughtsTokens - 8);
+  const outputTokens = candidates + (thoughtsLookExtra ? thoughtsTokens : 0);
+  return { inputTokens, outputTokens, cachedTokens, thoughtsTokens };
+}
 async function getTextModelTokenRates(modelId) {
   const cleanId = (modelId || "").trim();
   const defaultRates = DEFAULT_TEXT_TOKEN_RATES[cleanId] || {
@@ -7741,57 +8030,42 @@ async function getTextModelTokenRates(modelId) {
     audioInputPointsPerBlock: 0.2,
     audioInputTokenBlockSize: 1e3
   };
+  const idsToTry = TOKEN_ENDPOINT_ALIASES[cleanId] || [cleanId];
+  const pick = (data) => ratesFromEndpointLike(data, defaultRates);
   try {
-    const cached = modelEndpointCache.get(cleanId);
-    if (cached && cached.inputPointsPerBlock !== void 0) {
-      return {
-        inputPointsPerBlock: cached.inputPointsPerBlock ?? defaultRates.inputPointsPerBlock,
-        inputTokenBlockSize: cached.inputTokenBlockSize ?? defaultRates.inputTokenBlockSize,
-        outputPointsPerBlock: cached.outputPointsPerBlock ?? defaultRates.outputPointsPerBlock,
-        outputTokenBlockSize: cached.outputTokenBlockSize ?? defaultRates.outputTokenBlockSize,
-        audioInputPointsPerBlock: cached.audioInputPointsPerBlock ?? defaultRates.audioInputPointsPerBlock,
-        audioInputTokenBlockSize: cached.audioInputTokenBlockSize ?? defaultRates.audioInputTokenBlockSize
-      };
+    for (const id of idsToTry) {
+      const fromCache = pick(modelEndpointCache.get(id));
+      if (fromCache) return fromCache;
     }
-    if (cached && cached.inputPointsPer1k !== void 0) {
-      return {
-        inputPointsPerBlock: cached.inputPointsPer1k ?? defaultRates.inputPointsPerBlock,
-        inputTokenBlockSize: 1e3,
-        outputPointsPerBlock: cached.outputPointsPer1k ?? defaultRates.outputPointsPerBlock,
-        outputTokenBlockSize: 1e3,
-        audioInputPointsPerBlock: cached.audioInputPointsPer1k ?? defaultRates.audioInputPointsPerBlock,
-        audioInputTokenBlockSize: 1e3
-      };
+    const fromModelKey = pick(modelEndpointCache.get(`model:${cleanId}`));
+    if (fromModelKey) return fromModelKey;
+    for (const id of idsToTry) {
+      await getModelEndpointConfig(id, void 0, void 0).catch(() => null);
+      const fromLoaded = pick(modelEndpointCache.get(id));
+      if (fromLoaded) return fromLoaded;
     }
-    const seed = SEED_ENDPOINTS.find((s) => s.modelId === cleanId || s.id === cleanId);
-    if (seed && seed.inputPointsPerBlock !== void 0) {
-      return {
-        inputPointsPerBlock: seed.inputPointsPerBlock ?? defaultRates.inputPointsPerBlock,
-        inputTokenBlockSize: seed.inputTokenBlockSize ?? defaultRates.inputTokenBlockSize,
-        outputPointsPerBlock: seed.outputPointsPerBlock ?? defaultRates.outputPointsPerBlock,
-        outputTokenBlockSize: seed.outputTokenBlockSize ?? defaultRates.outputTokenBlockSize,
-        audioInputPointsPerBlock: seed.audioInputPointsPerBlock ?? defaultRates.audioInputPointsPerBlock,
-        audioInputTokenBlockSize: seed.audioInputTokenBlockSize ?? defaultRates.audioInputTokenBlockSize
-      };
+    for (const id of idsToTry) {
+      try {
+        const doc = await dbAdmin.collection("model_endpoints").doc(id).get();
+        if (doc.exists) {
+          const fromDoc = pick(doc.data());
+          if (fromDoc) return fromDoc;
+        }
+      } catch {
+      }
     }
-    if (seed && seed.inputPointsPer1k !== void 0) {
-      return {
-        inputPointsPerBlock: seed.inputPointsPer1k ?? defaultRates.inputPointsPerBlock,
-        inputTokenBlockSize: 1e3,
-        outputPointsPerBlock: seed.outputPointsPer1k ?? defaultRates.outputPointsPerBlock,
-        outputTokenBlockSize: 1e3,
-        audioInputPointsPerBlock: seed.audioInputPointsPer1k ?? defaultRates.audioInputPointsPerBlock,
-        audioInputTokenBlockSize: 1e3
-      };
+    for (const id of idsToTry) {
+      const fromSeed = pick(SEED_ENDPOINTS.find((s) => s.id === id));
+      if (fromSeed) return fromSeed;
     }
+    const fromSeedModel = pick(SEED_ENDPOINTS.find((s) => s.modelId === cleanId && s.pricingType !== "per_generation"));
+    if (fromSeedModel) return fromSeedModel;
   } catch {
   }
   return defaultRates;
 }
 async function chargeForTextModelUsage(uid, modelId, usageMetadata, isAdmin = false) {
-  const inputTokens = usageMetadata?.promptTokenCount || 0;
-  const outputTokens = usageMetadata?.candidatesTokenCount || 0;
-  const cachedTokens = usageMetadata?.cachedContentTokenCount || 0;
+  const { inputTokens, outputTokens, cachedTokens, thoughtsTokens } = extractGeminiUsage(usageMetadata);
   if (isAdmin) {
     await createDocRest("api_cost_log", {
       uid: uid || "admin",
@@ -7799,27 +8073,31 @@ async function chargeForTextModelUsage(uid, modelId, usageMetadata, isAdmin = fa
       inputTokens,
       outputTokens,
       cachedContentTokenCount: cachedTokens,
+      thoughtsTokenCount: thoughtsTokens,
       costInPoints: 0,
       billingType: "per_token",
       isAdmin: true,
       createdAt: Date.now()
     }, void 0).catch((e) => console.error("Admin api_cost_log write error:", e));
-    return { charged: 0, inputTokens, outputTokens, cachedTokens };
+    return { charged: 0, inputTokens, outputTokens, cachedTokens, thoughtsTokens, newBalance: null };
   }
   if (!uid || uid === "anonymous") {
-    return { charged: 0, inputTokens: 0, outputTokens: 0, cachedTokens: 0 };
+    return { charged: 0, inputTokens: 0, outputTokens: 0, cachedTokens: 0, thoughtsTokens: 0, newBalance: null };
   }
   const rates = await getTextModelTokenRates(modelId);
   const inBlock = rates.inputTokenBlockSize > 0 ? rates.inputTokenBlockSize : 1e3;
   const outBlock = rates.outputTokenBlockSize > 0 ? rates.outputTokenBlockSize : 1e3;
   const uncachedInputTokens = Math.max(0, inputTokens - cachedTokens);
-  const cost2 = parseFloat((uncachedInputTokens / inBlock * rates.inputPointsPerBlock + cachedTokens / inBlock * (rates.inputPointsPerBlock * 0.25) + outputTokens / outBlock * rates.outputPointsPerBlock).toFixed(4));
+  const cost2 = parseFloat((uncachedInputTokens / inBlock * rates.inputPointsPerBlock + cachedTokens / inBlock * (rates.inputPointsPerBlock * CACHED_INPUT_RATE_MULT) + outputTokens / outBlock * rates.outputPointsPerBlock).toFixed(4));
+  let newBalance = null;
   if (cost2 > 0) {
     await mutateBalanceAtomic(uid, -cost2, {}).then((res) => {
-      if (!res.ok) {
-        console.warn(`[chargeForTextModelUsage] Metered deduction notice for user ${uid}: ${res.reason}`);
-      }
+      if (res.ok) newBalance = res.newBalance;
+      else console.warn(`[chargeForTextModelUsage] Metered deduction notice for user ${uid}: ${res.reason}`);
     }).catch((e) => console.error("Metered balance deduction error:", e));
+  }
+  if (cachedTokens > 0) {
+    console.log(`[TokenMeter] cache hit model=${modelId} cached=${cachedTokens} uncachedIn=${uncachedInputTokens} out=${outputTokens} thoughts=${thoughtsTokens} cost=${cost2}`);
   }
   await createDocRest("api_cost_log", {
     uid,
@@ -7827,11 +8105,12 @@ async function chargeForTextModelUsage(uid, modelId, usageMetadata, isAdmin = fa
     inputTokens,
     outputTokens,
     cachedContentTokenCount: cachedTokens,
+    thoughtsTokenCount: thoughtsTokens,
     costInPoints: cost2,
     billingType: "per_token",
     createdAt: Date.now()
   }, void 0).catch((e) => console.error("api_cost_log write error:", e));
-  return { charged: cost2, inputTokens, outputTokens, cachedTokens };
+  return { charged: cost2, inputTokens, outputTokens, cachedTokens, thoughtsTokens, newBalance };
 }
 async function requireAuth(req, res) {
   const authHeader = req.headers.authorization;
@@ -7895,8 +8174,9 @@ setInterval(() => {
     else rateBuckets.set(k, kept);
   }
 }, 10 * 60 * 1e3);
-async function startServer() {
-  const app = (0, import_express.default)();
+async function startServer(existingApp) {
+  const app = existingApp || (0, import_express.default)();
+  const alreadyListening = Boolean(existingApp);
   const activeUserTasks = /* @__PURE__ */ new Set();
   const PORT = 3e3;
   const ALLOWED_ORIGINS = /* @__PURE__ */ new Set([
@@ -7931,6 +8211,39 @@ async function startServer() {
   app.get(["/api/health", "/health", "/healthz", "/_ah/health", "/_health", "/ping", "/livez", "/readyz"], (req, res) => {
     res.status(200).json({ status: "ok", timestamp: Date.now() });
   });
+  let seedExecuted = false;
+  const executeSeeds = () => {
+    if (!seedExecuted) {
+      seedExecuted = true;
+      seedModelEndpointsIfMissing().catch(() => {
+      });
+      seedFormatPresetsIfMissing().catch(() => {
+      });
+    }
+  };
+  const bindPort = (port, role) => {
+    const srv = import_http.default.createServer(app);
+    srv.setTimeout(6e5);
+    srv.keepAliveTimeout = 6e5;
+    srv.headersTimeout = 601e3;
+    srv.on("error", (err) => {
+      if (err.code === "EADDRINUSE") {
+        console.log(`[Port Notice] ${role} port ${port} already bound or in use by proxy.`);
+      } else {
+        console.error(`[Port Error] ${role} listener error on ${port}:`, err?.message || err);
+      }
+    });
+    srv.listen(port, "0.0.0.0", () => {
+      console.log(`[Server] ${role} active on http://0.0.0.0:${port}`);
+    });
+    return srv;
+  };
+  const envPortEarly = process.env.PORT ? parseInt(process.env.PORT, 10) : 8080;
+  const ingressPortEarly = envPortEarly && !isNaN(envPortEarly) ? envPortEarly : 8080;
+  if (!alreadyListening) {
+    bindPort(ingressPortEarly, "Cloud Run Ingress");
+    if (ingressPortEarly !== 3e3) bindPort(3e3, "App Port (3000)");
+  }
   app.all(["/__/auth/*", "/__/auth"], async (req, res) => {
     try {
       const targetHost = `${PROJECT_ID2}.firebaseapp.com`;
@@ -8171,10 +8484,11 @@ User prompt: "${prompt}"`,
     throw new Error("\u0641\u0634\u0644 \u062A\u0648\u0644\u064A\u062F \u0627\u0644\u0641\u064A\u062F\u064A\u0648.");
   }
   async function extractFirstFrameFromFile(videoPath, outputPath) {
+    const ffmpeg = await getFfmpeg();
     return new Promise((resolve, reject) => {
-      (0, import_fluent_ffmpeg.default)(videoPath).seekInput(0).frames(1).output(outputPath).on("end", async () => {
+      ffmpeg(videoPath).seekInput(0).frames(1).output(outputPath).on("end", async () => {
         try {
-          resolve(await import_fs5.default.promises.readFile(outputPath));
+          resolve(await import_fs4.default.promises.readFile(outputPath));
         } catch (e) {
           reject(e);
         }
@@ -8379,19 +8693,20 @@ User prompt: "${prompt}"`,
     }
   }
   async function extractLastFrameFromFile(videoPath, outputPath, durationSec) {
+    const ffmpeg = await getFfmpeg();
     return new Promise((resolve, reject) => {
       const seekTime = Math.max(0, durationSec - 0.15);
-      (0, import_fluent_ffmpeg.default)(videoPath).seekInput(seekTime).frames(1).output(outputPath).on("end", async () => {
+      ffmpeg(videoPath).seekInput(seekTime).frames(1).output(outputPath).on("end", async () => {
         try {
-          const buf = await import_fs5.default.promises.readFile(outputPath);
+          const buf = await import_fs4.default.promises.readFile(outputPath);
           resolve(buf);
         } catch (e) {
           reject(e);
         }
       }).on("error", (_err) => {
-        (0, import_fluent_ffmpeg.default)(videoPath).frames(1).output(outputPath).on("end", async () => {
+        ffmpeg(videoPath).frames(1).output(outputPath).on("end", async () => {
           try {
-            const buf = await import_fs5.default.promises.readFile(outputPath);
+            const buf = await import_fs4.default.promises.readFile(outputPath);
             resolve(buf);
           } catch (e) {
             reject(e);
@@ -8401,27 +8716,28 @@ User prompt: "${prompt}"`,
     });
   }
   async function concatenateVideoFiles(videoPaths, outputPath) {
+    const ffmpeg = await getFfmpeg();
     return new Promise((resolve, reject) => {
       const listPath = `${outputPath}.concat.txt`;
       const listContent = videoPaths.map((p) => `file '${p.replace(/'/g, "'\\''")}'`).join("\n");
-      import_fs5.default.writeFileSync(listPath, listContent);
-      (0, import_fluent_ffmpeg.default)().input(listPath).inputOptions(["-f", "concat", "-safe", "0"]).outputOptions(["-c", "copy"]).output(outputPath).on("end", () => {
+      import_fs4.default.writeFileSync(listPath, listContent);
+      ffmpeg().input(listPath).inputOptions(["-f", "concat", "-safe", "0"]).outputOptions(["-c", "copy"]).output(outputPath).on("end", () => {
         try {
-          import_fs5.default.unlinkSync(listPath);
+          import_fs4.default.unlinkSync(listPath);
         } catch (e) {
         }
         resolve(outputPath);
       }).on("error", (err) => {
         console.warn("[FFmpeg concat] Direct copy failed, retrying with re-encode:", err?.message || err);
-        (0, import_fluent_ffmpeg.default)().input(listPath).inputOptions(["-f", "concat", "-safe", "0"]).outputOptions(["-c:v", "libx264", "-pix_fmt", "yuv420p", "-c:a", "aac", "-preset", "ultrafast"]).output(outputPath).on("end", () => {
+        ffmpeg().input(listPath).inputOptions(["-f", "concat", "-safe", "0"]).outputOptions(["-c:v", "libx264", "-pix_fmt", "yuv420p", "-c:a", "aac", "-preset", "ultrafast"]).output(outputPath).on("end", () => {
           try {
-            import_fs5.default.unlinkSync(listPath);
+            import_fs4.default.unlinkSync(listPath);
           } catch (e) {
           }
           resolve(outputPath);
         }).on("error", (reErr) => {
           try {
-            import_fs5.default.unlinkSync(listPath);
+            import_fs4.default.unlinkSync(listPath);
           } catch (e) {
           }
           reject(reErr);
@@ -8578,11 +8894,11 @@ User prompt: "${prompt}"`,
     }
   });
   async function runNajeAdGeneration(jobId, uid, videoPlan, prompt, brandProfile, selectedAspect, selectedRes, videoModelEndpoint, deductedPoints, token) {
-    const workDir = import_path5.default.join(import_os.default.tmpdir(), `naje_ad_${jobId}_${Date.now()}`);
+    const workDir = import_path4.default.join(import_os.default.tmpdir(), `naje_ad_${jobId}_${Date.now()}`);
     const shotVideoPaths = [];
     const intermediateFramePaths = [];
     try {
-      await import_fs5.default.promises.mkdir(workDir, { recursive: true });
+      await import_fs4.default.promises.mkdir(workDir, { recursive: true });
       const ai5 = createGenAIClient2();
       const totalShots = videoPlan?.shots?.length || 1;
       let previousShotPath = null;
@@ -8608,7 +8924,7 @@ User prompt: "${prompt}"`,
             currentStepIndex: i * 2,
             stepLabel: `\u062C\u0627\u0631\u064A \u0627\u0633\u062A\u062E\u0631\u0627\u062C \u0627\u0644\u0625\u0637\u0627\u0631 \u0627\u0644\u0645\u0631\u062C\u0639\u064A \u0644\u0636\u0645\u0627\u0646 \u0627\u0644\u0627\u0633\u062A\u0645\u0631\u0627\u0631\u064A\u0629 \u0627\u0644\u0628\u0635\u0631\u064A\u0629 \u0644\u0644\u0642\u0637\u0629 ${shotNumber} \u0645\u0646 ${totalShots}...`
           }, token);
-          const framePath = import_path5.default.join(workDir, `continuity_frame_${i}.jpg`);
+          const framePath = import_path4.default.join(workDir, `continuity_frame_${i}.jpg`);
           intermediateFramePaths.push(framePath);
           const lastFrameBuf = await extractLastFrameFromFile(previousShotPath, framePath, videoPlan.shots[i - 1].durationSec);
           previousLastFrameBuffer = lastFrameBuf;
@@ -8640,8 +8956,8 @@ User prompt: "${prompt}"`,
             });
           }
         });
-        const shotPath = import_path5.default.join(workDir, `shot_${shotNumber}.mp4`);
-        await import_fs5.default.promises.writeFile(shotPath, shotBuffer);
+        const shotPath = import_path4.default.join(workDir, `shot_${shotNumber}.mp4`);
+        await import_fs4.default.promises.writeFile(shotPath, shotBuffer);
         shotBuffer = null;
         if (!isFirstShot && previousLastFrameBuffer) {
           await setDocRest("generation_jobs", jobId, {
@@ -8649,7 +8965,7 @@ User prompt: "${prompt}"`,
             progress: Math.min(86, Math.round(15 + (i * 2 + 1.5) / (totalShots * 2 + 1) * 60)),
             stepLabel: `\u062C\u0627\u0631\u064A \u0641\u062D\u0635 \u0627\u0644\u0627\u0633\u062A\u0645\u0631\u0627\u0631\u064A\u0629 \u0648\u0627\u0644\u062C\u0648\u062F\u0629 \u0628\u064A\u0646 \u0627\u0644\u0644\u0642\u0637\u0629 ${i} \u0648\u0627\u0644\u0644\u0642\u0637\u0629 ${shotNumber}...`
           }, token);
-          const firstFramePath = import_path5.default.join(workDir, `continuity_frame_${shotNumber}_first.jpg`);
+          const firstFramePath = import_path4.default.join(workDir, `continuity_frame_${shotNumber}_first.jpg`);
           intermediateFramePaths.push(firstFramePath);
           let firstFrameBuffer = await extractFirstFrameFromFile(shotPath, firstFramePath);
           const quality = await checkShotContinuity(ai5, previousLastFrameBuffer, firstFrameBuffer);
@@ -8668,9 +8984,9 @@ User prompt: "${prompt}"`,
               modelId: videoModelEndpoint.modelId,
               imageInput
             });
-            await import_fs5.default.promises.writeFile(shotPath, retryBuffer);
+            await import_fs4.default.promises.writeFile(shotPath, retryBuffer);
             retryBuffer = null;
-            const firstFramePathRetry = import_path5.default.join(workDir, `continuity_frame_${shotNumber}_first_retry.jpg`);
+            const firstFramePathRetry = import_path4.default.join(workDir, `continuity_frame_${shotNumber}_first_retry.jpg`);
             intermediateFramePaths.push(firstFramePathRetry);
             let firstFrameBufferRetry = await extractFirstFrameFromFile(shotPath, firstFramePathRetry);
             const qualityRetry = await checkShotContinuity(ai5, previousLastFrameBuffer, firstFrameBufferRetry);
@@ -8691,18 +9007,18 @@ User prompt: "${prompt}"`,
           currentStepIndex: totalShots * 2,
           stepLabel: `\u062C\u0627\u0631\u064A \u062F\u0645\u062C ${shotVideoPaths.length} \u0644\u0642\u0637\u0627\u062A \u0633\u064A\u0646\u0645\u0627\u0626\u064A\u0627\u064B \u0648\u0625\u0646\u062A\u0627\u062C \u0627\u0644\u0641\u064A\u062F\u064A\u0648 \u0627\u0644\u0643\u0627\u0645\u0644...`
         }, token);
-        const mergedPath = import_path5.default.join(workDir, "final_merged.mp4");
+        const mergedPath = import_path4.default.join(workDir, "final_merged.mp4");
         await concatenateVideoFiles(shotVideoPaths, mergedPath);
         finalVideoPath = mergedPath;
         for (const sp of shotVideoPaths) {
           try {
-            await import_fs5.default.promises.unlink(sp);
+            await import_fs4.default.promises.unlink(sp);
           } catch (_) {
           }
         }
         for (const fp of intermediateFramePaths) {
           try {
-            await import_fs5.default.promises.unlink(fp);
+            await import_fs4.default.promises.unlink(fp);
           } catch (_) {
           }
         }
@@ -8712,7 +9028,7 @@ User prompt: "${prompt}"`,
         progress: 95,
         stepLabel: "\u062C\u0627\u0631\u064A \u062D\u0641\u0638 \u0627\u0644\u0641\u064A\u062F\u064A\u0648 \u0648\u062A\u062C\u0647\u064A\u0632 \u0627\u0644\u0631\u0627\u0628\u0637 \u0627\u0644\u0646\u0647\u0627\u0626\u064A \u0644\u0644\u0639\u0631\u0636 \u0648\u0627\u0644\u062A\u062D\u0645\u064A\u0644..."
       }, token);
-      const finalVideoBuffer = await import_fs5.default.promises.readFile(finalVideoPath);
+      const finalVideoBuffer = await import_fs4.default.promises.readFile(finalVideoPath);
       const memPeak = process.memoryUsage();
       console.log(`[Naje Ad Pipeline] Job ${jobId} final video size: ${(finalVideoBuffer.length / 1024 / 1024).toFixed(2)}MB | Peak Heap: ${Math.round(memPeak.heapUsed / 1024 / 1024)}MB / RSS: ${Math.round(memPeak.rss / 1024 / 1024)}MB`);
       let finalMediaUrl = "";
@@ -8787,7 +9103,7 @@ User prompt: "${prompt}"`,
       }, token).catch((e) => console.error("Job update failed:", e));
     } finally {
       try {
-        await import_fs5.default.promises.rm(workDir, { recursive: true, force: true });
+        await import_fs4.default.promises.rm(workDir, { recursive: true, force: true });
       } catch (_cleanErr) {
       }
       const res = await releaseSlot(jobId);
@@ -9005,7 +9321,17 @@ User prompt: "${prompt}"`,
               value: pkg.usd.toFixed(2)
             },
             description: `Naje AI Points - ${pkg.points} points package`
-          }]
+          }],
+          payment_source: {
+            paypal: {
+              experience_context: {
+                brand_name: "\u0627\u0633\u062A\u0648\u062F\u064A\u0648 \u0646\u0627\u062C\u064A \u0644\u0644\u0630\u0643\u0627\u0621 \u0627\u0644\u0627\u0635\u0637\u0646\u0627\u0639\u064A",
+                locale: "ar-SA",
+                landing_page: "NO_PREFERENCE",
+                user_action: "PAY_NOW"
+              }
+            }
+          }
         })
       });
       const orderData = await orderResp.json();
@@ -10761,14 +11087,7 @@ Total 4-6 frames. Return raw JSON array ONLY, no markdown.`;
             cost2 += Math.min(imgCount, 3) * (pricing.video.imageAddon || 0.1);
           }
         } else if (type === "ui") {
-          if (req.body.mode === "plan" || req.body.isAutoRepair) {
-            cost2 = 0;
-          } else {
-            const requestedModelKey = String(req.body.model || "core").toLowerCase();
-            const tierMultipliers = pricing.ui?.tierMultiplier || { lite: 0.6, core: 1, max: 2 };
-            const tierMult = tierMultipliers[requestedModelKey] ?? 1;
-            cost2 = (pricing.ui?.perGeneration ?? 1) * tierMult * (isEdit ? pricing.ui?.editMultiplier ?? 0.5 : 1);
-          }
+          cost2 = 0;
         } else if (type === "document" || type === "text" && requestedDocType && requestedDocType !== "none") {
           if (requestedDocType === "pptx" || docTypeToUse === "pdf_slides") {
             const slides = parseInt(slidesCount) || 5;
@@ -10779,10 +11098,15 @@ Total 4-6 frames. Return raw JSON array ONLY, no markdown.`;
             cost2 = pages * (isA5 ? pricing.document?.a5PerPage ?? 0.1 : pricing.document?.a4PerPage ?? 0.15);
           }
         } else if (type === "voice") {
-          const textWords = (prompt || "").trim().split(/\s+/).filter(Boolean).length;
-          const wordsPerMin = pricing.voice?.estimatedWordsPerMinute || 140;
-          const estimatedSeconds = Math.max(3, Math.ceil(textWords / wordsPerMin * 60));
-          cost2 = Math.max(0.1, parseFloat((estimatedSeconds * (pricing.voice?.costPerAudioSecond || 0.02)).toFixed(2)));
+          const voiceTierPre = String(req.body.voiceTier || req.body.model || "core").toLowerCase() === "pro" ? "pro" : "core";
+          const billed = calcVoicePointsCost({
+            text: spokenTextFromVoiceScript(prompt || ""),
+            tier: voiceTierPre,
+            pointsPerCharacter: pricing.voice?.pointsPerCharacter,
+            pointsPerCharacterPro: pricing.voice?.pointsPerCharacterPro,
+            minCost: pricing.voice?.minCost
+          });
+          cost2 = billed.cost;
         } else if (type === "infographic") {
           const baseRender = Number(pricing.infographic?.renderFee ?? 0.5);
           cost2 = isEdit ? baseRender * Number(pricing.infographic?.editMultiplier ?? 0.5) : baseRender;
@@ -11720,10 +12044,14 @@ ${finalScript}`,
               generationResult = wavBuffer.toString("base64");
               mimeType = "audio/wav";
               extension = "wav";
-              const audioBuf = wavBuffer;
-              let actualSeconds = Math.ceil((audioBuf.length - 44) / (sampleRate * 2));
-              if (actualSeconds < 1) actualSeconds = 1;
-              cost2 = Math.max(0.1, parseFloat((actualSeconds * (pricing.voice?.costPerAudioSecond || 0.02)).toFixed(2)));
+              const billed = calcVoicePointsCost({
+                text: spokenTextFromVoiceScript(finalScript || prompt || ""),
+                tier: voiceTier === "pro" ? "pro" : "core",
+                pointsPerCharacter: pricing.voice?.pointsPerCharacter,
+                pointsPerCharacterPro: pricing.voice?.pointsPerCharacterPro,
+                minCost: pricing.voice?.minCost
+              });
+              cost2 = billed.cost;
               if (jobId) {
                 await setDocRest("generation_jobs", jobId, {
                   status: "completed",
@@ -11760,7 +12088,8 @@ ${finalScript}`,
                 createdAt: Date.now()
               }, token).catch((e) => console.error("Firestore job update failed:", e));
             }
-            const naje = new NajeEngine(process.env.GEMINI_API_KEY);
+            const NajeEngine2 = await getNajeEngineCtor();
+            const naje = new NajeEngine2(process.env.GEMINI_API_KEY);
             const requestedSlides = parseInt(slidesCount) || 0;
             const requestedPages = parseInt(pagesCount) || 0;
             const clampedSlides = requestedSlides > 0 ? Math.min(requestedSlides, MAX_SLIDES) : 8;
@@ -11830,7 +12159,8 @@ ${finalScript}`,
             } else if (docTypeToUse === "pptx") {
               const slideWriterModel = await getModelEndpointId("slide_writer", getNajeModel("personas"), token);
               const slideAuditorModel = await getModelEndpointId("document_engine", getNajeModel("personas"), token);
-              const naje2 = new NajeEngine(process.env.GEMINI_API_KEY);
+              const NajeEngine3 = await getNajeEngineCtor();
+              const naje2 = new NajeEngine3(process.env.GEMINI_API_KEY);
               totalSteps = sections.length + 2;
               var generatedSlides = [];
               let completedCount = 0;
@@ -11977,15 +12307,15 @@ ${skillsBlock}
               const displayTitle = typeof documentTitle === "string" ? documentTitle : "\u0645\u0633\u062A\u0646\u062F";
               const primaryColor = projectData?.brandProfile?.colors?.[0] || "#4f46e5";
               const textColor = projectData?.brandProfile?.colors?.[1] || "#374151";
-              const fontPath = import_path5.default.resolve(process.cwd(), "cairo_arabic.b64");
+              const fontPath = import_path4.default.resolve(process.cwd(), "cairo_arabic.b64");
               const docTextForSafety = fullContent.join("\n");
               const postSafety2 = await isSafePrompt(docTextForSafety, uid, type, token);
               if (!postSafety2.safe) {
                 throw new Error("\u0639\u0630\u0631\u0627\u064B\u060C \u062A\u0645 \u062D\u0638\u0631 \u0627\u0644\u0645\u062D\u062A\u0648\u0649 \u0627\u0644\u0645\u064F\u0648\u0644\u062F \u0644\u0645\u062E\u0627\u0644\u0641\u062A\u0647 \u0634\u0631\u0648\u0637 \u0627\u0644\u0633\u0644\u0627\u0645\u0629.");
               }
               let base64Font = "";
-              if (import_fs5.default.existsSync(fontPath)) {
-                base64Font = import_fs5.default.readFileSync(fontPath, "utf8").trim();
+              if (import_fs4.default.existsSync(fontPath)) {
+                base64Font = import_fs4.default.readFileSync(fontPath, "utf8").trim();
               }
               const isA5Paper = paperSize === "a5";
               const pageWidthMm = isA5Paper ? 148 : 210;
@@ -12541,64 +12871,119 @@ Return ONLY raw JSON, no markdown code fences.` }] }
                   console.warn("[UI Staged Pipeline] Call 1 Plan pass skipped:", planErr);
                 }
               }
-              const stream = await ai5.models.generateContentStream({
-                model: selectedModelId2,
-                contents,
-                config: {
-                  systemInstruction: finalSystemInstruction,
-                  tools: tools.length > 0 ? tools : void 0,
-                  toolConfig,
-                  maxOutputTokens: type === "ui" ? OUTPUT_TOKEN_LIMITS.uiHtml : OUTPUT_TOKEN_LIMITS.chatResponse,
-                  thinkingConfig: { thinkingLevel: requestedModelKey === "lite" ? "LOW" : requestedModelKey === "max" ? "HIGH" : "MEDIUM" },
-                  // Gemini 3.7 rejects deprecated sampling params and non-config fields
-                  // (aspectRatio/quality are image-only). Strip them before spreading.
-                  ...(() => {
-                    const { aspectRatio: aspectRatio2, quality, temperature, topP, topK, ...rest } = config || {};
-                    return rest;
-                  })()
+              let stream = null;
+              let streamModelUsed = selectedModelId2;
+              const streamConfig = {
+                systemInstruction: finalSystemInstruction,
+                tools: tools.length > 0 ? tools : void 0,
+                toolConfig,
+                maxOutputTokens: type === "ui" ? OUTPUT_TOKEN_LIMITS.uiHtml : OUTPUT_TOKEN_LIMITS.chatResponse,
+                thinkingConfig: { thinkingLevel: requestedModelKey === "lite" ? "LOW" : requestedModelKey === "max" ? "HIGH" : "MEDIUM" },
+                // Gemini 3.7 rejects deprecated sampling params and non-config fields
+                // (aspectRatio/quality are image-only). Strip them before spreading.
+                ...(() => {
+                  const { aspectRatio: aspectRatio2, quality, temperature, topP, topK, ...rest } = config || {};
+                  return rest;
+                })()
+              };
+              try {
+                stream = await ai5.models.generateContentStream({
+                  model: selectedModelId2,
+                  contents,
+                  config: streamConfig
+                });
+              } catch (primaryStreamErr) {
+                console.warn(`[Stream Generation] Primary model "${selectedModelId2}" stream initialization failed:`, primaryStreamErr?.message || primaryStreamErr);
+                const fallbackCandidate = selectedModelId2 !== "gemini-3.1-flash-lite" && selectedModelId2 !== "gemini-3.5-flash-lite" ? resolveEngineModel(getNajeModel("lite")) : "gemini-3.6-flash";
+                if (fallbackCandidate && fallbackCandidate !== selectedModelId2) {
+                  console.log(`[Stream Generation] Retrying stream with fallback model "${fallbackCandidate}"...`);
+                  try {
+                    stream = await ai5.models.generateContentStream({
+                      model: fallbackCandidate,
+                      contents,
+                      config: streamConfig
+                    });
+                    streamModelUsed = fallbackCandidate;
+                  } catch (fallbackStreamErr) {
+                    console.error(`[Stream Generation] Fallback model "${fallbackCandidate}" also failed:`, fallbackStreamErr?.message || fallbackStreamErr);
+                    throw fallbackStreamErr;
+                  }
+                } else {
+                  throw primaryStreamErr;
                 }
-              });
+              }
               let fullText = "";
               let functionCalls = [];
               let searchSources = [];
               let planViolationDetected = false;
               let streamUsageMetadata = null;
               const maxOutputBytes = (pricing.ui?.maxOutputKb || 400) * 1024;
-              for await (const chunk of stream) {
-                if (chunk.usageMetadata) {
-                  streamUsageMetadata = chunk.usageMetadata;
-                }
-                if (chunk.functionCalls && chunk.functionCalls.length > 0) {
-                  functionCalls.push(...chunk.functionCalls);
-                }
-                const candidate = chunk.candidates?.[0];
-                if (candidate?.groundingMetadata?.groundingChunks) {
-                  for (const gChunk of candidate.groundingMetadata.groundingChunks) {
-                    if (gChunk.web?.uri) {
-                      const url = gChunk.web.uri;
-                      const title = gChunk.web.title || url;
-                      if (!searchSources.some((s) => s.url === url)) {
-                        searchSources.push({ title, url });
+              try {
+                for await (const chunk of stream) {
+                  if (chunk.usageMetadata) {
+                    streamUsageMetadata = chunk.usageMetadata;
+                  }
+                  const extractedCalls = extractGeminiFunctionCalls(chunk);
+                  if (extractedCalls.length > 0) {
+                    functionCalls.push(...extractedCalls);
+                  }
+                  const candidate = chunk.candidates?.[0];
+                  if (candidate?.groundingMetadata?.groundingChunks) {
+                    for (const gChunk of candidate.groundingMetadata.groundingChunks) {
+                      if (gChunk.web?.uri) {
+                        const url = gChunk.web.uri;
+                        const title = gChunk.web.title || url;
+                        if (!searchSources.some((s) => s.url === url)) {
+                          searchSources.push({ title, url });
+                        }
                       }
                     }
                   }
-                }
-                const chunkText = chunk.text || "";
-                if (chunkText) {
-                  fullText += chunkText;
-                  if (type === "ui" && isPlanMode && !planViolationDetected) {
-                    if (/<!DOCTYPE html|<html[\s>]/i.test(fullText.slice(0, 300))) {
-                      planViolationDetected = true;
-                      console.warn(`[Plan Mode Violation] Detected HTML mid-stream, aborting generation. uid=${uid}`);
+                  const chunkText = extractGeminiText(chunk);
+                  if (chunkText) {
+                    fullText += chunkText;
+                    if (type === "ui" && isPlanMode && !planViolationDetected) {
+                      if (/<!DOCTYPE html|<html[\s>]/i.test(fullText.slice(0, 300))) {
+                        planViolationDetected = true;
+                        console.warn(`[Plan Mode Violation] Detected HTML mid-stream, aborting generation. uid=${uid}`);
+                        break;
+                      }
+                    }
+                    res.write(`data: ${JSON.stringify({ text: chunkText })}
+
+`);
+                    if (type === "ui" && fullText.length > maxOutputBytes) {
                       break;
                     }
                   }
-                  res.write(`data: ${JSON.stringify({ text: chunkText })}
+                }
+              } catch (streamIterErr) {
+                console.warn(`[Stream Chunk Iteration Warning] Stream interrupted mid-flight:`, streamIterErr?.message || streamIterErr);
+              }
+              if (!fullText && functionCalls.length === 0 && !planViolationDetected) {
+                console.warn(`[Stream Generation] Model "${streamModelUsed}" yielded empty text. Attempting non-streaming backup generation...`);
+                try {
+                  const backupModel = resolveEngineModel(getNajeModel("lite"));
+                  const backupResp = await ai5.models.generateContent({
+                    model: backupModel,
+                    contents,
+                    config: {
+                      systemInstruction: finalSystemInstruction,
+                      maxOutputTokens: OUTPUT_TOKEN_LIMITS.chatResponse
+                    }
+                  });
+                  if (backupResp.usageMetadata) streamUsageMetadata = backupResp.usageMetadata;
+                  const backupCalls = extractGeminiFunctionCalls(backupResp);
+                  if (backupCalls.length) functionCalls.push(...backupCalls);
+                  const backupText = extractGeminiText(backupResp);
+                  if (backupText) {
+                    fullText = backupText;
+                    res.write(`data: ${JSON.stringify({ text: fullText })}
 
 `);
-                  if (type === "ui" && fullText.length > maxOutputBytes) {
-                    break;
                   }
+                } catch (backupErr) {
+                  console.error("[Stream Generation] Backup generation failed:", backupErr?.message || backupErr);
                 }
               }
               if (planViolationDetected) {
@@ -12689,8 +13074,8 @@ Return the complete updated HTML document with real layout-changing mobile media
               }
               let finalBalanceForStream = currentBalance;
               const streamProducedArtifact = !fullText ? false : typeof fullText === "string" ? type === "ui" ? fullText.length > 200 : fullText.length > 0 : !!fullText;
-              if (cost2 > 0 && !streamProducedArtifact) {
-                res.write(`data: ${JSON.stringify({ error: "\u062A\u0639\u0630\u0651\u0631 \u0625\u0646\u0634\u0627\u0621 \u0627\u0644\u0645\u0644\u0641. \u0644\u0645 \u064A\u062A\u0645 \u062E\u0635\u0645 \u0623\u064A \u0646\u0642\u0627\u0637." })}
+              if (cost2 > 0 && !streamProducedArtifact && functionCalls.length === 0) {
+                res.write(`data: ${JSON.stringify({ error: "\u062A\u0639\u0630\u0651\u0631 \u0625\u0643\u0645\u0627\u0644 \u0627\u0633\u062A\u062C\u0627\u0628\u0629 \u0627\u0644\u0646\u0645\u0648\u0630\u062C. \u0644\u0645 \u064A\u062A\u0645 \u062E\u0635\u0645 \u0623\u064A \u0646\u0642\u0627\u0637." })}
 
 `);
                 res.end();
@@ -12763,13 +13148,41 @@ Return the complete updated HTML document with real layout-changing mobile media
                 const extractedType = String(docGenCall2.args.docType).toLowerCase();
                 const summaryPrompt = docGenCall2.args.summary || prompt;
                 const estimatedCount = Number(docGenCall2.args.estimatedPageOrSlideCount) || 5;
+                if (!fullText) {
+                  fullText = `\u0644\u0642\u062F \u0642\u0645\u062A \u0628\u0625\u0639\u062F\u0627\u062F \u0645\u0633\u0648\u062F\u0629 \u0644\u0625\u0646\u0634\u0627\u0621 \u0645\u0633\u062A\u0646\u062F (${extractedType.toUpperCase()})\u060C \u064A\u0645\u0643\u0646\u0643 \u062A\u0623\u0643\u064A\u062F \u0627\u0644\u0628\u062F\u0621 \u0645\u0646 \u0627\u0644\u0632\u0631 \u0623\u062F\u0646\u0627\u0647.`;
+                  res.write(`data: ${JSON.stringify({ text: fullText })}
+
+`);
+                }
                 res.write(`data: ${JSON.stringify({ triggerDocGeneration: extractedType, triggerPrompt: summaryPrompt, estimatedCount })}
 
 `);
               }
+              let streamTokenBill = null;
+              try {
+                const billingEndpointId = type === "ui" ? "ui_standard" : requestedModelKey === "lite" ? "text_lite" : requestedModelKey === "max" ? "text_max" : "text_core";
+                streamTokenBill = await chargeForTextModelUsage(uid, billingEndpointId, streamUsageMetadata, userIsAdmin);
+                if (typeof streamTokenBill.newBalance === "number") {
+                  finalBalanceForStream = streamTokenBill.newBalance;
+                }
+              } catch (meterErr) {
+                console.error("Stream token metering error:", meterErr);
+              }
               const streamEndPayload = { modeConfirmed: type === "ui" && isPlanMode ? "plan" : "build" };
               if (searchSources.length > 0) streamEndPayload.searchSources = searchSources;
               if (typeof groundingReport !== "undefined" && groundingReport) streamEndPayload.groundingReport = groundingReport;
+              if (typeof finalBalanceForStream === "number") streamEndPayload.newBalance = finalBalanceForStream;
+              if (streamTokenBill) {
+                streamEndPayload.usage = {
+                  charged: streamTokenBill.charged || 0,
+                  inputTokens: streamTokenBill.inputTokens || 0,
+                  outputTokens: streamTokenBill.outputTokens || 0,
+                  cachedTokens: streamTokenBill.cachedTokens || 0,
+                  thoughtsTokens: streamTokenBill.thoughtsTokens || 0,
+                  billingType: "per_token"
+                };
+                streamEndPayload.consumedBalance = streamTokenBill.charged || 0;
+              }
               res.write(`data: ${JSON.stringify(streamEndPayload)}
 
 `);
@@ -13839,7 +14252,15 @@ Respond ONLY with JSON matching this structure:
             await dbAdmin.collection("model_pricing").doc("video").set({ imageAddon: pointsPrice }, { merge: true }).catch(() => {
             });
           } else if (endpointId === "voice_tts" && typeof pointsPrice === "number" && pointsPrice > 0) {
-            await dbAdmin.collection("model_pricing").doc("voice").set({ costPerAudioSecond: pointsPrice }, { merge: true }).catch(() => {
+            await dbAdmin.collection("model_pricing").doc("voice").set({
+              pointsPerCharacter: pointsPrice,
+              ...pricingType === "per_character" ? { billingUnit: "character" } : {}
+            }, { merge: true }).catch(() => {
+            });
+          } else if (endpointId === "voice_tts_pro" && typeof pointsPrice === "number" && pointsPrice > 0) {
+            await dbAdmin.collection("model_pricing").doc("voice").set({
+              pointsPerCharacterPro: pointsPrice
+            }, { merge: true }).catch(() => {
             });
           }
         }
@@ -14082,10 +14503,10 @@ Respond ONLY with JSON matching this structure:
         res.setHeader("Cache-Control", "public, max-age=86400");
         return res.send(voiceSampleCache.get(lower));
       }
-      const localPath = import_path5.default.join(process.cwd(), "public", "voice-samples", `${lower}.wav`);
-      if (import_fs5.default.existsSync(localPath)) {
+      const localPath = import_path4.default.join(process.cwd(), "public", "voice-samples", `${lower}.wav`);
+      if (import_fs4.default.existsSync(localPath)) {
         try {
-          const buf = import_fs5.default.readFileSync(localPath);
+          const buf = import_fs4.default.readFileSync(localPath);
           if (buf.length > 500) {
             voiceSampleCache.set(lower, buf);
             res.setHeader("Content-Type", "audio/wav");
@@ -14142,9 +14563,9 @@ Respond ONLY with JSON matching this structure:
         if (wavBuffer.length > 500) {
           voiceSampleCache.set(lower, wavBuffer);
           try {
-            const dir = import_path5.default.join(process.cwd(), "public", "voice-samples");
-            if (!import_fs5.default.existsSync(dir)) import_fs5.default.mkdirSync(dir, { recursive: true });
-            import_fs5.default.writeFileSync(localPath, wavBuffer);
+            const dir = import_path4.default.join(process.cwd(), "public", "voice-samples");
+            if (!import_fs4.default.existsSync(dir)) import_fs4.default.mkdirSync(dir, { recursive: true });
+            import_fs4.default.writeFileSync(localPath, wavBuffer);
           } catch (e) {
           }
           res.setHeader("Content-Type", "audio/wav");
@@ -14224,10 +14645,10 @@ Respond ONLY with JSON matching this structure:
       }
       const ai5 = createGenAIClient2();
       const results = [];
-      const outputDir = import_path5.default.join(process.cwd(), "public", "voice-samples");
-      if (!import_fs5.default.existsSync(outputDir)) {
+      const outputDir = import_path4.default.join(process.cwd(), "public", "voice-samples");
+      if (!import_fs4.default.existsSync(outputDir)) {
         try {
-          import_fs5.default.mkdirSync(outputDir, { recursive: true });
+          import_fs4.default.mkdirSync(outputDir, { recursive: true });
         } catch (e) {
         }
       }
@@ -14281,7 +14702,7 @@ Respond ONLY with JSON matching this structure:
                   console.warn(`[Voice Sample Gen] makePublic failed for ${voice}:`, err?.message || err);
                 });
                 try {
-                  import_fs5.default.writeFileSync(import_path5.default.join(outputDir, `${lower}.wav`), wavBuffer);
+                  import_fs4.default.writeFileSync(import_path4.default.join(outputDir, `${lower}.wav`), wavBuffer);
                 } catch (e) {
                 }
                 results.push({ voice, status: "generated", size: wavBuffer.length, path: publicUrl });
@@ -14326,7 +14747,7 @@ Respond ONLY with JSON matching this structure:
       const [files] = await bucket.getFiles({ prefix: "voice-samples/" });
       const manifest = {};
       for (const file of files) {
-        const filename = import_path5.default.basename(file.name);
+        const filename = import_path4.default.basename(file.name);
         if (filename.endsWith(".wav")) {
           const voiceId = filename.replace(".wav", "").toLowerCase();
           manifest[voiceId] = `https://storage.googleapis.com/${bucket.name}/${file.name}`;
@@ -15007,15 +15428,535 @@ data: ${JSON.stringify({ error: err?.message || "Execution stream error" })}
       res.end();
     }
   });
+  const DEV_ZIP_MAX_BYTES = 8 * 1024 * 1024;
+  function isSafeOutboundUrl(raw) {
+    try {
+      const u = new import_url.URL(raw);
+      if (u.protocol !== "http:" && u.protocol !== "https:") return false;
+      const host = u.hostname.toLowerCase();
+      if (host === "localhost" || host.endsWith(".local") || host === "0.0.0.0") return false;
+      if (/^(127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[0-1])\.|169\.254\.|::1)/.test(host)) return false;
+      return true;
+    } catch {
+      return false;
+    }
+  }
+  function htmlToPlainText(html) {
+    return html.replace(/<script[\s\S]*?<\/script>/gi, " ").replace(/<style[\s\S]*?<\/style>/gi, " ").replace(/<[^>]+>/g, " ").replace(/&nbsp;/gi, " ").replace(/&/gi, "&").replace(/</gi, "<").replace(/>/gi, ">").replace(/"/gi, '"').replace(/&#39;/g, "'").replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCharCode(parseInt(h, 16))).replace(/&#(\d+);/g, (_, n) => String.fromCharCode(Number(n))).replace(/\s+/g, " ").trim().slice(0, 2e4);
+  }
+  async function loadWorkspaceFiles(workspaceId, uid) {
+    const snap = await dbAdmin.collection("developer_workspaces").doc(workspaceId).get();
+    if (!snap.exists) return null;
+    const meta = snap.data() || {};
+    if (meta.ownerId !== uid) return null;
+    const fileSnaps = await dbAdmin.collection("developer_workspaces").doc(workspaceId).collection("files").get();
+    const files = fileSnaps.docs.map((d) => {
+      const x = d.data() || {};
+      return {
+        path: String(x.path || d.id),
+        language: String(x.language || "plaintext"),
+        content: String(x.content || ""),
+        bytes: Number(x.bytes || 0),
+        truncated: !!x.truncated
+      };
+    });
+    return { meta, files };
+  }
+  app.post("/api/developer/unpack", async (req, res) => {
+    try {
+      const auth = await requireAuth(req, res);
+      if (!auth) return;
+      const userState = await getUserDocAndBalance(auth.uid, auth.token, auth);
+      if (!checkFeatureAccess(res, userState.doc, "najeDeveloper")) return;
+      const zipBase64 = String(req.body?.zipBase64 || "").replace(/^data:[^;]+;base64,/, "");
+      const fileName = String(req.body?.fileName || "project.zip").slice(0, 180);
+      if (!zipBase64) return res.status(400).json({ error: "\u0627\u0631\u0641\u0639 \u0645\u0644\u0641 ZIP \u0644\u0644\u0645\u0648\u0642\u0639." });
+      const buf = Buffer.from(zipBase64, "base64");
+      if (!buf.length) return res.status(400).json({ error: "\u0627\u0644\u0645\u0644\u0641 \u0641\u0627\u0631\u063A." });
+      if (buf.length > DEV_ZIP_MAX_BYTES) {
+        return res.status(413).json({ error: "\u062D\u062C\u0645 \u0627\u0644\u0623\u0631\u0634\u064A\u0641 \u0623\u0643\u0628\u0631 \u0645\u0646 8MB. \u0627\u0636\u063A\u0637 \u0627\u0644\u0645\u0634\u0631\u0648\u0639 \u0628\u062F\u0648\u0646 node_modules \u0648dist." });
+      }
+      const unpacked = await unpackSiteZip(buf);
+      if (!unpacked.files.length) {
+        return res.status(400).json({ error: "\u0645\u0627 \u0644\u0642\u064A\u0646\u0627 \u0645\u0644\u0641\u0627\u062A \u0646\u0635\u064A\u0629 \u062F\u0627\u062E\u0644 \u0627\u0644\u0623\u0631\u0634\u064A\u0641. \u062A\u0623\u0643\u062F \u0623\u0646\u0647 \u0645\u0648\u0642\u0639 (HTML/JS/CSS) \u0645\u0648 \u0635\u0648\u0631 \u0641\u0642\u0637." });
+      }
+      const workspaceRef = dbAdmin.collection("developer_workspaces").doc();
+      await workspaceRef.set({
+        ownerId: auth.uid,
+        fileName,
+        fileCount: unpacked.files.length,
+        skipped: unpacked.skipped,
+        truncatedFiles: unpacked.truncatedFiles,
+        createdAt: Date.now()
+      });
+      const batchSize = 400;
+      for (let i = 0; i < unpacked.files.length; i += batchSize) {
+        const batch = dbAdmin.batch();
+        for (const f of unpacked.files.slice(i, i + batchSize)) {
+          const id = Buffer.from(f.path).toString("base64url").slice(0, 700);
+          batch.set(workspaceRef.collection("files").doc(id), {
+            path: f.path,
+            language: f.language,
+            content: f.content,
+            bytes: f.bytes,
+            truncated: f.truncated
+          });
+        }
+        await batch.commit();
+      }
+      return res.json({
+        success: true,
+        workspaceId: workspaceRef.id,
+        fileCount: unpacked.files.length,
+        skipped: unpacked.skipped,
+        truncatedFiles: unpacked.truncatedFiles,
+        tree: unpacked.files.map((f) => ({ path: f.path, language: f.language, bytes: f.bytes, truncated: f.truncated })),
+        message: "\u062A\u0645 \u0641\u0643 \u0627\u0644\u0623\u0631\u0634\u064A\u0641. \u062A\u0648\u062C\u0647 \u0644\u0644\u062F\u0631\u062F\u0634\u0629 \u0645\u0639 \u0646\u0627\u062C\u064A."
+      });
+    } catch (err) {
+      console.error("[developer/unpack]", err);
+      return res.status(500).json({ error: err?.message || "\u062A\u0639\u0630\u0651\u0631 \u0641\u0643 \u0627\u0644\u0623\u0631\u0634\u064A\u0641." });
+    }
+  });
+  app.get("/api/developer/workspace/:id", async (req, res) => {
+    try {
+      const auth = await requireAuth(req, res);
+      if (!auth) return;
+      const loaded = await loadWorkspaceFiles(String(req.params.id), auth.uid);
+      if (!loaded) return res.status(404).json({ error: "\u0627\u0644\u0645\u0634\u0631\u0648\u0639 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F." });
+      return res.json({
+        success: true,
+        workspaceId: req.params.id,
+        fileName: loaded.meta.fileName,
+        fileCount: loaded.files.length,
+        tree: loaded.files.map((f) => ({ path: f.path, language: f.language, bytes: f.bytes, truncated: f.truncated }))
+      });
+    } catch (err) {
+      return res.status(500).json({ error: err?.message || "\u062A\u0639\u0630\u0651\u0631 \u062A\u062D\u0645\u064A\u0644 \u0627\u0644\u0645\u0634\u0631\u0648\u0639." });
+    }
+  });
+  app.get("/api/developer/file", async (req, res) => {
+    try {
+      const auth = await requireAuth(req, res);
+      if (!auth) return;
+      const workspaceId = String(req.query.workspaceId || "");
+      const filePath = String(req.query.path || "");
+      const snap = await dbAdmin.collection("developer_workspaces").doc(workspaceId).get();
+      if (!snap.exists || snap.data()?.ownerId !== auth.uid) {
+        return res.status(404).json({ error: "\u0627\u0644\u0645\u0634\u0631\u0648\u0639 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F." });
+      }
+      const id = Buffer.from(filePath).toString("base64url").slice(0, 700);
+      let fileSnap = await dbAdmin.collection("developer_workspaces").doc(workspaceId).collection("files").doc(id).get();
+      if (!fileSnap.exists) {
+        const q = await dbAdmin.collection("developer_workspaces").doc(workspaceId).collection("files").where("path", "==", filePath).limit(1).get();
+        fileSnap = q.empty ? fileSnap : q.docs[0];
+      }
+      if (!fileSnap.exists) return res.status(404).json({ error: "\u0627\u0644\u0645\u0644\u0641 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F." });
+      const x = fileSnap.data() || {};
+      return res.json({
+        success: true,
+        file: {
+          path: String(x.path || filePath),
+          language: String(x.language || "plaintext"),
+          content: String(x.content || ""),
+          bytes: Number(x.bytes || 0),
+          truncated: !!x.truncated
+        }
+      });
+    } catch (err) {
+      return res.status(500).json({ error: err?.message || "\u062A\u0639\u0630\u0651\u0631 \u0642\u0631\u0627\u0621\u0629 \u0627\u0644\u0645\u0644\u0641." });
+    }
+  });
+  app.post("/api/developer/export", async (req, res) => {
+    try {
+      const auth = await requireAuth(req, res);
+      if (!auth) return;
+      const loaded = await loadWorkspaceFiles(String(req.body?.workspaceId || ""), auth.uid);
+      if (!loaded) return res.status(404).json({ error: "\u0627\u0644\u0645\u0634\u0631\u0648\u0639 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F." });
+      const JSZipMod = (await import("jszip")).default;
+      const zip = new JSZipMod();
+      for (const f of loaded.files) zip.file(f.path, f.content);
+      const buf = await zip.generateAsync({ type: "nodebuffer", compression: "DEFLATE" });
+      res.setHeader("Content-Type", "application/zip");
+      res.setHeader("Content-Disposition", `attachment; filename="${encodeURIComponent(loaded.meta.fileName || "naje-project.zip")}"`);
+      return res.send(buf);
+    } catch (err) {
+      return res.status(500).json({ error: err?.message || "\u062A\u0639\u0630\u0651\u0631 \u062A\u0635\u062F\u064A\u0631 \u0627\u0644\u0623\u0631\u0634\u064A\u0641." });
+    }
+  });
+  app.post("/api/developer/chat", async (req, res) => {
+    try {
+      const auth = await requireAuth(req, res);
+      if (!auth) return;
+      const userState = await getUserDocAndBalance(auth.uid, auth.token, auth);
+      if (!checkFeatureAccess(res, userState.doc, "najeDeveloper")) return;
+      const userIsAdmin = isPrivilegedAdmin(userState.doc, auth);
+      const workspaceId = String(req.body?.workspaceId || "");
+      const prompt = String(req.body?.prompt || "").trim();
+      const intent = String(req.body?.intent || "chat");
+      const focusPath = req.body?.focusPath ? String(req.body.focusPath) : "";
+      const history = Array.isArray(req.body?.history) ? req.body.history.slice(-12) : [];
+      if (!prompt) return res.status(400).json({ error: "\u0627\u0643\u062A\u0628 \u0631\u0633\u0627\u0644\u0629." });
+      const loaded = await loadWorkspaceFiles(workspaceId, auth.uid);
+      if (!loaded) return res.status(404).json({ error: "\u0627\u0631\u0641\u0639 \u0623\u0631\u0634\u064A\u0641 \u0627\u0644\u0645\u0648\u0642\u0639 \u0623\u0648\u0644\u0627\u064B." });
+      const tree = buildFileTree(loaded.files.map((f) => f.path));
+      const codeCtx = buildCodeContext(loaded.files, focusPath);
+      const ai5 = createGenAIClient2();
+      const modelId = resolveEngineModel(await getModelEndpointId("text_core", getNajeModel("core"), auth.token));
+      let system = `\u0623\u0646\u062A \xAB\u0646\u0627\u062C\u064A \u0627\u0644\u0645\u0637\u0648\u0631\xBB. \u062A\u0641\u062D\u0635 \u0645\u0648\u0627\u0642\u0639 \u0645\u0631\u0641\u0648\u0639\u0629 \u0643\u0623\u0631\u0634\u064A\u0641 ZIP. \u062A\u062A\u0643\u0644\u0645 \u0639\u0631\u0628\u064A \u0641\u0635\u064A\u062D \u0648\u0627\u0636\u062D\u060C \u0631\u0624\u0648\u0633 \u0623\u0642\u0644\u0627\u0645\u060C \u0628\u062F\u0648\u0646 \u062D\u0634\u0648.
+\u0645\u0644\u0641\u0627\u062A \u0627\u0644\u0645\u0634\u0631\u0648\u0639 (${loaded.files.length}):
+${tree}
+
+\u0645\u0642\u062A\u0637\u0641 \u0627\u0644\u0643\u0648\u062F:
+${codeCtx}
+
+\u0642\u0648\u0627\u0639\u062F:
+- \u0644\u0627 \u062A\u062E\u062A\u0644\u0642 \u0645\u0644\u0641\u0627\u062A \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F\u0629.
+- \u0625\u0646 \u0637\u0644\u0628 \u0627\u0644\u0645\u0633\u062A\u062E\u062F\u0645 \u062A\u0639\u062F\u064A\u0644\u0627\u064B\u060C \u0627\u0633\u062A\u062F\u0639\u0650 \u0627\u0644\u0623\u062F\u0627\u0629 apply_file_patch \u0628\u0627\u0644\u0645\u0633\u0627\u0631 \u0648\u0627\u0644\u0645\u062D\u062A\u0648\u0649 \u0627\u0644\u0643\u0627\u0645\u0644 \u0627\u0644\u062C\u062F\u064A\u062F.
+- \u0644\u0627 \u062A\u0634\u063A\u0651\u0644 \u0627\u0644\u0643\u0648\u062F. \u0627\u0644\u062A\u0639\u062F\u064A\u0644 \u0639\u0644\u0649 \u0627\u0644\u0645\u0644\u0641\u0627\u062A \u0627\u0644\u0645\u062D\u0641\u0648\u0638\u0629 \u0641\u0642\u0637 \u062B\u0645 \u064A\u064F\u0639\u0627\u062F \u062A\u0635\u062F\u064A\u0631 ZIP.`;
+      if (intent === "audit") {
+        system += `
+
+\u0627\u0644\u0645\u0647\u0645\u0629 \u0627\u0644\u062D\u0627\u0644\u064A\u0629: \u0641\u062D\u0635 \u0634\u0627\u0645\u0644. \u0623\u062E\u0631\u062C \u062A\u0642\u0631\u064A\u0631\u0627\u064B \u0639\u0631\u0628\u064A\u0627\u064B \u0628\u0647\u0630\u0647 \u0627\u0644\u0623\u0642\u0633\u0627\u0645 \u062D\u0635\u0631\u0627\u064B:
+1) \u0627\u0644\u0628\u0646\u064A\u0629 \u0648\u0627\u0644\u0645\u0644\u0641\u0627\u062A
+2) \u0623\u062E\u0637\u0627\u0621 \u0648\u0627\u0636\u062D\u0629 (HTML/JS/CSS)
+3) \u0623\u0645\u0627\u0646 (XSS\u060C \u0623\u0633\u0631\u0627\u0631\u060C \u062A\u0642\u064A\u064A\u0645 eval\u060C \u0631\u0648\u0627\u0628\u0637 \u062E\u0627\u0631\u062C\u064A\u0629 \u062E\u0637\u0631\u0629)
+4) \u0623\u062F\u0627\u0621 \u0648\u0625\u062A\u0627\u062D\u0629
+5) \u0623\u0648\u0644\u0648\u064A\u0627\u062A \u0627\u0644\u0625\u0635\u0644\u0627\u062D
+\u0643\u0644 \u0642\u0633\u0645 \u0646\u0642\u0627\u0637 \u0642\u0635\u064A\u0631\u0629. \u0627\u062E\u062A\u0645 \u0628\u062C\u0645\u0644\u0629: \xAB\u0625\u0630\u0627 \u0628\u062F\u0643\u060C \u0623\u0643\u062A\u0628 \u0644\u0643 \u0628\u0631\u064A\u0641 \u062A\u0648\u062C\u064A\u0647 \u062A\u0641\u0635\u064A\u0644\u064A \u0644\u0644\u0648\u0643\u064A\u0644 \u0627\u0644\u0644\u064A \u062A\u0637\u0648\u0631 \u0645\u0639\u0647 \u0627\u0644\u0643\u0648\u062F.\xBB`;
+      } else if (intent === "brief") {
+        system += `
+
+\u0627\u0644\u0645\u0647\u0645\u0629 \u0627\u0644\u062D\u0627\u0644\u064A\u0629: \u0627\u0643\u062A\u0628 \u0628\u0631\u064A\u0641 \u062A\u0648\u062C\u064A\u0647 \u062A\u0641\u0635\u064A\u0644\u064A \u0644\u0648\u0643\u064A\u0644 \u0628\u0631\u0645\u062C\u064A (Cursor/Grok/Copilot) \u0628\u0627\u0644\u0639\u0631\u0628\u064A\u0629 \u0648\u0627\u0644\u0625\u0646\u062C\u0644\u064A\u0632\u064A\u0629 \u0627\u0644\u0645\u062E\u062A\u0635\u0631\u0629 \u0644\u0644\u0643\u0648\u062F. \u062D\u062F\u0651\u062F \u0627\u0644\u0645\u0644\u0641\u0627\u062A\u060C \u0627\u0644\u0645\u0637\u0644\u0648\u0628\u060C \u0642\u064A\u0648\u062F \u0639\u062F\u0645 \u0643\u0633\u0631 \u0627\u0644\u062A\u0635\u0645\u064A\u0645\u060C \u0648\u062A\u0631\u062A\u064A\u0628 \u0627\u0644\u062A\u0646\u0641\u064A\u0630.`;
+      }
+      const contents = [];
+      for (const h of history) {
+        const role = h.role === "assistant" || h.role === "model" ? "model" : "user";
+        const text = String(h.content || "").slice(0, 4e3);
+        if (text) contents.push({ role, parts: [{ text }] });
+      }
+      contents.push({ role: "user", parts: [{ text: prompt }] });
+      const tools = [{
+        functionDeclarations: [{
+          name: "apply_file_patch",
+          description: "Replace the full contents of an existing project file. Path must already exist.",
+          parameters: {
+            type: "OBJECT",
+            properties: {
+              path: { type: "STRING" },
+              content: { type: "STRING" },
+              note: { type: "STRING" }
+            },
+            required: ["path", "content"]
+          }
+        }]
+      }];
+      res.writeHead(200, { "Content-Type": "text/event-stream", "Cache-Control": "no-cache", Connection: "keep-alive" });
+      const stream = await ai5.models.generateContentStream({
+        model: modelId,
+        contents,
+        config: {
+          systemInstruction: system,
+          tools,
+          maxOutputTokens: intent === "audit" ? OUTPUT_TOKEN_LIMITS.fullstackAudit : OUTPUT_TOKEN_LIMITS.chatResponse
+        }
+      });
+      let fullText = "";
+      const functionCalls = [];
+      let usageMeta = null;
+      for await (const chunk of stream) {
+        if (chunk.usageMetadata) usageMeta = chunk.usageMetadata;
+        const calls = extractGeminiFunctionCalls(chunk);
+        if (calls.length) functionCalls.push(...calls);
+        const t = extractGeminiText(chunk);
+        if (t) {
+          fullText += t;
+          res.write(`data: ${JSON.stringify({ text: t })}
+
+`);
+        }
+      }
+      const applied = [];
+      for (const fc of functionCalls) {
+        if (fc.name !== "apply_file_patch") continue;
+        const p = String(fc.args?.path || "");
+        const content = String(fc.args?.content || "");
+        const target = loaded.files.find((f) => f.path === p);
+        if (!target || !content) continue;
+        const id = Buffer.from(p).toString("base64url").slice(0, 700);
+        await dbAdmin.collection("developer_workspaces").doc(workspaceId).collection("files").doc(id).set({
+          path: p,
+          language: target.language,
+          content: content.slice(0, 6e4),
+          bytes: Math.min(content.length, 6e4),
+          truncated: content.length > 6e4
+        }, { merge: true });
+        applied.push(p);
+      }
+      if (applied.length) {
+        const note = `
+
+\u062A\u0645 \u062A\u0637\u0628\u064A\u0642 \u0627\u0644\u062A\u0639\u062F\u064A\u0644 \u0639\u0644\u0649: ${applied.join("\u060C ")}. \u062A\u0642\u062F\u0631 \u062A\u0635\u062F\u0651\u0631 ZIP \u0645\u062D\u062F\u0651\u062B.`;
+        fullText += note;
+        res.write(`data: ${JSON.stringify({ text: note, applied })}
+
+`);
+      }
+      const bill = await chargeForTextModelUsage(auth.uid, "text_core", usageMeta, userIsAdmin).catch(() => null);
+      if (typeof bill?.newBalance === "number") {
+      }
+      res.write(`data: ${JSON.stringify({
+        newBalance: bill?.newBalance,
+        usage: {
+          charged: bill?.charged || 0,
+          inputTokens: bill?.inputTokens || 0,
+          outputTokens: bill?.outputTokens || 0,
+          cachedTokens: bill?.cachedTokens || 0,
+          thoughtsTokens: bill?.thoughtsTokens || 0,
+          billingType: "per_token"
+        },
+        applied
+      })}
+
+`);
+      res.write("data: [DONE]\n\n");
+      res.end();
+    } catch (err) {
+      console.error("[developer/chat]", err);
+      if (!res.headersSent) return res.status(500).json({ error: err?.message || "\u062A\u0639\u0630\u0651\u0631 \u0627\u0644\u0641\u062D\u0635." });
+      res.write(`data: ${JSON.stringify({ error: err?.message || "\u062A\u0639\u0630\u0651\u0631 \u0627\u0644\u0641\u062D\u0635." })}
+
+`);
+      res.write("data: [DONE]\n\n");
+      res.end();
+    }
+  });
+  app.post("/api/source/add", async (req, res) => {
+    try {
+      const auth = await requireAuth(req, res);
+      if (!auth) return;
+      const userState = await getUserDocAndBalance(auth.uid, auth.token, auth);
+      if (!checkFeatureAccess(res, userState.doc, "najeSource")) return;
+      let workspaceId = String(req.body?.workspaceId || "");
+      const type = String(req.body?.type || "text");
+      const title = String(req.body?.title || "").slice(0, 200);
+      let content = String(req.body?.content || "");
+      const url = String(req.body?.url || "").trim();
+      if (!workspaceId) {
+        const ref = dbAdmin.collection("source_workspaces").doc();
+        await ref.set({ ownerId: auth.uid, createdAt: Date.now(), itemCount: 0 });
+        workspaceId = ref.id;
+      } else {
+        const snap = await dbAdmin.collection("source_workspaces").doc(workspaceId).get();
+        if (!snap.exists || snap.data()?.ownerId !== auth.uid) {
+          return res.status(404).json({ error: "\u0645\u0633\u0627\u062D\u0629 \u0627\u0644\u0645\u0635\u0627\u062F\u0631 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F\u0629." });
+        }
+      }
+      const existing = await dbAdmin.collection("source_workspaces").doc(workspaceId).collection("items").get();
+      if (existing.size >= 24) return res.status(400).json({ error: "\u0648\u0635\u0644\u062A \u0644\u0644\u062D\u062F \u0627\u0644\u0623\u0642\u0635\u0649 (24 \u0645\u0635\u062F\u0631). \u0627\u062D\u0630\u0641 \u0645\u0635\u062F\u0631\u0627\u064B \u0623\u0648\u0644\u0627\u064B." });
+      if (type === "url") {
+        if (!isSafeOutboundUrl(url)) return res.status(400).json({ error: "\u0627\u0644\u0631\u0627\u0628\u0637 \u063A\u064A\u0631 \u0645\u0633\u0645\u0648\u062D." });
+        const ctrl = new AbortController();
+        const t = setTimeout(() => ctrl.abort(), 12e3);
+        try {
+          const fetched = await fetch(url, { signal: ctrl.signal, headers: { "User-Agent": "NajeSource/1.0" } });
+          if (!fetched.ok) return res.status(400).json({ error: `\u062A\u0639\u0630\u0651\u0631 \u062C\u0644\u0628 \u0627\u0644\u0631\u0627\u0628\u0637 (${fetched.status}).` });
+          const ctype = fetched.headers.get("content-type") || "";
+          const raw = await fetched.text();
+          content = ctype.includes("html") ? htmlToPlainText(raw) : raw.slice(0, 2e4);
+        } catch {
+          return res.status(400).json({ error: "\u062A\u0639\u0630\u0651\u0631 \u062C\u0644\u0628 \u0627\u0644\u0631\u0627\u0628\u0637." });
+        } finally {
+          clearTimeout(t);
+        }
+      }
+      content = content.slice(0, 2e4);
+      let imageBase64 = "";
+      let mimeType = "";
+      if (type === "image") {
+        imageBase64 = String(req.body?.data || content).replace(/^data:[^;]+;base64,/, "");
+        mimeType = String(req.body?.mimeType || "image/jpeg").slice(0, 80);
+        if (!imageBase64 || imageBase64.length > 7e5) {
+          return res.status(400).json({ error: "\u0627\u0644\u0635\u0648\u0631\u0629 \u0643\u0628\u064A\u0631\u0629 \u0623\u0648 \u0641\u0627\u0631\u063A\u0629 (\u0627\u0644\u062D\u062F ~500KB)." });
+        }
+        content = String(req.body?.caption || title || "\u0635\u0648\u0631\u0629 \u0645\u0631\u0641\u0642\u0629");
+      }
+      if (type !== "image" && !content.trim()) return res.status(400).json({ error: "\u0627\u0644\u0645\u062D\u062A\u0648\u0649 \u0641\u0627\u0631\u063A." });
+      const itemRef = await dbAdmin.collection("source_workspaces").doc(workspaceId).collection("items").add({
+        ownerId: auth.uid,
+        type,
+        title: title || (type === "url" ? url : type === "image" ? "\u0635\u0648\u0631\u0629" : "\u0645\u0635\u062F\u0631 \u0646\u0635\u064A"),
+        url: type === "url" ? url : "",
+        content,
+        imageBase64: imageBase64 || "",
+        mimeType: mimeType || "",
+        createdAt: Date.now()
+      });
+      await dbAdmin.collection("source_workspaces").doc(workspaceId).set({ itemCount: existing.size + 1, updatedAt: Date.now() }, { merge: true });
+      return res.json({
+        success: true,
+        workspaceId,
+        item: { id: itemRef.id, type, title: title || (type === "url" ? url : type === "image" ? "\u0635\u0648\u0631\u0629" : "\u0645\u0635\u062F\u0631 \u0646\u0635\u064A"), url: type === "url" ? url : "", excerpt: content.slice(0, 240) }
+      });
+    } catch (err) {
+      console.error("[source/add]", err);
+      return res.status(500).json({ error: err?.message || "\u062A\u0639\u0630\u0651\u0631 \u0625\u0636\u0627\u0641\u0629 \u0627\u0644\u0645\u0635\u062F\u0631." });
+    }
+  });
+  app.get("/api/source/workspace/:id", async (req, res) => {
+    try {
+      const auth = await requireAuth(req, res);
+      if (!auth) return;
+      const snap = await dbAdmin.collection("source_workspaces").doc(String(req.params.id)).get();
+      if (!snap.exists || snap.data()?.ownerId !== auth.uid) return res.status(404).json({ error: "\u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F." });
+      const items = await dbAdmin.collection("source_workspaces").doc(String(req.params.id)).collection("items").orderBy("createdAt", "desc").get();
+      return res.json({
+        success: true,
+        workspaceId: req.params.id,
+        items: items.docs.map((d) => {
+          const x = d.data() || {};
+          return { id: d.id, type: x.type, title: x.title, url: x.url || "", excerpt: String(x.content || "").slice(0, 240) };
+        })
+      });
+    } catch (err) {
+      return res.status(500).json({ error: err?.message || "\u062A\u0639\u0630\u0651\u0631 \u0627\u0644\u062A\u062D\u0645\u064A\u0644." });
+    }
+  });
+  app.delete("/api/source/item", async (req, res) => {
+    try {
+      const auth = await requireAuth(req, res);
+      if (!auth) return;
+      const workspaceId = String(req.body?.workspaceId || "");
+      const itemId = String(req.body?.itemId || "");
+      const snap = await dbAdmin.collection("source_workspaces").doc(workspaceId).get();
+      if (!snap.exists || snap.data()?.ownerId !== auth.uid) return res.status(404).json({ error: "\u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F." });
+      await dbAdmin.collection("source_workspaces").doc(workspaceId).collection("items").doc(itemId).delete();
+      return res.json({ success: true });
+    } catch (err) {
+      return res.status(500).json({ error: err?.message || "\u062A\u0639\u0630\u0651\u0631 \u0627\u0644\u062D\u0630\u0641." });
+    }
+  });
+  app.post("/api/source/chat", async (req, res) => {
+    try {
+      const auth = await requireAuth(req, res);
+      if (!auth) return;
+      const userState = await getUserDocAndBalance(auth.uid, auth.token, auth);
+      if (!checkFeatureAccess(res, userState.doc, "najeSource")) return;
+      const userIsAdmin = isPrivilegedAdmin(userState.doc, auth);
+      const workspaceId = String(req.body?.workspaceId || "");
+      const prompt = String(req.body?.prompt || "").trim();
+      const allowWeb = req.body?.allowWeb === true;
+      const history = Array.isArray(req.body?.history) ? req.body.history.slice(-12) : [];
+      if (!prompt) return res.status(400).json({ error: "\u0627\u0643\u062A\u0628 \u0631\u0633\u0627\u0644\u0629." });
+      if (!workspaceId) return res.status(400).json({ error: "\u0623\u0636\u0641 \u0645\u0635\u062F\u0631\u0627\u064B \u0623\u0648\u0644\u0627\u064B." });
+      const snap = await dbAdmin.collection("source_workspaces").doc(workspaceId).get();
+      if (!snap.exists || snap.data()?.ownerId !== auth.uid) return res.status(404).json({ error: "\u0645\u0633\u0627\u062D\u0629 \u0627\u0644\u0645\u0635\u0627\u062F\u0631 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F\u0629." });
+      const itemSnaps = await dbAdmin.collection("source_workspaces").doc(workspaceId).collection("items").get();
+      const sources = itemSnaps.docs.map((d) => {
+        const x = d.data() || {};
+        return {
+          title: x.title,
+          type: x.type,
+          url: x.url,
+          content: String(x.content || "").slice(0, 12e3),
+          imageBase64: x.imageBase64 ? String(x.imageBase64) : "",
+          mimeType: String(x.mimeType || "image/jpeg")
+        };
+      });
+      if (!sources.length) return res.status(400).json({ error: "\u0623\u0636\u0641 \u0645\u0635\u062F\u0631\u0627\u064B \u0648\u0627\u062D\u062F\u0627\u064B \u0639\u0644\u0649 \u0627\u0644\u0623\u0642\u0644." });
+      const sourceBlock = sources.map((s, i) => `# \u0645\u0635\u062F\u0631 ${i + 1}: ${s.title}${s.url ? ` (${s.url})` : ""}
+${s.content}`).join("\n\n");
+      const system = `\u0623\u0646\u062A \xAB\u0646\u0627\u062C\u064A \u0645\u0646 \u0645\u0635\u0627\u062F\u0631\u0643\xBB. \u0645\u0645\u0646\u0648\u0639 \u0627\u0644\u0627\u062E\u062A\u0644\u0627\u0642. \u062A\u062C\u064A\u0628 \u0641\u0642\u0637 \u0645\u0645\u0627 \u0641\u064A \u0627\u0644\u0645\u0635\u0627\u062F\u0631 \u0623\u062F\u0646\u0627\u0647.
+\u0625\u0630\u0627 \u0645\u0627 \u0644\u0642\u064A\u062A \u0627\u0644\u062C\u0648\u0627\u0628 \u0641\u064A \u0627\u0644\u0645\u0635\u0627\u062F\u0631:
+${allowWeb ? "- \u0627\u0628\u062F\u0623 \u062D\u0631\u0641\u064A\u0627\u064B: \xAB\u0644\u0645 \u0623\u062C\u062F \u0641\u064A \u0627\u0644\u0645\u0635\u0627\u062F\u0631\u060C \u0648\u0628\u062D\u062B\u062A \u0641\u064A \u0627\u0644\u0625\u0646\u062A\u0631\u0646\u062A \u0648\u0627\u0644\u0646\u062A\u064A\u062C\u0629:\xBB \u062B\u0645 \u0644\u062E\u0651\u0635 \u0646\u062A\u064A\u062C\u0629 \u0627\u0644\u0628\u062D\u062B \u0645\u0639 \u0627\u0644\u0631\u0648\u0627\u0628\u0637." : "- \u0623\u062C\u0628 \u062D\u0631\u0641\u064A\u0627\u064B \u0641\u0642\u0637: \xAB\u0644\u0645 \u0623\u062C\u062F \u0641\u064A \u0627\u0644\u0645\u0635\u0627\u062F\u0631.\xBB \u0628\u0644\u0627 \u0623\u064A \u0625\u0636\u0627\u0641\u0629."}
+\u0644\u0627 \u062A\u062E\u0644\u0637 \u0631\u0623\u064A\u0643. \u0625\u0646 \u0627\u0642\u062A\u0628\u0633\u062A\u060C \u0627\u0630\u0643\u0631 \u0631\u0642\u0645 \u0627\u0644\u0645\u0635\u062F\u0631.
+
+\u0627\u0644\u0645\u0635\u0627\u062F\u0631:
+${sourceBlock}`;
+      const ai5 = createGenAIClient2();
+      const modelId = resolveEngineModel(await getModelEndpointId("text_core", getNajeModel("core"), auth.token));
+      const contents = [];
+      for (const h of history) {
+        const role = h.role === "assistant" || h.role === "model" ? "model" : "user";
+        const text = String(h.content || "").slice(0, 4e3);
+        if (text) contents.push({ role, parts: [{ text }] });
+      }
+      contents.push({
+        role: "user",
+        parts: [
+          { text: prompt },
+          ...sources.filter((s) => s.imageBase64).slice(0, 4).map((s) => ({
+            inlineData: { mimeType: s.mimeType || "image/jpeg", data: s.imageBase64 }
+          }))
+        ]
+      });
+      const tools = [];
+      if (allowWeb) tools.push({ googleSearch: {} });
+      res.writeHead(200, { "Content-Type": "text/event-stream", "Cache-Control": "no-cache", Connection: "keep-alive" });
+      const stream = await ai5.models.generateContentStream({
+        model: modelId,
+        contents,
+        config: {
+          systemInstruction: system,
+          tools: tools.length ? tools : void 0,
+          maxOutputTokens: OUTPUT_TOKEN_LIMITS.chatResponse
+        }
+      });
+      let usageMeta = null;
+      const searchSources = [];
+      for await (const chunk of stream) {
+        if (chunk.usageMetadata) usageMeta = chunk.usageMetadata;
+        const candidate = chunk.candidates?.[0];
+        if (candidate?.groundingMetadata?.groundingChunks) {
+          for (const g of candidate.groundingMetadata.groundingChunks) {
+            if (g.web?.uri && !searchSources.some((s) => s.url === g.web.uri)) {
+              searchSources.push({ title: g.web.title || g.web.uri, url: g.web.uri });
+            }
+          }
+        }
+        const t = extractGeminiText(chunk);
+        if (t) res.write(`data: ${JSON.stringify({ text: t })}
+
+`);
+      }
+      if (searchSources.length) res.write(`data: ${JSON.stringify({ searchSources })}
+
+`);
+      const bill = await chargeForTextModelUsage(auth.uid, "text_core", usageMeta, userIsAdmin).catch(() => null);
+      res.write(`data: ${JSON.stringify({
+        newBalance: bill?.newBalance,
+        usage: {
+          charged: bill?.charged || 0,
+          inputTokens: bill?.inputTokens || 0,
+          outputTokens: bill?.outputTokens || 0,
+          cachedTokens: bill?.cachedTokens || 0,
+          thoughtsTokens: bill?.thoughtsTokens || 0,
+          billingType: "per_token"
+        }
+      })}
+
+`);
+      res.write("data: [DONE]\n\n");
+      res.end();
+    } catch (err) {
+      console.error("[source/chat]", err);
+      if (!res.headersSent) return res.status(500).json({ error: err?.message || "\u062A\u0639\u0630\u0651\u0631 \u0627\u0644\u0631\u062F." });
+      res.write(`data: ${JSON.stringify({ error: err?.message || "\u062A\u0639\u0630\u0651\u0631 \u0627\u0644\u0631\u062F." })}
+
+`);
+      res.write("data: [DONE]\n\n");
+      res.end();
+    }
+  });
   const candidateDistPaths = [
-    import_path5.default.join(process.cwd(), "dist"),
+    import_path4.default.join(process.cwd(), "dist"),
     appDirname,
-    import_path5.default.join(appDirname, "..", "dist"),
-    import_path5.default.join(appDirname, "dist")
+    import_path4.default.join(appDirname, "..", "dist"),
+    import_path4.default.join(appDirname, "dist")
   ];
-  const distPath = candidateDistPaths.find((p) => import_fs5.default.existsSync(import_path5.default.join(p, "index.html")));
+  const distPath = candidateDistPaths.find((p) => import_fs4.default.existsSync(import_path4.default.join(p, "index.html")));
   const isProduction = Boolean(isProdBundle && distPath);
-  app.use(import_express.default.static(import_path5.default.join(process.cwd(), "public"), { dotfiles: "allow" }));
+  app.use(import_express.default.static(import_path4.default.join(process.cwd(), "public"), { dotfiles: "allow" }));
   app.all("/api/*", (req, res) => {
     res.status(404).json({ error: `API route ${req.method} ${req.originalUrl} not found` });
   });
@@ -15029,7 +15970,7 @@ data: ${JSON.stringify({ error: err?.message || "Execution stream error" })}
   } else if (distPath) {
     app.use(import_express.default.static(distPath));
     app.get("*", (req, res) => {
-      const indexPath = import_path5.default.join(distPath, "index.html");
+      const indexPath = import_path4.default.join(distPath, "index.html");
       res.sendFile(indexPath);
     });
   }
@@ -15040,42 +15981,17 @@ data: ${JSON.stringify({ error: err?.message || "Execution stream error" })}
     }
     next(err);
   });
-  let seedExecuted = false;
-  const executeSeeds = () => {
-    if (!seedExecuted) {
-      seedExecuted = true;
-      seedModelEndpointsIfMissing().catch(() => {
-      });
-      seedFormatPresetsIfMissing().catch(() => {
-      });
-    }
-  };
-  const bindPort = (port, role) => {
-    const srv = import_http.default.createServer(app);
-    srv.setTimeout(6e5);
-    srv.keepAliveTimeout = 6e5;
-    srv.headersTimeout = 601e3;
-    srv.on("error", (err) => {
-      if (err.code === "EADDRINUSE") {
-        console.log(`[Port Notice] ${role} port ${port} already bound or in use by proxy.`);
-      } else {
-        console.error(`[Port Error] ${role} listener error on port ${port}:`, err?.message || err);
-      }
-    });
-    srv.listen(port, "0.0.0.0", () => {
-      console.log(`[Server] ${role} active on http://0.0.0.0:${port}`);
-      executeSeeds();
-    });
-    return srv;
-  };
-  const envPort = process.env.PORT ? parseInt(process.env.PORT, 10) : 8080;
-  const ingressPort = envPort && !isNaN(envPort) ? envPort : 8080;
-  bindPort(ingressPort, "Cloud Run Ingress");
-  if (ingressPort !== 3e3) {
-    bindPort(3e3, "App Port (3000)");
-  }
+  executeSeeds();
 }
-startServer();
+function shouldAutoStartServer() {
+  const entry = (process.argv[1] || "").replace(/\\/g, "/");
+  return entry.endsWith("/server.ts") || entry.endsWith("/server.cjs") || entry.endsWith("/dist/server.cjs");
+}
+if (shouldAutoStartServer()) {
+  startServer().catch((err) => {
+    console.error("[Server] fatal start error:", err);
+  });
+}
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
   MAX_DOCUMENT_PAGES,
@@ -15084,6 +16000,6 @@ startServer();
   MAX_SLIDES,
   chargeForTextModelUsage,
   getSafeZoneForPreset,
-  getTextModelTokenRates
+  getTextModelTokenRates,
+  startServer
 });
-//# sourceMappingURL=server.cjs.map

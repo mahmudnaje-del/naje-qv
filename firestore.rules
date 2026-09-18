@@ -25,11 +25,13 @@ service cloud.firestore {
     match /users/{uid} {
       allow read: if signedIn() && (request.auth.uid == uid || isAdmin());
       allow create: if signedIn() && request.auth.uid == uid
-                    && (!('isAdmin' in request.resource.data) || request.resource.data.isAdmin == false)
-                    && (!('canAddAdmins' in request.resource.data) || request.resource.data.canAddAdmins == false)
-                    && (!('isBlocked' in request.resource.data) || request.resource.data.isBlocked == false)
-                    && (!('hasRecharged' in request.resource.data) || request.resource.data.hasRecharged == false)
-                    && (!('balance' in request.resource.data) || request.resource.data.balance == 5);
+                    && !('isAdmin' in request.resource.data)
+                    && !('canAddAdmins' in request.resource.data)
+                    && !('isBlocked' in request.resource.data)
+                    && !('hasRecharged' in request.resource.data)
+                    && !('balance' in request.resource.data)
+                    && !('isNegativeBalance' in request.resource.data)
+                    && !('highestPurchasedTier' in request.resource.data);
       allow update: if signedIn() && (
                       (isAdmin() && (
                         (!('isAdmin' in request.resource.data) || request.resource.data.isAdmin == resource.data.isAdmin || canMintAdmins())

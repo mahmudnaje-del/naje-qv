@@ -185,13 +185,11 @@ export default function Auth() {
           uid: userCred.user.uid,
           email: targetEmail,
           displayName: chosenName,
-          balance: 5,
-          isAdmin: false,
-          canAddAdmins: false,
           hasAcceptedTerms: true,
           hasCompletedOnboarding: true,
           emailVerified: false,
         }, { merge: true });
+
 
         // Send email verification link
         try {
