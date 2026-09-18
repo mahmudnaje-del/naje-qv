@@ -1,8 +1,10 @@
-export type GatedFeature = 'creativelyAI' | 'najeAgent' | 'najeAd';
+export type GatedFeature = 'creativelyAI' | 'najeAgent' | 'najeAd' | 'najeSource' | 'najeDeveloper';
 
 export const FEATURE_MIN_TIER: Record<GatedFeature, number> = {
   creativelyAI: 1,
+  najeSource: 1,
   najeAgent: 2,
+  najeDeveloper: 2,
   najeAd: 3,
 };
 

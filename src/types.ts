@@ -111,6 +111,15 @@ export type ChatMessage = {
     style?: string;
     durationSeconds?: number;
   };
+  costInPoints?: number;
+  usage?: {
+    charged: number;
+    inputTokens: number;
+    outputTokens: number;
+    cachedTokens: number;
+    thoughtsTokens?: number;
+    billingType?: 'per_token' | 'per_generation' | 'per_character';
+  };
 };
 
 export type Message = ChatMessage;
@@ -131,7 +140,7 @@ export interface ModelEndpoint {
   featureGroup: 'text' | 'image' | 'video' | 'ui' | 'document' | 'voice' | 'infographic';
   labelAr: string;               // e.g. "Naje Lite (نص خفيف)" or "الناقد — مراجعة الطلب قبل التنفيذ"
   modelId: string;                // exact API model string
-  pricingType?: 'per_token' | 'per_generation'; // text models = per_token, media = per_generation
+  pricingType?: 'per_token' | 'per_generation' | 'per_character';
   inputPointsPer1k?: number;      // Points per 1,000 input tokens (legacy / convenience)
   outputPointsPer1k?: number;     // Points per 1,000 output tokens (legacy / convenience)
   audioInputPointsPer1k?: number; // Points per 1,000 audio tokens (legacy / convenience)

@@ -14,6 +14,8 @@ const FEATURE_LABELS: Record<GatedFeature, string> = {
   creativelyAI: 'Creatively AI',
   najeAgent: 'Naje AI Agent',
   najeAd: 'Naje Ad',
+  najeSource: 'ناجي من مصادرك',
+  najeDeveloper: 'ناجي المطور',
 };
 
 const FALLBACK_PRICES: Record<string, number> = {

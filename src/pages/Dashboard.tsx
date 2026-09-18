@@ -32,7 +32,7 @@ import {
   LogOut, User, Folder, Star, Info, Menu, PanelRight, X, Plus, Sparkles,
   ChevronDown, ChevronRight, ChevronLeft, MessageSquare, Image as ImageIcon, Film, Layout, Mic2,
   FileText, Shield, Download, ExternalLink, Calendar, Compass, Layers, AlertCircle,
-  Pencil, Trash2, Bot, Coins
+  Pencil, Trash2, Bot, Coins, Code2, BookOpen
 } from 'lucide-react';
 import { collection, query, where, orderBy, onSnapshot, addDoc, deleteDoc, doc, setDoc, getDocs, updateDoc } from 'firebase/firestore';
 import { cn } from '../lib/utils';
@@ -505,6 +505,44 @@ export default function Dashboard() {
             </div>
             <span className="text-[9px] bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 font-extrabold px-1.5 py-0.5 rounded border border-indigo-500/20">
               برو
+            </span>
+          </Link>
+
+          <Link 
+            to="/naje-developer" 
+            onClick={() => { setSidebarOpen(false); setUserGalleriesOpen('none'); }}
+            className={cn(
+              "w-full h-11 md:h-9 flex items-center justify-between px-3 rounded-xl text-xs font-bold transition-all border border-transparent",
+              location.pathname.includes('naje-developer')
+                ? "bg-white dark:bg-purple-950/45 text-purple-950 dark:text-purple-200 border border-purple-300 dark:border-purple-500/40 shadow-md shadow-purple-500/10 font-extrabold" 
+                : "text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-900/60"
+            )}
+          >
+            <div className="flex items-center gap-2.5">
+              <Code2 className="w-4 h-4 text-sky-500" />
+              <span>ناجي المطور</span>
+            </div>
+            <span className="text-[9px] bg-sky-500/10 text-sky-600 dark:text-sky-400 font-extrabold px-1.5 py-0.5 rounded border border-sky-500/20">
+              $10
+            </span>
+          </Link>
+
+          <Link 
+            to="/naje-source" 
+            onClick={() => { setSidebarOpen(false); setUserGalleriesOpen('none'); }}
+            className={cn(
+              "w-full h-11 md:h-9 flex items-center justify-between px-3 rounded-xl text-xs font-bold transition-all border border-transparent",
+              location.pathname.includes('naje-source')
+                ? "bg-white dark:bg-purple-950/45 text-purple-950 dark:text-purple-200 border border-purple-300 dark:border-purple-500/40 shadow-md shadow-purple-500/10 font-extrabold" 
+                : "text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-900/60"
+            )}
+          >
+            <div className="flex items-center gap-2.5">
+              <BookOpen className="w-4 h-4 text-emerald-500" />
+              <span>ناجي من مصادرك</span>
+            </div>
+            <span className="text-[9px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-extrabold px-1.5 py-0.5 rounded border border-emerald-500/20">
+              $5
             </span>
           </Link>
 

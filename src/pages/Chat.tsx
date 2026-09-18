@@ -34,6 +34,7 @@ import { saveDoc, getDoc as getLocalDoc } from '../lib/idb';
 import { uploadBase64ToStorage, uploadWithRetry } from '../lib/mediaStorage';
 import { downloadBase64File } from '../utils/fileDownloader';
 import { VoiceSettingsPanel, parseDualScriptLines, buildVoiceChatPayload } from "../components/chat/VoiceChatPanel";
+import { calcVoicePointsCost, spokenTextFromVoiceScript } from '../lib/voicePricing';
 import { VideoSettingsPanel, buildVideoChatPayload } from "../components/chat/VideoChatPanel";
 import { ImageSettingsPanel, buildImageChatPayload } from "../components/chat/ImageChatPanel";
 import { motion, AnimatePresence } from 'motion/react';
@@ -485,10 +486,13 @@ export default function Chat() {
         cost += Math.min(imgCount, 3) * (pricing.video?.imageAddon ?? pricing.image?.imageAddon ?? 0.1);
       }
     } else if (chat.type === 'voice') {
-      const words = (input || '').trim().split(/\s+/).filter(Boolean).length;
-      const wordsPerMin = pricing.voice?.estimatedWordsPerMinute || 140;
-      const estimatedSecs = Math.max(3, Math.ceil((words / wordsPerMin) * 60));
-      cost = Math.max(pricing.voice?.minCost ?? 0.10, parseFloat((estimatedSecs * (pricing.voice?.costPerAudioSecond ?? 0.02)).toFixed(2)));
+      cost = calcVoicePointsCost({
+        text: spokenTextFromVoiceScript(input || ''),
+        tier: voiceTier,
+        pointsPerCharacter: pricing.voice?.pointsPerCharacter,
+        pointsPerCharacterPro: pricing.voice?.pointsPerCharacterPro,
+        minCost: pricing.voice?.minCost
+      }).cost;
     } else if (chat.type === 'text') {
       if (activeDocType !== 'none') {
         if (activeDocType === 'pptx' || activeDocType === 'pdf_slides') {
@@ -1161,6 +1165,18 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
           }
           if (parsedChunk.newBalance !== undefined) {
             updateBalance(parsedChunk.newBalance);
+          }
+          if (parsedChunk.usage || typeof parsedChunk.consumedBalance === 'number') {
+            const usage = parsedChunk.usage;
+            const costInPoints = typeof parsedChunk.consumedBalance === 'number'
+              ? parsedChunk.consumedBalance
+              : usage?.charged;
+            if (msgIdToUpdate) {
+              updateDoc(doc(db, 'messages', msgIdToUpdate), {
+                ...(usage ? { usage } : {}),
+                ...(typeof costInPoints === 'number' ? { costInPoints } : {})
+              }).catch(e => console.error('Failed to update message usage:', e));
+            }
           }
         };
 

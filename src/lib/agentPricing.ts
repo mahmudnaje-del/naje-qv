@@ -46,6 +46,9 @@ export interface PricingConfig {
     costPerAudioSecond?: number;
     costPerClip?: number;
     per100Words?: number;
+    pointsPerCharacter?: number;
+    pointsPerCharacterPro?: number;
+    minCost?: number;
   };
   agent?: {
     brand_identity?: number;
@@ -122,6 +125,13 @@ export function getAgentToolCost(
     }
 
     case 'voice_narration': {
+      const script = String(inputParams?.script || inputParams?.text || inputParams?.prompt || '');
+      const perChar = Number(voicePricing.pointsPerCharacter ?? 0.01);
+      const minCost = Number(voicePricing.minCost ?? 0.1);
+      if (script.trim()) {
+        const chars = script.replace(/\s+/g, ' ').trim().length;
+        return Math.max(minCost, parseFloat((chars * perChar).toFixed(4)));
+      }
       const clipBase = agentPricing.voice_narration ?? voicePricing.costPerClip ?? 4;
       return parseFloat(Number(clipBase).toFixed(2));
     }

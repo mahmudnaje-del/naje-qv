@@ -34,7 +34,7 @@ export const AdminModelPricing: React.FC<AdminModelPricingProps> = () => {
     modelId: string;
     fallbackModelId?: string;
     isEnabled: boolean;
-    pricingType: 'per_token' | 'per_generation';
+    pricingType: 'per_token' | 'per_generation' | 'per_character';
     pointsPrice: number;
     inputPointsPer1k: number;
     outputPointsPer1k: number;
@@ -102,7 +102,7 @@ export const AdminModelPricing: React.FC<AdminModelPricingProps> = () => {
           modelId: ep.modelId || '',
           fallbackModelId: ep.fallbackModelId || '',
           isEnabled: ep.isEnabled !== false,
-          pricingType: ep.pricingType || (ep.featureGroup === 'text' || ep.id.startsWith('tier_') || ep.id.includes('writer') || ep.id.includes('auditor') || ep.id.includes('planner') || ep.id.includes('critic') ? 'per_token' : 'per_generation'),
+          pricingType: ep.pricingType || (ep.featureGroup === 'voice' ? 'per_character' : (ep.featureGroup === 'text' || ep.id.startsWith('tier_') || ep.id.includes('writer') || ep.id.includes('auditor') || ep.id.includes('planner') || ep.id.includes('critic') ? 'per_token' : 'per_generation')),
           pointsPrice: ep.pointsPrice ?? 0,
           inputPointsPer1k: ep.inputPointsPerBlock ?? ep.inputPointsPer1k ?? 0.1,
           inputPointsPerBlock: ep.inputPointsPerBlock ?? ep.inputPointsPer1k ?? 0.1,
@@ -533,7 +533,7 @@ export const AdminModelPricing: React.FC<AdminModelPricingProps> = () => {
                             modelId: ep.modelId,
                             fallbackModelId: ep.fallbackModelId,
                             isEnabled: ep.isEnabled !== false,
-                            pricingType: ep.pricingType || 'per_token',
+                            pricingType: ep.pricingType || (ep.featureGroup === 'voice' ? 'per_character' : 'per_token'),
                             pointsPrice: ep.pointsPrice ?? 0,
                             inputPointsPer1k: ep.inputPointsPerBlock ?? ep.inputPointsPer1k ?? 0.1,
                             inputPointsPerBlock: ep.inputPointsPerBlock ?? ep.inputPointsPer1k ?? 0.1,
@@ -549,6 +549,7 @@ export const AdminModelPricing: React.FC<AdminModelPricingProps> = () => {
                           };
 
                           const isTokenPricing = form.pricingType === 'per_token';
+                          const isCharPricing = form.pricingType === 'per_character' || ep.featureGroup === 'voice';
                           const isEnabled = form.isEnabled !== false;
 
                           // Real-time margin calculation
@@ -655,6 +656,7 @@ export const AdminModelPricing: React.FC<AdminModelPricingProps> = () => {
                                     className="bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl px-2 py-1 text-xs font-bold text-gray-800 dark:text-gray-200 focus:ring-2 focus:ring-purple-500 focus:outline-none"
                                   >
                                     <option value="per_token">لكل توكن</option>
+                                    <option value="per_character">لكل حرف</option>
                                     <option value="per_generation">لكل توليد</option>
                                   </select>
                                 </td>
@@ -721,13 +723,29 @@ export const AdminModelPricing: React.FC<AdminModelPricingProps> = () => {
                                         <span className="text-gray-500 text-[9px]">T</span>
                                       </div>
                                     </div>
+                                  ) : isCharPricing ? (
+                                    <div className="flex flex-col gap-1">
+                                      <div className="flex items-center gap-1.5">
+                                        <input
+                                          type="number"
+                                          min="0"
+                                          step="0.0001"
+                                          value={form.pointsPrice}
+                                          onChange={(e) => handleInputChange(ep.id, 'pointsPrice', parseFloat(e.target.value) || 0)}
+                                          className="w-24 bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-indigo-700 dark:text-indigo-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                                        />
+                                        <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400">نقطة / حرف</span>
+                                      </div>
+                                      <span className="text-[9px] text-gray-500">100 حرف ≈ {(Number(form.pointsPrice || 0) * 100).toFixed(2)} نقطة</span>
+                                    </div>
                                   ) : (
                                     <div className="flex items-center gap-1.5">
                                       <input
                                         type="number"
                                         min="0"
+                                        step="0.01"
                                         value={form.pointsPrice}
-                                        onChange={(e) => handleInputChange(ep.id, 'pointsPrice', parseInt(e.target.value) || 0)}
+                                        onChange={(e) => handleInputChange(ep.id, 'pointsPrice', parseFloat(e.target.value) || 0)}
                                         className="w-20 bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-purple-700 dark:text-purple-300 focus:ring-2 focus:ring-purple-500 focus:outline-none"
                                       />
                                       <span className="text-xs font-bold text-purple-600 dark:text-purple-400">نقطة</span>
@@ -873,7 +891,7 @@ export const AdminModelPricing: React.FC<AdminModelPricingProps> = () => {
         <Info className="w-5 h-5 shrink-0 text-purple-600 dark:text-purple-400 mt-0.5" />
         <div>
           <span className="font-bold">ملاحظة أمان وتكامل التسعير: </span>
-          يتم احتساب استهلاك النماذج النصية (Lite / Core / Max ومجلس العقول) بالتوكنات الفعلية مباشرة فور اكتمال الاستجابة، بينما تحافظ نماذج الصور والفيديو على تسعيرها الثابت لكل عملية توليد. يقوم زر "حفظ" بإجراء فحص حي للنموذج قبل تثبيته لضمان سلامة واستقرار النظام.
+          يتم احتساب النصوص والواجهات والمستندات بالتوكنات/النقاط حسب تسعير الأدمن. الصور والفيديو تسعير ثابت لكل توليد. الصوت: نقاط ناجي لكل حرف — الأدمن يحدد السعر من مجموعة «استوديو الصوتيات» (Core و Pro كلٌ على حدة).
         </div>
       </div>
     </div>

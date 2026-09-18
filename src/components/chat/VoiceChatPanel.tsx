@@ -5,6 +5,7 @@ import { cn } from '../../lib/utils';
 import NajeSelect from '../NajeSelect';
 import { VOICES } from '../../lib/voiceCatalog';
 import { usePricingConfig } from '../../hooks/usePricingConfig';
+import { calcVoicePointsCost, spokenTextFromVoiceScript } from '../../lib/voicePricing';
 
 export function buildVoiceChatPayload(state: any) {
   return {
@@ -85,11 +86,15 @@ export function VoiceSettingsPanel({
   const pricing = usePricingConfig();
   if (chat?.type !== 'voice' || !showVoiceSettings || loading) return null;
 
-  const words = (input || '').trim().split(/\s+/).filter(Boolean).length;
-  const wordsPerMin = pricing.voice?.estimatedWordsPerMinute || 140;
-  const costPerSec = pricing.voice?.costPerAudioSecond ?? 0.02;
-  const estimatedSeconds = Math.max(3, Math.ceil((words / wordsPerMin) * 60));
-  const estimatedCost = Math.max(pricing.voice?.minCost ?? 0.10, parseFloat((estimatedSeconds * costPerSec).toFixed(2)));
+  const billed = calcVoicePointsCost({
+    text: spokenTextFromVoiceScript(input || ''),
+    tier: voiceTier === 'pro' ? 'pro' : 'core',
+    pointsPerCharacter: pricing.voice?.pointsPerCharacter,
+    pointsPerCharacterPro: pricing.voice?.pointsPerCharacterPro,
+    minCost: pricing.voice?.minCost
+  });
+  const estimatedCost = billed.cost;
+  const charCount = billed.chars;
 
   return (
     <motion.div 
@@ -356,8 +361,7 @@ export function VoiceSettingsPanel({
         <div className="flex items-center gap-2">
           <Zap className="w-4 h-4 text-emerald-500 animate-pulse" />
           <span>
-            تقدير مدة الصوت: ~{estimatedSeconds} ثانية
-            ({words} كلمة)
+            {charCount} حرف × {billed.perChar} نقطة
           </span>
         </div>
         <div className="font-bold">

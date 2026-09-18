@@ -505,19 +505,19 @@ export const SEED_ENDPOINTS: ModelEndpoint[] = [
     supportsImageInput: true
   },
 
-  // VOICE TTS (Flat Per-Unit Pricing)
+  // VOICE TTS (Per-character pricing — admin sets Naje points per letter)
   { 
     id: 'voice_tts', 
     featureGroup: 'voice', 
     labelAr: 'تسجيل صوتي — Naje Voice Core (الأساسي)', 
     modelId: getNajeModel('voice_core'), 
     fallbackModelId: getNajeModel('voice_core'),
-    paramNotes: 'تحويل النص إلى صوت بشري متناسق وسريع (Core)',
+    paramNotes: 'تحويل النص إلى صوت — التسعير: نقاط ناجي لكل حرف',
     maxOutputTokens: 8192,
-    pricingType: 'per_generation',
+    pricingType: 'per_character',
     realCostPer: { unit: 'per_1m_audio_tokens', usd: 20.00 }, 
     isUnconfirmedCost: true, 
-    pointsPrice: 2,
+    pointsPrice: 0.01,
     isBackground: false
   },
   { 
@@ -526,12 +526,12 @@ export const SEED_ENDPOINTS: ModelEndpoint[] = [
     labelAr: 'تسجيل صوتي — Naje Voice Pro (الاحترافي الفائق)', 
     modelId: getNajeModel('voice_pro'), 
     fallbackModelId: getNajeModel('voice_core'),
-    paramNotes: 'أعلى دقة ونقاء صوتي ومعالجة نبرات متقدمة (Pro)',
+    paramNotes: 'أعلى دقة ونقاء — التسعير: نقاط ناجي لكل حرف',
     maxOutputTokens: 16384,
-    pricingType: 'per_generation',
+    pricingType: 'per_character',
     realCostPer: { unit: 'per_1m_audio_tokens', usd: 40.00 }, 
     isUnconfirmedCost: true, 
-    pointsPrice: 4,
+    pointsPrice: 0.02,
     isBackground: false
   },
   { 
@@ -540,12 +540,12 @@ export const SEED_ENDPOINTS: ModelEndpoint[] = [
     labelAr: 'تسجيل صوتي — حوار متعدد الأصوات (Core)', 
     modelId: getNajeModel('voice_core'), 
     fallbackModelId: getNajeModel('voice_core'),
-    paramNotes: 'حوار بين شخصيات متعددة',
+    paramNotes: 'حوار بين شخصيات — نقاط لكل حرف منطوق',
     maxOutputTokens: 8192,
-    pricingType: 'per_generation',
+    pricingType: 'per_character',
     realCostPer: { unit: 'per_1m_audio_tokens', usd: 20.00 }, 
     isUnconfirmedCost: true, 
-    pointsPrice: 2,
+    pointsPrice: 0.01,
     isBackground: false
   },
 

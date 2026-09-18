@@ -37,6 +37,8 @@ export interface PricingConfig {
     costPerAudioSecond: number;
     estimatedWordsPerMinute: number;
     minCost?: number;
+    pointsPerCharacter?: number;
+    pointsPerCharacterPro?: number;
   };
   agent?: Record<string, number>;
   najeAd?: {
@@ -84,7 +86,9 @@ export const DEFAULT_PRICING_CONFIG: PricingConfig = {
   voice: {
     costPerAudioSecond: 0.02,
     estimatedWordsPerMinute: 140,
-    minCost: 0.10
+    minCost: 0.10,
+    pointsPerCharacter: 0.01,
+    pointsPerCharacterPro: 0.02
   },
   najeAd: {
     enabled: true,

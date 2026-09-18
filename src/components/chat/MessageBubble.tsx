@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { cn } from '../../lib/utils';
 import { 
   Check, Copy, Eye, Code2, FileText, Wand2, Paintbrush, Download, 
-  History as HistoryIcon, Star, ThumbsUp, ThumbsDown, Image as ImageIcon, Video 
+  Star, ThumbsUp, ThumbsDown, Image as ImageIcon, Video 
 } from 'lucide-react';
+import najeWalletCoins from '../../assets/icons/naje-wallet-coins.svg';
 import NajeSpinner from '../NajeSpinner';
 import { parseUiMessage, AssistantTextMessage } from '../../pages/Chat';
 import NajeErrorCard from '../NajeErrorCard';
@@ -14,6 +15,66 @@ import LocalMediaRenderer from '../LocalMediaRenderer';
 import ImageZoomModal from '../ImageZoomModal';
 import { Message, Chat } from '../../types';
 import { toast } from '../../toastStore';
+
+function formatNajePoints(n: number): string {
+  if (!Number.isFinite(n)) return '0';
+  if (n === 0) return '0';
+  if (Math.abs(n) < 0.01) return n.toFixed(4);
+  return n.toFixed(2);
+}
+
+function MessageCostButton({ msg }: { msg: Message }) {
+  const [open, setOpen] = useState(false);
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const usage = (msg as any).usage as Message['usage'] | undefined;
+  const cost = typeof (msg as any).costInPoints === 'number'
+    ? (msg as any).costInPoints
+    : (typeof usage?.charged === 'number' ? usage.charged : null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDoc = (e: MouseEvent) => {
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
+    document.addEventListener('mousedown', onDoc);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDoc);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [open]);
+
+  return (
+    <div className="relative" ref={wrapRef}>
+      <button
+        type="button"
+        onClick={() => setOpen(v => !v)}
+        className={cn(
+          "p-1 sm:p-1.5 rounded-lg sm:rounded-xl transition cursor-pointer active:scale-95",
+          open ? "text-amber-600 bg-amber-500/10" : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+        )}
+        title="تكلفة الرسالة بالنقاط"
+      >
+        <img src={najeWalletCoins} alt="" className="w-3.5 h-3.5" />
+      </button>
+      {open && (
+        <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 z-40 w-52 rounded-xl border border-amber-500/20 bg-white dark:bg-gray-900 shadow-xl p-3 text-right" dir="rtl">
+          <div className="text-[11px] font-extrabold text-gray-900 dark:text-white mb-1">تكلفة الرسالة</div>
+          <div className="text-sm font-black text-amber-600">{cost == null ? '—' : `${formatNajePoints(cost)} نقطة`}</div>
+          {usage && (
+            <div className="mt-2 space-y-0.5 text-[10px] text-gray-500 font-bold">
+              <div>مدخلات: {usage.inputTokens || 0}</div>
+              <div>مخرجات: {usage.outputTokens || 0}</div>
+              {(usage.cachedTokens || 0) > 0 && <div>كاش: {usage.cachedTokens}</div>}
+              {(usage.thoughtsTokens || 0) > 0 && <div>تفكير: {usage.thoughtsTokens}</div>}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 interface MessageBubbleProps {
   msg: Message;
@@ -360,17 +421,7 @@ export default function MessageBubble({
               )}
             </button>
 
-            <button
-              type="button"
-              onClick={() => {
-                setActiveHistoryDocId(msg.id);
-                setActiveHistoryContent(msg.content);
-              }}
-              className="p-1 sm:p-1.5 rounded-lg sm:rounded-xl text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white transition cursor-pointer active:scale-95"
-              title="سجل التغييرات والإصدارات"
-            >
-              <HistoryIcon className="w-3.5 h-3.5" />
-            </button>
+            <MessageCostButton msg={msg} />
 
             <button
               type="button"

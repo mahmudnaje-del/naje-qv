@@ -25,6 +25,8 @@ const DeleteAccountRequest = lazyWithRetry(() => import('./pages/DeleteAccountRe
 const CreativelyAI = lazyWithRetry(() => import('./pages/CreativelyAI'));
 const NajeAgent = lazyWithRetry(() => import('./pages/NajeAgent'));
 const NajeAd = lazyWithRetry(() => import('./pages/NajeAd'));
+const NajeDeveloper = lazyWithRetry(() => import('./pages/NajeDeveloper'));
+const NajeSource = lazyWithRetry(() => import('./pages/NajeSource'));
 const Store = lazyWithRetry(() => import('./pages/Store'));
 const AuthAction = lazyWithRetry(() => import('./pages/AuthAction'));
 const NotFound = lazyWithRetry(() => import('./pages/NotFound'));
@@ -83,6 +85,8 @@ export default function App() {
               <Route path="creative-studio" element={<CreativelyAI />} />
               <Route path="creative-ai" element={<CreativelyAI />} />
               <Route path="naje-ad" element={<NajeAd />} />
+              <Route path="naje-developer" element={<NajeDeveloper />} />
+              <Route path="naje-source" element={<NajeSource />} />
               <Route path="store" element={<Store />} />
               <Route path="stor" element={<Navigate to="/store" replace />} />
               <Route path="settings" element={<Profile />} />

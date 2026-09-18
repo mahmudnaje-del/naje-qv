@@ -43,10 +43,42 @@ import ffmpeg from 'fluent-ffmpeg';
 import ffmpegStatic from 'ffmpeg-static';
 import os from 'os';
 import { buildInitialPlan, splitDuration, VideoPlan, ShotPlan } from './src/lib/videoOrchestrator';
+import { unpackSiteZip, buildFileTree, buildCodeContext, WorkspaceFile } from './src/lib/workspaceZip';
+import { calcVoicePointsCost, spokenTextFromVoiceScript } from './src/lib/voicePricing';
+
 
 if (ffmpegStatic) {
   ffmpeg.setFfmpegPath(ffmpegStatic);
 }
+
+
+/** Visible model text only — never use response.text when functionCall parts exist
+ *  (the SDK warns and concatenates, which is how empty chat replies leak through). */
+function extractGeminiText(chunk: any): string {
+  const parts = chunk?.candidates?.[0]?.content?.parts;
+  if (!Array.isArray(parts) || parts.length === 0) return '';
+  let out = '';
+  for (const p of parts) {
+    if (!p || typeof p.text !== 'string') continue;
+    if (p.thought === true) continue;
+    if (p.functionCall) continue;
+    out += p.text;
+  }
+  return out;
+}
+
+function extractGeminiFunctionCalls(chunk: any): any[] {
+  const fromSdk = Array.isArray(chunk?.functionCalls) ? chunk.functionCalls : [];
+  if (fromSdk.length > 0) return fromSdk;
+  const parts = chunk?.candidates?.[0]?.content?.parts;
+  if (!Array.isArray(parts)) return [];
+  const calls: any[] = [];
+  for (const p of parts) {
+    if (p?.functionCall?.name) calls.push(p.functionCall);
+  }
+  return calls;
+}
+
 
 // Load environment variables
 dotenv.config();
@@ -149,12 +181,16 @@ const FEATURE_MIN_TIER: Record<string, number> = {
   creativelyAI: 1,
   najeAgent: 2,
   najeAd: 3,
+  najeSource: 1,
+  najeDeveloper: 2,
 };
 
 const FEATURE_DISPLAY_NAME: Record<string, string> = {
   creativelyAI: 'Creatively AI',
   najeAgent: 'Naje AI Agent',
   najeAd: 'Naje Ad',
+  najeSource: 'ناجي من مصادرك',
+  najeDeveloper: 'ناجي المطور',
 };
 
 const TIER_UNLOCK_PACKAGE: Record<number, string> = {
@@ -228,8 +264,13 @@ async function getModelEndpointConfig(endpointId: string, defaultFallback?: stri
         supportedDurations,
         inputPointsPer1k: data.inputPointsPer1k,
         outputPointsPer1k: data.outputPointsPer1k,
+        inputPointsPerBlock: data.inputPointsPerBlock ?? data.inputPointsPer1k,
+        inputTokenBlockSize: data.inputTokenBlockSize,
+        outputPointsPerBlock: data.outputPointsPerBlock ?? data.outputPointsPer1k,
+        outputTokenBlockSize: data.outputTokenBlockSize,
         fetchedAt: now 
       });
+      if (modelId) modelEndpointCache.set(`model:${modelId}`, modelEndpointCache.get(endpointId));
       return { modelId, fallbackModelId, maxOutputTokens, isEnabled, supportedDurations };
     }
   } catch (err) {
@@ -1135,7 +1176,7 @@ async function getPricing(token?: string) {
       a5PerPage: 0.10
     },
     ui: { perGeneration: 1.0, editMultiplier: 0.5, maxOutputKb: 600, tierMultiplier: { lite: 0.6, core: 1.0, max: 2.0 } },
-    voice: { costPerAudioSecond: 0.02, estimatedWordsPerMinute: 140, minCost: 0.10, costPerClip: 4, per100Words: 2 },
+    voice: { costPerAudioSecond: 0.02, estimatedWordsPerMinute: 140, minCost: 0.10, costPerClip: 4, per100Words: 2, pointsPerCharacter: 0.01, pointsPerCharacterPro: 0.02 },
     agent: {
       brand_identity: 3,
       web_grounding: 2,
@@ -1228,7 +1269,11 @@ async function getFullCurrentPricingConfig(token?: string) {
             pricing.document.a5PerPage = d.pointsPrice;
           } else if (doc.id === 'doc_slides' && typeof d.pointsPrice === 'number' && d.pointsPrice > 0) {
             pricing.document.pdf_per_slide = d.pointsPrice;
-          } else if (doc.id === 'voice_tts' && typeof d.pointsPrice === 'number' && d.pointsPrice > 0) {
+          } else if (doc.id === 'voice_tts' && d.pricingType === 'per_character' && typeof d.pointsPrice === 'number' && d.pointsPrice > 0) {
+            pricing.voice.pointsPerCharacter = d.pointsPrice;
+          } else if (doc.id === 'voice_tts_pro' && d.pricingType === 'per_character' && typeof d.pointsPrice === 'number' && d.pointsPrice > 0) {
+            pricing.voice.pointsPerCharacterPro = d.pointsPrice;
+          } else if (doc.id === 'voice_tts' && typeof d.pointsPrice === 'number' && d.pointsPrice > 0 && d.pricingType !== 'per_character') {
             pricing.voice.costPerAudioSecond = d.pointsPrice;
           }
         });
@@ -2292,16 +2337,73 @@ const DEFAULT_TEXT_TOKEN_RATES: Record<string, {
   },
 };
 
-export async function getTextModelTokenRates(modelId: string): Promise<{
+/** Admin panel uses tier_* / ui_builder; the generate path uses text_* / ui_standard. Same rates. */
+const TOKEN_ENDPOINT_ALIASES: Record<string, string[]> = {
+  tier_lite: ['tier_lite', 'text_lite'],
+  text_lite: ['text_lite', 'tier_lite'],
+  tier_core: ['tier_core', 'text_core'],
+  text_core: ['text_core', 'tier_core'],
+  tier_max: ['tier_max', 'text_max'],
+  text_max: ['text_max', 'tier_max'],
+  ui_builder: ['ui_builder', 'ui_standard'],
+  ui_standard: ['ui_standard', 'ui_builder'],
+};
+
+const CACHED_INPUT_RATE_MULT = 0.25; // Gemini implicit cache ≈ 25% of input price
+
+type TokenRates = {
   inputPointsPerBlock: number;
   inputTokenBlockSize: number;
   outputPointsPerBlock: number;
   outputTokenBlockSize: number;
   audioInputPointsPerBlock?: number;
   audioInputTokenBlockSize?: number;
-}> {
+};
+
+function ratesFromEndpointLike(data: any, fallback: TokenRates): TokenRates | null {
+  if (!data) return null;
+  const inputBlock = data.inputPointsPerBlock ?? data.inputPointsPer1k;
+  const outputBlock = data.outputPointsPerBlock ?? data.outputPointsPer1k;
+  if (inputBlock === undefined && outputBlock === undefined) return null;
+  return {
+    inputPointsPerBlock: Number(inputBlock ?? fallback.inputPointsPerBlock),
+    inputTokenBlockSize: Number(data.inputTokenBlockSize > 0 ? data.inputTokenBlockSize : 1000),
+    outputPointsPerBlock: Number(outputBlock ?? fallback.outputPointsPerBlock),
+    outputTokenBlockSize: Number(data.outputTokenBlockSize > 0 ? data.outputTokenBlockSize : 1000),
+    audioInputPointsPerBlock: data.audioInputPointsPerBlock ?? data.audioInputPointsPer1k ?? fallback.audioInputPointsPerBlock,
+    audioInputTokenBlockSize: data.audioInputTokenBlockSize > 0 ? data.audioInputTokenBlockSize : 1000
+  };
+}
+
+function extractGeminiUsage(usageMetadata: any): {
+  inputTokens: number;
+  outputTokens: number;
+  cachedTokens: number;
+  thoughtsTokens: number;
+} {
+  const inputTokens = Number(usageMetadata?.promptTokenCount || 0);
+  const candidates = Number(usageMetadata?.candidatesTokenCount || 0);
+  const thoughtsTokens = Number(usageMetadata?.thoughtsTokenCount || 0);
+  const cachedTokens = Number(usageMetadata?.cachedContentTokenCount || 0);
+  const total = Number(usageMetadata?.totalTokenCount || 0);
+  const thoughtsLookExtra = thoughtsTokens > 0 && (total === 0 || total >= inputTokens + candidates + thoughtsTokens - 8);
+  const outputTokens = candidates + (thoughtsLookExtra ? thoughtsTokens : 0);
+  return { inputTokens, outputTokens, cachedTokens, thoughtsTokens };
+}
+
+function mergeGeminiUsage(into: any, add: any) {
+  if (!add) return into;
+  into.promptTokenCount = (into.promptTokenCount || 0) + (add.promptTokenCount || 0);
+  into.candidatesTokenCount = (into.candidatesTokenCount || 0) + (add.candidatesTokenCount || 0);
+  into.cachedContentTokenCount = (into.cachedContentTokenCount || 0) + (add.cachedContentTokenCount || 0);
+  into.thoughtsTokenCount = (into.thoughtsTokenCount || 0) + (add.thoughtsTokenCount || 0);
+  into.totalTokenCount = (into.totalTokenCount || 0) + (add.totalTokenCount || 0);
+  return into;
+}
+
+export async function getTextModelTokenRates(modelId: string): Promise<TokenRates> {
   const cleanId = (modelId || '').trim();
-  const defaultRates = DEFAULT_TEXT_TOKEN_RATES[cleanId] || {
+  const defaultRates: TokenRates = DEFAULT_TEXT_TOKEN_RATES[cleanId] || {
     inputPointsPerBlock: 0.1,
     inputTokenBlockSize: 1000,
     outputPointsPerBlock: 0.1,
@@ -2310,69 +2412,58 @@ export async function getTextModelTokenRates(modelId: string): Promise<{
     audioInputTokenBlockSize: 1000
   };
 
+  const idsToTry = TOKEN_ENDPOINT_ALIASES[cleanId] || [cleanId];
+  const pick = (data: any): TokenRates | null => ratesFromEndpointLike(data, defaultRates);
+
   try {
-    const cached = modelEndpointCache.get(cleanId);
-    if (cached && (cached as any).inputPointsPerBlock !== undefined) {
-      return {
-        inputPointsPerBlock: (cached as any).inputPointsPerBlock ?? defaultRates.inputPointsPerBlock,
-        inputTokenBlockSize: (cached as any).inputTokenBlockSize ?? defaultRates.inputTokenBlockSize,
-        outputPointsPerBlock: (cached as any).outputPointsPerBlock ?? defaultRates.outputPointsPerBlock,
-        outputTokenBlockSize: (cached as any).outputTokenBlockSize ?? defaultRates.outputTokenBlockSize,
-        audioInputPointsPerBlock: (cached as any).audioInputPointsPerBlock ?? defaultRates.audioInputPointsPerBlock,
-        audioInputTokenBlockSize: (cached as any).audioInputTokenBlockSize ?? defaultRates.audioInputTokenBlockSize
-      };
+    for (const id of idsToTry) {
+      const fromCache = pick(modelEndpointCache.get(id));
+      if (fromCache) return fromCache;
     }
-    if (cached && (cached as any).inputPointsPer1k !== undefined) {
-      return {
-        inputPointsPerBlock: (cached as any).inputPointsPer1k ?? defaultRates.inputPointsPerBlock,
-        inputTokenBlockSize: 1000,
-        outputPointsPerBlock: (cached as any).outputPointsPer1k ?? defaultRates.outputPointsPerBlock,
-        outputTokenBlockSize: 1000,
-        audioInputPointsPerBlock: (cached as any).audioInputPointsPer1k ?? defaultRates.audioInputPointsPerBlock,
-        audioInputTokenBlockSize: 1000
-      };
+
+    const fromModelKey = pick(modelEndpointCache.get(`model:${cleanId}`));
+    if (fromModelKey) return fromModelKey;
+
+    for (const id of idsToTry) {
+      await getModelEndpointConfig(id, undefined, undefined).catch(() => null);
+      const fromLoaded = pick(modelEndpointCache.get(id));
+      if (fromLoaded) return fromLoaded;
     }
-    const seed = SEED_ENDPOINTS.find(s => s.modelId === cleanId || s.id === cleanId);
-    if (seed && seed.inputPointsPerBlock !== undefined) {
-      return {
-        inputPointsPerBlock: seed.inputPointsPerBlock ?? defaultRates.inputPointsPerBlock,
-        inputTokenBlockSize: seed.inputTokenBlockSize ?? defaultRates.inputTokenBlockSize,
-        outputPointsPerBlock: seed.outputPointsPerBlock ?? defaultRates.outputPointsPerBlock,
-        outputTokenBlockSize: seed.outputTokenBlockSize ?? defaultRates.outputTokenBlockSize,
-        audioInputPointsPerBlock: seed.audioInputPointsPerBlock ?? defaultRates.audioInputPointsPerBlock,
-        audioInputTokenBlockSize: seed.audioInputTokenBlockSize ?? defaultRates.audioInputTokenBlockSize
-      };
+
+    for (const id of idsToTry) {
+      try {
+        const doc = await dbAdmin.collection('model_endpoints').doc(id).get();
+        if (doc.exists) {
+          const fromDoc = pick(doc.data());
+          if (fromDoc) return fromDoc;
+        }
+      } catch {}
     }
-    if (seed && seed.inputPointsPer1k !== undefined) {
-      return {
-        inputPointsPerBlock: seed.inputPointsPer1k ?? defaultRates.inputPointsPerBlock,
-        inputTokenBlockSize: 1000,
-        outputPointsPerBlock: seed.outputPointsPer1k ?? defaultRates.outputPointsPerBlock,
-        outputTokenBlockSize: 1000,
-        audioInputPointsPerBlock: seed.audioInputPointsPer1k ?? defaultRates.audioInputPointsPerBlock,
-        audioInputTokenBlockSize: 1000
-      };
+
+    for (const id of idsToTry) {
+      const fromSeed = pick(SEED_ENDPOINTS.find(s => s.id === id));
+      if (fromSeed) return fromSeed;
     }
+
+    const fromSeedModel = pick(SEED_ENDPOINTS.find(s => s.modelId === cleanId && s.pricingType !== 'per_generation'));
+    if (fromSeedModel) return fromSeedModel;
   } catch {}
 
   return defaultRates;
 }
 
 /**
- * Reads real Gemini usageMetadata from a generateContent response and immediately,
- * atomically charges the user for actual token consumption on this specific call.
- * Applies ONLY to text-tier models — never to image/video generation calls, which
- * keep their existing flat per-unit pricing untouched.
+ * Reads real Gemini usageMetadata and atomically charges using admin input/output
+ * block rates. Cached prompt tokens are billed at 25% of the input rate.
+ * Do NOT call this for image/video generation — those stay flat per-unit.
  */
 export async function chargeForTextModelUsage(
   uid: string,
   modelId: string,
-  usageMetadata: { promptTokenCount?: number; candidatesTokenCount?: number; cachedContentTokenCount?: number } | undefined,
+  usageMetadata: { promptTokenCount?: number; candidatesTokenCount?: number; cachedContentTokenCount?: number; thoughtsTokenCount?: number; totalTokenCount?: number } | undefined,
   isAdmin: boolean = false
-): Promise<{ charged: number; inputTokens: number; outputTokens: number; cachedTokens: number }> {
-  const inputTokens = usageMetadata?.promptTokenCount || 0;
-  const outputTokens = usageMetadata?.candidatesTokenCount || 0;
-  const cachedTokens = usageMetadata?.cachedContentTokenCount || 0;
+): Promise<{ charged: number; inputTokens: number; outputTokens: number; cachedTokens: number; thoughtsTokens: number; newBalance: number | null }> {
+  const { inputTokens, outputTokens, cachedTokens, thoughtsTokens } = extractGeminiUsage(usageMetadata);
 
   if (isAdmin) {
     await createDocRest("api_cost_log", {
@@ -2381,36 +2472,40 @@ export async function chargeForTextModelUsage(
       inputTokens,
       outputTokens,
       cachedContentTokenCount: cachedTokens,
+      thoughtsTokenCount: thoughtsTokens,
       costInPoints: 0,
       billingType: 'per_token',
       isAdmin: true,
       createdAt: Date.now()
     }, undefined).catch(e => console.error("Admin api_cost_log write error:", e));
-    return { charged: 0, inputTokens, outputTokens, cachedTokens };
+    return { charged: 0, inputTokens, outputTokens, cachedTokens, thoughtsTokens, newBalance: null };
   }
 
   if (!uid || uid === 'anonymous') {
-    return { charged: 0, inputTokens: 0, outputTokens: 0, cachedTokens: 0 };
+    return { charged: 0, inputTokens: 0, outputTokens: 0, cachedTokens: 0, thoughtsTokens: 0, newBalance: null };
   }
 
   const rates = await getTextModelTokenRates(modelId);
   const inBlock = rates.inputTokenBlockSize > 0 ? rates.inputTokenBlockSize : 1000;
   const outBlock = rates.outputTokenBlockSize > 0 ? rates.outputTokenBlockSize : 1000;
 
-  // Uncached prompt tokens are charged at normal rate; cached prompt tokens benefit from discount
   const uncachedInputTokens = Math.max(0, inputTokens - cachedTokens);
   const cost = parseFloat((
     ((uncachedInputTokens / inBlock) * rates.inputPointsPerBlock) +
-    ((cachedTokens / inBlock) * (rates.inputPointsPerBlock * 0.25)) +
+    ((cachedTokens / inBlock) * (rates.inputPointsPerBlock * CACHED_INPUT_RATE_MULT)) +
     ((outputTokens / outBlock) * rates.outputPointsPerBlock)
   ).toFixed(4));
 
+  let newBalance: number | null = null;
   if (cost > 0) {
     await mutateBalanceAtomic(uid, -cost, {}).then(res => {
-      if (!res.ok) {
-        console.warn(`[chargeForTextModelUsage] Metered deduction notice for user ${uid}: ${res.reason}`);
-      }
+      if (res.ok) newBalance = res.newBalance;
+      else console.warn(`[chargeForTextModelUsage] Metered deduction notice for user ${uid}: ${res.reason}`);
     }).catch(e => console.error("Metered balance deduction error:", e));
+  }
+
+  if (cachedTokens > 0) {
+    console.log(`[TokenMeter] cache hit model=${modelId} cached=${cachedTokens} uncachedIn=${uncachedInputTokens} out=${outputTokens} thoughts=${thoughtsTokens} cost=${cost}`);
   }
 
   await createDocRest("api_cost_log", {
@@ -2419,12 +2514,13 @@ export async function chargeForTextModelUsage(
     inputTokens,
     outputTokens,
     cachedContentTokenCount: cachedTokens,
+    thoughtsTokenCount: thoughtsTokens,
     costInPoints: cost,
     billingType: 'per_token',
     createdAt: Date.now()
   }, undefined).catch(e => console.error("api_cost_log write error:", e));
 
-  return { charged: cost, inputTokens, outputTokens, cachedTokens };
+  return { charged: cost, inputTokens, outputTokens, cachedTokens, thoughtsTokens, newBalance };
 }
 
 async function updateUserBalance(uid: string, newBalance: number, _token?: string): Promise<boolean> {
@@ -6004,14 +6100,8 @@ app.post("/api/generate", async (req, res) => {
           cost += Math.min(imgCount, 3) * (pricing.video.imageAddon || 0.1);
         }
       } else if (type === 'ui') {
-        if (req.body.mode === 'plan' || req.body.isAutoRepair) {
-          cost = 0; // Plan mode and auto-repair are free
-        } else {
-          const requestedModelKey = String(req.body.model || 'core').toLowerCase();
-          const tierMultipliers: Record<string, number> = pricing.ui?.tierMultiplier || { lite: 0.6, core: 1.0, max: 2.0 };
-          const tierMult = tierMultipliers[requestedModelKey] ?? 1.0;
-          cost = (pricing.ui?.perGeneration ?? 1.0) * tierMult * (isEdit ? (pricing.ui?.editMultiplier ?? 0.5) : 1);
-        }
+        // Token-metered after the stream using admin input/output rates.
+        cost = 0;
       } else if (type === 'document' || (type === 'text' && requestedDocType && requestedDocType !== 'none')) {
         if (requestedDocType === 'pptx' || docTypeToUse === 'pdf_slides') {
           const slides = parseInt(slidesCount) || 5;
@@ -6022,15 +6112,20 @@ app.post("/api/generate", async (req, res) => {
           cost = pages * (isA5 ? (pricing.document?.a5PerPage ?? 0.10) : (pricing.document?.a4PerPage ?? 0.15));
         }
       } else if (type === 'voice') {
-        const textWords = (prompt || '').trim().split(/\s+/).filter(Boolean).length;
-        const wordsPerMin = pricing.voice?.estimatedWordsPerMinute || 140;
-        const estimatedSeconds = Math.max(3, Math.ceil((textWords / wordsPerMin) * 60));
-        cost = Math.max(0.10, parseFloat((estimatedSeconds * (pricing.voice?.costPerAudioSecond || 0.02)).toFixed(2)));
+        const voiceTierPre = (String(req.body.voiceTier || req.body.model || 'core')).toLowerCase() === 'pro' ? 'pro' : 'core';
+        const billed = calcVoicePointsCost({
+          text: spokenTextFromVoiceScript(prompt || ''),
+          tier: voiceTierPre,
+          pointsPerCharacter: pricing.voice?.pointsPerCharacter,
+          pointsPerCharacterPro: pricing.voice?.pointsPerCharacterPro,
+          minCost: pricing.voice?.minCost
+        });
+        cost = billed.cost;
       } else if (type === 'infographic') {
         const baseRender = Number(pricing.infographic?.renderFee ?? 0.5);
         cost = isEdit ? baseRender * Number(pricing.infographic?.editMultiplier ?? 0.5) : baseRender;
       } else if (type === 'text') {
-        cost = 0; // text is free
+        cost = 0; // token-metered from usageMetadata after the stream
       }
       
       cost = parseFloat(cost.toFixed(2));
@@ -7113,10 +7208,14 @@ ${speaker2Name}: لا والله، الجو مش صافي وفي تراب.`
           mimeType = 'audio/wav';
           extension = 'wav';
 
-          const audioBuf = wavBuffer;
-          let actualSeconds = Math.ceil((audioBuf.length - 44) / (sampleRate * 2));
-          if (actualSeconds < 1) actualSeconds = 1;
-          cost = Math.max(0.10, parseFloat((actualSeconds * (pricing.voice?.costPerAudioSecond || 0.02)).toFixed(2)));
+          const billed = calcVoicePointsCost({
+            text: spokenTextFromVoiceScript(finalScript || prompt || ''),
+            tier: voiceTier === 'pro' ? 'pro' : 'core',
+            pointsPerCharacter: pricing.voice?.pointsPerCharacter,
+            pointsPerCharacterPro: pricing.voice?.pointsPerCharacterPro,
+            minCost: pricing.voice?.minCost
+          });
+          cost = billed.cost;
 
           if (jobId) {
             await setDocRest("generation_jobs", jobId, {
@@ -8067,8 +8166,9 @@ Return ONLY raw JSON, no markdown code fences.` }] }
               if (chunk.usageMetadata) {
                 streamUsageMetadata = chunk.usageMetadata;
               }
-              if (chunk.functionCalls && chunk.functionCalls.length > 0) {
-                functionCalls.push(...chunk.functionCalls);
+              const extractedCalls = extractGeminiFunctionCalls(chunk);
+              if (extractedCalls.length > 0) {
+                functionCalls.push(...extractedCalls);
               }
               const candidate = chunk.candidates?.[0];
               if (candidate?.groundingMetadata?.groundingChunks) {
@@ -8082,7 +8182,7 @@ Return ONLY raw JSON, no markdown code fences.` }] }
                   }
                 }
               }
-              const chunkText = chunk.text || "";
+              const chunkText = extractGeminiText(chunk);
               if (chunkText) {
                 fullText += chunkText;
 
@@ -8118,8 +8218,12 @@ Return ONLY raw JSON, no markdown code fences.` }] }
                   maxOutputTokens: OUTPUT_TOKEN_LIMITS.chatResponse
                 }
               });
-              if (backupResp.text) {
-                fullText = backupResp.text;
+              if (backupResp.usageMetadata) streamUsageMetadata = backupResp.usageMetadata;
+              const backupCalls = extractGeminiFunctionCalls(backupResp);
+              if (backupCalls.length) functionCalls.push(...backupCalls);
+              const backupText = extractGeminiText(backupResp);
+              if (backupText) {
+                fullText = backupText;
                 res.write(`data: ${JSON.stringify({ text: fullText })}\n\n`);
               }
             } catch (backupErr: any) {
@@ -8293,9 +8397,34 @@ Return the complete updated HTML document with real layout-changing mobile media
             res.write(`data: ${JSON.stringify({ triggerDocGeneration: extractedType, triggerPrompt: summaryPrompt, estimatedCount })}\n\n`);
           }
 
+          let streamTokenBill: Awaited<ReturnType<typeof chargeForTextModelUsage>> | null = null;
+          try {
+            const billingEndpointId = type === 'ui'
+              ? 'ui_standard'
+              : (requestedModelKey === 'lite' ? 'text_lite' : requestedModelKey === 'max' ? 'text_max' : 'text_core');
+            streamTokenBill = await chargeForTextModelUsage(uid, billingEndpointId, streamUsageMetadata, userIsAdmin);
+            if (typeof streamTokenBill.newBalance === 'number') {
+              finalBalanceForStream = streamTokenBill.newBalance;
+            }
+          } catch (meterErr) {
+            console.error('Stream token metering error:', meterErr);
+          }
+
           const streamEndPayload: any = { modeConfirmed: (type === 'ui' && isPlanMode) ? 'plan' : 'build' };
           if (searchSources.length > 0) streamEndPayload.searchSources = searchSources;
           if (typeof groundingReport !== 'undefined' && groundingReport) streamEndPayload.groundingReport = groundingReport;
+          if (typeof finalBalanceForStream === 'number') streamEndPayload.newBalance = finalBalanceForStream;
+          if (streamTokenBill) {
+            streamEndPayload.usage = {
+              charged: streamTokenBill.charged || 0,
+              inputTokens: streamTokenBill.inputTokens || 0,
+              outputTokens: streamTokenBill.outputTokens || 0,
+              cachedTokens: streamTokenBill.cachedTokens || 0,
+              thoughtsTokens: streamTokenBill.thoughtsTokens || 0,
+              billingType: 'per_token'
+            };
+            streamEndPayload.consumedBalance = streamTokenBill.charged || 0;
+          }
           res.write(`data: ${JSON.stringify(streamEndPayload)}\n\n`);
           res.write(`data: [DONE]\n\n`);
           res.end();
@@ -9497,7 +9626,14 @@ app.post("/api/admin/update-model-endpoint", async (req, res) => {
           await dbAdmin.collection('model_pricing').doc('image').set({ imageAddon: pointsPrice }, { merge: true }).catch(() => {});
           await dbAdmin.collection('model_pricing').doc('video').set({ imageAddon: pointsPrice }, { merge: true }).catch(() => {});
         } else if (endpointId === 'voice_tts' && typeof pointsPrice === 'number' && pointsPrice > 0) {
-          await dbAdmin.collection('model_pricing').doc('voice').set({ costPerAudioSecond: pointsPrice }, { merge: true }).catch(() => {});
+          await dbAdmin.collection('model_pricing').doc('voice').set({
+            pointsPerCharacter: pointsPrice,
+            ...(pricingType === 'per_character' ? { billingUnit: 'character' } : {})
+          }, { merge: true }).catch(() => {});
+        } else if (endpointId === 'voice_tts_pro' && typeof pointsPrice === 'number' && pointsPrice > 0) {
+          await dbAdmin.collection('model_pricing').doc('voice').set({
+            pointsPerCharacterPro: pointsPrice
+          }, { merge: true }).catch(() => {});
         }
       }
     } catch (e) {
@@ -10835,6 +10971,545 @@ app.post("/api/agent/execute-tool-stream", async (req, res) => {
     res.end();
   }
 });
+
+
+  // ---------------------------------------------------------------------------
+  // ناجي المطور + ناجي من مصادرك
+  // ---------------------------------------------------------------------------
+  const DEV_ZIP_MAX_BYTES = 8 * 1024 * 1024;
+
+  function isSafeOutboundUrl(raw: string): boolean {
+    try {
+      const u = new URL(raw);
+      if (u.protocol !== 'http:' && u.protocol !== 'https:') return false;
+      const host = u.hostname.toLowerCase();
+      if (host === 'localhost' || host.endsWith('.local') || host === '0.0.0.0') return false;
+      if (/^(127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[0-1])\.|169\.254\.|::1)/.test(host)) return false;
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  function htmlToPlainText(html: string): string {
+    return html
+      .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+      .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/&nbsp;/g, ' ')
+      .replace(/&/g, '&')
+      .replace(/</g, '<')
+      .replace(/>/g, '>')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 20_000);
+  }
+
+  async function loadWorkspaceFiles(workspaceId: string, uid: string): Promise<{ meta: any; files: WorkspaceFile[] } | null> {
+    const snap = await dbAdmin.collection('developer_workspaces').doc(workspaceId).get();
+    if (!snap.exists) return null;
+    const meta = snap.data() || {};
+    if (meta.ownerId !== uid) return null;
+    const fileSnaps = await dbAdmin.collection('developer_workspaces').doc(workspaceId).collection('files').get();
+    const files: WorkspaceFile[] = fileSnaps.docs.map(d => {
+      const x = d.data() || {};
+      return {
+        path: String(x.path || d.id),
+        language: String(x.language || 'plaintext'),
+        content: String(x.content || ''),
+        bytes: Number(x.bytes || 0),
+        truncated: !!x.truncated
+      };
+    });
+    return { meta, files };
+  }
+
+  app.post('/api/developer/unpack', async (req, res) => {
+    try {
+      const auth = await requireAuth(req, res);
+      if (!auth) return;
+      const userState = await getUserDocAndBalance(auth.uid, auth.token, auth);
+      if (!checkFeatureAccess(res, userState.doc, 'najeDeveloper')) return;
+
+      const zipBase64 = String(req.body?.zipBase64 || '').replace(/^data:[^;]+;base64,/, '');
+      const fileName = String(req.body?.fileName || 'project.zip').slice(0, 180);
+      if (!zipBase64) return res.status(400).json({ error: 'ارفع ملف ZIP للموقع.' });
+      const buf = Buffer.from(zipBase64, 'base64');
+      if (!buf.length) return res.status(400).json({ error: 'الملف فارغ.' });
+      if (buf.length > DEV_ZIP_MAX_BYTES) {
+        return res.status(413).json({ error: 'حجم الأرشيف أكبر من 8MB. اضغط المشروع بدون node_modules وdist.' });
+      }
+
+      const unpacked = await unpackSiteZip(buf);
+      if (!unpacked.files.length) {
+        return res.status(400).json({ error: 'ما لقينا ملفات نصية داخل الأرشيف. تأكد أنه موقع (HTML/JS/CSS) مو صور فقط.' });
+      }
+
+      const workspaceRef = dbAdmin.collection('developer_workspaces').doc();
+      await workspaceRef.set({
+        ownerId: auth.uid,
+        fileName,
+        fileCount: unpacked.files.length,
+        skipped: unpacked.skipped,
+        truncatedFiles: unpacked.truncatedFiles,
+        createdAt: Date.now()
+      });
+      const batchSize = 400;
+      for (let i = 0; i < unpacked.files.length; i += batchSize) {
+        const batch = dbAdmin.batch();
+        for (const f of unpacked.files.slice(i, i + batchSize)) {
+          const id = Buffer.from(f.path).toString('base64url').slice(0, 700);
+          batch.set(workspaceRef.collection('files').doc(id), {
+            path: f.path,
+            language: f.language,
+            content: f.content,
+            bytes: f.bytes,
+            truncated: f.truncated
+          });
+        }
+        await batch.commit();
+      }
+
+      return res.json({
+        success: true,
+        workspaceId: workspaceRef.id,
+        fileCount: unpacked.files.length,
+        skipped: unpacked.skipped,
+        truncatedFiles: unpacked.truncatedFiles,
+        tree: unpacked.files.map(f => ({ path: f.path, language: f.language, bytes: f.bytes, truncated: f.truncated })),
+        message: 'تم فك الأرشيف. توجه للدردشة مع ناجي.'
+      });
+    } catch (err: any) {
+      console.error('[developer/unpack]', err);
+      return res.status(500).json({ error: err?.message || 'تعذّر فك الأرشيف.' });
+    }
+  });
+
+  app.get('/api/developer/workspace/:id', async (req, res) => {
+    try {
+      const auth = await requireAuth(req, res);
+      if (!auth) return;
+      const loaded = await loadWorkspaceFiles(String(req.params.id), auth.uid);
+      if (!loaded) return res.status(404).json({ error: 'المشروع غير موجود.' });
+      return res.json({
+        success: true,
+        workspaceId: req.params.id,
+        fileName: loaded.meta.fileName,
+        fileCount: loaded.files.length,
+        tree: loaded.files.map(f => ({ path: f.path, language: f.language, bytes: f.bytes, truncated: f.truncated }))
+      });
+    } catch (err: any) {
+      return res.status(500).json({ error: err?.message || 'تعذّر تحميل المشروع.' });
+    }
+  });
+
+  app.get('/api/developer/file', async (req, res) => {
+    try {
+      const auth = await requireAuth(req, res);
+      if (!auth) return;
+      const workspaceId = String(req.query.workspaceId || '');
+      const filePath = String(req.query.path || '');
+      const loaded = await loadWorkspaceFiles(workspaceId, auth.uid);
+      if (!loaded) return res.status(404).json({ error: 'المشروع غير موجود.' });
+      const file = loaded.files.find(f => f.path === filePath);
+      if (!file) return res.status(404).json({ error: 'الملف غير موجود.' });
+      return res.json({ success: true, file });
+    } catch (err: any) {
+      return res.status(500).json({ error: err?.message || 'تعذّر قراءة الملف.' });
+    }
+  });
+
+  app.post('/api/developer/export', async (req, res) => {
+    try {
+      const auth = await requireAuth(req, res);
+      if (!auth) return;
+      const loaded = await loadWorkspaceFiles(String(req.body?.workspaceId || ''), auth.uid);
+      if (!loaded) return res.status(404).json({ error: 'المشروع غير موجود.' });
+      const JSZipMod = (await import('jszip')).default;
+      const zip = new JSZipMod();
+      for (const f of loaded.files) zip.file(f.path, f.content);
+      const buf = await zip.generateAsync({ type: 'nodebuffer', compression: 'DEFLATE' });
+      res.setHeader('Content-Type', 'application/zip');
+      res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(loaded.meta.fileName || 'naje-project.zip')}"`);
+      return res.send(buf);
+    } catch (err: any) {
+      return res.status(500).json({ error: err?.message || 'تعذّر تصدير الأرشيف.' });
+    }
+  });
+
+  app.post('/api/developer/chat', async (req, res) => {
+    try {
+      const auth = await requireAuth(req, res);
+      if (!auth) return;
+      const userState = await getUserDocAndBalance(auth.uid, auth.token, auth);
+      if (!checkFeatureAccess(res, userState.doc, 'najeDeveloper')) return;
+      const userIsAdmin = isPrivilegedAdmin(userState.doc, auth);
+
+      const workspaceId = String(req.body?.workspaceId || '');
+      const prompt = String(req.body?.prompt || '').trim();
+      const intent = String(req.body?.intent || 'chat');
+      const focusPath = req.body?.focusPath ? String(req.body.focusPath) : '';
+      const history = Array.isArray(req.body?.history) ? req.body.history.slice(-12) : [];
+      if (!prompt) return res.status(400).json({ error: 'اكتب رسالة.' });
+
+      const loaded = await loadWorkspaceFiles(workspaceId, auth.uid);
+      if (!loaded) return res.status(404).json({ error: 'ارفع أرشيف الموقع أولاً.' });
+
+      const tree = buildFileTree(loaded.files.map(f => f.path));
+      const codeCtx = buildCodeContext(loaded.files, focusPath);
+      const ai = createGenAIClient();
+      const modelId = resolveEngineModel(await getModelEndpointId('text_core', getNajeModel('core'), auth.token));
+
+      let system = `أنت «ناجي المطور». تفحص مواقع مرفوعة كأرشيف ZIP. تتكلم عربي فصيح واضح، رؤوس أقلام، بدون حشو.
+ملفات المشروع (${loaded.files.length}):
+${tree}
+
+مقتطف الكود:
+${codeCtx}
+
+قواعد:
+- لا تختلق ملفات غير موجودة.
+- إن طلب المستخدم تعديلاً، استدعِ الأداة apply_file_patch بالمسار والمحتوى الكامل الجديد.
+- لا تشغّل الكود. التعديل على الملفات المحفوظة فقط ثم يُعاد تصدير ZIP.`;
+
+      if (intent === 'audit') {
+        system += `\n\nالمهمة الحالية: فحص شامل. أخرج تقريراً عربياً بهذه الأقسام حصراً:
+1) البنية والملفات
+2) أخطاء واضحة (HTML/JS/CSS)
+3) أمان (XSS، أسرار، تقييم eval، روابط خارجية خطرة)
+4) أداء وإتاحة
+5) أولويات الإصلاح
+كل قسم نقاط قصيرة. اختم بجملة: «إذا بدك، أكتب لك بريف توجيه تفصيلي للوكيل اللي تطور معه الكود.»`;
+      } else if (intent === 'brief') {
+        system += `\n\nالمهمة الحالية: اكتب بريف توجيه تفصيلي لوكيل برمجي (Cursor/Grok/Copilot) بالعربية والإنجليزية المختصرة للكود. حدّد الملفات، المطلوب، قيود عدم كسر التصميم، وترتيب التنفيذ.`;
+      }
+
+      const contents: any[] = [];
+      for (const h of history) {
+        const role = h.role === 'assistant' || h.role === 'model' ? 'model' : 'user';
+        const text = String(h.content || '').slice(0, 4000);
+        if (text) contents.push({ role, parts: [{ text }] });
+      }
+      contents.push({ role: 'user', parts: [{ text: prompt }] });
+
+      const tools = [{
+        functionDeclarations: [{
+          name: 'apply_file_patch',
+          description: 'Replace the full contents of an existing project file. Path must already exist.',
+          parameters: {
+            type: 'OBJECT',
+            properties: {
+              path: { type: 'STRING' },
+              content: { type: 'STRING' },
+              note: { type: 'STRING' }
+            },
+            required: ['path', 'content']
+          }
+        }]
+      }];
+
+      res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive' });
+
+      const stream = await ai.models.generateContentStream({
+        model: modelId,
+        contents,
+        config: {
+          systemInstruction: system,
+          tools,
+          maxOutputTokens: intent === 'audit' ? OUTPUT_TOKEN_LIMITS.fullstackAudit : OUTPUT_TOKEN_LIMITS.chatResponse
+        }
+      });
+
+      let fullText = '';
+      const functionCalls: any[] = [];
+      let usageMeta: any = null;
+      for await (const chunk of stream) {
+        if (chunk.usageMetadata) usageMeta = chunk.usageMetadata;
+        const calls = extractGeminiFunctionCalls(chunk);
+        if (calls.length) functionCalls.push(...calls);
+        const t = extractGeminiText(chunk);
+        if (t) {
+          fullText += t;
+          res.write(`data: ${JSON.stringify({ text: t })}\n\n`);
+        }
+      }
+
+      const applied: string[] = [];
+      for (const fc of functionCalls) {
+        if (fc.name !== 'apply_file_patch') continue;
+        const p = String(fc.args?.path || '');
+        const content = String(fc.args?.content || '');
+        const target = loaded.files.find(f => f.path === p);
+        if (!target || !content) continue;
+        const id = Buffer.from(p).toString('base64url').slice(0, 700);
+        await dbAdmin.collection('developer_workspaces').doc(workspaceId).collection('files').doc(id).set({
+          path: p,
+          language: target.language,
+          content: content.slice(0, 60_000),
+          bytes: Math.min(content.length, 60_000),
+          truncated: content.length > 60_000
+        }, { merge: true });
+        applied.push(p);
+      }
+      if (applied.length) {
+        const note = `\n\nتم تطبيق التعديل على: ${applied.join('، ')}. تقدر تصدّر ZIP محدّث.`;
+        fullText += note;
+        res.write(`data: ${JSON.stringify({ text: note, applied })}\n\n`);
+      }
+
+      const bill = await chargeForTextModelUsage(auth.uid, 'text_core', usageMeta, userIsAdmin).catch(() => null);
+      if (typeof bill?.newBalance === 'number') {
+        // live balance
+      }
+      res.write(`data: ${JSON.stringify({
+        newBalance: bill?.newBalance,
+        usage: {
+          charged: bill?.charged || 0,
+          inputTokens: bill?.inputTokens || 0,
+          outputTokens: bill?.outputTokens || 0,
+          cachedTokens: bill?.cachedTokens || 0,
+          thoughtsTokens: bill?.thoughtsTokens || 0,
+          billingType: 'per_token'
+        },
+        applied
+      })}\n\n`);
+      res.write('data: [DONE]\n\n');
+      res.end();
+    } catch (err: any) {
+      console.error('[developer/chat]', err);
+      if (!res.headersSent) return res.status(500).json({ error: err?.message || 'تعذّر الفحص.' });
+      res.write(`data: ${JSON.stringify({ error: err?.message || 'تعذّر الفحص.' })}\n\n`);
+      res.write('data: [DONE]\n\n');
+      res.end();
+    }
+  });
+
+  app.post('/api/source/add', async (req, res) => {
+    try {
+      const auth = await requireAuth(req, res);
+      if (!auth) return;
+      const userState = await getUserDocAndBalance(auth.uid, auth.token, auth);
+      if (!checkFeatureAccess(res, userState.doc, 'najeSource')) return;
+
+      let workspaceId = String(req.body?.workspaceId || '');
+      const type = String(req.body?.type || 'text');
+      const title = String(req.body?.title || '').slice(0, 200);
+      let content = String(req.body?.content || '');
+      const url = String(req.body?.url || '').trim();
+
+      if (!workspaceId) {
+        const ref = dbAdmin.collection('source_workspaces').doc();
+        await ref.set({ ownerId: auth.uid, createdAt: Date.now(), itemCount: 0 });
+        workspaceId = ref.id;
+      } else {
+        const snap = await dbAdmin.collection('source_workspaces').doc(workspaceId).get();
+        if (!snap.exists || snap.data()?.ownerId !== auth.uid) {
+          return res.status(404).json({ error: 'مساحة المصادر غير موجودة.' });
+        }
+      }
+
+      const existing = await dbAdmin.collection('source_workspaces').doc(workspaceId).collection('items').get();
+      if (existing.size >= 24) return res.status(400).json({ error: 'وصلت للحد الأقصى (24 مصدر). احذف مصدراً أولاً.' });
+
+      if (type === 'url') {
+        if (!isSafeOutboundUrl(url)) return res.status(400).json({ error: 'الرابط غير مسموح.' });
+        const ctrl = new AbortController();
+        const t = setTimeout(() => ctrl.abort(), 12000);
+        try {
+          const fetched = await fetch(url, { signal: ctrl.signal, headers: { 'User-Agent': 'NajeSource/1.0' } });
+          if (!fetched.ok) return res.status(400).json({ error: `تعذّر جلب الرابط (${fetched.status}).` });
+          const ctype = fetched.headers.get('content-type') || '';
+          const raw = await fetched.text();
+          content = ctype.includes('html') ? htmlToPlainText(raw) : raw.slice(0, 20_000);
+        } catch {
+          return res.status(400).json({ error: 'تعذّر جلب الرابط.' });
+        } finally {
+          clearTimeout(t);
+        }
+      }
+
+      content = content.slice(0, 20_000);
+      let imageBase64 = '';
+      let mimeType = '';
+      if (type === 'image') {
+        imageBase64 = String(req.body?.data || content).replace(/^data:[^;]+;base64,/, '');
+        mimeType = String(req.body?.mimeType || 'image/jpeg').slice(0, 80);
+        if (!imageBase64 || imageBase64.length > 700_000) {
+          return res.status(400).json({ error: 'الصورة كبيرة أو فارغة (الحد ~500KB).' });
+        }
+        content = String(req.body?.caption || title || 'صورة مرفقة');
+      }
+      if (type !== 'image' && !content.trim()) return res.status(400).json({ error: 'المحتوى فارغ.' });
+
+      const itemRef = await dbAdmin.collection('source_workspaces').doc(workspaceId).collection('items').add({
+        ownerId: auth.uid,
+        type,
+        title: title || (type === 'url' ? url : type === 'image' ? 'صورة' : 'مصدر نصي'),
+        url: type === 'url' ? url : '',
+        content,
+        imageBase64: imageBase64 || '',
+        mimeType: mimeType || '',
+        createdAt: Date.now()
+      });
+      await dbAdmin.collection('source_workspaces').doc(workspaceId).set({ itemCount: existing.size + 1, updatedAt: Date.now() }, { merge: true });
+
+      return res.json({
+        success: true,
+        workspaceId,
+        item: { id: itemRef.id, type, title: title || (type === 'url' ? url : type === 'image' ? 'صورة' : 'مصدر نصي'), url: type === 'url' ? url : '', excerpt: content.slice(0, 240) }
+      });
+    } catch (err: any) {
+      console.error('[source/add]', err);
+      return res.status(500).json({ error: err?.message || 'تعذّر إضافة المصدر.' });
+    }
+  });
+
+  app.get('/api/source/workspace/:id', async (req, res) => {
+    try {
+      const auth = await requireAuth(req, res);
+      if (!auth) return;
+      const snap = await dbAdmin.collection('source_workspaces').doc(String(req.params.id)).get();
+      if (!snap.exists || snap.data()?.ownerId !== auth.uid) return res.status(404).json({ error: 'غير موجود.' });
+      const items = await dbAdmin.collection('source_workspaces').doc(String(req.params.id)).collection('items').orderBy('createdAt', 'desc').get();
+      return res.json({
+        success: true,
+        workspaceId: req.params.id,
+        items: items.docs.map(d => {
+          const x = d.data() || {};
+          return { id: d.id, type: x.type, title: x.title, url: x.url || '', excerpt: String(x.content || '').slice(0, 240) };
+        })
+      });
+    } catch (err: any) {
+      return res.status(500).json({ error: err?.message || 'تعذّر التحميل.' });
+    }
+  });
+
+  app.delete('/api/source/item', async (req, res) => {
+    try {
+      const auth = await requireAuth(req, res);
+      if (!auth) return;
+      const workspaceId = String(req.body?.workspaceId || '');
+      const itemId = String(req.body?.itemId || '');
+      const snap = await dbAdmin.collection('source_workspaces').doc(workspaceId).get();
+      if (!snap.exists || snap.data()?.ownerId !== auth.uid) return res.status(404).json({ error: 'غير موجود.' });
+      await dbAdmin.collection('source_workspaces').doc(workspaceId).collection('items').doc(itemId).delete();
+      return res.json({ success: true });
+    } catch (err: any) {
+      return res.status(500).json({ error: err?.message || 'تعذّر الحذف.' });
+    }
+  });
+
+  app.post('/api/source/chat', async (req, res) => {
+    try {
+      const auth = await requireAuth(req, res);
+      if (!auth) return;
+      const userState = await getUserDocAndBalance(auth.uid, auth.token, auth);
+      if (!checkFeatureAccess(res, userState.doc, 'najeSource')) return;
+      const userIsAdmin = isPrivilegedAdmin(userState.doc, auth);
+
+      const workspaceId = String(req.body?.workspaceId || '');
+      const prompt = String(req.body?.prompt || '').trim();
+      const allowWeb = req.body?.allowWeb === true;
+      const history = Array.isArray(req.body?.history) ? req.body.history.slice(-12) : [];
+      if (!prompt) return res.status(400).json({ error: 'اكتب رسالة.' });
+      if (!workspaceId) return res.status(400).json({ error: 'أضف مصدراً أولاً.' });
+
+      const snap = await dbAdmin.collection('source_workspaces').doc(workspaceId).get();
+      if (!snap.exists || snap.data()?.ownerId !== auth.uid) return res.status(404).json({ error: 'مساحة المصادر غير موجودة.' });
+      const itemSnaps = await dbAdmin.collection('source_workspaces').doc(workspaceId).collection('items').get();
+      const sources = itemSnaps.docs.map(d => {
+        const x = d.data() || {};
+        return {
+          title: x.title,
+          type: x.type,
+          url: x.url,
+          content: String(x.content || '').slice(0, 12_000),
+          imageBase64: x.imageBase64 ? String(x.imageBase64) : '',
+          mimeType: String(x.mimeType || 'image/jpeg')
+        };
+      });
+      if (!sources.length) return res.status(400).json({ error: 'أضف مصدراً واحداً على الأقل.' });
+
+      const sourceBlock = sources.map((s, i) => `# مصدر ${i + 1}: ${s.title}${s.url ? ` (${s.url})` : ''}\n${s.content}`).join('\n\n');
+      const system = `أنت «ناجي من مصادرك». ممنوع الاختلاق. تجيب فقط مما في المصادر أدناه.
+إذا ما لقيت الجواب في المصادر:
+${allowWeb ? '- ابدأ حرفياً: «لم أجد في المصادر، وبحثت في الإنترنت والنتيجة:» ثم لخّص نتيجة البحث مع الروابط.' : '- أجب حرفياً فقط: «لم أجد في المصادر.» بلا أي إضافة.'}
+لا تخلط رأيك. إن اقتبست، اذكر رقم المصدر.
+
+المصادر:
+${sourceBlock}`;
+
+      const ai = createGenAIClient();
+      const modelId = resolveEngineModel(await getModelEndpointId('text_core', getNajeModel('core'), auth.token));
+      const contents: any[] = [];
+      for (const h of history) {
+        const role = h.role === 'assistant' || h.role === 'model' ? 'model' : 'user';
+        const text = String(h.content || '').slice(0, 4000);
+        if (text) contents.push({ role, parts: [{ text }] });
+      }
+      contents.push({
+        role: 'user',
+        parts: [
+          { text: prompt },
+          ...sources.filter(s => s.imageBase64).slice(0, 4).map(s => ({
+            inlineData: { mimeType: s.mimeType || 'image/jpeg', data: s.imageBase64 }
+          }))
+        ]
+      });
+
+      const tools: any[] = [];
+      if (allowWeb) tools.push({ googleSearch: {} });
+
+      res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive' });
+
+      const stream = await ai.models.generateContentStream({
+        model: modelId,
+        contents,
+        config: {
+          systemInstruction: system,
+          tools: tools.length ? tools : undefined,
+          maxOutputTokens: OUTPUT_TOKEN_LIMITS.chatResponse
+        }
+      });
+
+      let usageMeta: any = null;
+      const searchSources: Array<{ title: string; url: string }> = [];
+      for await (const chunk of stream) {
+        if (chunk.usageMetadata) usageMeta = chunk.usageMetadata;
+        const candidate = chunk.candidates?.[0];
+        if (candidate?.groundingMetadata?.groundingChunks) {
+          for (const g of candidate.groundingMetadata.groundingChunks) {
+            if (g.web?.uri && !searchSources.some(s => s.url === g.web.uri)) {
+              searchSources.push({ title: g.web.title || g.web.uri, url: g.web.uri });
+            }
+          }
+        }
+        const t = extractGeminiText(chunk);
+        if (t) res.write(`data: ${JSON.stringify({ text: t })}\n\n`);
+      }
+      if (searchSources.length) res.write(`data: ${JSON.stringify({ searchSources })}\n\n`);
+      const bill = await chargeForTextModelUsage(auth.uid, 'text_core', usageMeta, userIsAdmin).catch(() => null);
+      res.write(`data: ${JSON.stringify({
+        newBalance: bill?.newBalance,
+        usage: {
+          charged: bill?.charged || 0,
+          inputTokens: bill?.inputTokens || 0,
+          outputTokens: bill?.outputTokens || 0,
+          cachedTokens: bill?.cachedTokens || 0,
+          thoughtsTokens: bill?.thoughtsTokens || 0,
+          billingType: 'per_token'
+        }
+      })}\n\n`);
+      res.write('data: [DONE]\n\n');
+      res.end();
+    } catch (err: any) {
+      console.error('[source/chat]', err);
+      if (!res.headersSent) return res.status(500).json({ error: err?.message || 'تعذّر الرد.' });
+      res.write(`data: ${JSON.stringify({ error: err?.message || 'تعذّر الرد.' })}\n\n`);
+      res.write('data: [DONE]\n\n');
+      res.end();
+    }
+  });
 
 
   const candidateDistPaths = [
