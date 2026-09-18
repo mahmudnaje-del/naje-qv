@@ -8,13 +8,14 @@ export type WorkspaceFile = {
   truncated: boolean;
 };
 
-const SKIP_DIR = /(^|\/)(node_modules|\.git|dist|build|\.next|coverage|vendor|__pycache__|\.venv|venv|\.cache|\.turbo)(\/|$)/i;
-const SKIP_FILE = /(\.(png|jpe?g|gif|webp|ico|woff2?|ttf|eot|mp4|mp3|mov|zip|gz|7z|pdf|psd|ai|exe|dll|so|dylib|lock)|package-lock\.json|yarn\.lock|pnpm-lock\.yaml)$/i;
-const TEXT_EXT = /\.(html?|css|scss|less|js|mjs|cjs|jsx|ts|tsx|json|md|txt|svg|vue|svelte|py|php|rb|go|rs|java|kt|xml|ya?ml|sql|sh|env|toml|ini)$/i;
+const SKIP_DIR = /(^|\/)(node_modules|\.git|dist|build|\.next|coverage|vendor|__pycache__|\.venv|venv|\.cache|\.turbo|\.grok|artifacts|attachments|imagine_images|static\/static)(\/|$)/i;
+const SKIP_FILE = /(\.(png|jpe?g|gif|webp|ico|woff2?|ttf|eot|mp4|mp3|mov|zip|gz|7z|pdf|psd|ai|exe|dll|so|dylib|lock|map)|package-lock\.json|yarn\.lock|pnpm-lock\.yaml)$/i;
+const TEXT_EXT = /\.(html?|css|scss|less|js|mjs|cjs|jsx|ts|tsx|json|md|txt|svg|vue|svelte|py|php|rb|go|rs|java|kt|xml|ya?ml|sql|sh|env|toml|ini|c|cc|cpp|h|hpp)$/i;
+const CODE_EXT = /\.(html?|css|scss|less|js|mjs|cjs|jsx|ts|tsx|json|vue|svelte|py|php|rb|go|rs|java|kt|xml|sql|sh)$/i;
 
-const MAX_FILES = 120;
-const MAX_FILE_CHARS = 60_000;
-const MAX_TOTAL_CHARS = 420_000;
+const MAX_FILES = 220;
+const MAX_FILE_CHARS = 80_000;
+const MAX_TOTAL_CHARS = 900_000;
 
 export function languageOf(path: string): string {
   const ext = (path.split('.').pop() || '').toLowerCase();
@@ -25,6 +26,17 @@ export function languageOf(path: string): string {
     xml: 'xml', yml: 'yaml', yaml: 'yaml', svg: 'xml', sql: 'sql', sh: 'bash', vue: 'xml'
   };
   return map[ext] || 'plaintext';
+}
+
+function filePriority(path: string): number {
+  const n = path.replace(/\\/g, '/').toLowerCase();
+  if (/(^|\/)index\.html$/.test(n)) return 0;
+  if (/(^|\/)(package\.json|vite\.config\.\w+|tsconfig.*\.json)$/.test(n)) return 1;
+  if (n.startsWith('src/') && CODE_EXT.test(n)) return 2;
+  if (CODE_EXT.test(n)) return 3;
+  if (/\.(css|scss|less)$/.test(n)) return 4;
+  if (/\.md$/.test(n)) return 8;
+  return 6;
 }
 
 export async function unpackSiteZip(buffer: Buffer | ArrayBuffer | Uint8Array): Promise<{
@@ -38,7 +50,12 @@ export async function unpackSiteZip(buffer: Buffer | ArrayBuffer | Uint8Array): 
   let truncatedFiles = 0;
   let totalChars = 0;
 
-  const entries = Object.keys(zip.files).sort((a, b) => a.localeCompare(b));
+  const entries = Object.keys(zip.files).sort((a, b) => {
+    const pa = filePriority(a) - filePriority(b);
+    if (pa !== 0) return pa;
+    return a.localeCompare(b);
+  });
+
   for (const name of entries) {
     const entry = zip.files[name];
     if (!entry || entry.dir) continue;
@@ -53,7 +70,6 @@ export async function unpackSiteZip(buffer: Buffer | ArrayBuffer | Uint8Array): 
     }
     let text = await entry.async('string');
     if (!text) continue;
-    // Drop obviously-binary payloads that slipped past the extension check
     if (text.includes('\u0000')) {
       skipped += 1;
       continue;
@@ -66,7 +82,7 @@ export async function unpackSiteZip(buffer: Buffer | ArrayBuffer | Uint8Array): 
     }
     if (totalChars + text.length > MAX_TOTAL_CHARS) {
       const remain = MAX_TOTAL_CHARS - totalChars;
-      if (remain < 200) {
+      if (remain < 400) {
         skipped += 1;
         continue;
       }
@@ -78,6 +94,7 @@ export async function unpackSiteZip(buffer: Buffer | ArrayBuffer | Uint8Array): 
     files.push({ path, language: languageOf(path), content: text, bytes: text.length, truncated });
   }
 
+  files.sort((a, b) => filePriority(a.path) - filePriority(b.path) || a.path.localeCompare(b.path));
   return { files, skipped, truncatedFiles };
 }
 
@@ -85,24 +102,16 @@ export function buildFileTree(paths: string[]): string {
   return paths.map(p => `• ${p}`).join('\n');
 }
 
-export function buildCodeContext(files: WorkspaceFile[], focusPath?: string, budget = 90_000): string {
+export function buildCodeContext(files: WorkspaceFile[], focusPath?: string, budget = 180_000): string {
   const ordered = [...files].sort((a, b) => {
     if (focusPath && a.path === focusPath) return -1;
     if (focusPath && b.path === focusPath) return 1;
-    const score = (p: string) => {
-      const n = p.toLowerCase();
-      if (/^index\.html$/.test(n) || n.endsWith('/index.html')) return 0;
-      if (/package\.json$/.test(n)) return 1;
-      if (/\.(tsx|jsx|ts|js)$/.test(n)) return 2;
-      if (/\.(css|scss)$/.test(n)) return 3;
-      return 4;
-    };
-    return score(a.path) - score(b.path);
+    return filePriority(a.path) - filePriority(b.path) || a.path.localeCompare(b.path);
   });
   let used = 0;
   const parts: string[] = [];
   for (const f of ordered) {
-    const block = `--- FILE: ${f.path} ---\n${f.content}\n`;
+    const block = `--- FILE: ${f.path}${f.truncated ? ' (truncated)' : ''} ---\n${f.content}\n`;
     if (used + block.length > budget) {
       const remain = budget - used;
       if (remain > 400) parts.push(block.slice(0, remain) + '\n/* … */\n');

@@ -1209,7 +1209,7 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
           } else if (lastStreamError) {
             throw new Error(lastStreamError);
           } else {
-            throw new Error('تعذّر قراءة رد النموذج.');
+            assistantContent = 'النموذج أنهى الرد بدون نص ظاهر (تفكير أو أداة فقط). أعد المحاولة بصيغة أوضح.';
           }
         }
 
@@ -1492,20 +1492,38 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
   const isListeningRef = useRef(false);
   const baseInputRef = useRef('');
   const [isDraggingFile, setIsDraggingFile] = useState(false);
+  const dragDepthRef = useRef(0);
+
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const types = Array.from(e.dataTransfer?.types || []);
+    if (!types.includes('Files')) return;
+    dragDepthRef.current += 1;
+    setIsDraggingFile(true);
+  };
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
-    setIsDraggingFile(true);
+    e.stopPropagation();
   };
 
   const handleDragLeave = (e: React.DragEvent) => {
     e.preventDefault();
+    e.stopPropagation();
+    dragDepthRef.current = Math.max(0, dragDepthRef.current - 1);
+    if (dragDepthRef.current === 0) setIsDraggingFile(false);
+  };
+
+  const clearDragOverlay = () => {
+    dragDepthRef.current = 0;
     setIsDraggingFile(false);
   };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
-    setIsDraggingFile(false);
+    e.stopPropagation();
+    clearDragOverlay();
     
     const droppedFiles = Array.from(e.dataTransfer.files || []);
     droppedFiles.forEach((file: any) => {
@@ -1518,6 +1536,16 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
       reader.readAsDataURL(file);
     });
   };
+
+  useEffect(() => {
+    const onEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') clearDragOverlay(); };
+    window.addEventListener('keydown', onEsc);
+    window.addEventListener('dragend', clearDragOverlay);
+    return () => {
+      window.removeEventListener('keydown', onEsc);
+      window.removeEventListener('dragend', clearDragOverlay);
+    };
+  }, []);
 
   useEffect(() => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -1856,6 +1884,7 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
   return (
     <div 
       className="flex flex-col h-[100dvh] bg-[#FAF9FC] dark:bg-[#0d0f12] relative overflow-hidden"
+      onDragEnter={handleDragEnter}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}

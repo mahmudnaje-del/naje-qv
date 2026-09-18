@@ -10996,10 +10996,14 @@ app.post("/api/agent/execute-tool-stream", async (req, res) => {
       .replace(/<script[\s\S]*?<\/script>/gi, ' ')
       .replace(/<style[\s\S]*?<\/style>/gi, ' ')
       .replace(/<[^>]+>/g, ' ')
-      .replace(/&nbsp;/g, ' ')
-      .replace(/&/g, '&')
-      .replace(/</g, '<')
-      .replace(/>/g, '>')
+      .replace(/&nbsp;/gi, ' ')
+      .replace(/&/gi, '&')
+      .replace(/</gi, '<')
+      .replace(/>/gi, '>')
+      .replace(/"/gi, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCharCode(parseInt(h, 16)))
+      .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(Number(n)))
       .replace(/\s+/g, ' ')
       .trim()
       .slice(0, 20_000);
@@ -11109,11 +11113,28 @@ app.post("/api/agent/execute-tool-stream", async (req, res) => {
       if (!auth) return;
       const workspaceId = String(req.query.workspaceId || '');
       const filePath = String(req.query.path || '');
-      const loaded = await loadWorkspaceFiles(workspaceId, auth.uid);
-      if (!loaded) return res.status(404).json({ error: 'المشروع غير موجود.' });
-      const file = loaded.files.find(f => f.path === filePath);
-      if (!file) return res.status(404).json({ error: 'الملف غير موجود.' });
-      return res.json({ success: true, file });
+      const snap = await dbAdmin.collection('developer_workspaces').doc(workspaceId).get();
+      if (!snap.exists || snap.data()?.ownerId !== auth.uid) {
+        return res.status(404).json({ error: 'المشروع غير موجود.' });
+      }
+      const id = Buffer.from(filePath).toString('base64url').slice(0, 700);
+      let fileSnap = await dbAdmin.collection('developer_workspaces').doc(workspaceId).collection('files').doc(id).get();
+      if (!fileSnap.exists) {
+        const q = await dbAdmin.collection('developer_workspaces').doc(workspaceId).collection('files').where('path', '==', filePath).limit(1).get();
+        fileSnap = q.empty ? fileSnap : q.docs[0];
+      }
+      if (!fileSnap.exists) return res.status(404).json({ error: 'الملف غير موجود.' });
+      const x = fileSnap.data() || {};
+      return res.json({
+        success: true,
+        file: {
+          path: String(x.path || filePath),
+          language: String(x.language || 'plaintext'),
+          content: String(x.content || ''),
+          bytes: Number(x.bytes || 0),
+          truncated: !!x.truncated
+        }
+      });
     } catch (err: any) {
       return res.status(500).json({ error: err?.message || 'تعذّر قراءة الملف.' });
     }

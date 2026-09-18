@@ -24,6 +24,7 @@ export default function NajeDeveloper() {
   const [tab, setTab] = useState<Tab>('code');
   const [workspaceId, setWorkspaceId] = useState<string>(() => localStorage.getItem(LS_WS) || '');
   const [tree, setTree] = useState<TreeFile[]>([]);
+  const [unpackStats, setUnpackStats] = useState<{ skipped: number; truncatedFiles: number } | null>(null);
   const [fileName, setFileName] = useState('project.zip');
   const [unpacking, setUnpacking] = useState(false);
   const [unpackHint, setUnpackHint] = useState('');
@@ -81,18 +82,18 @@ export default function NajeDeveloper() {
     setUnpacking(true);
     setUnpackHint('جاري قراءة الأرشيف...');
     try {
-      const buf = await file.arrayBuffer();
-      const bytes = new Uint8Array(buf);
-      let binary = '';
-      for (let i = 0; i < bytes.length; i += 4096) {
-        binary += String.fromCharCode(...bytes.subarray(i, i + 4096));
-      }
-      setUnpackHint('جاري فك الملفات وتصنيف الأقسام...');
+      const zipBase64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result || ''));
+        reader.onerror = () => reject(new Error('تعذّر قراءة الملف'));
+        reader.readAsDataURL(file);
+      });
+      setUnpackHint('جاري فك الملفات — الكود أولاً ثم الوثائق...');
       const token = await auth.currentUser?.getIdToken();
       const res = await fetch('/api/developer/unpack', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ zipBase64: btoa(binary), fileName: file.name })
+        body: JSON.stringify({ zipBase64, fileName: file.name })
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'تعذّر فك الأرشيف');
@@ -100,10 +101,15 @@ export default function NajeDeveloper() {
       localStorage.setItem(LS_WS, data.workspaceId);
       setTree(data.tree || []);
       setFileName(file.name);
+      setUnpackStats({ skipped: data.skipped || 0, truncatedFiles: data.truncatedFiles || 0 });
+      const extra = [
+        data.skipped ? `تم تخطي ${data.skipped} (صور/بناء/وثائق غير كود)` : '',
+        data.truncatedFiles ? `${data.truncatedFiles} ملف قُصّ لطوله` : ''
+      ].filter(Boolean).join(' · ');
       setMessages([{
         id: 'sys',
         role: 'assistant',
-        content: `تم فك الأرشيف (**${data.fileCount}** ملف نصي). توجه للدردشة مع ناجي — اضغط «افحص المشروع» لتقرير رؤوس الأقلام.`
+        content: `تم فك الأرشيف (**${data.fileCount}** ملف).${extra ? ` ${extra}.` : ''} توجه للدردشة مع ناجي — اضغط «افحص المشروع» لتقرير رؤوس الأقلام.`
       }]);
       setUnpackHint('تم. توجه للدردشة مع ناجي.');
       toast.success('تم فك الأرشيف. توجه للدردشة مع ناجي.');
@@ -260,6 +266,13 @@ export default function NajeDeveloper() {
             <div className="flex items-center gap-1.5 text-[11px] font-extrabold text-gray-500 mb-2">
               <FolderTree className="w-3.5 h-3.5" /> {tree.length} ملف
             </div>
+            {unpackStats && (unpackStats.skipped > 0 || unpackStats.truncatedFiles > 0) && (
+              <p className="text-[10px] text-amber-600 font-bold mb-2">
+                {unpackStats.skipped ? `تخطي ${unpackStats.skipped}` : ''}
+                {unpackStats.skipped && unpackStats.truncatedFiles ? ' · ' : ''}
+                {unpackStats.truncatedFiles ? `قصّ ${unpackStats.truncatedFiles}` : ''}
+              </p>
+            )}
             <div className="space-y-0.5">
               {tree.map(f => (
                 <button
