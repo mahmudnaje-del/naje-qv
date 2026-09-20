@@ -243,23 +243,23 @@ export default function NajeAd() {
     : activeJob?.stepLabel || (isSubmitting ? 'جاري التحضير…' : '');
 
   return (
-    <div className="h-full overflow-y-auto bg-[#07080c] px-3 py-5 text-[#f4efe6] sm:px-6" dir="rtl">
+    <div className="h-full overflow-y-auto bg-[#07080c] px-2.5 py-3 text-[#f4efe6] sm:px-6 sm:py-5" dir="rtl">
       <FeaturePaywallModal isOpen={showPaywall} onClose={() => setShowPaywall(false)} feature="najeAd" />
-      <div className="mx-auto max-w-6xl space-y-5">
-        <header className="overflow-hidden rounded-[28px] border border-white/8 bg-[radial-gradient(1200px_circle_at_100%_-20%,rgba(212,165,116,0.16),transparent_45%),linear-gradient(180deg,#141218,#0b0c10)] p-5 shadow-2xl">
-          <div className="flex flex-wrap items-start justify-between gap-4">
+      <div className="mx-auto max-w-6xl space-y-3 sm:space-y-5">
+        <header className="overflow-hidden rounded-2xl border border-white/8 bg-[radial-gradient(1200px_circle_at_100%_-20%,rgba(212,165,116,0.16),transparent_45%),linear-gradient(180deg,#141218,#0b0c10)] p-3 shadow-2xl sm:rounded-[28px] sm:p-5">
+          <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-[#d4a574]/30 bg-[#d4a574]/10 px-3 py-1 text-[10px] font-black tracking-[0.18em] text-[#e8b86d]">
+              <div className="mb-1.5 inline-flex items-center gap-2 rounded-full border border-[#d4a574]/30 bg-[#d4a574]/10 px-2.5 py-0.5 text-[10px] font-black tracking-[0.14em] text-[#e8b86d]">
                 <Clapperboard className="h-3.5 w-3.5" /> NAJE AD · {NAJE_VIDEO_PRO_LABEL}
               </div>
-              <h1 className="text-2xl font-black tracking-tight text-white">استوديو الإعلان المتحرك</h1>
-              <p className="mt-1 max-w-xl text-xs leading-relaxed text-white/50">
+              <h1 className="text-xl font-black tracking-tight text-white sm:text-2xl">استوديو الإعلان المتحرك</h1>
+              <p className="mt-1 hidden max-w-xl text-xs leading-relaxed text-white/50 sm:block">
                 {NAJE_VIDEO_PRO_LABEL} — توليد، تمديد المشهد حتى 40 ثانية، وتحرير باللغة الطبيعية.
               </p>
             </div>
-            <div className="rounded-2xl border border-white/10 bg-black/30 px-4 py-2 text-right">
+            <div className="rounded-2xl border border-white/10 bg-black/30 px-3 py-1.5 text-right sm:px-4 sm:py-2">
               <div className="text-[10px] text-white/40">رصيدك</div>
-              <div className="font-mono text-lg font-black text-[#e8b86d]">{(user?.balance ?? 0).toLocaleString()} نقطة</div>
+              <div className="font-mono text-base font-black text-[#e8b86d] sm:text-lg">{(user?.balance ?? 0).toLocaleString()} نقطة</div>
             </div>
           </div>
         </header>
@@ -273,7 +273,7 @@ export default function NajeAd() {
           </div>
         )}
 
-        <section className="rounded-[28px] border border-white/8 bg-[#0e1016] p-4">
+        <section className="rounded-2xl border border-white/8 bg-[#0e1016] p-3 sm:rounded-[28px] sm:p-4">
           <CastingRoom
             selectedAvatarId={dna.selectedAvatarId}
             customPreview={customCharacter}
@@ -301,7 +301,7 @@ export default function NajeAd() {
           />
         </section>
 
-        <section className="rounded-[28px] border border-white/8 bg-[#0e1016] p-4">
+        <section className="rounded-2xl border border-white/8 bg-[#0e1016] p-3 sm:rounded-[28px] sm:p-4">
           <LocationScout
             selectedLocationId={dna.selectedLocationId}
             customPreview={customLocation}
@@ -329,14 +329,14 @@ export default function NajeAd() {
           />
         </section>
 
-        <section className="rounded-[28px] border border-white/8 bg-[#0e1016] p-4">
+        <section className="rounded-2xl border border-white/8 bg-[#0e1016] p-3 sm:rounded-[28px] sm:p-4">
           <StyleGallery
             selectedStyleId={dna.selectedStyleTemplateId}
             onSelectStyle={(id) => updateDna({ selectedStyleTemplateId: id, style: id })}
           />
         </section>
 
-        <section className="rounded-[28px] border border-white/8 bg-[#0e1016] p-4">
+        <section className="rounded-2xl border border-white/8 bg-[#0e1016] p-3 sm:rounded-[28px] sm:p-4">
           <CastBoard
             cards={sceneCards}
             onChange={setSceneCards}
@@ -388,7 +388,7 @@ export default function NajeAd() {
           resolutionMultiplier={resMul}
         />
 
-        <form onSubmit={handleGenerate} className="space-y-3 rounded-[28px] border border-white/8 bg-[#0e1016] p-5">
+        <form onSubmit={handleGenerate} className="space-y-3 rounded-2xl border border-white/8 bg-[#0e1016] p-3 sm:rounded-[28px] sm:p-5">
           <label className="block text-xs font-black text-white">سيناريو الإعلان</label>
           <textarea
             rows={4}
@@ -408,7 +408,7 @@ export default function NajeAd() {
         </form>
 
         {(isSubmitting || videoUrl) && (
-          <section className="space-y-3 rounded-[28px] border border-white/8 bg-[#0e1016] p-4">
+          <section className="space-y-3 rounded-2xl border border-white/8 bg-[#0e1016] p-3 sm:rounded-[28px] sm:p-4">
             <div className="flex items-center justify-between">
               <h3 className="inline-flex items-center gap-2 text-sm font-black text-white">
                 <Film className="h-4 w-4 text-[#d4a574]" /> المونيتور
@@ -453,7 +453,7 @@ export default function NajeAd() {
         )}
 
         {recentVideos.length > 0 && (
-          <section className="rounded-[28px] border border-white/8 bg-[#0e1016] p-4">
+          <section className="rounded-2xl border border-white/8 bg-[#0e1016] p-3 sm:rounded-[28px] sm:p-4">
             <h3 className="mb-3 text-sm font-black text-white">آخر الإعلانات</h3>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               {recentVideos.map((vid) => (

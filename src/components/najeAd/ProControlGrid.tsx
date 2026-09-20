@@ -21,6 +21,42 @@ import {
 } from '../../lib/omniAd';
 import { DIALECT_OPTIONS, LANGUAGE_OPTIONS, PLATFORM_OPTIONS } from '../../lib/adDnaEngine';
 
+const LANG_SHORT: Record<string, string> = {
+  ar: 'العربية',
+  en: 'English',
+  fr: 'Français',
+  es: 'Español',
+  tr: 'Türkçe',
+  de: 'Deutsch',
+};
+
+const PLATFORM_SHORT: Record<string, string> = {
+  general: 'عام',
+  tiktok: 'TikTok',
+  instagram_reels: 'Reels',
+  youtube: 'يوتيوب',
+  youtube_shorts: 'Shorts',
+  snapchat: 'Snapchat',
+  tv_commercial: 'تلفزيون',
+};
+
+const DIALECT_SHORT: Record<string, string> = {
+  standard_modern: 'فصحى معاصرة',
+  gulf_saudi: 'خليجية',
+  gulf_emirati: 'إماراتية',
+  levantine_syrian_lebanese: 'شامية',
+  egyptian: 'مصرية',
+  maghrebi_moroccan: 'مغاربية',
+  iraqi: 'عراقية',
+  us_standard: 'American',
+  uk_rp: 'British',
+  global_neutral: 'International',
+  fr_standard: 'Français',
+  es_castilian: 'Español',
+  tr_istanbul: 'Türkçe',
+  de_standard: 'Deutsch',
+};
+
 function Chip({
   active,
   onClick,
@@ -34,7 +70,7 @@ function Chip({
     <button
       type="button"
       onClick={onClick}
-      className={`inline-flex items-center gap-1.5 rounded-xl border px-3 py-2 text-[11px] font-bold transition ${
+      className={`inline-flex items-center gap-1 rounded-xl border px-2.5 py-1.5 text-[11px] font-bold transition sm:px-3 sm:py-2 ${
         active
           ? 'border-[#d4a574] bg-[#d4a574]/15 text-[#f4efe6] shadow-[0_0_18px_rgba(212,165,116,0.22)]'
           : 'border-white/10 bg-black/35 text-white/65 hover:border-white/25 hover:text-white'
@@ -48,12 +84,12 @@ function Chip({
 
 function Box({ title, hint, children }: { title: string; hint?: string; children: React.ReactNode }) {
   return (
-    <section className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-      <div className="mb-3">
+    <section className="rounded-2xl border border-white/10 bg-white/[0.04] p-3 sm:p-4">
+      <div className="mb-2.5">
         <h4 className="text-xs font-black text-white">{title}</h4>
         {hint && <p className="mt-0.5 text-[10px] text-white/40">{hint}</p>}
       </div>
-      <div className="flex flex-wrap gap-2">{children}</div>
+      <div className="flex flex-wrap gap-1.5 sm:gap-2">{children}</div>
     </section>
   );
 }
@@ -105,11 +141,11 @@ export function ProControlGrid(props: {
   const dialects = DIALECT_OPTIONS[props.language] || [];
 
   return (
-    <div className="grid grid-cols-1 gap-3 lg:grid-cols-2" dir="rtl">
+    <div className="grid grid-cols-1 gap-2.5 sm:gap-3 lg:grid-cols-2" dir="rtl">
       <Box title="المدة" hint="التوليد 10 ثوانٍ ثم تمديد المشهد بزيادات 10 ثوانٍ">
         {OMNI_DURATIONS.map((d) => (
           <Chip key={d} active={props.duration === d} onClick={() => props.onDuration(d)}>
-            {d} ثانية
+            {d} ث
           </Chip>
         ))}
       </Box>
@@ -124,10 +160,10 @@ export function ProControlGrid(props: {
 
       <Box title="الأبعاد والمنصة">
         <Chip active={props.aspectRatio === '9:16'} onClick={() => props.onAspect('9:16')}>
-          9:16 ريلز / تيك توك
+          9:16
         </Chip>
         <Chip active={props.aspectRatio === '16:9'} onClick={() => props.onAspect('16:9')}>
-          16:9 يوتيوب / تلفزيون
+          16:9
         </Chip>
         {PLATFORM_OPTIONS.map((p) => (
           <Chip
@@ -138,7 +174,7 @@ export function ProControlGrid(props: {
               props.onAspect(p.defaultRatio as '16:9' | '9:16');
             }}
           >
-            {p.label}
+            {PLATFORM_SHORT[p.id] || p.label}
           </Chip>
         ))}
       </Box>
@@ -228,20 +264,26 @@ export function ProControlGrid(props: {
         ))}
       </Box>
 
-      <Box title="لغة الحوار">
-        {LANGUAGE_OPTIONS.map((l) => (
-          <Chip key={l.id} active={props.language === l.id} onClick={() => props.onLanguage(l.id)}>
-            {l.label}
-          </Chip>
-        ))}
-        {dialects.map((d) => (
-          <Chip key={d.id} active={props.dialect === d.id} onClick={() => props.onDialect(d.id)}>
-            {d.label}
-          </Chip>
-        ))}
-      </Box>
+      <div className="space-y-2.5">
+        <Box title="لغة الحوار">
+          {LANGUAGE_OPTIONS.map((l) => (
+            <Chip key={l.id} active={props.language === l.id} onClick={() => props.onLanguage(l.id)}>
+              {LANG_SHORT[l.id] || l.label}
+            </Chip>
+          ))}
+        </Box>
+        {dialects.length > 0 && (
+          <Box title="اللهجة" hint="تظهر بعد اختيار اللغة">
+            {dialects.map((d) => (
+              <Chip key={d.id} active={props.dialect === d.id} onClick={() => props.onDialect(d.id)}>
+                {DIALECT_SHORT[d.id] || d.label}
+              </Chip>
+            ))}
+          </Box>
+        )}
+      </div>
 
-      <div className="rounded-2xl border border-[#d4a574]/30 bg-[#d4a574]/10 p-4 lg:col-span-2">
+      <div className="rounded-2xl border border-[#d4a574]/30 bg-[#d4a574]/10 p-3 sm:p-4 lg:col-span-2">
         <div className="flex flex-wrap items-end justify-between gap-2 text-right">
           <div>
             <p className="text-[10px] font-bold text-[#e8b86d]">التكلفة التقديرية</p>

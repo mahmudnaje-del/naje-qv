@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Search, Filter, ChevronLeft, ChevronRight, Check, Upload } from 'lucide-react';
+import { Search, Filter, Upload, Check } from 'lucide-react';
 import { AVATAR_REGISTRY, NajiAvatar, interleaveDiverseAvatars } from '../../data/avatars/avatarRegistry';
 import { getRegionLabelAr } from '../../data/avatars/avatarRegionLabels';
 import { CircularCardCarousel } from './CircularCardCarousel';
@@ -72,11 +72,10 @@ export function CastingRoom({
   );
 
   useEffect(() => {
-    if (selectedAvatarId) {
-      const found = items.findIndex((c) => c.type === 'avatar' && c.id === selectedAvatarId);
-      if (found !== -1) setCenterIndex(found);
-    }
-  }, [selectedAvatarId, items]);
+    if (!selectedAvatarId) return;
+    const found = items.findIndex((c) => c.type === 'avatar' && c.id === selectedAvatarId);
+    if (found !== -1) setCenterIndex(found);
+  }, [selectedAvatarId]);
 
   const pickFile = (file?: File) => {
     if (!file) return;
@@ -86,14 +85,20 @@ export function CastingRoom({
   };
 
   return (
-    <div className="space-y-3 text-right" dir="rtl">
-      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h2 className="text-base font-black text-white">الشخصية</h2>
-          <p className="text-[11px] text-white/45">أول بطاقة لإرفاق وجهك — اسحب لمكتبة ناجي</p>
+    <div className="space-y-2.5 text-right" dir="rtl">
+      <div className="flex items-center justify-between gap-2">
+        <div className="min-w-0">
+          <h2 className="text-sm font-black text-white sm:text-base">الشخصية</h2>
+          <p className="text-[10px] text-white/45 sm:text-[11px]">أرفق وجهك أو اسحب مكتبة ناجي</p>
         </div>
-        <div className="relative w-full md:w-72">
-          <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/35" />
+        <span className="shrink-0 rounded-lg border border-white/10 px-2 py-1 font-mono text-[11px] font-bold text-[#e8b86d]">
+          {centerIndex + 1}/{items.length}
+        </span>
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <div className="relative">
+          <Search className="absolute right-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/35" />
           <input
             value={searchTerm}
             onChange={(e) => {
@@ -101,21 +106,18 @@ export function CastingRoom({
               setCenterIndex(0);
             }}
             placeholder="ابحث بالاسم أو المهنة..."
-            className="w-full rounded-xl border border-white/10 bg-black/35 py-2 pr-10 pl-3 text-xs text-white placeholder:text-white/30 focus:border-[#d4a574] focus:outline-none"
+            className="w-full rounded-xl border border-white/10 bg-black/35 py-2 pr-9 pl-3 text-xs text-white placeholder:text-white/30 focus:border-[#d4a574] focus:outline-none"
           />
         </div>
-      </div>
-
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex flex-wrap items-center gap-2">
-          <Filter className="h-3.5 w-3.5 text-[#d4a574]" />
+        <div className="flex items-center gap-2 overflow-x-auto pb-0.5">
+          <Filter className="h-3.5 w-3.5 shrink-0 text-[#d4a574]" />
           <select
             value={selectedRegion}
             onChange={(e) => {
               setSelectedRegion(e.target.value);
               setCenterIndex(0);
             }}
-            className="rounded-xl border border-white/10 bg-[#141824] px-3 py-1.5 text-[11px] text-white"
+            className="min-w-0 flex-1 rounded-xl border border-white/10 bg-[#141824] px-2.5 py-1.5 text-[11px] text-white"
           >
             <option value="all">كل المناطق</option>
             {regions.map((r) => (
@@ -130,7 +132,7 @@ export function CastingRoom({
               setSelectedAgeGroup(e.target.value);
               setCenterIndex(0);
             }}
-            className="rounded-xl border border-white/10 bg-[#141824] px-3 py-1.5 text-[11px] text-white"
+            className="min-w-0 flex-1 rounded-xl border border-white/10 bg-[#141824] px-2.5 py-1.5 text-[11px] text-white"
           >
             {Object.entries(AGE_GROUP_LABELS).map(([k, v]) => (
               <option key={k} value={k}>
@@ -139,40 +141,33 @@ export function CastingRoom({
             ))}
           </select>
         </div>
-        <div className="flex items-center gap-2 text-[11px] font-bold text-white/60">
-          <button type="button" onClick={() => setCenterIndex((i) => (i - 1 + items.length) % items.length)} className="rounded-lg border border-white/10 p-1.5">
-            <ChevronRight className="h-4 w-4" />
-          </button>
-          <span className="font-mono text-[#e8b86d]">
-            {centerIndex + 1}/{items.length}
-          </span>
-          <button type="button" onClick={() => setCenterIndex((i) => (i + 1) % items.length)} className="rounded-lg border border-white/10 p-1.5">
-            <ChevronLeft className="h-4 w-4" />
-          </button>
-        </div>
       </div>
 
-      <div className="relative overflow-visible rounded-3xl border border-white/8 bg-[#0c0e14] p-3">
-        {showHint && centerIndex === 0 && <SwipeHintHand label="اسحب لمشاهدة شخصيات ناجي" />}
+      <div className="relative overflow-visible rounded-2xl border border-white/8 bg-[#0c0e14] px-1 py-2 sm:rounded-3xl sm:p-3">
         <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(e) => pickFile(e.target.files?.[0])} />
         <CircularCardCarousel<Card>
           items={items}
           getKey={(c) => c.id}
           isSelected={(c) => (c.type === 'upload' ? Boolean(customPreview) && !selectedAvatarId : c.id === selectedAvatarId)}
           onSelect={(c) => {
-            if (c.type === 'upload') fileRef.current?.click();
-            else onSelectAvatar(c.id);
+            if (c.type === 'avatar') onSelectAvatar(c.id);
           }}
           centerIndex={centerIndex}
           onCenterIndexChange={setCenterIndex}
           onUserSwipe={onUserSwipe}
+          frameClassName="h-[360px] sm:h-[430px]"
           renderCard={(c, isCenter) => {
             if (c.type === 'upload') {
               return (
-                <div className={`w-[78vw] max-w-[15rem] rounded-2xl border p-3 ${isCenter ? 'border-[#d4a574] bg-[#1a140f]' : 'border-white/10 bg-[#12141c]'} `}>
-                  <div className="mb-2 text-[10px] font-black text-[#e8b86d]">إرفاق شخصية</div>
-                  <button
-                    type="button"
+                <div className={`w-[70vw] max-w-[14.5rem] rounded-2xl border p-2.5 ${isCenter ? 'border-[#d4a574] bg-[#1a140f]' : 'border-white/10 bg-[#12141c]'}`}>
+                  <div className="mb-2 flex items-center justify-center gap-2 rounded-xl bg-black/25 py-1">
+                    <span className="h-1 w-6 rounded-full bg-[#d4a574]/80" />
+                    <span className="text-[10px] font-black text-[#e8b86d]">إرفاق · اسحب</span>
+                    <span className="h-1 w-6 rounded-full bg-[#d4a574]/80" />
+                  </div>
+                  <div
+                    role="button"
+                    tabIndex={0}
                     onClick={(e) => {
                       e.stopPropagation();
                       fileRef.current?.click();
@@ -187,14 +182,14 @@ export function CastingRoom({
                         <span className="px-3 text-center text-[11px] font-bold text-white/70">ارفق صورتك أو ممثلك</span>
                       </>
                     )}
-                  </button>
+                  </div>
                 </div>
               );
             }
             const av = c.avatar;
             const selected = av.id === selectedAvatarId;
             return (
-              <div className={`rounded-2xl border p-2.5 ${isCenter ? 'w-[78vw] max-w-[15rem] bg-[#121622]' : 'w-36 bg-[#11141c]'} ${selected ? 'border-[#d4a574]' : 'border-white/10'}`}>
+              <div className={`rounded-2xl border p-2 ${isCenter ? 'w-[70vw] max-w-[14.5rem] bg-[#121622]' : 'w-32 bg-[#11141c]'} ${selected ? 'border-[#d4a574]' : 'border-white/10'}`}>
                 <div className="relative aspect-[3/4] overflow-hidden rounded-xl">
                   <AvatarPhoto id={av.id} name={av.name} gradient={av.placeholderGradient} className="h-full w-full" />
                   {selected && (
@@ -226,6 +221,7 @@ export function CastingRoom({
           }}
         />
       </div>
+      {showHint && centerIndex === 0 && <SwipeHintHand label="اسحب يميناً أو يساراً لمشاهدة شخصيات ناجي" />}
     </div>
   );
 }

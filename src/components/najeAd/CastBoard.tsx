@@ -1,5 +1,5 @@
 import React, { useMemo, useRef, useState } from 'react';
-import { Plus, Upload, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Upload, X } from 'lucide-react';
 import { AVATAR_REGISTRY, NajiAvatar } from '../../data/avatars/avatarRegistry';
 import { LOCATION_REGISTRY, NajiLocation } from '../../data/locations/locationRegistry';
 import {
@@ -15,6 +15,7 @@ import {
 import { CircularCardCarousel } from './CircularCardCarousel';
 import { AvatarPhoto } from './AvatarPhoto';
 import { LocationPhoto } from './LocationPhoto';
+import { SwipeHintHand } from './SwipeHintHand';
 
 type DeckItem = { type: 'add'; id: '__add__' } | { type: 'card'; id: string; card: SceneBoardCard };
 
@@ -43,6 +44,7 @@ export function CastBoard({
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [centerIndex, setCenterIndex] = useState(1);
+  const [hint, setHint] = useState(true);
 
   const items: DeckItem[] = useMemo(
     () => [{ type: 'add', id: '__add__' }, ...cards.map((card) => ({ type: 'card' as const, id: card.id, card }))],
@@ -92,25 +94,17 @@ export function CastBoard({
   };
 
   return (
-    <div className="space-y-3 text-right" dir="rtl">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <h2 className="text-base font-black text-white">لوحة المشهد</h2>
-          <p className="text-[11px] text-white/45">
-            اسحب كالبطاقات الأخرى. بطاقة الإضافة دائماً موجودة — شخصية ثانية أو مكان ينتقل عند الثانية التي تختارها.
+    <div className="space-y-2.5 text-right" dir="rtl">
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <h2 className="text-sm font-black text-white sm:text-base">لوحة المشهد</h2>
+          <p className="text-[10px] leading-snug text-white/45 sm:text-[11px]">
+            اسحب البطاقات. الإضافة دائماً موجودة — شخصية أو مكان يظهر عند الثانية التي تختارها.
           </p>
         </div>
-        <div className="flex items-center gap-2 text-[11px] font-bold text-white/60">
-          <button type="button" onClick={() => setCenterIndex((i) => (i - 1 + items.length) % items.length)} className="rounded-lg border border-white/10 p-1.5">
-            <ChevronRight className="h-4 w-4" />
-          </button>
-          <span className="font-mono text-[#e8b86d]">
-            {centerIndex + 1}/{items.length}
-          </span>
-          <button type="button" onClick={() => setCenterIndex((i) => (i + 1) % items.length)} className="rounded-lg border border-white/10 p-1.5">
-            <ChevronLeft className="h-4 w-4" />
-          </button>
-        </div>
+        <span className="shrink-0 rounded-lg border border-white/10 px-2 py-1 font-mono text-[11px] font-bold text-[#e8b86d]">
+          {centerIndex + 1}/{items.length}
+        </span>
       </div>
 
       <input
@@ -129,7 +123,7 @@ export function CastBoard({
         }}
       />
 
-      <div className="relative overflow-visible rounded-3xl border border-white/8 bg-[#0c0e14] p-3">
+      <div className="relative overflow-visible rounded-2xl border border-white/8 bg-[#0c0e14] px-1 py-2 sm:rounded-3xl sm:p-3">
         <CircularCardCarousel<DeckItem>
           items={items}
           getKey={(c) => c.id}
@@ -137,22 +131,27 @@ export function CastBoard({
           onSelect={() => {}}
           centerIndex={centerIndex}
           onCenterIndexChange={setCenterIndex}
-          frameClassName="h-[540px] sm:h-[560px]"
+          onUserSwipe={() => setHint(false)}
+          frameClassName="h-[360px] sm:h-[420px]"
           renderCard={(item, isCenter) => {
             if (item.type === 'add') {
               return (
                 <div
-                  className={`${isCenter ? 'w-[82vw] max-w-[17.5rem]' : 'w-40'} overflow-hidden rounded-2xl border border-dashed border-[#d4a574]/55 bg-gradient-to-b from-[#2a1c12] to-[#120e0c] p-3 shadow-[0_20px_50px_-24px_rgba(212,165,116,0.55)]`}
+                  className={`${isCenter ? 'w-[72vw] max-w-[16.5rem]' : 'w-36'} overflow-hidden rounded-2xl border border-dashed border-[#d4a574]/55 bg-gradient-to-b from-[#2a1c12] to-[#120e0c] p-2.5 shadow-[0_20px_50px_-24px_rgba(212,165,116,0.55)]`}
                 >
-                  <div className="mb-2 inline-flex items-center gap-1.5 text-[11px] font-black text-[#e8b86d]">
-                    <Plus className="h-3.5 w-3.5" /> أضف بطاقة
+                  <div className="mb-2 flex items-center justify-center gap-2 rounded-xl bg-black/25 py-1.5">
+                    <span className="h-1 w-7 rounded-full bg-[#d4a574]/80" />
+                    <span className="inline-flex items-center gap-1 text-[10px] font-black text-[#e8b86d]">
+                      <Plus className="h-3.5 w-3.5" /> أضف · اسحب
+                    </span>
+                    <span className="h-1 w-7 rounded-full bg-[#d4a574]/80" />
                   </div>
                   {isCenter ? (
-                    <div className="max-h-[460px] space-y-2.5 overflow-y-auto pr-0.5">
+                    <div data-no-drag className="max-h-[270px] space-y-2 overflow-y-auto overscroll-contain touch-pan-y pr-0.5">
                       {SCENE_ADD_GROUPS.map((group) => (
                         <div key={group.title}>
                           <p className="mb-1 text-[9px] font-black tracking-wide text-white/35">{group.title}</p>
-                          <div className="space-y-1">
+                          <div className="grid grid-cols-2 gap-1">
                             {group.ids.map((id) => {
                               const opt = optionMeta(id);
                               if (!opt) return null;
@@ -164,13 +163,10 @@ export function CastBoard({
                                     e.stopPropagation();
                                     addCard(id);
                                   }}
-                                  className="flex w-full items-start gap-2 rounded-xl border border-white/10 bg-black/35 px-2.5 py-2 text-right hover:border-[#d4a574]/45"
+                                  className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-black/35 px-1.5 py-1.5 text-right hover:border-[#d4a574]/45"
                                 >
-                                  <span className="mt-0.5 h-2 w-2 shrink-0 rounded-full" style={{ background: opt.accent }} />
-                                  <span className="min-w-0">
-                                    <span className="block text-[11px] font-black text-white">{opt.label}</span>
-                                    <span className="block text-[9px] leading-snug text-white/40">{opt.desc}</span>
-                                  </span>
+                                  <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: opt.accent }} />
+                                  <span className="min-w-0 truncate text-[10px] font-black text-white">{opt.label}</span>
                                 </button>
                               );
                             })}
@@ -204,10 +200,10 @@ export function CastBoard({
 
             return (
               <div
-                className={`${isCenter ? 'w-[82vw] max-w-[17.5rem]' : 'w-40'} overflow-hidden rounded-2xl border bg-[#12141c] p-2.5`}
+                className={`${isCenter ? 'w-[72vw] max-w-[16.5rem]' : 'w-36'} overflow-hidden rounded-2xl border bg-[#12141c] p-2`}
                 style={{ borderColor: isCenter ? accent : 'rgba(255,255,255,0.1)' }}
               >
-                <div className="mb-2 flex items-center justify-between gap-2">
+                <div className="mb-1.5 flex items-center justify-between gap-2">
                   <span className="text-[11px] font-black" style={{ color: accent }}>
                     {meta?.label || card.kind}
                   </span>
@@ -222,13 +218,14 @@ export function CastBoard({
                     <X className="h-3.5 w-3.5" />
                   </button>
                 </div>
-                <button
-                  type="button"
+                <div
+                  role="button"
+                  tabIndex={0}
                   onClick={(e) => {
                     e.stopPropagation();
                     attachFileTo(card.id);
                   }}
-                  className="relative mb-2 flex aspect-[3/4] w-full items-center justify-center overflow-hidden rounded-xl border border-dashed bg-black/35"
+                  className="relative mb-2 flex aspect-[4/5] w-full items-center justify-center overflow-hidden rounded-xl border border-dashed bg-black/35"
                   style={{ borderColor: `${accent}55` }}
                 >
                   {card.preview ? (
@@ -253,7 +250,7 @@ export function CastBoard({
                       <span className="text-center text-[10px] font-bold">{emptyLabel}</span>
                     </div>
                   )}
-                </button>
+                </div>
                 {isCenter && (
                   <div className="space-y-1.5">
                     <input
@@ -287,7 +284,7 @@ export function CastBoard({
                       </button>
                     )}
                     {timed && (
-                      <div className="rounded-xl border border-white/10 bg-black/30 p-2">
+                      <div data-no-drag className="rounded-xl border border-white/10 bg-black/30 p-2 touch-pan-y">
                         <label className="mb-1 block text-[10px] font-black text-[#e8b86d]">
                           انتقال عند الثانية {card.appearAtSec ?? 0} / {duration}
                         </label>
@@ -333,6 +330,7 @@ export function CastBoard({
           }}
         />
       </div>
+      {hint && <SwipeHintHand label="اسحب يميناً أو يساراً لتقليب بطاقات المشهد" />}
     </div>
   );
 }
