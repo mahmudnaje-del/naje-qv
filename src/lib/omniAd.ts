@@ -93,10 +93,10 @@ export function composeDirectorChunkPrompt(opts: {
     const iv = opts.beatInterval;
     const pack =
       iv < 10
-        ? `Pack two or more ${iv}s user notes into this single 10s window, in order.`
+        ? `Direction only — do not change clip length. Pack the ${iv}s notes that fall in this window into one ~10s output, in order.`
         : iv > 10
-        ? `This 10s window is only a slice of a longer ${iv}s user beat — play the matching portion, do not rush the whole beat into 10s.`
-        : `One user beat maps to this 10s window.`;
+        ? `Direction only — do not change clip length. This 10s output is a slice of a longer ${iv}s user note; play only the matching portion.`
+        : `Direction only — do not change clip length. This user note maps to this ~10s output.`;
     parts.push(`User clock: ${iv}-second beats across ${totalDuration}s. ${pack}`);
   }
 

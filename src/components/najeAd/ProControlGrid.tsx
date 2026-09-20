@@ -262,7 +262,7 @@ export function ProControlGrid(props: {
 
       <Box
         title="توجيه النموذج"
-        hint="ماذا يفعل في كل مقطع — الصناديق تظهر تحت حسب المدة"
+        hint="ملاحظات داخل المدة فقط — التوليد يبقى 10 ثوانٍ ثم تمديد. مدة 10 + كل 5ث = صندوقان (1→5 و 5→10) في نفس التوليد."
         className="lg:col-span-2"
       >
         {BEAT_INTERVALS.map((iv) => (

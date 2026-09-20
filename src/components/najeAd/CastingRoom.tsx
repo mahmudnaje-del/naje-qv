@@ -4,7 +4,6 @@ import { AVATAR_REGISTRY, NajiAvatar, interleaveDiverseAvatars } from '../../dat
 import { getRegionLabelAr } from '../../data/avatars/avatarRegionLabels';
 import { CircularCardCarousel } from './CircularCardCarousel';
 import { AvatarPhoto } from './AvatarPhoto';
-import { SwipeHintHand } from './SwipeHintHand';
 
 type Card = { type: 'upload'; id: '__upload__' } | { type: 'avatar'; id: string; avatar: NajiAvatar };
 
@@ -143,7 +142,7 @@ export function CastingRoom({
         </div>
       </div>
 
-      <div className="relative overflow-visible rounded-2xl border border-white/8 bg-[#0c0e14] px-1 py-2 sm:rounded-3xl sm:p-3">
+      <div className="relative overflow-visible rounded-2xl border border-white/8 bg-[#0c0e14] px-5 py-3 sm:rounded-3xl sm:px-8 sm:py-4">
         <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(e) => pickFile(e.target.files?.[0])} />
         <CircularCardCarousel<Card>
           items={items}
@@ -155,11 +154,13 @@ export function CastingRoom({
           centerIndex={centerIndex}
           onCenterIndexChange={setCenterIndex}
           onUserSwipe={onUserSwipe}
-          frameClassName="h-[360px] sm:h-[430px]"
+          showHand={showHint && centerIndex === 0}
+          handLabel="اسحب لمكتبة ناجي"
+          frameClassName="h-[340px] sm:h-[410px]"
           renderCard={(c, isCenter) => {
             if (c.type === 'upload') {
               return (
-                <div className={`w-[70vw] max-w-[14.5rem] rounded-2xl border p-2.5 ${isCenter ? 'border-[#d4a574] bg-[#1a140f]' : 'border-white/10 bg-[#12141c]'}`}>
+                <div className={`w-[58vw] max-w-[14rem] rounded-2xl border p-2.5 ${isCenter ? 'border-[#d4a574] bg-[#1a140f]' : 'border-white/10 bg-[#12141c]'}`}>
                   <div className="mb-2 flex items-center justify-center gap-2 rounded-xl bg-black/25 py-1">
                     <span className="h-1 w-6 rounded-full bg-[#d4a574]/80" />
                     <span className="text-[10px] font-black text-[#e8b86d]">إرفاق · اسحب</span>
@@ -189,7 +190,7 @@ export function CastingRoom({
             const av = c.avatar;
             const selected = av.id === selectedAvatarId;
             return (
-              <div className={`rounded-2xl border p-2 ${isCenter ? 'w-[70vw] max-w-[14.5rem] bg-[#121622]' : 'w-32 bg-[#11141c]'} ${selected ? 'border-[#d4a574]' : 'border-white/10'}`}>
+              <div className={`w-[58vw] max-w-[14rem] rounded-2xl border p-2 ${isCenter ? 'bg-[#121622]' : 'bg-[#11141c]'} ${selected ? 'border-[#d4a574]' : 'border-white/10'}`}>
                 <div className="relative aspect-[3/4] overflow-hidden rounded-xl">
                   <AvatarPhoto id={av.id} name={av.name} gradient={av.placeholderGradient} className="h-full w-full" />
                   {selected && (
@@ -221,7 +222,6 @@ export function CastingRoom({
           }}
         />
       </div>
-      {showHint && centerIndex === 0 && <SwipeHintHand label="اسحب يميناً أو يساراً لمشاهدة شخصيات ناجي" />}
     </div>
   );
 }

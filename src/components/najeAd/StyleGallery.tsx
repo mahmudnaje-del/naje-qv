@@ -41,7 +41,7 @@ export function StyleGallery({
         />
       </div>
 
-      <div className="relative overflow-visible rounded-2xl border border-white/8 bg-[#0c0e14] px-1 py-2 sm:rounded-3xl sm:p-3">
+      <div className="relative overflow-visible rounded-2xl border border-white/8 bg-[#0c0e14] px-5 py-3 sm:rounded-3xl sm:px-8 sm:py-4">
         <CircularCardCarousel<AdStyle>
           items={filtered}
           getKey={(t) => t.id}
@@ -49,10 +49,10 @@ export function StyleGallery({
           onSelect={(t) => onSelectStyle(t.id)}
           centerIndex={centerIndex}
           onCenterIndexChange={setCenterIndex}
-          frameClassName="h-[280px] sm:h-[360px]"
+          frameClassName="h-[250px] sm:h-[330px]"
           renderCard={(t, isCenter) => (
             <div
-              className={`overflow-hidden rounded-2xl border ${isCenter ? 'w-[78vw] max-w-64' : 'w-36'} ${
+              className={`w-[64vw] max-w-[15.5rem] overflow-hidden rounded-2xl border ${
                 t.id === selectedStyleId ? 'border-[#d4a574]' : 'border-white/10'
               }`}
             >
@@ -73,15 +73,16 @@ export function StyleGallery({
               </div>
               {isCenter && (
                 <div className="bg-[#12141c] p-2.5">
-                  <p className="line-clamp-2 text-[11px] leading-relaxed text-white/55">{t.desc}</p>
+                  <p className="line-clamp-2 text-right text-[11px] leading-relaxed text-white/55" dir="rtl">
+                    {t.desc.replace(/[.\u06D4]+$/g, '')}
+                  </p>
                   <button
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
                       onSelectStyle(t.id);
                     }}
-                    className="mt-2 w-full rounded-xl py-1.5 text-[11px] font-black text-black"
-                    style={{ background: t.accent }}
+                    className="mt-2 w-full rounded-xl bg-[#d4a574] py-1.5 text-[11px] font-black text-black"
                   >
                     اعتماد الأسلوب
                   </button>

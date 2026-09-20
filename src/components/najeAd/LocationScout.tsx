@@ -4,7 +4,6 @@ import { LOCATION_REGISTRY, NajiLocation } from '../../data/locations/locationRe
 import { getCategoryLabelAr } from '../../data/locations/locationCategoryLabels';
 import { CircularCardCarousel } from './CircularCardCarousel';
 import { LocationPhoto } from './LocationPhoto';
-import { SwipeHintHand } from './SwipeHintHand';
 
 type Card = { type: 'upload'; id: '__upload__' } | { type: 'location'; id: string; location: NajiLocation };
 
@@ -104,7 +103,7 @@ export function LocationScout({
         </div>
       </div>
 
-      <div className="relative overflow-visible rounded-2xl border border-white/8 bg-[#0c0e14] px-1 py-2 sm:rounded-3xl sm:p-3">
+      <div className="relative overflow-visible rounded-2xl border border-white/8 bg-[#0c0e14] px-5 py-3 sm:rounded-3xl sm:px-8 sm:py-4">
         <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(e) => pickFile(e.target.files?.[0])} />
         <CircularCardCarousel<Card>
           items={items}
@@ -116,11 +115,13 @@ export function LocationScout({
           centerIndex={centerIndex}
           onCenterIndexChange={setCenterIndex}
           onUserSwipe={onUserSwipe}
-          frameClassName="h-[300px] sm:h-[380px]"
+          showHand={showHint && centerIndex === 0}
+          handLabel="اسحب لمواقع ناجي"
+          frameClassName="h-[280px] sm:h-[360px]"
           renderCard={(c, isCenter) => {
             if (c.type === 'upload') {
               return (
-                <div className={`w-[78vw] max-w-[16.5rem] rounded-2xl border p-2.5 ${isCenter ? 'border-[#7dd3c7] bg-[#10201c]' : 'border-white/10 bg-[#12141c]'}`}>
+                <div className={`w-[64vw] max-w-[16rem] rounded-2xl border p-2.5 ${isCenter ? 'border-[#7dd3c7] bg-[#10201c]' : 'border-white/10 bg-[#12141c]'}`}>
                   <div className="mb-2 flex items-center justify-center gap-2 rounded-xl bg-black/25 py-1">
                     <span className="h-1 w-6 rounded-full bg-[#7dd3c7]/80" />
                     <span className="text-[10px] font-black text-[#7dd3c7]">إرفاق · اسحب</span>
@@ -150,7 +151,7 @@ export function LocationScout({
             const loc = c.location;
             const selected = loc.id === selectedLocationId;
             return (
-              <div className={`rounded-2xl border p-2 ${isCenter ? 'w-[78vw] max-w-[16.5rem] bg-[#121622]' : 'w-36 bg-[#11141c]'} ${selected ? 'border-[#7dd3c7]' : 'border-white/10'}`}>
+              <div className={`w-[64vw] max-w-[16rem] rounded-2xl border p-2 ${isCenter ? 'bg-[#121622]' : 'bg-[#11141c]'} ${selected ? 'border-[#7dd3c7]' : 'border-white/10'}`}>
                 <div className="relative aspect-video overflow-hidden rounded-xl">
                   <LocationPhoto id={loc.id} name={loc.name} gradient={loc.placeholderGradient} className="h-full w-full" />
                   {selected && (
@@ -182,7 +183,6 @@ export function LocationScout({
           }}
         />
       </div>
-      {showHint && centerIndex === 0 && <SwipeHintHand label="اسحب يميناً أو يساراً لمشاهدة أماكن ناجي" />}
     </div>
   );
 }

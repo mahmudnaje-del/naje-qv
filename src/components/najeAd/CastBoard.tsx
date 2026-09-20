@@ -15,7 +15,6 @@ import {
 import { CircularCardCarousel } from './CircularCardCarousel';
 import { AvatarPhoto } from './AvatarPhoto';
 import { LocationPhoto } from './LocationPhoto';
-import { SwipeHintHand } from './SwipeHintHand';
 
 type DeckItem = { type: 'add'; id: '__add__' } | { type: 'card'; id: string; card: SceneBoardCard };
 
@@ -123,7 +122,7 @@ export function CastBoard({
         }}
       />
 
-      <div className="relative overflow-visible rounded-2xl border border-white/8 bg-[#0c0e14] px-1 py-2 sm:rounded-3xl sm:p-3">
+      <div className="relative overflow-visible rounded-2xl border border-white/8 bg-[#0c0e14] px-5 py-3 sm:rounded-3xl sm:px-8 sm:py-4">
         <CircularCardCarousel<DeckItem>
           items={items}
           getKey={(c) => c.id}
@@ -132,12 +131,14 @@ export function CastBoard({
           centerIndex={centerIndex}
           onCenterIndexChange={setCenterIndex}
           onUserSwipe={() => setHint(false)}
-          frameClassName="h-[360px] sm:h-[420px]"
+          showHand={hint}
+          handLabel="اسحب لتقليب المشهد"
+          frameClassName="h-[340px] sm:h-[400px]"
           renderCard={(item, isCenter) => {
             if (item.type === 'add') {
               return (
                 <div
-                  className={`${isCenter ? 'w-[72vw] max-w-[16.5rem]' : 'w-36'} overflow-hidden rounded-2xl border border-dashed border-[#d4a574]/55 bg-gradient-to-b from-[#2a1c12] to-[#120e0c] p-2.5 shadow-[0_20px_50px_-24px_rgba(212,165,116,0.55)]`}
+                  className="w-[58vw] max-w-[15.5rem] overflow-hidden rounded-2xl border border-dashed border-[#d4a574]/55 bg-gradient-to-b from-[#2a1c12] to-[#120e0c] p-2.5 shadow-[0_20px_50px_-24px_rgba(212,165,116,0.55)]"
                 >
                   <div className="mb-2 flex items-center justify-center gap-2 rounded-xl bg-black/25 py-1.5">
                     <span className="h-1 w-7 rounded-full bg-[#d4a574]/80" />
@@ -147,7 +148,7 @@ export function CastBoard({
                     <span className="h-1 w-7 rounded-full bg-[#d4a574]/80" />
                   </div>
                   {isCenter ? (
-                    <div data-no-drag className="max-h-[270px] space-y-2 overflow-y-auto overscroll-contain touch-pan-y pr-0.5">
+                    <div data-no-drag className="max-h-[230px] space-y-2 overflow-y-auto overscroll-contain touch-pan-y pr-0.5">
                       {SCENE_ADD_GROUPS.map((group) => (
                         <div key={group.title}>
                           <p className="mb-1 text-[9px] font-black tracking-wide text-white/35">{group.title}</p>
@@ -200,7 +201,7 @@ export function CastBoard({
 
             return (
               <div
-                className={`${isCenter ? 'w-[72vw] max-w-[16.5rem]' : 'w-36'} overflow-hidden rounded-2xl border bg-[#12141c] p-2`}
+                className="w-[58vw] max-w-[15.5rem] overflow-hidden rounded-2xl border bg-[#12141c] p-2"
                 style={{ borderColor: isCenter ? accent : 'rgba(255,255,255,0.1)' }}
               >
                 <div className="mb-1.5 flex items-center justify-between gap-2">
@@ -330,7 +331,6 @@ export function CastBoard({
           }}
         />
       </div>
-      {hint && <SwipeHintHand label="اسحب يميناً أو يساراً لتقليب بطاقات المشهد" />}
     </div>
   );
 }
