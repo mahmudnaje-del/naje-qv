@@ -45,15 +45,17 @@ export function StyleGallery({
         onSelect={(t) => onSelectStyle(t.id)}
         centerIndex={centerIndex}
         onCenterIndexChange={setCenterIndex}
-        frameClassName="h-[380px] sm:h-[400px]"
+        frameClassName="h-[400px] sm:h-[430px]"
         renderCard={(t, isCenter) => (
           <div
             className={`overflow-hidden rounded-2xl border ${isCenter ? 'w-[78vw] max-w-64' : 'w-40'} ${
               t.id === selectedStyleId ? 'border-[#d4a574]' : 'border-white/10'
             }`}
           >
-            <div className="flex aspect-[5/3] items-end p-3" style={{ background: `linear-gradient(145deg, ${t.gradient[0]}, ${t.gradient[1]})` }}>
-              <span className="text-sm font-black text-white drop-shadow">{t.name}</span>
+            <div className="relative aspect-[3/2] overflow-hidden">
+              <img src={t.image} alt={t.name} className="h-full w-full object-cover" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
+              <span className="absolute right-2 bottom-2 text-sm font-black text-white drop-shadow">{t.name}</span>
             </div>
             {isCenter && (
               <div className="bg-[#12141c] p-3">

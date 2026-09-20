@@ -10,12 +10,12 @@ import { AdDnaState, DIALECT_OPTIONS, INITIAL_AD_DNA_STATE } from '../lib/adDnaE
 import { AVATAR_REGISTRY } from '../data/avatars/avatarRegistry';
 import { LOCATION_REGISTRY } from '../data/locations/locationRegistry';
 import {
-  OmniAdModel,
+  NAJE_VIDEO_PRO_LABEL,
   OmniDuration,
   OmniResolution,
+  SceneBoardCard,
   composeOmniAdPrompt,
   estimateOmniPoints,
-  modelFor,
 } from '../lib/omniAd';
 import FeaturePaywallModal from '../components/FeaturePaywallModal';
 import { CastingRoom } from '../components/najeAd/CastingRoom';
@@ -24,10 +24,20 @@ import { StyleGallery } from '../components/najeAd/StyleGallery';
 import { CastBoard } from '../components/najeAd/CastBoard';
 import { ProControlGrid } from '../components/najeAd/ProControlGrid';
 
-function stripDataUrl(dataUrl: string | null): string | undefined {
+function stripDataUrl(dataUrl: string | null | undefined): string | undefined {
   if (!dataUrl) return undefined;
   const i = dataUrl.indexOf(',');
   return i >= 0 ? dataUrl.slice(i + 1) : dataUrl;
+}
+
+function upsertKind(cards: SceneBoardCard[], kind: SceneBoardCard['kind'], patch: Partial<SceneBoardCard>): SceneBoardCard[] {
+  const idx = cards.findIndex((c) => c.kind === kind);
+  if (idx === -1) {
+    return [...cards, { id: `sc_${kind}_${Date.now().toString(36)}`, kind, ...patch }];
+  }
+  const next = [...cards];
+  next[idx] = { ...next[idx], ...patch };
+  return next;
 }
 
 export default function NajeAd() {
@@ -37,20 +47,25 @@ export default function NajeAd() {
   const resMul = najeAd?.resolutionMultiplier;
 
   const [dna, setDna] = useState<AdDnaState>(INITIAL_AD_DNA_STATE);
-  const [productName, setProductName] = useState('');
-  const [productPreview, setProductPreview] = useState<string | null>(null);
+  const [sceneCards, setSceneCards] = useState<SceneBoardCard[]>([]);
   const [customCharacter, setCustomCharacter] = useState<string | null>(null);
   const [customLocation, setCustomLocation] = useState<string | null>(null);
   const [showCastHint, setShowCastHint] = useState(true);
   const [showLocHint, setShowLocHint] = useState(true);
 
-  const [model, setModel] = useState<OmniAdModel>('omni-1.1');
   const [duration, setDuration] = useState<OmniDuration>(10);
   const [resolution, setResolution] = useState<OmniResolution>('720p');
   const [cameraMotion, setCameraMotion] = useState('cinematic_pan');
   const [lighting, setLighting] = useState('studio');
   const [marketingGoal, setMarketingGoal] = useState('showcase');
   const [audioMode, setAudioMode] = useState('native');
+  const [pace, setPace] = useState('medium');
+  const [colorGrade, setColorGrade] = useState('warm');
+  const [productPlacement, setProductPlacement] = useState('hero');
+  const [cta, setCta] = useState('hold');
+  const [voiceCast, setVoiceCast] = useState('talent');
+  const [musicEnergy, setMusicEnergy] = useState('soft');
+  const [hookStyle, setHookStyle] = useState('product_first');
   const [prompt, setPrompt] = useState('');
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -61,16 +76,10 @@ export default function NajeAd() {
   const [recentVideos, setRecentVideos] = useState<any[]>([]);
   const [editText, setEditText] = useState('');
 
-  const spec = modelFor(model);
-  useEffect(() => {
-    if (duration > spec.maxDuration) setModel('omni-1.1');
-    if (!spec.resolutions.includes(resolution)) setResolution('720p');
-  }, [model, duration, resolution, spec.maxDuration, spec.resolutions]);
-
   const avatar = dna.selectedAvatarId ? AVATAR_REGISTRY[dna.selectedAvatarId] || null : null;
   const location = dna.selectedLocationId ? LOCATION_REGISTRY[dna.selectedLocationId] || null : null;
-  const points = estimateOmniPoints({ durationSec: duration, resolution, model, pointsRatePerSecond: pointsRate, resolutionMultiplier: resMul });
-
+  const points = estimateOmniPoints({ durationSec: duration, resolution, pointsRatePerSecond: pointsRate, resolutionMultiplier: resMul });
+  const productCard = sceneCards.find((c) => c.kind === 'product');
   const updateDna = (partial: Partial<AdDnaState>) => setDna((p) => ({ ...p, ...partial }));
 
   useEffect(() => {
@@ -133,7 +142,8 @@ export default function NajeAd() {
 
   const handleGenerate = async (e?: React.FormEvent) => {
     e?.preventDefault();
-    if (!prompt.trim() && !productName && !avatar && !customCharacter) {
+    const hasTalent = Boolean(avatar || customCharacter || sceneCards.some((c) => c.kind === 'character' || c.kind === 'character_extra'));
+    if (!prompt.trim() && !productCard?.name && !hasTalent) {
       setErrorMessage('أضف منتجاً أو شخصية أو اكتب فكرة الإعلان.');
       return;
     }
@@ -143,30 +153,48 @@ export default function NajeAd() {
       script: prompt,
       dna,
       styleId: dna.selectedStyleTemplateId,
-      productName,
-      hasProductImage: Boolean(productPreview),
-      hasCharacterImage: Boolean(customCharacter || avatar),
-      hasLocationImage: Boolean(customLocation || location),
+      sceneCards,
       cameraMotion,
       lighting,
       marketingGoal,
       audioMode,
+      pace,
+      colorGrade,
+      productPlacement,
+      cta,
+      voiceCast,
+      musicEnergy,
+      hookStyle,
       durationSec: duration,
       aspectRatio: dna.aspectRatio,
     });
+    const primaryChar = sceneCards.find((c) => c.kind === 'character');
+    const primaryLoc = sceneCards.find((c) => c.kind === 'location');
+    const extraImages = sceneCards
+      .filter((c) => c.preview && c.kind !== 'product' && c.kind !== 'character' && c.kind !== 'location')
+      .slice(0, 6)
+      .map((c) => ({
+        kind: c.kind,
+        id: c.id,
+        name: c.name,
+        appearAtSec: c.appearAtSec,
+        imageBase64: stripDataUrl(c.preview),
+      }));
     try {
       const data = await postJob('/api/naje-ad/generate', {
         prompt: master,
         duration,
         aspectRatio: dna.aspectRatio,
         resolution,
-        model,
-        productName,
-        productImageBase64: stripDataUrl(productPreview),
-        characterImageBase64: stripDataUrl(customCharacter),
-        locationImageBase64: stripDataUrl(customLocation),
-        selectedAvatarId: dna.selectedAvatarId,
-        selectedLocationId: dna.selectedLocationId,
+        model: 'omni-1.1',
+        productName: productCard?.name || '',
+        productImageBase64: stripDataUrl(productCard?.preview),
+        characterImageBase64: stripDataUrl(primaryChar?.preview || customCharacter),
+        locationImageBase64: stripDataUrl(primaryLoc?.preview || customLocation),
+        selectedAvatarId: primaryChar?.avatarId || dna.selectedAvatarId,
+        selectedLocationId: primaryLoc?.locationId || dna.selectedLocationId,
+        sceneCards: sceneCards.map(({ preview, ...rest }) => rest),
+        extraImages,
         cameraMotion,
         lighting,
         marketingGoal,
@@ -221,11 +249,11 @@ export default function NajeAd() {
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-[#d4a574]/30 bg-[#d4a574]/10 px-3 py-1 text-[10px] font-black tracking-[0.18em] text-[#e8b86d]">
-                <Clapperboard className="h-3.5 w-3.5" /> NAJE AD · GEMINI OMNI
+                <Clapperboard className="h-3.5 w-3.5" /> NAJE AD · {NAJE_VIDEO_PRO_LABEL}
               </div>
               <h1 className="text-2xl font-black tracking-tight text-white">استوديو الإعلان المتحرك</h1>
               <p className="mt-1 max-w-xl text-xs leading-relaxed text-white/50">
-                Gemini Omni Flash للتوليد الأول، وترقية 1.1 لتمديد المشهد حتى 40 ثانية بزيادات 10 ثوانٍ مع تحرير باللغة الطبيعية.
+                {NAJE_VIDEO_PRO_LABEL} — توليد، تمديد المشهد حتى 40 ثانية، وتحرير باللغة الطبيعية على Gemini Omni 1.1 Flash.
               </p>
             </div>
             <div className="rounded-2xl border border-white/10 bg-black/30 px-4 py-2 text-right">
@@ -251,10 +279,21 @@ export default function NajeAd() {
             onSelectAvatar={(id) => {
               setCustomCharacter(null);
               updateDna({ selectedAvatarId: id });
+              const av = id ? AVATAR_REGISTRY[id] : null;
+              setSceneCards((prev) => upsertKind(prev, 'character', {
+                avatarId: id,
+                name: av?.name,
+                preview: null,
+              }));
             }}
             onCustomFile={(url) => {
               setCustomCharacter(url);
               updateDna({ selectedAvatarId: null });
+              setSceneCards((prev) => upsertKind(prev, 'character', {
+                avatarId: null,
+                preview: url,
+                name: 'شخصية مرفقة',
+              }));
             }}
             showHint={showCastHint}
             onUserSwipe={() => setShowCastHint(false)}
@@ -268,10 +307,21 @@ export default function NajeAd() {
             onSelectLocation={(id) => {
               setCustomLocation(null);
               updateDna({ selectedLocationId: id });
+              const loc = id ? LOCATION_REGISTRY[id] : null;
+              setSceneCards((prev) => upsertKind(prev, 'location', {
+                locationId: id,
+                name: loc?.name,
+                preview: null,
+              }));
             }}
             onCustomFile={(url) => {
               setCustomLocation(url);
               updateDna({ selectedLocationId: null });
+              setSceneCards((prev) => upsertKind(prev, 'location', {
+                locationId: null,
+                preview: url,
+                name: 'مكان مرفق',
+              }));
             }}
             showHint={showLocHint}
             onUserSwipe={() => setShowLocHint(false)}
@@ -285,35 +335,17 @@ export default function NajeAd() {
           />
         </section>
 
-        <section className="space-y-3">
-          <h2 className="text-sm font-black text-white">لوحة المشهد</h2>
+        <section className="rounded-[28px] border border-white/8 bg-[#0e1016] p-4">
           <CastBoard
-            productName={productName}
-            productPreview={productPreview}
-            onProductName={setProductName}
-            onProductFile={setProductPreview}
-            onClearProduct={() => {
-              setProductPreview(null);
-              setProductName('');
-            }}
-            avatar={avatar}
-            customCharacterPreview={customCharacter}
-            onClearCharacter={() => {
-              setCustomCharacter(null);
-              updateDna({ selectedAvatarId: null });
-            }}
-            location={location}
-            customLocationPreview={customLocation}
-            onClearLocation={() => {
-              setCustomLocation(null);
-              updateDna({ selectedLocationId: null });
-            }}
+            cards={sceneCards}
+            onChange={setSceneCards}
+            duration={duration}
+            libraryAvatar={avatar}
+            libraryLocation={location}
           />
         </section>
 
         <ProControlGrid
-          model={model}
-          onModel={setModel}
           duration={duration}
           onDuration={setDuration}
           resolution={resolution}
@@ -337,6 +369,20 @@ export default function NajeAd() {
             const dialects = DIALECT_OPTIONS[v] || [];
             updateDna({ language: v, dialect: dialects[0]?.id || '' });
           }}
+          pace={pace}
+          onPace={setPace}
+          colorGrade={colorGrade}
+          onColorGrade={setColorGrade}
+          productPlacement={productPlacement}
+          onProductPlacement={setProductPlacement}
+          cta={cta}
+          onCta={setCta}
+          voiceCast={voiceCast}
+          onVoiceCast={setVoiceCast}
+          musicEnergy={musicEnergy}
+          onMusicEnergy={setMusicEnergy}
+          hookStyle={hookStyle}
+          onHookStyle={setHookStyle}
           pointsRate={pointsRate}
           resolutionMultiplier={resMul}
         />

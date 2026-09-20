@@ -32,7 +32,6 @@ import { getAgentToolCost } from './src/lib/agentPricing.ts';
 import { buildPersonaInstruction, criticReviewRequest, getThinkingConfig } from './src/lib/councilOfMinds.ts';
 import os from 'os';
 import {
-  OMNI_FLASH_ID,
   OMNI_11_ID,
   OMNI_11_FALLBACK_ID,
   estimateOmniPoints,
@@ -3051,13 +3050,11 @@ function normalizeOmniResolution(raw: unknown): OmniResolution {
   return '720p';
 }
 
-function normalizeOmniModel(raw: unknown, durationSec: number, resolution: OmniResolution): OmniAdModel {
-  if (durationSec > 10 || resolution === '1080p' || resolution === '4k') return 'omni-1.1';
-  return raw === 'omni-flash' ? 'omni-flash' : 'omni-1.1';
+function normalizeOmniModel(_raw: unknown, _durationSec: number, _resolution: OmniResolution): OmniAdModel {
+  return 'omni-1.1';
 }
 
-function omniModelChain(model: OmniAdModel): string[] {
-  if (model === 'omni-flash') return [OMNI_FLASH_ID, OMNI_11_FALLBACK_ID, OMNI_11_ID];
+function omniModelChain(_model?: OmniAdModel): string[] {
   return [OMNI_11_ID, OMNI_11_FALLBACK_ID];
 }
 
@@ -3110,11 +3107,20 @@ async function gatherOmniRefImages(job: any): Promise<Array<{ data: string; mime
     [refs.product, 'hero product'],
     [refs.character, 'on-camera talent likeness'],
     [refs.location, 'environment / location'],
+    [refs.logo, 'brand logo lockup'],
+    [refs.first_frame, 'mandatory first frame'],
+    [refs.last_frame, 'mandatory last frame'],
   ];
   for (const [p, role] of loaders) {
     if (typeof p === 'string' && p) {
       const img = await loadNajeAdRefImage(p);
       if (img) images.push({ ...img, role });
+    }
+  }
+  for (const key of Object.keys(refs)) {
+    if (key.startsWith('extra_') && typeof refs[key] === 'string') {
+      const img = await loadNajeAdRefImage(refs[key]);
+      if (img) images.push({ ...img, role: `additional scene reference ${key}` });
     }
   }
   if (!refs.character) {
@@ -3131,7 +3137,7 @@ async function gatherOmniRefImages(job: any): Promise<Array<{ data: string; mime
       if (img) images.push({ ...img, role: 'environment / location' });
     }
   }
-  return images.slice(0, 3);
+  return images.slice(0, 6);
 }
 
 function buildOmniInput(prompt: string, images: Array<{ data: string; mime: string; role: string }>) {
@@ -3501,7 +3507,6 @@ app.post('/api/naje-ad/generate', async (req, res) => {
     const deductedPoints = estimateOmniPoints({
       durationSec: snapped,
       resolution: selectedRes,
-      model: omniModel,
       pointsRatePerSecond: pointsRate,
       resolutionMultiplier: najeAdConfig.resolutionMultiplier,
     });
@@ -3522,6 +3527,30 @@ app.post('/api/naje-ad/generate', async (req, res) => {
       const p = await persistNajeAdRefImage(uid, jobId, 'location', locationB64, guessImageMime(locationB64));
       if (p) refImages.location = p;
     }
+    const extraList = Array.isArray(body.extraImages) ? body.extraImages.slice(0, 6) : [];
+    let extraIdx = 0;
+    for (const item of extraList) {
+      const b64 = stripInlineB64(item?.imageBase64);
+      if (!b64) continue;
+      const kind = String(item?.kind || 'extra').replace(/[^a-z0-9_]/gi, '').slice(0, 24) || 'extra';
+      const p = await persistNajeAdRefImage(uid, jobId, `x${extraIdx}_${kind}`, b64, guessImageMime(b64));
+      if (p) {
+        if ((kind === 'logo' || kind === 'first_frame' || kind === 'last_frame') && !refImages[kind]) refImages[kind] = p;
+        else refImages[`extra_${extraIdx}`] = p;
+        extraIdx++;
+      }
+    }
+    const sceneCards = Array.isArray(body.sceneCards)
+      ? body.sceneCards.slice(0, 16).map((c: any) => ({
+          id: typeof c?.id === 'string' ? c.id.slice(0, 40) : '',
+          kind: typeof c?.kind === 'string' ? c.kind.slice(0, 32) : '',
+          name: typeof c?.name === 'string' ? c.name.slice(0, 120) : '',
+          appearAtSec: Number(c?.appearAtSec) || 0,
+          transition: typeof c?.transition === 'string' ? c.transition.slice(0, 32) : '',
+          avatarId: sanitizeAssetId(c?.avatarId),
+          locationId: sanitizeAssetId(c?.locationId),
+        }))
+      : [];
 
     const jobPayload: any = {
       ownerId: uid,
@@ -3541,6 +3570,7 @@ app.post('/api/naje-ad/generate', async (req, res) => {
       aspectRatio: selectedAspect,
       resolution: selectedRes,
       refImages,
+      sceneCards,
       consumedBalance: deductedPoints,
       createdAt: Date.now(),
       lastActionError: null,
@@ -3622,7 +3652,6 @@ app.post('/api/naje-ad/edit', async (req, res) => {
       estimateOmniPoints({
         durationSec: 10,
         resolution,
-        model: 'omni-1.1',
         pointsRatePerSecond: pointsRate,
         resolutionMultiplier: najeAdConfig.resolutionMultiplier,
       }) * (najeAdConfig.editMultiplier || 0.5)
@@ -3731,7 +3760,6 @@ app.post('/api/naje-ad/extend', async (req, res) => {
     const deductedPoints = estimateOmniPoints({
       durationSec: 10,
       resolution,
-      model: 'omni-1.1',
       pointsRatePerSecond: pointsRate,
       resolutionMultiplier: najeAdConfig.resolutionMultiplier,
     });
@@ -3827,7 +3855,7 @@ async function runOmniAdJob(jobId: string, uid: string, token: string, job: any)
     await setDocRest('generation_jobs', jobId, {
       status: 'generating',
       progress: 18,
-      stepLabel: `جاري توليد المشهد الأول عبر ${model === 'omni-flash' ? 'Gemini Omni Flash' : 'Gemini Omni 1.1 Flash'}…`,
+      stepLabel: 'جاري توليد المشهد الأول عبر Naje Video Pro…',
     }, token);
 
     const first = await createOmniInteraction(ai, {

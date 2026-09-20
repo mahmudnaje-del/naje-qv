@@ -3,16 +3,21 @@ import { Check } from 'lucide-react';
 import {
   AUDIO_MODES,
   CAMERA_MOTIONS,
+  COLOR_GRADES,
+  CTA_MODES,
+  HOOK_STYLES,
   LIGHTING_LOOKS,
   MARKETING_GOALS,
+  MUSIC_ENERGY,
+  NAJE_VIDEO_PRO_LABEL,
   OMNI_DURATIONS,
-  OMNI_MODELS,
   OMNI_RESOLUTIONS,
-  OmniAdModel,
   OmniDuration,
   OmniResolution,
+  PACE_OPTIONS,
+  PRODUCT_PLACEMENTS,
+  VOICE_CASTS,
   estimateOmniPoints,
-  modelFor,
 } from '../../lib/omniAd';
 import { DIALECT_OPTIONS, LANGUAGE_OPTIONS, PLATFORM_OPTIONS } from '../../lib/adDnaEngine';
 
@@ -20,23 +25,20 @@ function Chip({
   active,
   onClick,
   children,
-  disabled,
 }: {
   active: boolean;
   onClick: () => void;
   children: React.ReactNode;
-  disabled?: boolean;
 }) {
   return (
     <button
       type="button"
-      disabled={disabled}
       onClick={onClick}
       className={`inline-flex items-center gap-1.5 rounded-xl border px-3 py-2 text-[11px] font-bold transition ${
         active
           ? 'border-[#d4a574] bg-[#d4a574]/15 text-[#f4efe6] shadow-[0_0_18px_rgba(212,165,116,0.22)]'
           : 'border-white/10 bg-black/35 text-white/65 hover:border-white/25 hover:text-white'
-      } ${disabled ? 'cursor-not-allowed opacity-40' : 'cursor-pointer'}`}
+      }`}
     >
       {active && <Check className="h-3 w-3 text-[#e8b86d]" />}
       {children}
@@ -57,8 +59,6 @@ function Box({ title, hint, children }: { title: string; hint?: string; children
 }
 
 export function ProControlGrid(props: {
-  model: OmniAdModel;
-  onModel: (v: OmniAdModel) => void;
   duration: OmniDuration;
   onDuration: (v: OmniDuration) => void;
   resolution: OmniResolution;
@@ -79,14 +79,26 @@ export function ProControlGrid(props: {
   onLanguage: (v: string) => void;
   dialect: string;
   onDialect: (v: string) => void;
+  pace: string;
+  onPace: (v: string) => void;
+  colorGrade: string;
+  onColorGrade: (v: string) => void;
+  productPlacement: string;
+  onProductPlacement: (v: string) => void;
+  cta: string;
+  onCta: (v: string) => void;
+  voiceCast: string;
+  onVoiceCast: (v: string) => void;
+  musicEnergy: string;
+  onMusicEnergy: (v: string) => void;
+  hookStyle: string;
+  onHookStyle: (v: string) => void;
   pointsRate: number;
   resolutionMultiplier?: Partial<Record<OmniResolution, number>>;
 }) {
-  const spec = modelFor(props.model);
   const points = estimateOmniPoints({
     durationSec: props.duration,
     resolution: props.resolution,
-    model: props.model,
     pointsRatePerSecond: props.pointsRate,
     resolutionMultiplier: props.resolutionMultiplier,
   });
@@ -94,52 +106,27 @@ export function ProControlGrid(props: {
 
   return (
     <div className="grid grid-cols-1 gap-3 lg:grid-cols-2" dir="rtl">
-      <Box title="النموذج" hint="الأول للتوليد السريع — الترقية لتمديد المشهد حتى 40 ثانية">
-        {OMNI_MODELS.map((m) => (
-          <Chip key={m.id} active={props.model === m.id} onClick={() => props.onModel(m.id)}>
-            <span>{m.name}</span>
-            <span className="rounded-full bg-white/10 px-1.5 py-0.5 text-[9px]">{m.tag}</span>
-          </Chip>
-        ))}
-        <p className="basis-full text-[10px] leading-relaxed text-white/40">{spec.desc}</p>
+      <Box title="المحرك" hint="تمديد المشهد حتى 40 ثانية، تحرير باللغة الطبيعية، إطار أول/أخير، و4K">
+        <div className="inline-flex items-center gap-2 rounded-xl border border-[#d4a574]/40 bg-[#d4a574]/15 px-3 py-2 text-[11px] font-black text-[#f4efe6]">
+          {NAJE_VIDEO_PRO_LABEL}
+          <span className="rounded-full bg-white/10 px-1.5 py-0.5 text-[9px] font-bold text-[#e8b86d]">Gemini Omni 1.1 Flash</span>
+        </div>
       </Box>
 
       <Box title="المدة" hint="التوليد 10 ثوانٍ ثم تمديد المشهد بزيادات 10 ثوانٍ">
-        {OMNI_DURATIONS.map((d) => {
-          const locked = d > spec.maxDuration;
-          return (
-            <Chip
-              key={d}
-              active={props.duration === d}
-              disabled={locked}
-              onClick={() => {
-                if (locked) props.onModel('omni-1.1');
-                props.onDuration(d);
-              }}
-            >
-              {d} ثانية{locked ? ' · 1.1' : ''}
-            </Chip>
-          );
-        })}
+        {OMNI_DURATIONS.map((d) => (
+          <Chip key={d} active={props.duration === d} onClick={() => props.onDuration(d)}>
+            {d} ثانية
+          </Chip>
+        ))}
       </Box>
 
-      <Box title="الجودة" hint="360p للمسودة الاقتصادية — 1080p و4K عبر الترقية">
-        {OMNI_RESOLUTIONS.map((r) => {
-          const locked = !spec.resolutions.includes(r.id);
-          return (
-            <Chip
-              key={r.id}
-              active={props.resolution === r.id}
-              disabled={locked}
-              onClick={() => {
-                if (locked) props.onModel('omni-1.1');
-                props.onResolution(r.id);
-              }}
-            >
-              {r.name}
-            </Chip>
-          );
-        })}
+      <Box title="الجودة" hint="360p للتجربة السريعة — 1080p و4K للتسليم">
+        {OMNI_RESOLUTIONS.map((r) => (
+          <Chip key={r.id} active={props.resolution === r.id} onClick={() => props.onResolution(r.id)}>
+            {r.name}
+          </Chip>
+        ))}
       </Box>
 
       <Box title="الأبعاد والمنصة">
@@ -163,6 +150,14 @@ export function ProControlGrid(props: {
         ))}
       </Box>
 
+      <Box title="هوك الثلاث ثوانٍ الأولى">
+        {HOOK_STYLES.map((h) => (
+          <Chip key={h.id} active={props.hookStyle === h.id} onClick={() => props.onHookStyle(h.id)}>
+            {h.label}
+          </Chip>
+        ))}
+      </Box>
+
       <Box title="حركة الكاميرا">
         {CAMERA_MOTIONS.map((c) => (
           <Chip key={c.id} active={props.cameraMotion === c.id} onClick={() => props.onCamera(c.id)}>
@@ -179,6 +174,30 @@ export function ProControlGrid(props: {
         ))}
       </Box>
 
+      <Box title="الإيقاع">
+        {PACE_OPTIONS.map((p) => (
+          <Chip key={p.id} active={props.pace === p.id} onClick={() => props.onPace(p.id)}>
+            {p.label}
+          </Chip>
+        ))}
+      </Box>
+
+      <Box title="التدرج اللوني">
+        {COLOR_GRADES.map((g) => (
+          <Chip key={g.id} active={props.colorGrade === g.id} onClick={() => props.onColorGrade(g.id)}>
+            {g.label}
+          </Chip>
+        ))}
+      </Box>
+
+      <Box title="ظهور المنتج">
+        {PRODUCT_PLACEMENTS.map((p) => (
+          <Chip key={p.id} active={props.productPlacement === p.id} onClick={() => props.onProductPlacement(p.id)}>
+            {p.label}
+          </Chip>
+        ))}
+      </Box>
+
       <Box title="هدف الإعلان">
         {MARKETING_GOALS.map((g) => (
           <Chip key={g.id} active={props.marketingGoal === g.id} onClick={() => props.onGoal(g.id)}>
@@ -191,6 +210,27 @@ export function ProControlGrid(props: {
         {AUDIO_MODES.map((a) => (
           <Chip key={a.id} active={props.audioMode === a.id} onClick={() => props.onAudio(a.id)}>
             {a.label}
+          </Chip>
+        ))}
+      </Box>
+
+      <Box title="المعلق والموسيقى">
+        {VOICE_CASTS.map((v) => (
+          <Chip key={v.id} active={props.voiceCast === v.id} onClick={() => props.onVoiceCast(v.id)}>
+            {v.label}
+          </Chip>
+        ))}
+        {MUSIC_ENERGY.map((m) => (
+          <Chip key={m.id} active={props.musicEnergy === m.id} onClick={() => props.onMusicEnergy(m.id)}>
+            {m.label}
+          </Chip>
+        ))}
+      </Box>
+
+      <Box title="الإغلاق / CTA">
+        {CTA_MODES.map((c) => (
+          <Chip key={c.id} active={props.cta === c.id} onClick={() => props.onCta(c.id)}>
+            {c.label}
           </Chip>
         ))}
       </Box>
@@ -217,7 +257,7 @@ export function ProControlGrid(props: {
             </p>
           </div>
           <p className="max-w-sm text-[10px] leading-relaxed text-white/45">
-            {props.duration}ث · {props.resolution} · {spec.name}
+            {props.duration}ث · {props.resolution} · {NAJE_VIDEO_PRO_LABEL}
             {props.duration > 10 ? ` · ${Math.ceil((props.duration - 10) / 10)} تمديد مشهد` : ''}
           </p>
         </div>

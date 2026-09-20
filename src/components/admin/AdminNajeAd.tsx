@@ -55,8 +55,7 @@ interface GenerationJob {
 const AVAILABLE_DURATION_PRESETS = [10, 20, 30, 40];
 
 const MODEL_OPTIONS = [
-  { id: 'video_omni', label: 'Gemini Omni 1.1 Flash (تمديد حتى 40ث + تحرير طبيعي)', provider: 'Omni 1.1' },
-  { id: 'omni-flash', label: 'Gemini Omni Flash (الإصدار الأول — حتى 10ث)', provider: 'Omni Flash' },
+  { id: 'video_omni', label: 'Naje Video Pro (Gemini Omni 1.1 Flash — تمديد حتى 40ث + تحرير طبيعي)', provider: 'Naje Video Pro' },
 ];
 
 export const AdminNajeAd: React.FC = () => {
@@ -216,7 +215,7 @@ export const AdminNajeAd: React.FC = () => {
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-xl font-black text-gray-900 dark:text-white">إدارة محرك Naje Ad (Gemini Omni)</h2>
+                <h2 className="text-xl font-black text-gray-900 dark:text-white">إدارة محرك Naje Ad (Naje Video Pro)</h2>
                 <span className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full border ${
                   config.enabled 
                     ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30' 
@@ -226,7 +225,7 @@ export const AdminNajeAd: React.FC = () => {
                 </span>
               </div>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                التحكم بأسعار التوليد بالثانية، مدد 10–40، ومضاعفات الدقة (360p مسودة / 720p / 1080p / 4K).
+                التحكم بأسعار التوليد بالثانية، مدد 10–40، ومضاعفات الدقة (360p / 720p / 1080p / 4K) على Naje Video Pro.
               </p>
             </div>
           </div>
@@ -410,7 +409,7 @@ export const AdminNajeAd: React.FC = () => {
                   </label>
                 ))}
               </div>
-              <p className="text-[11px] text-gray-500">360p للمسودة الاقتصادية — 1080p و4K ترقية احترافية عبر Omni 1.1.</p>
+              <p className="text-[11px] text-gray-500">360p للتجربة السريعة — 1080p و4K للتسليم عبر Naje Video Pro.</p>
             </div>
           </div>
         </div>

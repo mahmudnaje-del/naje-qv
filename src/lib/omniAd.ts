@@ -3,42 +3,13 @@ import { AVATAR_REGISTRY } from '../data/avatars/avatarRegistry';
 import { LOCATION_REGISTRY } from '../data/locations/locationRegistry';
 import type { AdDnaState } from './adDnaEngine';
 
-export const OMNI_FLASH_ID = 'gemini-omni-flash-preview';
 export const OMNI_11_ID = 'gemini-omni-1.1-flash';
 export const OMNI_11_FALLBACK_ID = 'gemini-omni-1.1-flash-preview';
+export const NAJE_VIDEO_PRO_LABEL = 'Naje Video Pro';
 
-export type OmniAdModel = 'omni-flash' | 'omni-1.1';
+export type OmniAdModel = 'omni-1.1';
 export type OmniResolution = '360p' | '720p' | '1080p' | '4k';
 export type OmniDuration = 10 | 20 | 30 | 40;
-
-export const OMNI_MODELS: {
-  id: OmniAdModel;
-  modelId: string;
-  name: string;
-  tag: string;
-  desc: string;
-  maxDuration: OmniDuration;
-  resolutions: OmniResolution[];
-}[] = [
-  {
-    id: 'omni-flash',
-    modelId: OMNI_FLASH_ID,
-    name: 'Gemini Omni Flash',
-    tag: 'الإصدار الأول',
-    desc: 'توليد سريع حتى 10 ثوانٍ — مثالي للمسودات والإطلاق الأول.',
-    maxDuration: 10,
-    resolutions: ['360p', '720p'],
-  },
-  {
-    id: 'omni-1.1',
-    modelId: OMNI_11_ID,
-    name: 'Gemini Omni 1.1 Flash',
-    tag: 'ترقية',
-    desc: 'تمديد مشهد حتى 40 ثانية، تحرير باللغة الطبيعية، إطار أول/أخير، و4K.',
-    maxDuration: 40,
-    resolutions: ['360p', '720p', '1080p', '4k'],
-  },
-];
 
 export const OMNI_DURATIONS: OmniDuration[] = [10, 20, 30, 40];
 
@@ -48,9 +19,9 @@ export const OMNI_RESOLUTIONS: {
   hint: string;
   multiplier: number;
 }[] = [
-  { id: '360p', name: 'مسودة 360p', hint: 'أسرع وأرخص بثلث تكلفة 720p', multiplier: 0.35 },
+  { id: '360p', name: '360p', hint: 'أسرع وأوفر — مناسب للتجربة والمعاينة', multiplier: 0.35 },
   { id: '720p', name: '720p', hint: 'الجودة القياسية الأصلية', multiplier: 1 },
-  { id: '1080p', name: '1080p', hint: 'ترقية احترافية للتسليم', multiplier: 1.5 },
+  { id: '1080p', name: '1080p', hint: 'تسليم احترافي للمنصات', multiplier: 1.5 },
   { id: '4k', name: '4K', hint: 'إنهاء سينمائي عبر Upscale', multiplier: 3 },
 ];
 
@@ -62,6 +33,9 @@ export const CAMERA_MOTIONS = [
   { id: 'handheld', label: 'كاميرا يد واقعية', prompt: 'realistic handheld camera' },
   { id: 'orbital', label: 'دوران حول المنتج', prompt: 'smooth orbital product turn' },
   { id: 'push_in', label: 'اقتراب درامي', prompt: 'slow dramatic push-in' },
+  { id: 'crane_rise', label: 'رافعة صاعدة', prompt: 'elegant crane rise revealing the scene' },
+  { id: 'whip_pan', label: 'Whip pan سريع', prompt: 'energetic whip-pan into the hero' },
+  { id: 'lockoff', label: 'كاميرا ثابتة', prompt: 'locked-off tripod, subject moves through frame' },
 ];
 
 export const LIGHTING_LOOKS = [
@@ -71,6 +45,8 @@ export const LIGHTING_LOOKS = [
   { id: 'golden', label: 'ساعة ذهبية', prompt: 'golden hour warm backlight' },
   { id: 'neon', label: 'نيون ليلي', prompt: 'wet neon night reflections' },
   { id: 'beauty', label: 'جمال حريري', prompt: 'silk beauty dish glamour light' },
+  { id: 'high_key', label: 'هاي كي مشرق', prompt: 'bright high-key commercial lighting' },
+  { id: 'practicals', label: 'إضاءة عملية داخلية', prompt: 'warm practical lamps and interior bounce' },
 ];
 
 export const MARKETING_GOALS = [
@@ -80,6 +56,8 @@ export const MARKETING_GOALS = [
   { id: 'storytelling', label: 'قصة قصيرة' },
   { id: 'ugc', label: 'توصية عفوية' },
   { id: 'launch', label: 'إطلاق منتج' },
+  { id: 'conversion', label: 'تحويل مباشر' },
+  { id: 'awareness', label: 'وعي بالعلامة' },
 ];
 
 export const AUDIO_MODES = [
@@ -87,10 +65,122 @@ export const AUDIO_MODES = [
   { id: 'music', label: 'موسيقى ومؤثرات فقط', prompt: 'Music and foley only. No spoken dialogue.' },
   { id: 'vo', label: 'تعليق صوتي للمنتج', prompt: 'Confident product voice-over in the requested language plus a restrained music bed.' },
   { id: 'silent', label: 'بدون حوار', prompt: 'No dialogue. Subtle ambience only.' },
+  { id: 'asrm', label: 'ASMR لمسي', prompt: 'Intimate ASMR foley of the product: texture, pour, unbox. No voice-over.' },
 ];
 
-export function modelFor(id: OmniAdModel) {
-  return OMNI_MODELS.find((m) => m.id === id) || OMNI_MODELS[1];
+export const PACE_OPTIONS = [
+  { id: 'slow', label: 'بطيء فاخر', prompt: 'slow luxurious pacing' },
+  { id: 'medium', label: 'متوازن', prompt: 'confident medium commercial pacing' },
+  { id: 'punchy', label: 'سريع وإيقاعي', prompt: 'punchy rhythmic social pacing' },
+];
+
+export const COLOR_GRADES = [
+  { id: 'neutral', label: 'محايد طبيعي', prompt: 'natural neutral grade' },
+  { id: 'warm', label: 'دافئ ذهبي', prompt: 'warm golden commercial grade' },
+  { id: 'cool', label: 'بارد تقني', prompt: 'cool clean tech grade' },
+  { id: 'film', label: 'فيلم سينمائي', prompt: 'cinematic filmic contrast grade' },
+  { id: 'vivid', label: 'مشبع حي', prompt: 'vivid saturated commercial grade' },
+];
+
+export const PRODUCT_PLACEMENTS = [
+  { id: 'hero', label: 'بطل الكادر', prompt: 'product as the hero of the frame' },
+  { id: 'in_hand', label: 'في اليد', prompt: 'product held naturally in talent hands' },
+  { id: 'table', label: 'على الطاولة', prompt: 'product living on a surface in the scene' },
+  { id: 'worn', label: 'يُرتدى', prompt: 'product worn on the body' },
+  { id: 'unbox', label: 'فتح العلبة', prompt: 'unboxing reveal of the product' },
+];
+
+export const CTA_MODES = [
+  { id: 'none', label: 'بدون CTA', prompt: 'no call to action' },
+  { id: 'spoken', label: 'دعوة منطوقة', prompt: 'a short spoken call to action at the end' },
+  { id: 'end_card', label: 'كرت نهاية', prompt: 'clean end-card beat with logo-safe space, no garbled type' },
+  { id: 'hold', label: 'إمساك المنتج', prompt: 'final decisive product hold to camera' },
+];
+
+export const VOICE_CASTS = [
+  { id: 'none', label: 'بدون معلق' },
+  { id: 'female', label: 'صوت أنثوي واثق' },
+  { id: 'male', label: 'صوت ذكوري دافئ' },
+  { id: 'talent', label: 'الشخصية تتحدث' },
+];
+
+export const MUSIC_ENERGY = [
+  { id: 'none', label: 'صمت / أجواء', prompt: 'no music bed, ambience only' },
+  { id: 'soft', label: 'هادئة', prompt: 'soft restrained music bed' },
+  { id: 'pulse', label: 'نبض عصري', prompt: 'modern pulse music bed' },
+  { id: 'epic', label: 'ملحمية', prompt: 'epic rising trailer-adjacent music, still premium' },
+];
+
+export const HOOK_STYLES = [
+  { id: 'product_first', label: 'المنتج أولاً', prompt: 'open on the product in the first second' },
+  { id: 'face_first', label: 'الوجه أولاً', prompt: 'open on the talent face then reveal product' },
+  { id: 'motion_smash', label: 'صدمة حركة', prompt: 'open with an attention-smash of motion' },
+  { id: 'whisper', label: 'همس حميم', prompt: 'open intimate and quiet then bloom' },
+];
+
+export type SceneCardKind =
+  | 'product'
+  | 'character'
+  | 'location'
+  | 'character_extra'
+  | 'location_extra'
+  | 'logo'
+  | 'first_frame'
+  | 'last_frame'
+  | 'prop'
+  | 'packaging'
+  | 'color_ref'
+  | 'onscreen_text'
+  | 'end_card'
+  | 'before'
+  | 'after';
+
+export interface SceneBoardCard {
+  id: string;
+  kind: SceneCardKind;
+  name?: string;
+  preview?: string | null;
+  avatarId?: string | null;
+  locationId?: string | null;
+  appearAtSec?: number;
+  transition?: string;
+  note?: string;
+}
+
+export const SCENE_TRANSITIONS = [
+  { id: 'seamless', label: 'انتقال سلس', prompt: 'seamless continuous transition' },
+  { id: 'walk_in', label: 'يدخل إلى الكادر', prompt: 'talent walks into frame' },
+  { id: 'reveal', label: 'كشف درامي', prompt: 'dramatic reveal' },
+  { id: 'match_cut', label: 'قص متطابق', prompt: 'match-cut on motion or shape' },
+  { id: 'pan', label: 'بان إلى المشهد', prompt: 'camera pan into the new beat' },
+  { id: 'morph', label: 'تحول المكان', prompt: 'environment morphs while talent continuity holds' },
+];
+
+export const SCENE_ADD_OPTIONS: {
+  id: SceneCardKind;
+  label: string;
+  desc: string;
+  accent: string;
+}[] = [
+  { id: 'product', label: 'منتج', desc: 'البطل البصري للإعلان', accent: '#d4a574' },
+  { id: 'character', label: 'شخصية', desc: 'الممثل على الكاميرا', accent: '#7dd3c7' },
+  { id: 'location', label: 'مكان', desc: 'موقع التصوير الأساسي', accent: '#93c5fd' },
+  { id: 'character_extra', label: 'شخصية إضافية', desc: 'تظهر عند ثانية محددة', accent: '#6ee7b7' },
+  { id: 'location_extra', label: 'مكان إضافي', desc: 'انتقال للموقع عند ثانية محددة', accent: '#818cf8' },
+  { id: 'logo', label: 'شعار العلامة', desc: 'قفل هوية في الكرت أو المنتج', accent: '#e8b86d' },
+  { id: 'first_frame', label: 'الإطار الأول', desc: 'قفل أول لقطة', accent: '#f9a8d4' },
+  { id: 'last_frame', label: 'الإطار الأخير', desc: 'قفل نهاية المشهد', accent: '#c084fc' },
+  { id: 'prop', label: 'إكسسوار', desc: 'عنصر يُمسك أو يُعرض', accent: '#fb923c' },
+  { id: 'packaging', label: 'تغليف', desc: 'علبة أو زجاجة المنتج', accent: '#fbbf24' },
+  { id: 'color_ref', label: 'مرجع لون', desc: 'لوحة ألوان العلامة', accent: '#67e8f9' },
+  { id: 'onscreen_text', label: 'نص على الشاشة', desc: 'سطر واحد مقروء أو لا شيء', accent: '#fda4af' },
+  { id: 'end_card', label: 'كرت النهاية', desc: 'شعار + دعوة في آخر ثانية', accent: '#a78bfa' },
+  { id: 'before', label: 'قبل', desc: 'المشكلة قبل المنتج', accent: '#94a3b8' },
+  { id: 'after', label: 'بعد', desc: 'النتيجة بعد الاستخدام', accent: '#86efac' },
+];
+
+export function newSceneCardId() {
+  return `sc_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`;
 }
 
 export function resolutionMeta(id: OmniResolution) {
@@ -105,61 +195,105 @@ export function extensionSteps(duration: number): number {
 export function estimateOmniPoints(opts: {
   durationSec: number;
   resolution: OmniResolution;
-  model: OmniAdModel;
   pointsRatePerSecond: number;
   resolutionMultiplier?: Partial<Record<OmniResolution, number>>;
 }): number {
   const resMul = opts.resolutionMultiplier?.[opts.resolution] ?? resolutionMeta(opts.resolution).multiplier;
-  const modelMul = opts.model === 'omni-1.1' ? 1.1 : 1;
   const seconds = Math.min(40, Math.max(10, opts.durationSec));
-  return Math.max(1, Math.ceil(seconds * opts.pointsRatePerSecond * resMul * modelMul));
+  return Math.max(1, Math.ceil(seconds * opts.pointsRatePerSecond * resMul * 1.1));
+}
+
+function kindRole(kind: SceneCardKind): string {
+  switch (kind) {
+    case 'product': return 'hero product';
+    case 'character': return 'primary on-camera talent';
+    case 'character_extra': return 'additional talent entering later';
+    case 'location': return 'primary location';
+    case 'location_extra': return 'secondary location for a timed transition';
+    case 'logo': return 'brand logo lockup';
+    case 'first_frame': return 'mandatory first frame';
+    case 'last_frame': return 'mandatory last frame';
+    case 'prop': return 'hero prop / accessory';
+    case 'packaging': return 'product packaging';
+    case 'color_ref': return 'brand color reference';
+    case 'onscreen_text': return 'on-screen copy (must be spelled correctly or omitted)';
+    case 'end_card': return 'end-card composition';
+    case 'before': return 'before-state reference';
+    case 'after': return 'after-state reference';
+    default: return kind;
+  }
 }
 
 export function composeOmniAdPrompt(input: {
   script: string;
   dna: AdDnaState;
   styleId: string | null;
-  productName?: string;
-  productNotes?: string;
-  hasProductImage?: boolean;
-  hasCharacterImage?: boolean;
-  hasLocationImage?: boolean;
+  sceneCards?: SceneBoardCard[];
   cameraMotion?: string;
   lighting?: string;
   marketingGoal?: string;
   audioMode?: string;
+  pace?: string;
+  colorGrade?: string;
+  productPlacement?: string;
+  cta?: string;
+  voiceCast?: string;
+  musicEnergy?: string;
+  hookStyle?: string;
   durationSec: number;
   aspectRatio: '16:9' | '9:16';
 }): string {
   const style = getAdStyle(input.styleId);
-  const avatar = input.dna.selectedAvatarId ? AVATAR_REGISTRY[input.dna.selectedAvatarId] : null;
-  const location = input.dna.selectedLocationId ? LOCATION_REGISTRY[input.dna.selectedLocationId] : null;
   const cam = CAMERA_MOTIONS.find((c) => c.id === input.cameraMotion);
   const light = LIGHTING_LOOKS.find((l) => l.id === input.lighting);
   const audio = AUDIO_MODES.find((a) => a.id === input.audioMode);
   const goal = MARKETING_GOALS.find((g) => g.id === input.marketingGoal);
+  const pace = PACE_OPTIONS.find((p) => p.id === input.pace);
+  const grade = COLOR_GRADES.find((g) => g.id === input.colorGrade);
+  const place = PRODUCT_PLACEMENTS.find((p) => p.id === input.productPlacement);
+  const cta = CTA_MODES.find((c) => c.id === input.cta);
+  const music = MUSIC_ENERGY.find((m) => m.id === input.musicEnergy);
+  const hook = HOOK_STYLES.find((h) => h.id === input.hookStyle);
+  const cards = input.sceneCards || [];
 
   const parts: string[] = [];
-  parts.push('Create one continuous commercial shot. Do not cut. Maintain character, wardrobe, lighting and environment across the whole take.');
+  parts.push('Create a premium live-action commercial. Prefer one continuous take. If a timed location or talent change is specified, execute it as a motivated camera move or seamless morph — not a cheap jump cut.');
   if (input.script.trim()) parts.push(`Director brief: ${input.script.trim()}`);
-  if (input.productName) parts.push(`Hero product: ${input.productName}.${input.productNotes ? ' ' + input.productNotes : ''}`);
-  if (input.hasProductImage) parts.push('Match the attached product reference exactly (shape, logo, color, materials). Tag mentally as the hero product.');
-  if (avatar) {
-    parts.push(`Talent: ${avatar.name}, ${avatar.age}, ${avatar.genderPresentation}, ${avatar.visualRegion}. ${avatar.skin}. ${avatar.face}. ${avatar.hair}. Wearing ${avatar.clothing}. Expression: ${avatar.expression}.`);
-    if (avatar.aiImagePrompt) parts.push(`Talent likeness lock: ${avatar.aiImagePrompt}`);
-  } else if (input.hasCharacterImage) {
-    parts.push('Use the attached character still as a hard likeness lock for the on-camera talent.');
+
+  for (const card of cards) {
+    const trans = SCENE_TRANSITIONS.find((t) => t.id === card.transition);
+    const avatar = card.avatarId ? AVATAR_REGISTRY[card.avatarId] : null;
+    const location = card.locationId ? LOCATION_REGISTRY[card.locationId] : null;
+    const when = typeof card.appearAtSec === 'number' && card.appearAtSec > 0
+      ? ` At second ${card.appearAtSec} of the ${input.durationSec}s runtime, ${trans?.prompt || 'transition in'}.`
+      : '';
+    if (avatar) {
+      parts.push(`${kindRole(card.kind)}: ${avatar.name}, ${avatar.age}, ${avatar.genderPresentation}, ${avatar.visualRegion}. ${avatar.skin}. ${avatar.face}. ${avatar.hair}. Wearing ${avatar.clothing}. Expression: ${avatar.expression}.${when}`);
+      if (avatar.aiImagePrompt) parts.push(`Likeness lock: ${avatar.aiImagePrompt}`);
+    } else if (location) {
+      parts.push(`${kindRole(card.kind)}: ${location.name} (${location.category}). ${location.description}.${when}`);
+    } else if (card.kind === 'onscreen_text' && (card.name || card.note)) {
+      parts.push(`On-screen copy if any must read exactly: "${(card.note || card.name || '').trim()}". If it cannot be spelled perfectly, omit on-screen text.`);
+    } else if (card.name || card.preview) {
+      parts.push(`${kindRole(card.kind)}: ${card.name || 'see attached still'}.${card.note ? ' ' + card.note : ''}${when}${card.preview ? ' Match the attached still exactly.' : ''}`);
+    }
   }
-  if (location) {
-    parts.push(`Location: ${location.name} (${location.category}). ${location.description}.`);
-  } else if (input.hasLocationImage) {
-    parts.push('Use the attached location still as the environment lock.');
-  }
+
   if (style) parts.push(`Ad style: ${style.prompt}`);
   if (goal) parts.push(`Marketing goal: ${goal.label}.`);
+  if (hook) parts.push(`Hook: ${hook.prompt}.`);
   if (cam) parts.push(`Camera: ${cam.prompt}.`);
   if (light) parts.push(`Lighting: ${light.prompt}.`);
+  if (pace) parts.push(`Pace: ${pace.prompt}.`);
+  if (grade) parts.push(`Color: ${grade.prompt}.`);
+  if (place) parts.push(`Product placement: ${place.prompt}.`);
+  if (cta) parts.push(`Close: ${cta.prompt}.`);
   if (audio) parts.push(audio.prompt);
+  if (music) parts.push(`Music: ${music.prompt}.`);
+  if (input.voiceCast === 'female') parts.push('If voice-over: confident adult female.');
+  if (input.voiceCast === 'male') parts.push('If voice-over: warm adult male.');
+  if (input.voiceCast === 'talent') parts.push('Spoken lines come from the on-camera talent only.');
+  if (input.voiceCast === 'none') parts.push('No voice-over narrator.');
 
   const lang = input.dna.language === 'en' ? 'English' : input.dna.language === 'ar' ? 'Arabic' : input.dna.language;
   parts.push(`Spoken language if any: ${lang}${input.dna.dialect ? ` (${input.dna.dialect})` : ''}.`);

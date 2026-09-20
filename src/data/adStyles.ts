@@ -5,6 +5,7 @@ export interface AdStyle {
   prompt: string;
   gradient: [string, string];
   accent: string;
+  image: string;
 }
 
 /** Advertising-only visual languages — not the old cinematic template library. */
@@ -16,6 +17,7 @@ export const AD_STYLES: AdStyle[] = [
     prompt: 'Premium hero product commercial: the product is the star, slow orbital or push-in camera, jewel-like studio lighting, tactile materials, luxury color grade, no clutter.',
     gradient: ['#2a1810', '#d4a574'],
     accent: '#e8b86d',
+    image: '/ad-styles/hero_product.webp',
   },
   {
     id: 'lifestyle',
@@ -24,6 +26,7 @@ export const AD_STYLES: AdStyle[] = [
     prompt: 'Authentic lifestyle commercial: natural daylight, real-world environment, product used casually by the talent, warm unforced motion, documentary-adjacent but polished.',
     gradient: ['#1a2a22', '#7dcea0'],
     accent: '#7dcea0',
+    image: '/ad-styles/lifestyle.webp',
   },
   {
     id: 'ugc',
@@ -32,6 +35,7 @@ export const AD_STYLES: AdStyle[] = [
     prompt: 'UGC / creator-style ad: handheld phone camera, slightly imperfect framing, direct-to-camera energy, authentic social-proof vibe, high conversion, not cinematic artifice.',
     gradient: ['#1c1428', '#c084fc'],
     accent: '#c084fc',
+    image: '/ad-styles/ugc.webp',
   },
   {
     id: 'tiktok_hook',
@@ -40,6 +44,7 @@ export const AD_STYLES: AdStyle[] = [
     prompt: 'Vertical social hook ad: aggressive first-frame attention grab, fast rhythmic motion, on-screen product payoff, punchy pacing built for mute-autoplay then sound-on.',
     gradient: ['#1a1020', '#fb7185'],
     accent: '#fb7185',
+    image: '/ad-styles/tiktok_hook.webp',
   },
   {
     id: 'brand_story',
@@ -48,6 +53,7 @@ export const AD_STYLES: AdStyle[] = [
     prompt: 'Emotional brand-story commercial: intimate close-ups, restrained camera, music-led pacing, a human moment that resolves on the product as meaning not just object.',
     gradient: ['#141824', '#93c5fd'],
     accent: '#93c5fd',
+    image: '/ad-styles/brand_story.webp',
   },
   {
     id: 'before_after',
@@ -56,6 +62,7 @@ export const AD_STYLES: AdStyle[] = [
     prompt: 'Before-and-after commercial: visually readable transformation, matched framing, the product as the causal bridge, satisfying reveal, clean continuity of talent and space.',
     gradient: ['#1a1a14', '#fbbf24'],
     accent: '#fbbf24',
+    image: '/ad-styles/before_after.webp',
   },
   {
     id: 'fashion_editorial',
@@ -64,6 +71,7 @@ export const AD_STYLES: AdStyle[] = [
     prompt: 'High-fashion editorial commercial: runway or studio strobe, confident body language, fabric motion, luxury catalogue energy, fashion-film color.',
     gradient: ['#1a1216', '#f9a8d4'],
     accent: '#f9a8d4',
+    image: '/ad-styles/fashion_editorial.webp',
   },
   {
     id: 'tech_minimal',
@@ -72,6 +80,7 @@ export const AD_STYLES: AdStyle[] = [
     prompt: 'Tech-minimal commercial: seamless surfaces, cool key light, precise macro of interface or material, silent luxury of engineering, restrained motion graphics feel without fake UI glitches.',
     gradient: ['#0f1720', '#67e8f9'],
     accent: '#67e8f9',
+    image: '/ad-styles/tech_minimal.webp',
   },
   {
     id: 'food_macro',
@@ -80,6 +89,7 @@ export const AD_STYLES: AdStyle[] = [
     prompt: 'Macro food commercial: extreme close-up texture, steam and glisten, slow pour or bite, rich saturated appetite color, shallow focus, sensory ASMR-adjacent motion.',
     gradient: ['#1c140c', '#fb923c'],
     accent: '#fb923c',
+    image: '/ad-styles/food_macro.webp',
   },
   {
     id: 'auto_cinematic',
@@ -88,6 +98,7 @@ export const AD_STYLES: AdStyle[] = [
     prompt: 'Automotive cinematic commercial: low tracking shots, paint reflections, road spray or studio turntable, powerful engine-body language, dusk or night drama.',
     gradient: ['#101418', '#94a3b8'],
     accent: '#94a3b8',
+    image: '/ad-styles/auto_cinematic.webp',
   },
   {
     id: 'beauty_slowmo',
@@ -96,6 +107,7 @@ export const AD_STYLES: AdStyle[] = [
     prompt: 'Beauty slow-motion commercial: skin texture, hair and fabric in 120fps-feel motion, mist or perfume spray, satin light, intimate glamour without uncanny faces.',
     gradient: ['#1a1020', '#e879f9'],
     accent: '#e879f9',
+    image: '/ad-styles/beauty_slowmo.webp',
   },
   {
     id: 'launch_drop',
@@ -104,6 +116,7 @@ export const AD_STYLES: AdStyle[] = [
     prompt: 'Product-launch drop commercial: dark stage, theatrical reveal, rising energy, logo-safe negative space at the end card moment, event-scale lighting.',
     gradient: ['#120c18', '#a78bfa'],
     accent: '#a78bfa',
+    image: '/ad-styles/launch_drop.webp',
   },
   {
     id: 'testimonial',
@@ -112,6 +125,7 @@ export const AD_STYLES: AdStyle[] = [
     prompt: 'Testimonial commercial: natural talking-head then cutaway of product in use, trustworthy eye-level lens, soft window light, sincere not salesy.',
     gradient: ['#121c18', '#6ee7b7'],
     accent: '#6ee7b7',
+    image: '/ad-styles/testimonial.webp',
   },
   {
     id: 'offer_urgency',
@@ -120,6 +134,7 @@ export const AD_STYLES: AdStyle[] = [
     prompt: 'Limited-offer commercial: urgent but premium pacing, clear product hero, countdown energy without cheap stock-graphics, ends on a decisive product hold.',
     gradient: ['#1c1010', '#f87171'],
     accent: '#f87171',
+    image: '/ad-styles/offer_urgency.webp',
   },
   {
     id: 'sport_energy',
@@ -128,6 +143,7 @@ export const AD_STYLES: AdStyle[] = [
     prompt: 'Sports-energy commercial: kinetic tracking, grit and sweat, explosive motion, performance product integration, high-contrast athletic grade.',
     gradient: ['#14120c', '#facc15'],
     accent: '#facc15',
+    image: '/ad-styles/sport_energy.webp',
   },
   {
     id: 'family_warm',
@@ -136,6 +152,7 @@ export const AD_STYLES: AdStyle[] = [
     prompt: 'Warm family commercial: golden indoor practicals, multi-generational natural interaction, product as a helper in a lived-in home, gentle humor.',
     gradient: ['#1c180e', '#f6d58a'],
     accent: '#f6d58a',
+    image: '/ad-styles/family_warm.webp',
   },
   {
     id: 'night_city',
@@ -144,6 +161,7 @@ export const AD_STYLES: AdStyle[] = [
     prompt: 'Night-city luxury commercial: wet asphalt reflections, refined neon, talent walking with product, cosmopolitan after-dark glamour.',
     gradient: ['#0c1020', '#818cf8'],
     accent: '#818cf8',
+    image: '/ad-styles/night_city.webp',
   },
   {
     id: 'clean_studio',
@@ -152,6 +170,7 @@ export const AD_STYLES: AdStyle[] = [
     prompt: 'Clean white-studio commercial: seamless cyclorama, soft shadow, catalog-grade product isolation, elegant simple camera move, premium e-commerce hero.',
     gradient: ['#1a1a1c', '#e7e5e4'],
     accent: '#d6d3d1',
+    image: '/ad-styles/clean_studio.webp',
   },
   {
     id: 'travel_hospitality',
@@ -160,6 +179,7 @@ export const AD_STYLES: AdStyle[] = [
     prompt: 'Travel and hospitality commercial: wide establishing into intimate amenity details, golden hour or lobby glow, wanderlust without stock cliché.',
     gradient: ['#102028', '#5eead4'],
     accent: '#5eead4',
+    image: '/ad-styles/travel_hospitality.webp',
   },
   {
     id: 'app_in_hand',
@@ -168,6 +188,7 @@ export const AD_STYLES: AdStyle[] = [
     prompt: 'App-in-hand commercial: photoreal smartphone held by talent, screen content readable and correct if shown, natural thumb interaction, lifestyle around the device.',
     gradient: ['#10141c', '#38bdf8'],
     accent: '#38bdf8',
+    image: '/ad-styles/app_in_hand.webp',
   },
 ];
 

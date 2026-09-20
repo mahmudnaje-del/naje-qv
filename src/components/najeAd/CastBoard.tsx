@@ -1,141 +1,297 @@
-import React, { useRef } from 'react';
-import { PackagePlus, User, MapPin, X, ImagePlus } from 'lucide-react';
-import { NajiAvatar } from '../../data/avatars/avatarRegistry';
-import { NajiLocation } from '../../data/locations/locationRegistry';
+import React, { useMemo, useRef, useState } from 'react';
+import { Plus, Upload, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { AVATAR_REGISTRY, NajiAvatar } from '../../data/avatars/avatarRegistry';
+import { LOCATION_REGISTRY, NajiLocation } from '../../data/locations/locationRegistry';
+import {
+  SCENE_ADD_OPTIONS,
+  SCENE_TRANSITIONS,
+  SceneBoardCard,
+  SceneCardKind,
+  newSceneCardId,
+} from '../../lib/omniAd';
+import { CircularCardCarousel } from './CircularCardCarousel';
 import { AvatarPhoto } from './AvatarPhoto';
 import { LocationPhoto } from './LocationPhoto';
 
-export function CastBoard({
-  productName,
-  productPreview,
-  onProductName,
-  onProductFile,
-  onClearProduct,
-  avatar,
-  customCharacterPreview,
-  onClearCharacter,
-  location,
-  customLocationPreview,
-  onClearLocation,
-}: {
-  productName: string;
-  productPreview: string | null;
-  onProductName: (v: string) => void;
-  onProductFile: (dataUrl: string) => void;
-  onClearProduct: () => void;
-  avatar: NajiAvatar | null;
-  customCharacterPreview: string | null;
-  onClearCharacter: () => void;
-  location: NajiLocation | null;
-  customLocationPreview: string | null;
-  onClearLocation: () => void;
-}) {
-  const productRef = useRef<HTMLInputElement>(null);
+type DeckItem = { type: 'add'; id: '__add__' } | { type: 'card'; id: string; card: SceneBoardCard };
 
-  const readFile = (file: File, cb: (url: string) => void) => {
-    const reader = new FileReader();
-    reader.onload = () => cb(String(reader.result || ''));
-    reader.readAsDataURL(file);
+function readFile(file: File, cb: (url: string) => void) {
+  const reader = new FileReader();
+  reader.onload = () => cb(String(reader.result || ''));
+  reader.readAsDataURL(file);
+}
+
+export function CastBoard({
+  cards,
+  onChange,
+  duration,
+  libraryAvatar,
+  libraryLocation,
+}: {
+  cards: SceneBoardCard[];
+  onChange: (cards: SceneBoardCard[]) => void;
+  duration: number;
+  libraryAvatar: NajiAvatar | null;
+  libraryLocation: NajiLocation | null;
+}) {
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [centerIndex, setCenterIndex] = useState(0);
+
+  const items: DeckItem[] = useMemo(
+    () => [{ type: 'add', id: '__add__' }, ...cards.map((card) => ({ type: 'card' as const, id: card.id, card }))],
+    [cards]
+  );
+
+  const addCard = (kind: SceneCardKind) => {
+    const hasPrimaryChar = cards.some((c) => c.kind === 'character');
+    const hasPrimaryLoc = cards.some((c) => c.kind === 'location');
+    let resolved: SceneCardKind = kind;
+    if (kind === 'character' && hasPrimaryChar) resolved = 'character_extra';
+    if (kind === 'location' && hasPrimaryLoc) resolved = 'location_extra';
+    const timed = resolved === 'character_extra' || resolved === 'location_extra' || resolved === 'after';
+    const next: SceneBoardCard = {
+      id: newSceneCardId(),
+      kind: resolved,
+      appearAtSec: timed ? Math.min(duration - 2, Math.max(4, Math.round(duration / 2))) : 0,
+      transition: timed ? (resolved === 'location_extra' ? 'morph' : 'walk_in') : 'seamless',
+    };
+    if (resolved === 'character' && libraryAvatar) {
+      next.avatarId = libraryAvatar.id;
+      next.name = libraryAvatar.name;
+    }
+    if (resolved === 'location' && libraryLocation) {
+      next.locationId = libraryLocation.id;
+      next.name = libraryLocation.name;
+    }
+    onChange([...cards, next]);
+    setCenterIndex(cards.length + 1);
   };
 
+  const patch = (id: string, partial: Partial<SceneBoardCard>) => {
+    onChange(cards.map((c) => (c.id === id ? { ...c, ...partial } : c)));
+  };
+
+  const remove = (id: string) => {
+    const idx = cards.findIndex((c) => c.id === id);
+    onChange(cards.filter((c) => c.id !== id));
+    setCenterIndex(Math.max(0, idx));
+  };
+
+  const attachFileTo = (kindOrId: string) => {
+    fileRef.current?.setAttribute('data-target', kindOrId);
+    fileRef.current?.click();
+  };
+
+  const optionMeta = (kind: SceneCardKind) => SCENE_ADD_OPTIONS.find((o) => o.id === kind);
+
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-3" dir="rtl">
-      <article className="group relative overflow-hidden rounded-3xl border border-[#d4a574]/35 bg-gradient-to-b from-[#2a1c12] to-[#120e0c] p-3 shadow-[0_20px_50px_-24px_rgba(212,165,116,0.55)]">
-        <div className="mb-2 flex items-center justify-between">
-          <span className="inline-flex items-center gap-1.5 text-[11px] font-black text-[#e8b86d]">
-            <PackagePlus className="h-3.5 w-3.5" /> أضف المنتج
-          </span>
-          {productPreview && (
-            <button type="button" onClick={onClearProduct} className="rounded-full p-1 text-white/50 hover:text-white">
-              <X className="h-3.5 w-3.5" />
-            </button>
-          )}
+    <div className="space-y-3 text-right" dir="rtl">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <h2 className="text-base font-black text-white">لوحة المشهد</h2>
+          <p className="text-[11px] text-white/45">اسحب البطاقات — بطاقة الإضافة دائماً في البداية. شخصية أو مكان إضافي يظهر عند ثانية تختارها.</p>
         </div>
-        <button
-          type="button"
-          onClick={() => productRef.current?.click()}
-          className="relative mb-2 flex aspect-[4/3] w-full items-center justify-center overflow-hidden rounded-2xl border border-dashed border-[#d4a574]/40 bg-black/30"
-        >
-          {productPreview ? (
-            <img src={productPreview} alt="منتج" className="h-full w-full object-cover" />
-          ) : (
-            <div className="flex flex-col items-center gap-1 text-[#e8b86d]/80">
-              <ImagePlus className="h-7 w-7" />
-              <span className="text-[11px] font-bold">ارفق صورة المنتج</span>
-            </div>
-          )}
-        </button>
-        <input
-          ref={productRef}
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={(e) => {
-            const f = e.target.files?.[0];
-            if (f) readFile(f, onProductFile);
+        <div className="flex items-center gap-2 text-[11px] font-bold text-white/60">
+          <button type="button" onClick={() => setCenterIndex((i) => (i - 1 + items.length) % items.length)} className="rounded-lg border border-white/10 p-1.5">
+            <ChevronRight className="h-4 w-4" />
+          </button>
+          <span className="font-mono text-[#e8b86d]">
+            {centerIndex + 1}/{items.length}
+          </span>
+          <button type="button" onClick={() => setCenterIndex((i) => (i + 1) % items.length)} className="rounded-lg border border-white/10 p-1.5">
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+
+      <input
+        ref={fileRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          const target = fileRef.current?.getAttribute('data-target') || '';
+          e.target.value = '';
+          if (!f) return;
+          readFile(f, (url) => {
+            if (target.startsWith('sc_') || cards.some((c) => c.id === target)) {
+              patch(target, { preview: url });
+            }
+          });
+        }}
+      />
+
+      <div className="relative overflow-visible rounded-3xl border border-white/8 bg-[#0c0e14] p-3">
+        <CircularCardCarousel<DeckItem>
+          items={items}
+          getKey={(c) => c.id}
+          isSelected={() => false}
+          onSelect={() => {}}
+          centerIndex={centerIndex}
+          onCenterIndexChange={setCenterIndex}
+          frameClassName="h-[520px] sm:h-[540px]"
+          renderCard={(item, isCenter) => {
+            if (item.type === 'add') {
+              return (
+                <div className={`${isCenter ? 'w-[82vw] max-w-[17.5rem]' : 'w-40'} overflow-hidden rounded-2xl border border-dashed border-[#d4a574]/50 bg-[#16110c] p-3`}>
+                  <div className="mb-2 inline-flex items-center gap-1.5 text-[11px] font-black text-[#e8b86d]">
+                    <Plus className="h-3.5 w-3.5" /> أضف بطاقة
+                  </div>
+                  {isCenter ? (
+                    <div className="grid max-h-[430px] grid-cols-2 gap-1.5 overflow-y-auto pr-0.5">
+                      {SCENE_ADD_OPTIONS.map((opt) => (
+                        <button
+                          key={opt.id}
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            addCard(opt.id);
+                          }}
+                          className="rounded-xl border border-white/10 bg-black/35 p-2 text-right hover:border-[#d4a574]/50"
+                        >
+                          <div className="text-[11px] font-black text-white" style={{ color: opt.accent }}>
+                            {opt.label}
+                          </div>
+                          <div className="mt-0.5 text-[9px] leading-snug text-white/45">{opt.desc}</div>
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="flex aspect-[3/4] flex-col items-center justify-center text-[#e8b86d]/80">
+                      <Plus className="mb-2 h-8 w-8" />
+                      <span className="text-[11px] font-bold">إضافة عنصر</span>
+                    </div>
+                  )}
+                </div>
+              );
+            }
+
+            const card = item.card;
+            const meta = optionMeta(card.kind);
+            const timed = card.kind === 'character_extra' || card.kind === 'location_extra' || card.kind === 'after' || card.kind === 'before';
+            return (
+              <div className={`${isCenter ? 'w-[82vw] max-w-[17.5rem]' : 'w-40'} overflow-hidden rounded-2xl border border-white/10 bg-[#12141c] p-2.5`}>
+                <div className="mb-2 flex items-center justify-between gap-2">
+                  <span className="text-[11px] font-black" style={{ color: meta?.accent || '#d4a574' }}>
+                    {meta?.label || card.kind}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      remove(card.id);
+                    }}
+                    className="rounded-full p-1 text-white/40 hover:text-white"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    attachFileTo(card.id);
+                  }}
+                  className="relative mb-2 flex aspect-[4/5] w-full items-center justify-center overflow-hidden rounded-xl border border-dashed border-white/15 bg-black/35"
+                >
+                  {card.preview ? (
+                    <img src={card.preview} alt="" className="h-full w-full object-cover" />
+                  ) : card.avatarId && AVATAR_REGISTRY[card.avatarId] ? (
+                    <AvatarPhoto
+                      id={card.avatarId}
+                      name={card.name || AVATAR_REGISTRY[card.avatarId].name}
+                      gradient={AVATAR_REGISTRY[card.avatarId].placeholderGradient}
+                      className="h-full w-full"
+                    />
+                  ) : card.locationId && LOCATION_REGISTRY[card.locationId] ? (
+                    <LocationPhoto
+                      id={card.locationId}
+                      name={card.name || LOCATION_REGISTRY[card.locationId].name}
+                      gradient={LOCATION_REGISTRY[card.locationId].placeholderGradient}
+                      className="h-full w-full"
+                    />
+                  ) : (
+                    <div className="flex flex-col items-center gap-1 text-white/45">
+                      <Upload className="h-6 w-6" />
+                      <span className="px-2 text-center text-[10px] font-bold">ارفق صورة</span>
+                    </div>
+                  )}
+                </button>
+                {isCenter && (
+                  <div className="space-y-1.5">
+                    <input
+                      value={card.name || ''}
+                      onChange={(e) => patch(card.id, { name: e.target.value })}
+                      placeholder={card.kind === 'onscreen_text' ? 'النص الظاهر (حرفياً)' : 'اسم أو ملاحظة قصيرة'}
+                      className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-1.5 text-[11px] text-white placeholder:text-white/30 focus:border-[#d4a574] focus:outline-none"
+                    />
+                    {(card.kind === 'character' || card.kind === 'character_extra') && libraryAvatar && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          patch(card.id, { avatarId: libraryAvatar.id, name: libraryAvatar.name, preview: null });
+                        }}
+                        className="w-full rounded-xl border border-[#7dd3c7]/30 py-1.5 text-[10px] font-bold text-[#7dd3c7]"
+                      >
+                        استخدم الشخصية المختارة من المكتبة
+                      </button>
+                    )}
+                    {(card.kind === 'location' || card.kind === 'location_extra') && libraryLocation && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          patch(card.id, { locationId: libraryLocation.id, name: libraryLocation.name, preview: null });
+                        }}
+                        className="w-full rounded-xl border border-[#93c5fd]/30 py-1.5 text-[10px] font-bold text-[#93c5fd]"
+                      >
+                        استخدم المكان المختار من المكتبة
+                      </button>
+                    )}
+                    {timed && (
+                      <>
+                        <label className="block text-[10px] font-bold text-white/50">
+                          يظهر / ينتقل عند الثانية {card.appearAtSec ?? 0}
+                        </label>
+                        <input
+                          type="range"
+                          min={1}
+                          max={Math.max(2, duration - 1)}
+                          value={card.appearAtSec ?? 8}
+                          onChange={(e) => patch(card.id, { appearAtSec: Number(e.target.value) })}
+                          className="w-full accent-[#d4a574]"
+                        />
+                        <div className="flex flex-wrap gap-1">
+                          {SCENE_TRANSITIONS.map((t) => (
+                            <button
+                              key={t.id}
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                patch(card.id, { transition: t.id });
+                              }}
+                              className={`rounded-lg border px-2 py-1 text-[9px] font-bold ${
+                                card.transition === t.id
+                                  ? 'border-[#d4a574] bg-[#d4a574]/15 text-[#e8b86d]'
+                                  : 'border-white/10 text-white/50'
+                              }`}
+                            >
+                              {t.label}
+                            </button>
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
+                {!isCenter && <p className="truncate text-[11px] font-bold text-white">{card.name || meta?.label}</p>}
+              </div>
+            );
           }}
         />
-        <input
-          value={productName}
-          onChange={(e) => onProductName(e.target.value)}
-          placeholder="اسم المنتج أو الخدمة"
-          className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-xs text-white placeholder:text-white/30 focus:border-[#d4a574] focus:outline-none"
-        />
-      </article>
-
-      <article className="overflow-hidden rounded-3xl border border-white/10 bg-[#111318] p-3">
-        <div className="mb-2 flex items-center justify-between">
-          <span className="inline-flex items-center gap-1.5 text-[11px] font-black text-[#7dd3c7]">
-            <User className="h-3.5 w-3.5" /> الشخصية
-          </span>
-          {(avatar || customCharacterPreview) && (
-            <button type="button" onClick={onClearCharacter} className="rounded-full p-1 text-white/50 hover:text-white">
-              <X className="h-3.5 w-3.5" />
-            </button>
-          )}
-        </div>
-        <div className="relative mb-2 aspect-[3/4] overflow-hidden rounded-2xl bg-black/40">
-          {customCharacterPreview ? (
-            <img src={customCharacterPreview} alt="شخصية" className="h-full w-full object-cover object-top" />
-          ) : avatar ? (
-            <AvatarPhoto id={avatar.id} name={avatar.name} gradient={avatar.placeholderGradient} className="h-full w-full" />
-          ) : (
-            <div className="flex h-full items-center justify-center px-4 text-center text-[11px] text-white/40">
-              ارفق شخصية أو اسحب من مكتبة ناجي
-            </div>
-          )}
-        </div>
-        <p className="truncate text-xs font-bold text-white">
-          {avatar?.name || (customCharacterPreview ? 'شخصية مرفقة' : 'لم تُختر بعد')}
-        </p>
-      </article>
-
-      <article className="overflow-hidden rounded-3xl border border-white/10 bg-[#111318] p-3">
-        <div className="mb-2 flex items-center justify-between">
-          <span className="inline-flex items-center gap-1.5 text-[11px] font-black text-[#93c5fd]">
-            <MapPin className="h-3.5 w-3.5" /> المكان
-          </span>
-          {(location || customLocationPreview) && (
-            <button type="button" onClick={onClearLocation} className="rounded-full p-1 text-white/50 hover:text-white">
-              <X className="h-3.5 w-3.5" />
-            </button>
-          )}
-        </div>
-        <div className="relative mb-2 aspect-video overflow-hidden rounded-2xl bg-black/40">
-          {customLocationPreview ? (
-            <img src={customLocationPreview} alt="مكان" className="h-full w-full object-cover" />
-          ) : location ? (
-            <LocationPhoto id={location.id} name={location.name} gradient={location.placeholderGradient} className="h-full w-full" />
-          ) : (
-            <div className="flex h-full items-center justify-center px-4 text-center text-[11px] text-white/40">
-              ارفق مكاناً أو اسحب مواقع ناجي
-            </div>
-          )}
-        </div>
-        <p className="truncate text-xs font-bold text-white">
-          {location?.name || (customLocationPreview ? 'مكان مرفق' : 'لم يُختر بعد')}
-        </p>
-      </article>
+      </div>
     </div>
   );
 }
