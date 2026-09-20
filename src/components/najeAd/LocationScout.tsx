@@ -65,7 +65,7 @@ export function LocationScout({
           <h2 className="text-sm font-black text-white sm:text-base">المكان</h2>
           <p className="text-[10px] text-white/45 sm:text-[11px]">أرفق موقعك أو اسحب مواقع تصوير ناجي</p>
         </div>
-        <span className="shrink-0 rounded-lg border border-white/10 px-2 py-1 font-mono text-[11px] font-bold text-[#7dd3c7]">
+        <span className="shrink-0 rounded-lg border border-white/10 px-2 py-1 font-mono text-[11px] font-bold text-[var(--naje-accent)]">
           {centerIndex + 1}/{items.length}
         </span>
       </div>
@@ -80,18 +80,18 @@ export function LocationScout({
               setCenterIndex(0);
             }}
             placeholder="ابحث عن موقع..."
-            className="w-full rounded-xl border border-white/10 bg-black/35 py-2 pr-9 pl-3 text-xs text-white placeholder:text-white/30 focus:border-[#7dd3c7] focus:outline-none"
+            className="w-full rounded-xl border border-white/10 bg-black/35 py-2 pr-9 pl-3 text-xs text-white placeholder:text-white/30 focus:border-[var(--naje-accent)] focus:outline-none"
           />
         </div>
         <div className="flex items-center gap-2">
-          <Filter className="h-3.5 w-3.5 shrink-0 text-[#7dd3c7]" />
+          <Filter className="h-3.5 w-3.5 shrink-0 text-[var(--naje-accent)]" />
           <select
             value={selectedCategory}
             onChange={(e) => {
               setSelectedCategory(e.target.value);
               setCenterIndex(0);
             }}
-            className="min-w-0 flex-1 rounded-xl border border-white/10 bg-[#141824] px-2.5 py-1.5 text-[11px] text-white"
+            className="min-w-0 flex-1 rounded-xl border border-white/10 bg-naje-elevated px-2.5 py-1.5 text-[11px] text-naje-ink"
           >
             <option value="all">كل الفئات</option>
             {categories.map((c) => (
@@ -103,7 +103,7 @@ export function LocationScout({
         </div>
       </div>
 
-      <div className="relative overflow-visible rounded-2xl border border-white/8 bg-[#0c0e14] px-5 py-3 sm:rounded-3xl sm:px-8 sm:py-4">
+      <div className="relative overflow-visible rounded-2xl border border-white/8 bg-naje-elevated px-5 py-3 sm:rounded-3xl sm:px-8 sm:py-4">
         <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(e) => pickFile(e.target.files?.[0])} />
         <CircularCardCarousel<Card>
           items={items}
@@ -121,11 +121,11 @@ export function LocationScout({
           renderCard={(c, isCenter) => {
             if (c.type === 'upload') {
               return (
-                <div className={`w-[64vw] max-w-[16rem] rounded-2xl border p-2.5 ${isCenter ? 'border-[#7dd3c7] bg-[#10201c]' : 'border-white/10 bg-[#12141c]'}`}>
+                <div className={`w-[64vw] max-w-[16rem] rounded-2xl border p-2.5 ${isCenter ? 'border-[var(--naje-accent)] bg-[#10201c]' : 'border-white/10 bg-[#12141c]'}`}>
                   <div className="mb-2 flex items-center justify-center gap-2 rounded-xl bg-black/25 py-1">
-                    <span className="h-1 w-6 rounded-full bg-[#7dd3c7]/80" />
-                    <span className="text-[10px] font-black text-[#7dd3c7]">إرفاق · اسحب</span>
-                    <span className="h-1 w-6 rounded-full bg-[#7dd3c7]/80" />
+                    <span className="h-1 w-6 rounded-full bg-[var(--naje-accent)]/80" />
+                    <span className="text-[10px] font-black text-[var(--naje-accent)]">إرفاق · اسحب</span>
+                    <span className="h-1 w-6 rounded-full bg-[var(--naje-accent)]/80" />
                   </div>
                   <div
                     role="button"
@@ -134,13 +134,13 @@ export function LocationScout({
                       e.stopPropagation();
                       fileRef.current?.click();
                     }}
-                    className="relative flex aspect-video w-full flex-col items-center justify-center overflow-hidden rounded-2xl border border-dashed border-[#7dd3c7]/50 bg-black/30"
+                    className="relative flex aspect-video w-full flex-col items-center justify-center overflow-hidden rounded-2xl border border-dashed border-[var(--naje-accent)]/50 bg-black/30"
                   >
                     {customPreview ? (
                       <img src={customPreview} alt="مكان" className="h-full w-full object-cover" />
                     ) : (
                       <>
-                        <Upload className="mb-1 h-7 w-7 text-[#7dd3c7]" />
+                        <Upload className="mb-1 h-7 w-7 text-[var(--naje-accent)]" />
                         <span className="text-[11px] font-bold text-white/70">ارفق صورة الموقع</span>
                       </>
                     )}
@@ -151,11 +151,11 @@ export function LocationScout({
             const loc = c.location;
             const selected = loc.id === selectedLocationId;
             return (
-              <div className={`w-[64vw] max-w-[16rem] rounded-2xl border p-2 ${isCenter ? 'bg-[#121622]' : 'bg-[#11141c]'} ${selected ? 'border-[#7dd3c7]' : 'border-white/10'}`}>
+              <div className={`w-[64vw] max-w-[16rem] rounded-2xl border p-2 ${isCenter ? 'bg-[#121622]' : 'bg-[#11141c]'} ${selected ? 'border-[var(--naje-accent)]' : 'border-white/10'}`}>
                 <div className="relative aspect-video overflow-hidden rounded-xl">
                   <LocationPhoto id={loc.id} name={loc.name} gradient={loc.placeholderGradient} className="h-full w-full" />
                   {selected && (
-                    <span className="absolute top-2 right-2 inline-flex items-center gap-1 rounded-full bg-[#7dd3c7] px-2 py-0.5 text-[9px] font-black text-black">
+                    <span className="absolute top-2 right-2 inline-flex items-center gap-1 rounded-full bg-[var(--naje-accent)] px-2 py-0.5 text-[9px] font-black text-[var(--naje-on-accent)]">
                       <Check className="h-3 w-3" /> معتمد
                     </span>
                   )}
@@ -171,7 +171,7 @@ export function LocationScout({
                         e.stopPropagation();
                         onSelectLocation(loc.id);
                       }}
-                      className="mt-2 w-full rounded-xl bg-[#7dd3c7] py-1.5 text-[11px] font-black text-black"
+                      className="mt-2 w-full rounded-xl bg-[var(--naje-accent)] py-1.5 text-[11px] font-black text-[var(--naje-on-accent)]"
                     >
                       اختيار
                     </button>

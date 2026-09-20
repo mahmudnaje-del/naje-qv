@@ -347,7 +347,7 @@ export default function Store() {
         </Link>
 
         {/* Bilingual Selector (Arabic & English) */}
-        <div className="flex items-center gap-2 bg-[#12141a] border border-gray-800 rounded-xl p-1 shadow-sm">
+        <div className="flex items-center gap-2 bg-naje-elevated border border-gray-800 rounded-xl p-1 shadow-sm">
           <Globe className="w-3.5 h-3.5 text-amber-400 ml-1.5 mr-1" />
           <button
             type="button"
@@ -398,7 +398,7 @@ export default function Store() {
         </p>
 
         {user && (
-          <div className="mt-4 inline-flex items-center gap-2 bg-[#f2f0f5] dark:bg-[#0e1014] border border-purple-200 dark:border-gray-900 rounded-xl px-4 py-2">
+          <div className="mt-4 inline-flex items-center gap-2 bg-naje-card border border-purple-200 dark:border-gray-900 rounded-xl px-4 py-2">
             <span className="text-xs text-gray-600 dark:text-gray-400">
               {lang === 'ar' ? 'رصيدك الحالي:' : 'Current Balance:'}
             </span>
@@ -459,8 +459,8 @@ export default function Store() {
                 content.accent
               } ${
                 isSelected
-                  ? 'border-amber-400 shadow-xl shadow-amber-500/10 ring-1 ring-amber-400/50 bg-[#0b0c10]'
-                  : 'border-gray-800 bg-[#0e1014] hover:border-gray-700'
+                  ? 'border-amber-400 shadow-xl shadow-amber-500/10 ring-1 ring-amber-400/50 bg-naje-canvas'
+                  : 'border-gray-800 bg-naje-elevated hover:border-gray-700'
               }`}
             >
               {content.badge && (
@@ -527,7 +527,7 @@ export default function Store() {
       </div>
 
       {/* Checkout panel */}
-      <div className="bg-[#0b0c10] border border-amber-500/30 rounded-2xl p-6 sm:p-8 shadow-xl relative overflow-hidden">
+      <div className="bg-naje-canvas border border-amber-500/30 rounded-2xl p-6 sm:p-8 shadow-xl relative overflow-hidden">
         <div className="absolute top-0 right-0 w-72 h-72 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute bottom-0 left-0 w-72 h-72 bg-purple-600/10 rounded-full blur-3xl pointer-events-none" />
 
@@ -622,7 +622,7 @@ export default function Store() {
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
               {/* Payment Execution Section (7 cols) */}
               <div className="lg:col-span-7 space-y-4">
-                <div className="bg-[#0e1118] border border-gray-800 rounded-2xl p-5 shadow-lg relative">
+                <div className="bg-naje-elevated border border-gray-800 rounded-2xl p-5 shadow-lg relative">
                   <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-800/80">
                     <div className="flex items-center gap-2">
                       <Lock className="w-4 h-4 text-amber-400" />
@@ -747,7 +747,7 @@ export default function Store() {
 
               {/* Order Breakdown (5 cols) */}
               <div className="lg:col-span-5 space-y-4">
-                <div className="bg-[#0e1118] border border-gray-800 rounded-2xl p-4 text-xs space-y-2.5 shadow-md">
+                <div className="bg-naje-elevated border border-gray-800 rounded-2xl p-4 text-xs space-y-2.5 shadow-md">
                   <div className="flex items-center justify-between pb-2 border-b border-gray-800 text-gray-400 font-medium">
                     <span>{lang === 'ar' ? 'ملخص الفاتورة الفورية' : 'Order Receipt'}</span>
                     <span className="text-[10px] text-emerald-400 flex items-center gap-1 font-bold">

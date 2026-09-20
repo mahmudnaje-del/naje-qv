@@ -101,7 +101,7 @@ export function CastBoard({
             اسحب البطاقات. الإضافة دائماً موجودة — شخصية أو مكان يظهر عند الثانية التي تختارها.
           </p>
         </div>
-        <span className="shrink-0 rounded-lg border border-white/10 px-2 py-1 font-mono text-[11px] font-bold text-[#e8b86d]">
+        <span className="shrink-0 rounded-lg border border-white/10 px-2 py-1 font-mono text-[11px] font-bold text-[var(--naje-accent-2)]">
           {centerIndex + 1}/{items.length}
         </span>
       </div>
@@ -138,14 +138,14 @@ export function CastBoard({
             if (item.type === 'add') {
               return (
                 <div
-                  className="w-[58vw] max-w-[15.5rem] overflow-hidden rounded-2xl border border-dashed border-[#d4a574]/55 bg-gradient-to-b from-[#2a1c12] to-[#120e0c] p-2.5 shadow-[0_20px_50px_-24px_rgba(212,165,116,0.55)]"
+                  className="w-[58vw] max-w-[15.5rem] overflow-hidden rounded-2xl border border-dashed border-[var(--naje-accent)]/55 bg-gradient-to-b from-[#2a1c12] to-[#120e0c] p-2.5 shadow-[0_20px_50px_-24px_rgba(212,165,116,0.55)]"
                 >
                   <div className="mb-2 flex items-center justify-center gap-2 rounded-xl bg-black/25 py-1.5">
-                    <span className="h-1 w-7 rounded-full bg-[#d4a574]/80" />
-                    <span className="inline-flex items-center gap-1 text-[10px] font-black text-[#e8b86d]">
+                    <span className="h-1 w-7 rounded-full bg-[var(--naje-accent)]/80" />
+                    <span className="inline-flex items-center gap-1 text-[10px] font-black text-[var(--naje-accent-2)]">
                       <Plus className="h-3.5 w-3.5" /> أضف · اسحب
                     </span>
-                    <span className="h-1 w-7 rounded-full bg-[#d4a574]/80" />
+                    <span className="h-1 w-7 rounded-full bg-[var(--naje-accent)]/80" />
                   </div>
                   {isCenter ? (
                     <div data-no-drag className="max-h-[230px] space-y-2 overflow-y-auto overscroll-contain touch-pan-y pr-0.5">
@@ -164,7 +164,7 @@ export function CastBoard({
                                     e.stopPropagation();
                                     addCard(id);
                                   }}
-                                  className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-black/35 px-1.5 py-1.5 text-right hover:border-[#d4a574]/45"
+                                  className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-black/35 px-1.5 py-1.5 text-right hover:border-[var(--naje-accent)]/45"
                                 >
                                   <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: opt.accent }} />
                                   <span className="min-w-0 truncate text-[10px] font-black text-white">{opt.label}</span>
@@ -176,7 +176,7 @@ export function CastBoard({
                       ))}
                     </div>
                   ) : (
-                    <div className="flex aspect-[3/4] flex-col items-center justify-center text-[#e8b86d]/85">
+                    <div className="flex aspect-[3/4] flex-col items-center justify-center text-[var(--naje-accent-2)]/85">
                       <Plus className="mb-2 h-8 w-8" />
                       <span className="text-[11px] font-bold">إضافة عنصر</span>
                     </div>
@@ -187,7 +187,7 @@ export function CastBoard({
 
             const card = item.card;
             const meta = optionMeta(card.kind);
-            const accent = meta?.accent || '#d4a574';
+            const accent = meta?.accent || 'var(--naje-accent)';
             const timed = isTimedKind(card.kind);
             const primary = PRIMARY_SCENE_KINDS.includes(card.kind);
             const emptyLabel =
@@ -258,7 +258,7 @@ export function CastBoard({
                       value={card.name || ''}
                       onChange={(e) => patch(card.id, { name: e.target.value })}
                       placeholder={card.kind === 'onscreen_text' ? 'النص الظاهر حرفياً' : primary ? (card.kind === 'product' ? 'اسم المنتج أو الخدمة' : 'اسم') : 'اسم أو ملاحظة'}
-                      className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-1.5 text-[11px] text-white placeholder:text-white/30 focus:border-[#d4a574] focus:outline-none"
+                      className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-1.5 text-[11px] text-white placeholder:text-white/30 focus:border-[var(--naje-accent)] focus:outline-none"
                     />
                     {(card.kind === 'character' || card.kind === 'character_extra') && libraryAvatar && (
                       <button
@@ -286,7 +286,7 @@ export function CastBoard({
                     )}
                     {timed && (
                       <div data-no-drag className="rounded-xl border border-white/10 bg-black/30 p-2 touch-pan-y">
-                        <label className="mb-1 block text-[10px] font-black text-[#e8b86d]">
+                        <label className="mb-1 block text-[10px] font-black text-[var(--naje-accent-2)]">
                           انتقال عند الثانية {card.appearAtSec ?? 0} / {duration}
                         </label>
                         <input
@@ -295,7 +295,7 @@ export function CastBoard({
                           max={Math.max(2, duration - 1)}
                           value={card.appearAtSec ?? Math.round(duration / 2)}
                           onChange={(e) => patch(card.id, { appearAtSec: Number(e.target.value) })}
-                          className="w-full accent-[#d4a574]"
+                          className="w-full accent-[var(--naje-accent)]"
                         />
                         <div className="mt-1.5 flex flex-wrap gap-1">
                           {SCENE_TRANSITIONS.map((tr) => (
@@ -308,7 +308,7 @@ export function CastBoard({
                               }}
                               className={`rounded-lg border px-2 py-1 text-[9px] font-bold ${
                                 card.transition === tr.id
-                                  ? 'border-[#d4a574] bg-[#d4a574]/15 text-[#e8b86d]'
+                                  ? 'border-[var(--naje-accent)] bg-[var(--naje-accent)]/15 text-[var(--naje-accent-2)]'
                                   : 'border-white/10 text-white/50'
                               }`}
                             >

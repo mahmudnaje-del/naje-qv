@@ -1883,7 +1883,7 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
 
   return (
     <div 
-      className="flex flex-col h-[100dvh] bg-[#FAF9FC] dark:bg-[#0d0f12] relative overflow-hidden"
+      className="flex flex-col h-[100dvh] bg-naje-canvas relative overflow-hidden"
       onDragEnter={handleDragEnter}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}

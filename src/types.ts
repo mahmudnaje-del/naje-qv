@@ -12,6 +12,8 @@ export type UserData = {
   hasRecharged?: boolean;
   emailVerified?: boolean;
   highestPurchasedTier?: number;
+  unlockedThemes?: string[];
+  selectedThemeColor?: string;
 };
 
 export type ProjectClassification =

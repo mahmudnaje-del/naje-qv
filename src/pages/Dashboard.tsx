@@ -14,7 +14,7 @@ import najeWalletCoins from '../assets/icons/naje-wallet-coins.svg';
 
 function NajePageLoader() {
   return (
-    <div className="flex-1 flex flex-col items-center justify-center min-h-[60vh] w-full p-6 bg-[#FAF9FC] dark:bg-[#0d0f12]">
+    <div className="flex-1 flex flex-col items-center justify-center min-h-[60vh] w-full p-6 bg-naje-canvas">
       <div className="flex flex-col items-center justify-center gap-4 p-8 rounded-3xl bg-white/80 dark:bg-gray-900/60 border border-gray-200/80 dark:border-gray-800/80 backdrop-blur-xl shadow-2xl shadow-purple-500/5 max-w-sm w-full text-center">
         <NajeThinking size={56} />
         <div className="flex flex-col items-center gap-1.5 mt-1">
@@ -835,7 +835,7 @@ export default function Dashboard() {
   );
 
   return (
-    <div className="h-screen h-[100dvh] bg-[#FAF9FC] dark:bg-[#0d0f12] text-gray-800 dark:text-gray-100 flex overflow-hidden">
+    <div className="h-screen h-[100dvh] bg-naje-canvas text-naje-ink flex overflow-hidden">
       <TermsConsentModal />
       {/* 1. Sidebar - Desktop (Right-hand persistent in RTL) */}
       <motion.aside 
@@ -931,7 +931,7 @@ export default function Dashboard() {
               initial={{ opacity: 0, scale: 0.98 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.98 }}
-              className="absolute inset-0 bg-[#eae8f4] dark:bg-[#08090b] z-40 overflow-y-auto p-6 flex flex-col font-sans"
+              className="absolute inset-0 bg-naje-canvas z-40 overflow-y-auto p-6 flex flex-col font-sans"
             >
               <div className="max-w-6xl w-full mx-auto flex flex-col h-full">
                 {/* Header */}
@@ -1016,7 +1016,7 @@ export default function Dashboard() {
          !location.pathname.includes('naje-developer') && 
          !location.pathname.includes('naje-source') && 
          !location.pathname.includes('naje-agent') && (
-          <header className={`flex items-center justify-between px-3 sm:px-4 py-2 sm:py-2.5 flex-shrink-0 z-30 h-12 sm:h-14 ${location.pathname.includes('/creative') ? 'bg-[#030303]' : 'naje-glass-card-lg rounded-none border-t-0 border-r-0 border-l-0'}`}>
+          <header className={`flex items-center justify-between px-3 sm:px-4 py-2 sm:py-2.5 flex-shrink-0 z-30 h-12 sm:h-14 ${location.pathname.includes('/creative') ? 'bg-naje-canvas naje-chroma' : 'naje-glass-card-lg rounded-none border-t-0 border-r-0 border-l-0'}`}>
             <div className="flex items-center gap-2 sm:gap-3 shrink-0">
               {/* Hamburger Menu (Mobile only) */}
               <button 

@@ -1,6 +1,7 @@
 import React, { useEffect, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAppStore } from './store';
+import { applyThemeToDocument } from './lib/themes';
 import { lazyWithRetry } from './lib/lazyRetry';
 import Auth from './pages/Auth';
 import Dashboard from './pages/Dashboard';
@@ -32,15 +33,11 @@ const AuthAction = lazyWithRetry(() => import('./pages/AuthAction'));
 const NotFound = lazyWithRetry(() => import('./pages/NotFound'));
 
 export default function App() {
-  const { initializeAuth, loadingAuth, user, themeMode } = useAppStore();
+  const { initializeAuth, loadingAuth, user, themeMode, themeColor } = useAppStore();
 
   useEffect(() => {
-    if (themeMode === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, [themeMode]);
+    applyThemeToDocument(themeColor, themeMode);
+  }, [themeMode, themeColor]);
 
   useEffect(() => {
     initializeAuth();
@@ -48,7 +45,7 @@ export default function App() {
 
   if (loadingAuth) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-[#0f1115]">
+      <div className="min-h-screen flex items-center justify-center bg-naje-canvas">
         <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
@@ -59,7 +56,7 @@ export default function App() {
       <ErrorBoundary>
         <BrowserRouter>
         <Suspense fallback={
-          <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-[#0f1115]">
+          <div className="min-h-screen flex items-center justify-center bg-naje-canvas">
             <NajeThinking size={48} />
           </div>
         }>

@@ -204,7 +204,7 @@ export function CircularCardCarousel<T>({
               transition={{ type: 'spring', stiffness: 420, damping: 36, mass: 0.65 }}
               className={`absolute ${isCenter ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'} rounded-2xl ${
                 selected
-                  ? 'ring-2 ring-[#d4a574] shadow-[0_16px_40px_-18px_rgba(212,165,116,0.7)]'
+                  ? 'ring-2 ring-[var(--naje-accent)] shadow-[0_16px_40px_-18px_rgba(212,165,116,0.7)]'
                   : isCenter
                   ? 'shadow-[0_18px_36px_-16px_rgba(0,0,0,0.7)]'
                   : ''
@@ -236,7 +236,7 @@ export function CircularCardCarousel<T>({
             {showHand ? (
               <SwipeHintHand label={handLabel} />
             ) : (
-              <span className="font-mono text-[12px] font-black text-[#e8b86d]">
+              <span className="font-mono text-[12px] font-black text-[var(--naje-accent-2)]">
                 {centerIndex + 1} / {total}
               </span>
             )}

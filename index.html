@@ -1,6 +1,18 @@
 <!doctype html>
-<html lang="ar" dir="rtl">
+<html lang="ar" dir="rtl" data-naje-color="violet">
   <head>
+    <script>
+      (function () {
+        try {
+          var mode = localStorage.getItem('naje_theme');
+          var color = localStorage.getItem('naje_theme_color') || 'violet';
+          var dark = mode ? mode === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+          if (dark) document.documentElement.classList.add('dark');
+          else document.documentElement.classList.remove('dark');
+          document.documentElement.setAttribute('data-naje-color', color);
+        } catch (e) {}
+      })();
+    </script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="منصة شاملة للإبداع بالذكاء الاصطناعي: محادثة متقدمة، توليد صور وفيديوهات، تصميم عروض تقديمية ورسوم بيانية، وتوليد نصوص صوتية احترافية" />

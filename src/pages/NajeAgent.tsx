@@ -682,7 +682,7 @@ export default function NajeAgent() {
     : Bot;
 
   return (
-    <div className="flex-1 flex flex-col h-full min-h-0 bg-[#FAF9FC] dark:bg-[#0a0c10] text-slate-800 dark:text-slate-200 overflow-hidden font-sans" dir="rtl">
+    <div className="flex-1 flex flex-col h-full min-h-0 bg-naje-canvas text-naje-ink overflow-hidden font-sans" dir="rtl">
       <FeaturePaywallModal
         isOpen={showAgentPaywall}
         onClose={() => setShowAgentPaywall(false)}

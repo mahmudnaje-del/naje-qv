@@ -457,7 +457,7 @@ export default function NajeDeveloper() {
   };
 
   return (
-    <div className="flex-1 flex flex-col h-full min-h-0 bg-[#FAF9FC] dark:bg-[#0b0d11] overflow-hidden" dir="rtl">
+    <div className="flex-1 flex flex-col h-full min-h-0 bg-naje-canvas overflow-hidden" dir="rtl">
       <FeaturePaywallModal isOpen={showPaywall} onClose={() => setShowPaywall(false)} feature="najeDeveloper" />
 
       {/* ========================================================= */}

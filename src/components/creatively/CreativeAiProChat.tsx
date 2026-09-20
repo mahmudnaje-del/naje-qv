@@ -987,14 +987,14 @@ export function CreativeAiProChat({ activationCode = 'naje_authenticated', setAc
     }));
   };
 
-  if (!isStorageLoaded) return <div className="min-h-screen bg-[#09090b] flex items-center justify-center text-white">Loading...</div>;
+  if (!isStorageLoaded) return <div className="naje-chroma min-h-screen bg-naje-canvas flex items-center justify-center text-naje-ink">Loading...</div>;
 
   return (
-    <div className="flex h-full bg-[#030303] font-sans text-white overflow-hidden relative">
+    <div className="naje-chroma flex h-full bg-naje-canvas font-sans text-naje-ink overflow-hidden relative">
       {/* High-end Cosmic Animated Background */}
       <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
          {/* Deep radial core */}
-         <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,_#1e1b4b_0%,_#030303_60%)] opacity-80" />
+         <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,color-mix(in_srgb,var(--naje-p)_45%,transparent)_0%,var(--naje-canvas)_60%)] opacity-80" />
          
          {/* Animated floating orbs */}
          <motion.div 

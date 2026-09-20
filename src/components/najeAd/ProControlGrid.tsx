@@ -74,11 +74,11 @@ function Chip({
       onClick={onClick}
       className={`inline-flex items-center gap-1 rounded-xl border px-2.5 py-1.5 text-[11px] font-bold transition sm:px-3 sm:py-2 ${
         active
-          ? 'border-[#d4a574] bg-[#d4a574]/15 text-[#f4efe6] shadow-[0_0_18px_rgba(212,165,116,0.22)]'
+          ? 'border-[var(--naje-accent)] bg-[var(--naje-accent)]/15 text-[#f4efe6] shadow-[0_0_18px_rgba(212,165,116,0.22)]'
           : 'border-white/10 bg-black/35 text-white/65 hover:border-white/25 hover:text-white'
       }`}
     >
-      {active && <Check className="h-3 w-3 text-[#e8b86d]" />}
+      {active && <Check className="h-3 w-3 text-[var(--naje-accent-2)]" />}
       {children}
     </button>
   );
@@ -108,7 +108,7 @@ function Box({
           <button
             type="button"
             onClick={onAdd}
-            className="inline-flex shrink-0 items-center gap-1 rounded-xl border border-[#d4a574]/40 bg-[#d4a574]/10 px-2 py-1 text-[10px] font-black text-[#e8b86d]"
+            className="inline-flex shrink-0 items-center gap-1 rounded-xl border border-[var(--naje-accent)]/40 bg-[var(--naje-accent)]/10 px-2 py-1 text-[10px] font-black text-[var(--naje-accent-2)]"
           >
             <Plus className="h-3 w-3" /> إضافة
           </button>
@@ -229,13 +229,13 @@ export function ProControlGrid(props: {
             }}
             className={`rounded-2xl border p-3 text-right transition ${
               props.aspectRatio === '9:16'
-                ? 'border-[#d4a574] bg-[#d4a574]/15 shadow-[0_0_18px_rgba(212,165,116,0.18)]'
+                ? 'border-[var(--naje-accent)] bg-[var(--naje-accent)]/15 shadow-[0_0_18px_rgba(212,165,116,0.18)]'
                 : 'border-white/10 bg-black/30 hover:border-white/25'
             }`}
           >
             <div className="flex items-center justify-between gap-2">
               <span className="text-sm font-black text-white">طولي</span>
-              <span className="font-mono text-[11px] font-bold text-[#e8b86d]">9:16</span>
+              <span className="font-mono text-[11px] font-bold text-[var(--naje-accent-2)]">9:16</span>
             </div>
             <p className="mt-1.5 text-[10px] leading-relaxed text-white/50">تيك توك · ريلز · شورتس · سناب · ستوريز</p>
           </button>
@@ -247,13 +247,13 @@ export function ProControlGrid(props: {
             }}
             className={`rounded-2xl border p-3 text-right transition ${
               props.aspectRatio === '16:9'
-                ? 'border-[#d4a574] bg-[#d4a574]/15 shadow-[0_0_18px_rgba(212,165,116,0.18)]'
+                ? 'border-[var(--naje-accent)] bg-[var(--naje-accent)]/15 shadow-[0_0_18px_rgba(212,165,116,0.18)]'
                 : 'border-white/10 bg-black/30 hover:border-white/25'
             }`}
           >
             <div className="flex items-center justify-between gap-2">
               <span className="text-sm font-black text-white">عرضي</span>
-              <span className="font-mono text-[11px] font-bold text-[#e8b86d]">16:9</span>
+              <span className="font-mono text-[11px] font-bold text-[var(--naje-accent-2)]">16:9</span>
             </div>
             <p className="mt-1.5 text-[10px] leading-relaxed text-white/50">يوتيوب · تلفزيون · شاشات رقمية</p>
           </button>
@@ -280,7 +280,7 @@ export function ProControlGrid(props: {
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:col-span-2">
           {props.beatSlots.map((slot, idx) => (
             <label key={`${slot.from}-${slot.to}-${idx}`} className="rounded-2xl border border-white/10 bg-white/[0.04] p-3 text-right">
-              <span className="mb-1.5 block text-[11px] font-black text-[#e8b86d]">
+              <span className="mb-1.5 block text-[11px] font-black text-[var(--naje-accent-2)]">
                 من {slot.from} → {slot.to}
               </span>
               <textarea
@@ -291,7 +291,7 @@ export function ProControlGrid(props: {
                   props.onBeatSlots(next);
                 }}
                 placeholder="ماذا يحدث في هذه الثواني؟"
-                className="w-full resize-none rounded-xl border border-white/10 bg-black/40 p-2.5 text-[12px] text-white placeholder:text-white/30 focus:border-[#d4a574] focus:outline-none"
+                className="w-full resize-none rounded-xl border border-white/10 bg-black/40 p-2.5 text-[12px] text-white placeholder:text-white/30 focus:border-[var(--naje-accent)] focus:outline-none"
               />
             </label>
           ))}
@@ -424,10 +424,10 @@ export function ProControlGrid(props: {
         ) : null}
       </div>
 
-      <div className="rounded-2xl border border-[#d4a574]/30 bg-[#d4a574]/10 p-3 sm:p-4 lg:col-span-2">
+      <div className="rounded-2xl border border-[var(--naje-accent)]/30 bg-[var(--naje-accent)]/10 p-3 sm:p-4 lg:col-span-2">
         <div className="flex flex-wrap items-end justify-between gap-2 text-right">
           <div>
-            <p className="text-[10px] font-bold text-[#e8b86d]">التكلفة التقديرية</p>
+            <p className="text-[10px] font-bold text-[var(--naje-accent-2)]">التكلفة التقديرية</p>
             <p className="text-2xl font-black text-white">
               {points} <span className="text-sm font-medium text-white/50">نقطة</span>
             </p>
@@ -454,7 +454,7 @@ export function ProControlGrid(props: {
               value={addLabel}
               onChange={(e) => setAddLabel(e.target.value.slice(0, 48))}
               placeholder="مثال: إطلاق في رمضان"
-              className="mb-3 w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-[#d4a574] focus:outline-none"
+              className="mb-3 w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-[var(--naje-accent)] focus:outline-none"
             />
             <label className="mb-2 block text-[11px] font-bold text-white/70">ماذا سيفعل النموذج</label>
             <textarea
@@ -462,14 +462,14 @@ export function ProControlGrid(props: {
               value={addPrompt}
               onChange={(e) => setAddPrompt(e.target.value.slice(0, 240))}
               placeholder="وصف قصير يُضاف إلى التوجيه"
-              className="mb-4 w-full resize-none rounded-xl border border-white/10 bg-black/40 p-3 text-sm text-white placeholder:text-white/30 focus:border-[#d4a574] focus:outline-none"
+              className="mb-4 w-full resize-none rounded-xl border border-white/10 bg-black/40 p-3 text-sm text-white placeholder:text-white/30 focus:border-[var(--naje-accent)] focus:outline-none"
             />
             <div className="flex gap-2">
               <button
                 type="button"
                 onClick={saveAdd}
                 disabled={!addLabel.trim()}
-                className="flex-1 rounded-xl bg-[#d4a574] py-2.5 text-sm font-black text-black disabled:opacity-40"
+                className="flex-1 rounded-xl bg-[var(--naje-accent)] py-2.5 text-sm font-black text-black disabled:opacity-40"
               >
                 حفظ
               </button>

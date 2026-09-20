@@ -5,6 +5,13 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
 import { toast } from './toastStore';
 import { registerForPushNotifications } from './lib/pushNotifications';
+import {
+  applyThemeToDocument,
+  DEFAULT_THEME_ID,
+  isThemeColorId,
+  isThemeUnlocked,
+  type ThemeColorId,
+} from './lib/themes';
 
 let userUnsubscribe: (() => void) | null = null;
 
@@ -35,13 +42,15 @@ interface AppState {
   setNewChatModalOpen: (open: boolean) => void;
   themeMode: 'light' | 'dark';
   setThemeMode: (mode: 'light' | 'dark') => void;
+  themeColor: ThemeColorId;
+  setThemeColor: (color: ThemeColorId) => void;
   maintenanceDismissed: boolean;
   setMaintenanceDismissed: (dismissed: boolean) => void;
 }
 
 let statusUnsubscribe: (() => void) | null = null;
 
-export const useAppStore = create<AppState>((set) => ({
+export const useAppStore = create<AppState>((set, get) => ({
   user: null,
   loadingAuth: true,
   systemStatus: null,
@@ -65,12 +74,16 @@ export const useAppStore = create<AppState>((set) => ({
     : 'dark'),
   setThemeMode: (themeMode) => {
     localStorage.setItem('naje_theme', themeMode);
-    if (themeMode === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
+    applyThemeToDocument(get().themeColor, themeMode);
     set({ themeMode });
+  },
+  themeColor: (typeof localStorage !== 'undefined' && isThemeColorId(localStorage.getItem('naje_theme_color')))
+    ? (localStorage.getItem('naje_theme_color') as ThemeColorId)
+    : DEFAULT_THEME_ID,
+  setThemeColor: (themeColor) => {
+    localStorage.setItem('naje_theme_color', themeColor);
+    applyThemeToDocument(themeColor, get().themeMode);
+    set({ themeColor });
   },
   maintenanceDismissed: false,
   setMaintenanceDismissed: (maintenanceDismissed) => set({ maintenanceDismissed }),
@@ -117,6 +130,12 @@ export const useAppStore = create<AppState>((set) => ({
             }
 
             const lastProjectId = localStorage.getItem('naje_last_project_' + firebaseUser.uid);
+            const incomingColor = isThemeColorId(userData.selectedThemeColor) ? userData.selectedThemeColor : get().themeColor;
+            const resolvedColor = isThemeUnlocked(userData as any, incomingColor) ? incomingColor : DEFAULT_THEME_ID;
+            if (resolvedColor !== get().themeColor) {
+              localStorage.setItem('naje_theme_color', resolvedColor);
+            }
+            applyThemeToDocument(resolvedColor, get().themeMode);
 
             set({ 
               user: { 
@@ -127,7 +146,8 @@ export const useAppStore = create<AppState>((set) => ({
                 hasAcceptedTerms: Boolean(userData.hasAcceptedTerms)
               } as unknown as UserData, 
               loadingAuth: false, 
-              activeProjectId: lastProjectId 
+              activeProjectId: lastProjectId,
+              themeColor: resolvedColor,
             });
 
             if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {

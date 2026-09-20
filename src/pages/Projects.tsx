@@ -411,7 +411,7 @@ export default function Projects() {
 
   if (loading) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-[#FAF9FC] dark:bg-[#0d0f12]">
+      <div className="flex-1 flex items-center justify-center bg-naje-canvas">
         <div className="flex flex-col items-center gap-3">
           <NajeSpinner className="w-8 h-8" />
           <span className="text-gray-800 dark:text-gray-400 text-sm font-medium">جاري تحميل استوديو ناجي...</span>

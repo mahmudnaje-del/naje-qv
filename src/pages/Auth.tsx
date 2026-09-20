@@ -211,7 +211,7 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 dark:bg-[#0f1115] px-4 py-12 relative font-sans" dir="rtl">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-naje-canvas px-4 py-12 relative font-sans" dir="rtl">
       <div className="w-full max-w-md bg-white dark:bg-gray-900/50 p-8 rounded-2xl border border-gray-600 dark:border-gray-800">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">Naje AI</h1>

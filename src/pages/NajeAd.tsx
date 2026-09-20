@@ -251,13 +251,13 @@ export default function NajeAd() {
     : activeJob?.stepLabel || (isSubmitting ? 'جاري التحضير…' : '');
 
   return (
-    <div className="h-full overflow-y-auto bg-[#07080c] px-2.5 py-3 text-[#f4efe6] sm:px-6 sm:py-5" dir="rtl">
+    <div className="naje-chroma h-full overflow-y-auto bg-naje-canvas px-2.5 py-3 text-naje-ink sm:px-6 sm:py-5" dir="rtl">
       <FeaturePaywallModal isOpen={showPaywall} onClose={() => setShowPaywall(false)} feature="najeAd" />
       <div className="mx-auto max-w-6xl space-y-3 sm:space-y-5">
-        <header className="overflow-hidden rounded-2xl border border-white/8 bg-[radial-gradient(1200px_circle_at_100%_-20%,rgba(212,165,116,0.16),transparent_45%),linear-gradient(180deg,#141218,#0b0c10)] p-3 shadow-2xl sm:rounded-[28px] sm:p-5">
+        <header className="overflow-hidden rounded-2xl border border-white/8 bg-[radial-gradient(1200px_circle_at_100%_-20%,color-mix(in_srgb,var(--naje-accent)_22%,transparent),transparent_45%),linear-gradient(180deg,var(--naje-elevated),var(--naje-canvas))] p-3 shadow-2xl sm:rounded-[28px] sm:p-5">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <div className="mb-1.5 inline-flex items-center gap-2 rounded-full border border-[#d4a574]/30 bg-[#d4a574]/10 px-2.5 py-0.5 text-[10px] font-black tracking-[0.14em] text-[#e8b86d]">
+              <div className="mb-1.5 inline-flex items-center gap-2 rounded-full border border-[var(--naje-accent)]/30 bg-[var(--naje-accent)]/10 px-2.5 py-0.5 text-[10px] font-black tracking-[0.14em] text-[var(--naje-accent-2)]">
                 <Clapperboard className="h-3.5 w-3.5" /> NAJE AD · {NAJE_VIDEO_PRO_LABEL}
               </div>
               <h1 className="text-xl font-black tracking-tight text-white sm:text-2xl">استوديو الإعلان المتحرك</h1>
@@ -267,7 +267,7 @@ export default function NajeAd() {
             </div>
             <div className="rounded-2xl border border-white/10 bg-black/30 px-3 py-1.5 text-right sm:px-4 sm:py-2">
               <div className="text-[10px] text-white/40">رصيدك</div>
-              <div className="font-mono text-base font-black text-[#e8b86d] sm:text-lg">{(user?.balance ?? 0).toLocaleString()} نقطة</div>
+              <div className="font-mono text-base font-black text-[var(--naje-accent-2)] sm:text-lg">{(user?.balance ?? 0).toLocaleString()} نقطة</div>
             </div>
           </div>
         </header>
@@ -410,12 +410,12 @@ export default function NajeAd() {
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
             placeholder="مثال: الكاميرا تدور حول الزجاجة ثم ترفعها اليد ببطء نحو الضوء، رذاذ ماء، ابتسامة واثقة..."
-            className="w-full resize-none rounded-2xl border border-white/10 bg-black/40 p-4 text-sm text-white placeholder:text-white/30 focus:border-[#d4a574] focus:outline-none"
+            className="w-full resize-none rounded-2xl border border-white/10 bg-black/40 p-4 text-sm text-white placeholder:text-white/30 focus:border-[var(--naje-accent)] focus:outline-none"
           />
           <button
             type="submit"
             disabled={isSubmitting || najeAd?.enabled === false}
-            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-l from-[#c17f59] via-[#d4a574] to-[#7dd3c7] py-3.5 text-sm font-black text-black shadow-[0_12px_40px_-12px_rgba(212,165,116,0.7)] disabled:opacity-50"
+            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-l from-[var(--naje-accent)] via-[var(--naje-accent-2)] to-[color-mix(in_srgb,var(--naje-s)_70%,white)] py-3.5 text-sm font-black text-[var(--naje-on-accent)] shadow-[0_12px_40px_-12px_var(--naje-glow)] disabled:opacity-50"
           >
             {isSubmitting ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
             {isSubmitting ? stepLabel || 'جاري الإنتاج…' : `إنتاج الإعلان — ${points} نقطة`}
@@ -423,16 +423,16 @@ export default function NajeAd() {
         </form>
 
         {(isSubmitting || videoUrl) && (
-          <section className="space-y-3 rounded-2xl border border-white/8 bg-[#0e1016] p-3 sm:rounded-[28px] sm:p-4">
+          <section className="space-y-3 rounded-2xl border border-white/8 bg-naje-elevated p-3 sm:rounded-[28px] sm:p-4">
             <div className="flex items-center justify-between">
               <h3 className="inline-flex items-center gap-2 text-sm font-black text-white">
-                <Film className="h-4 w-4 text-[#d4a574]" /> المونيتور
+                <Film className="h-4 w-4 text-[var(--naje-accent)]" /> المونيتور
               </h3>
-              {isSubmitting && <span className="text-[11px] font-mono text-[#e8b86d]">{progress}%</span>}
+              {isSubmitting && <span className="text-[11px] font-mono text-[var(--naje-accent-2)]">{progress}%</span>}
             </div>
             {isSubmitting && (
               <div className="h-1.5 overflow-hidden rounded-full bg-white/10">
-                <motion.div className="h-full bg-gradient-to-l from-[#d4a574] to-[#7dd3c7]" animate={{ width: `${Math.max(8, progress)}%` }} />
+                <motion.div className="h-full bg-gradient-to-l from-[var(--naje-accent)] to-[#7dd3c7]" animate={{ width: `${Math.max(8, progress)}%` }} />
               </div>
             )}
             {videoUrl && (
@@ -456,9 +456,9 @@ export default function NajeAd() {
                     value={editText}
                     onChange={(e) => setEditText(e.target.value)}
                     placeholder="تحرير طبيعي: اجعل الإضاءة أدفأ، أخفِ الحوار، قرّب المنتج..."
-                    className="flex-1 rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-xs text-white placeholder:text-white/30 focus:border-[#d4a574] focus:outline-none"
+                    className="flex-1 rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-xs text-white placeholder:text-white/30 focus:border-[var(--naje-accent)] focus:outline-none"
                   />
-                  <button type="button" onClick={handleEdit} className="inline-flex items-center gap-1 rounded-xl bg-[#d4a574] px-3 py-2 text-[11px] font-black text-black">
+                  <button type="button" onClick={handleEdit} className="inline-flex items-center gap-1 rounded-xl bg-[var(--naje-accent)] px-3 py-2 text-[11px] font-black text-black">
                     <Wand2 className="h-3.5 w-3.5" /> طبّق
                   </button>
                 </div>

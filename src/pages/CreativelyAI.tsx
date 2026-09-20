@@ -1536,14 +1536,14 @@ const handleProUnlockSubmit = async () => {};
 
   if (currentScreen === 'gallery') {
     return (
-      <div className="flex-1 min-h-0 overflow-y-auto bg-[#030303] text-white font-sans overflow-x-hidden flex flex-col pb-28 sm:pb-12" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
+      <div className="naje-chroma flex-1 min-h-0 overflow-y-auto bg-naje-canvas text-naje-ink font-sans overflow-x-hidden flex flex-col pb-28 sm:pb-12" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
         <div className="fixed inset-0 pointer-events-none z-0">
           <div className="absolute top-[-10%] ltr:left-[-10%] rtl:right-[-10%] w-[40rem] h-[40rem] bg-purple-900/20 rounded-full blur-[120px] mix-blend-screen" />
           <div className="absolute bottom-[-10%] ltr:right-[-10%] rtl:left-[-10%] w-[50rem] h-[50rem] bg-indigo-900/10 rounded-full blur-[150px] mix-blend-screen" />
           <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay"></div>
         </div>
         
-        <header className="relative z-10 px-6 py-6 border-b border-white/5 bg-[#030303]/60 backdrop-blur-2xl shadow-[0_8px_30px_rgba(0,0,0,0.3)] hover:shadow-[0_8px_30px_rgba(255,255,255,0.05)] flex justify-between items-center">
+        <header className="relative z-10 px-6 py-6 border-b border-white/5 bg-naje-canvas/60 backdrop-blur-2xl shadow-[0_8px_30px_rgba(0,0,0,0.3)] hover:shadow-[0_8px_30px_rgba(255,255,255,0.05)] flex justify-between items-center">
           <button 
             onClick={() => handleSetScreen('welcome')}
             className="flex items-center gap-2 text-slate-300 hover:text-white transition-colors"
@@ -2010,7 +2010,7 @@ if (currentScreen === 'welcome') {
 
 
   return (
-    <div className={`w-full ${mode === 'chat' ? 'h-full flex-1 overflow-hidden py-0 md:py-12 px-0 md:px-8' : 'min-h-full flex-1 overflow-y-auto overflow-x-hidden pt-6 pb-32 sm:pb-24 md:py-16 px-4 md:px-8'} bg-slate-950 text-white font-sans flex flex-col justify-start items-center relative`} dir="rtl">
+    <div className={`naje-chroma w-full ${mode === 'chat' ? 'h-full flex-1 overflow-hidden py-0 md:py-12 px-0 md:px-8' : 'min-h-full flex-1 overflow-y-auto overflow-x-hidden pt-6 pb-32 sm:pb-24 md:py-16 px-4 md:px-8'} bg-naje-canvas text-naje-ink font-sans flex flex-col justify-start items-center relative`} dir="rtl">
       <FeaturePaywallModal
         isOpen={showCreativelyPaywall}
         onClose={() => setShowCreativelyPaywall(false)}

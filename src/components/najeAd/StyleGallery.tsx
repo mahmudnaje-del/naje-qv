@@ -24,10 +24,10 @@ export function StyleGallery({
         <div className="min-w-0">
           <h2 className="text-sm font-black text-white sm:text-base">أسلوب الإعلان</h2>
           <p className="truncate text-[10px] text-white/45 sm:text-[11px]">
-            الحالي: <span className="font-bold text-[#e8b86d]">{current?.name || 'اختر أسلوباً إعلانياً'}</span>
+            الحالي: <span className="font-bold text-[var(--naje-accent-2)]">{current?.name || 'اختر أسلوباً إعلانياً'}</span>
           </p>
         </div>
-        <span className="shrink-0 rounded-lg border border-white/10 px-2 py-1 font-mono text-[11px] font-bold text-[#e8b86d]">
+        <span className="shrink-0 rounded-lg border border-white/10 px-2 py-1 font-mono text-[11px] font-bold text-[var(--naje-accent-2)]">
           {filtered.length ? `${centerIndex + 1}/${filtered.length}` : '0'}
         </span>
       </div>
@@ -37,7 +37,7 @@ export function StyleGallery({
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           placeholder="ابحث عن أسلوب إعلان..."
-          className="w-full rounded-xl border border-white/10 bg-black/35 py-2 pr-9 pl-3 text-xs text-white placeholder:text-white/30 focus:border-[#e8b86d] focus:outline-none"
+          className="w-full rounded-xl border border-white/10 bg-black/35 py-2 pr-9 pl-3 text-xs text-white placeholder:text-white/30 focus:border-[var(--naje-accent-2)] focus:outline-none"
         />
       </div>
 
@@ -53,7 +53,7 @@ export function StyleGallery({
           renderCard={(t, isCenter) => (
             <div
               className={`w-[64vw] max-w-[15.5rem] overflow-hidden rounded-2xl border ${
-                t.id === selectedStyleId ? 'border-[#d4a574]' : 'border-white/10'
+                t.id === selectedStyleId ? 'border-[var(--naje-accent)]' : 'border-white/10'
               }`}
             >
               <div
@@ -82,7 +82,7 @@ export function StyleGallery({
                       e.stopPropagation();
                       onSelectStyle(t.id);
                     }}
-                    className="mt-2 w-full rounded-xl bg-[#d4a574] py-1.5 text-[11px] font-black text-black"
+                    className="mt-2 w-full rounded-xl bg-[var(--naje-accent)] py-1.5 text-[11px] font-black text-[var(--naje-on-accent)]"
                   >
                     اعتماد الأسلوب
                   </button>

@@ -31,7 +31,8 @@ service cloud.firestore {
                     && !('hasRecharged' in request.resource.data)
                     && !('balance' in request.resource.data)
                     && !('isNegativeBalance' in request.resource.data)
-                    && !('highestPurchasedTier' in request.resource.data);
+                    && !('highestPurchasedTier' in request.resource.data)
+                    && !('unlockedThemes' in request.resource.data);
       allow update: if signedIn() && (
                       (isAdmin() && (
                         (!('isAdmin' in request.resource.data) || request.resource.data.isAdmin == resource.data.isAdmin || canMintAdmins())
@@ -44,7 +45,9 @@ service cloud.firestore {
                        && (!('canAddAdmins' in request.resource.data) || request.resource.data.canAddAdmins == resource.data.canAddAdmins)
                        && (!('isBlocked' in request.resource.data) || request.resource.data.isBlocked == resource.data.isBlocked)
                        && (!('hasRecharged' in request.resource.data) || request.resource.data.hasRecharged == resource.data.hasRecharged)
-                       && (!('email' in request.resource.data) || request.resource.data.email == resource.data.email))
+                       && (!('email' in request.resource.data) || request.resource.data.email == resource.data.email)
+                       && (!('unlockedThemes' in request.resource.data) || request.resource.data.unlockedThemes == resource.data.unlockedThemes)
+                       && (!('highestPurchasedTier' in request.resource.data) || request.resource.data.highestPurchasedTier == resource.data.highestPurchasedTier))
                     );
       allow delete: if false;
     }

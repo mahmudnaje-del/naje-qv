@@ -36,7 +36,7 @@ export function WelcomeScreen({ lang = 'ar', onNavigate, onSecretClick, userName
   ];
 
   return (
-    <div className="bg-[#030303] min-h-full text-slate-200 font-sans selection:bg-purple-500/30 overflow-x-hidden" dir={isAr ? 'rtl' : 'ltr'}>
+    <div className="naje-chroma bg-naje-canvas min-h-full text-naje-ink font-sans selection:bg-purple-500/30 overflow-x-hidden" dir={isAr ? 'rtl' : 'ltr'}>
       {/* Background Gradients */}
       <div className="fixed inset-0 pointer-events-none z-0">
         <div className="absolute top-[-10%] ltr:left-[-10%] rtl:right-[-10%] w-[40rem] h-[40rem] bg-purple-900/20 rounded-full blur-[120px] mix-blend-screen animate-pulse" style={{ animationDuration: '10s' }} />

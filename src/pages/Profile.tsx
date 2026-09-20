@@ -15,10 +15,11 @@ import { doc, updateDoc, collection, query, where, getDocs, getCountFromServer }
 import { RedeemCode } from '../types';
 import { 
   CreditCard, History, BarChart2, Image as ImageIcon, Film, 
-  FileText, Folder, LogOut, Shield, Sparkles, Code, Mail, ExternalLink, Info, User, Moon, Sun,
+  FileText, Folder, LogOut, Shield, Sparkles, Code, Mail, ExternalLink, Info, User,
   Bell, Database, Download, Trash2, KeyRound, Lock, ShieldCheck
 } from 'lucide-react';
 import NajeSpinner from '../components/NajeSpinner';
+import ThemeStudio from '../components/ThemeStudio';
 import { safeVerifyBeforeUpdateEmail } from '../lib/authActionSettings';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
@@ -27,7 +28,7 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { registerForPushNotifications, disablePushNotifications } from '../lib/pushNotifications';
 
 export default function Profile() {
-  const { user, updateBalance, themeMode, setThemeMode } = useAppStore();
+  const { user, updateBalance } = useAppStore();
   const [activeTab, setActiveTab] = useState<'settings' | 'about'>('settings');
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
@@ -461,7 +462,7 @@ export default function Profile() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             
             {/* Balance Card */}
-            <div className="bg-[#f2f0f5] dark:bg-[#0e1014] border border-purple-200 dark:hover:border-gray-900 rounded-2xl p-6 sm:p-8 hover:border-purple-300 dark:hover:border-gray-800 transition-colors shadow-lg">
+            <div className="bg-naje-card border border-purple-200 dark:border-gray-900 rounded-2xl p-6 sm:p-8 shadow-lg">
               <div className="flex items-center gap-4 mb-6">
                 <div className="w-12 h-12 bg-indigo-50 dark:bg-indigo-500/10 rounded-xl flex items-center justify-center text-indigo-600 dark:text-indigo-400 ring-1 ring-indigo-500/25">
                   <CreditCard className="w-6 h-6" />
@@ -513,7 +514,7 @@ export default function Profile() {
             </div>
 
             {/* Account Info Details Card */}
-            <div className="bg-[#f2f0f5] dark:bg-[#0e1014] border border-purple-200 dark:hover:border-gray-900 rounded-2xl p-6 sm:p-8 hover:border-purple-300 dark:hover:border-gray-800 transition-colors shadow-lg flex flex-col justify-between">
+            <div className="bg-naje-card border border-purple-200 dark:border-gray-900 rounded-2xl p-6 sm:p-8 shadow-lg flex flex-col justify-between">
               <div>
                 <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-6">تفاصيل حساب الإبداع</h2>
                 <div className="space-y-5">
@@ -564,25 +565,6 @@ export default function Profile() {
                     <p className="text-xs text-gray-800 dark:text-gray-400 mb-1">البريد الإلكتروني للغرفة</p>
                     <p className="font-bold text-gray-900 dark:text-gray-300 text-[15px]">{user.email}</p>
                   </div>
-                  <div className="border-b border-gray-500 dark:border-gray-900 pb-3">
-                    <p className="text-xs text-gray-800 dark:text-gray-400 mb-2">المظهر</p>
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => setThemeMode('dark')}
-                        className={`flex items-center justify-center gap-2 flex-1 py-2 rounded-lg text-xs font-bold transition border ${themeMode === 'dark' ? 'bg-indigo-600 text-white border-indigo-500 shadow-md' : 'bg-gray-50 dark:bg-gray-900 border-gray-500 dark:border-gray-800 text-gray-800 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white cursor-pointer'}`}
-                      >
-                        <Moon className="w-4 h-4" />
-                        <span>داكن</span>
-                      </button>
-                      <button
-                        onClick={() => setThemeMode('light')}
-                        className={`flex items-center justify-center gap-2 flex-1 py-2 rounded-lg text-xs font-bold transition border ${themeMode === 'light' ? 'bg-indigo-600 text-white border-indigo-500 shadow-md' : 'bg-gray-50 dark:bg-gray-900 border-gray-500 dark:border-gray-800 text-gray-800 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white cursor-pointer'}`}
-                      >
-                        <Sun className="w-4 h-4" />
-                        <span>فاتح</span>
-                      </button>
-                    </div>
-                  </div>
                   <div>
                     <p className="text-xs text-gray-800 dark:text-gray-400 mb-1">حالة نشاط المنصة</p>
                     <div className="flex items-center gap-2 mt-1">
@@ -602,8 +584,12 @@ export default function Profile() {
 
           </div>
 
+          <div className="bg-naje-card border border-purple-200 dark:border-gray-900 rounded-2xl p-6 sm:p-8 shadow-lg">
+            <ThemeStudio />
+          </div>
+
           {/* Security & Credentials Card */}
-          <div className="bg-[#f2f0f5] dark:bg-[#0e1014] border border-purple-200 dark:border-gray-900 rounded-2xl p-6 sm:p-8 shadow-lg">
+          <div className="bg-naje-card border border-purple-200 dark:border-gray-900 rounded-2xl p-6 sm:p-8 shadow-lg">
             <div className="flex items-center gap-4 mb-6">
               <div className="w-12 h-12 bg-indigo-50 dark:bg-indigo-500/10 rounded-xl flex items-center justify-center text-indigo-600 dark:text-indigo-400 ring-1 ring-indigo-500/25">
                 <ShieldCheck className="w-6 h-6" />

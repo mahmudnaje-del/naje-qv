@@ -6,7 +6,7 @@ export function SwipeHintHand({ label }: { label: string }) {
     <div className="pointer-events-none flex flex-col items-center gap-0.5" aria-hidden>
       <div className="relative h-14 w-[4.5rem]">
         <motion.span
-          className="absolute left-1 top-6 h-8 w-8 rounded-full bg-[#d4a574]/15"
+          className="absolute left-1 top-6 h-8 w-8 rounded-full bg-[var(--naje-accent)]/15"
           animate={{ scale: [0.85, 1.15, 0.85], opacity: [0.2, 0.45, 0.2] }}
           transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
         />
@@ -19,8 +19,8 @@ export function SwipeHintHand({ label }: { label: string }) {
           animate={{ x: [10, -14, 10] }}
           transition={{ duration: 1.7, repeat: Infinity, ease: 'easeInOut' }}
         >
-          <path d="M14 22c8-6 16-8 24-7" stroke="#d4a574" strokeWidth="1.6" strokeLinecap="round" opacity="0.35" />
-          <path d="M16 28c7-4 14-6 22-5" stroke="#e8b86d" strokeWidth="1.2" strokeLinecap="round" opacity="0.55" />
+          <path d="M14 22c8-6 16-8 24-7" stroke="var(--naje-accent)" strokeWidth="1.6" strokeLinecap="round" opacity="0.35" />
+          <path d="M16 28c7-4 14-6 22-5" stroke="var(--naje-accent-2)" strokeWidth="1.2" strokeLinecap="round" opacity="0.55" />
           <path d="M18 33c6-3 12-4 18-3" stroke="#f4efe6" strokeWidth="1" strokeLinecap="round" opacity="0.25" />
           <ellipse cx="40" cy="50" rx="11" ry="3" fill="rgba(212,165,116,0.22)" />
           <path
@@ -31,10 +31,10 @@ export function SwipeHintHand({ label }: { label: string }) {
             strokeLinejoin="round"
           />
           <path d="M38.2 8.5v11.5" stroke="#c17f59" strokeWidth="2.2" strokeLinecap="round" />
-          <circle cx="38.2" cy="7.2" r="2.1" fill="#e8b86d" stroke="#c17f59" strokeWidth="1.1" />
+          <circle cx="38.2" cy="7.2" r="2.1" fill="var(--naje-accent-2)" stroke="#c17f59" strokeWidth="1.1" />
         </motion.svg>
       </div>
-      <span className="max-w-[9.5rem] text-center text-[9px] font-black leading-tight tracking-wide text-[#e8b86d]/90">
+      <span className="max-w-[9.5rem] text-center text-[9px] font-black leading-tight tracking-wide text-[var(--naje-accent-2)]/90">
         {label}
       </span>
     </div>
