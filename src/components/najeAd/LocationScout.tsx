@@ -103,7 +103,7 @@ export function LocationScout({
         </div>
       </div>
 
-      <div className="relative overflow-visible rounded-2xl border border-white/8 bg-naje-elevated px-5 py-3 sm:rounded-3xl sm:px-8 sm:py-4">
+      <div className="relative overflow-visible rounded-2xl border border-white/8 bg-[#0c0e14] px-5 py-3 sm:rounded-3xl sm:px-8 sm:py-4">
         <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(e) => pickFile(e.target.files?.[0])} />
         <CircularCardCarousel<Card>
           items={items}
@@ -121,7 +121,7 @@ export function LocationScout({
           renderCard={(c, isCenter) => {
             if (c.type === 'upload') {
               return (
-                <div className={`w-[64vw] max-w-[16rem] rounded-2xl border p-2.5 ${isCenter ? 'border-[var(--naje-accent)] bg-[#10201c]' : 'border-white/10 bg-[#12141c]'}`}>
+                <div className={`w-[54vw] max-w-[14.5rem] rounded-2xl border p-2.5 ${isCenter ? 'border-[var(--naje-accent)] bg-[#10201c]' : 'border-white/10 bg-[#12141c]'}`}>
                   <div className="mb-2 flex items-center justify-center gap-2 rounded-xl bg-black/25 py-1">
                     <span className="h-1 w-6 rounded-full bg-[var(--naje-accent)]/80" />
                     <span className="text-[10px] font-black text-[var(--naje-accent)]">إرفاق · اسحب</span>
@@ -151,7 +151,7 @@ export function LocationScout({
             const loc = c.location;
             const selected = loc.id === selectedLocationId;
             return (
-              <div className={`w-[64vw] max-w-[16rem] rounded-2xl border p-2 ${isCenter ? 'bg-[#121622]' : 'bg-[#11141c]'} ${selected ? 'border-[var(--naje-accent)]' : 'border-white/10'}`}>
+              <div className={`w-[54vw] max-w-[14.5rem] rounded-2xl border p-2 ${isCenter ? 'bg-[#121622]' : 'bg-[#11141c]'} ${selected ? 'border-[var(--naje-accent)]' : 'border-white/10'}`}>
                 <div className="relative aspect-video overflow-hidden rounded-xl">
                   <LocationPhoto id={loc.id} name={loc.name} gradient={loc.placeholderGradient} className="h-full w-full" />
                   {selected && (

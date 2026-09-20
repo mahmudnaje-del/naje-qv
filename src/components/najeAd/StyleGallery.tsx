@@ -52,7 +52,7 @@ export function StyleGallery({
           frameClassName="h-[250px] sm:h-[330px]"
           renderCard={(t, isCenter) => (
             <div
-              className={`w-[64vw] max-w-[15.5rem] overflow-hidden rounded-2xl border ${
+              className={`w-[54vw] max-w-[14.5rem] overflow-hidden rounded-2xl border ${
                 t.id === selectedStyleId ? 'border-[var(--naje-accent)]' : 'border-white/10'
               }`}
             >

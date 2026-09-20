@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { motion, PanInfo, useDragControls } from 'motion/react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { SwipeHintHand } from './SwipeHintHand';
 
 export interface CircularCarouselProps<T> {
@@ -123,8 +122,8 @@ export function CircularCardCarousel<T>({
   const visibleWindowLimit = width < 640 ? 1 : 2;
   const actualWindow = Math.min(visibleWindowLimit, Math.floor((total - 1) / 2));
   const visibleOffsets = Array.from({ length: actualWindow * 2 + 1 }, (_, i) => i - actualWindow);
-  const step = width < 400 ? 108 : width < 640 ? 128 : 156;
-  const stackDepth = Math.min(2, Math.max(0, total - 1));
+  const step = width < 400 ? 148 : width < 640 ? 168 : 200;
+  const stackDepth = Math.min(2, Math.max(0, total - 1 - actualWindow));
 
   return (
     <div className="w-full">
@@ -135,23 +134,23 @@ export function CircularCardCarousel<T>({
       >
         {Array.from({ length: stackDepth }, (_, s) => {
           const depth = stackDepth - s;
-          const item = items[wrapIndex(centerIndex + depth + (actualWindow > 0 ? 1 : 0))];
+          const item = items[wrapIndex(centerIndex + actualWindow + depth)];
           if (!item) return null;
           return (
             <motion.div
               key={`stack-${depth}-${getKey(item)}`}
               aria-hidden
               animate={{
-                x: depth * 14,
-                y: depth * 16,
-                scale: 1 - depth * 0.055,
-                rotate: depth * 4.2,
-                opacity: 0.42 - depth * 0.08,
-                zIndex: 8 - depth,
+                x: 10 + depth * 22,
+                y: 14 + depth * 18,
+                scale: 1 - depth * 0.08,
+                rotate: depth * 6.5,
+                opacity: 0.55 - depth * 0.12,
+                zIndex: 6 - depth,
               }}
               transition={{ type: 'spring', stiffness: 380, damping: 34 }}
-              className="pointer-events-none absolute rounded-2xl shadow-xl shadow-black/40"
-              style={{ transformStyle: 'preserve-3d', filter: 'brightness(0.62) saturate(0.8)' }}
+              className="pointer-events-none absolute rounded-2xl shadow-xl shadow-black/50"
+              style={{ transformStyle: 'preserve-3d', filter: 'brightness(0.72) saturate(0.85)' }}
             >
               {renderCard(item, false)}
             </motion.div>
@@ -195,19 +194,19 @@ export function CircularCardCarousel<T>({
               }}
               animate={{
                 x: offset * step,
-                y: isCenter ? 0 : 8,
-                scale: isCenter ? 1 : 1 - absOffset * 0.08,
-                opacity: isCenter ? 1 : 0.78 - absOffset * 0.12,
-                zIndex: 30 - absOffset,
-                rotateY: offset * -7,
+                y: isCenter ? 0 : 10,
+                scale: isCenter ? 1 : 0.82 - absOffset * 0.04,
+                opacity: isCenter ? 1 : 0.92,
+                zIndex: 40 - absOffset * 10,
+                rotate: offset * 7,
               }}
               transition={{ type: 'spring', stiffness: 420, damping: 36, mass: 0.65 }}
               className={`absolute ${isCenter ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'} rounded-2xl ${
                 selected
-                  ? 'ring-2 ring-[var(--naje-accent)] shadow-[0_16px_40px_-18px_rgba(212,165,116,0.7)]'
+                  ? 'ring-2 ring-[var(--naje-accent)] shadow-[0_16px_40px_-18px_rgba(0,0,0,0.55)]'
                   : isCenter
                   ? 'shadow-[0_18px_36px_-16px_rgba(0,0,0,0.7)]'
-                  : ''
+                  : 'shadow-[0_10px_24px_-16px_rgba(0,0,0,0.6)]'
               }`}
               style={{
                 transformStyle: 'preserve-3d',
@@ -223,32 +222,11 @@ export function CircularCardCarousel<T>({
       </div>
 
       {total > 1 && (
-        <div className="mt-1.5 flex items-center justify-center gap-4 px-2" dir="ltr">
-          <button
-            type="button"
-            aria-label="البطاقة السابقة"
-            onClick={() => commitFlip(-1)}
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/15 bg-[#12141c] text-white shadow-lg shadow-black/30"
-          >
-            <ChevronLeft className="h-5 w-5" />
-          </button>
-          <div className="flex min-h-[3.25rem] min-w-[7.5rem] items-center justify-center">
-            {showHand ? (
-              <SwipeHintHand label={handLabel} />
-            ) : (
-              <span className="font-mono text-[12px] font-black text-[var(--naje-accent-2)]">
-                {centerIndex + 1} / {total}
-              </span>
-            )}
-          </div>
-          <button
-            type="button"
-            aria-label="البطاقة التالية"
-            onClick={() => commitFlip(1)}
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/15 bg-[#12141c] text-white shadow-lg shadow-black/30"
-          >
-            <ChevronRight className="h-5 w-5" />
-          </button>
+        <div className="mt-1 flex flex-col items-center justify-center gap-0.5">
+          {showHand ? <SwipeHintHand label={handLabel} /> : null}
+          <span className="font-mono text-[11px] font-black text-white/55">
+            {centerIndex + 1} / {total}
+          </span>
         </div>
       )}
     </div>

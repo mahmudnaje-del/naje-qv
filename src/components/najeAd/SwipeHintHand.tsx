@@ -4,37 +4,40 @@ import { motion } from 'motion/react';
 export function SwipeHintHand({ label }: { label: string }) {
   return (
     <div className="pointer-events-none flex flex-col items-center gap-0.5" aria-hidden>
-      <div className="relative h-14 w-[4.5rem]">
-        <motion.span
-          className="absolute left-1 top-6 h-8 w-8 rounded-full bg-[var(--naje-accent)]/15"
-          animate={{ scale: [0.85, 1.15, 0.85], opacity: [0.2, 0.45, 0.2] }}
-          transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
-        />
+      <div className="relative h-[3.35rem] w-[5.5rem]">
         <motion.svg
-          width="72"
-          height="56"
-          viewBox="0 0 72 56"
+          width="88"
+          height="54"
+          viewBox="0 0 88 54"
           fill="none"
           className="absolute inset-0"
-          animate={{ x: [10, -14, 10] }}
-          transition={{ duration: 1.7, repeat: Infinity, ease: 'easeInOut' }}
+          animate={{ x: [6, -10, 6], opacity: [0.25, 0.85, 0.25] }}
+          transition={{ duration: 1.55, repeat: Infinity, ease: 'easeInOut' }}
         >
-          <path d="M14 22c8-6 16-8 24-7" stroke="var(--naje-accent)" strokeWidth="1.6" strokeLinecap="round" opacity="0.35" />
-          <path d="M16 28c7-4 14-6 22-5" stroke="var(--naje-accent-2)" strokeWidth="1.2" strokeLinecap="round" opacity="0.55" />
-          <path d="M18 33c6-3 12-4 18-3" stroke="#f4efe6" strokeWidth="1" strokeLinecap="round" opacity="0.25" />
-          <ellipse cx="40" cy="50" rx="11" ry="3" fill="rgba(212,165,116,0.22)" />
+          <path d="M18 20c10-9 22-12 36-10" stroke="white" strokeWidth="2.4" strokeLinecap="round" opacity="0.22" />
+          <path d="M16 28c12-8 24-11 38-9" stroke="white" strokeWidth="2.8" strokeLinecap="round" opacity="0.4" />
+          <path d="M20 36c10-6 20-8 32-7" stroke="white" strokeWidth="2.2" strokeLinecap="round" opacity="0.28" />
+        </motion.svg>
+        <motion.svg
+          width="88"
+          height="54"
+          viewBox="0 0 88 54"
+          fill="none"
+          className="absolute inset-0 drop-shadow-[0_2px_6px_rgba(0,0,0,0.45)]"
+          animate={{ x: [8, -12, 8] }}
+          transition={{ duration: 1.55, repeat: Infinity, ease: 'easeInOut' }}
+        >
           <path
-            d="M33.2 18.5c0-3.4 2.4-5.6 5.1-5.6 2.7 0 5 2.2 5 5.6v6.2c1.1-1.5 2.8-2.4 4.8-1.7 2.2.8 2.9 3 2.4 5.1l-1.6 6.6c2.1.5 3.7 2.4 3.7 4.8 0 3.6-3.3 6.7-9.1 6.7H32.6c-5.4 0-9.4-3.4-9.4-8.6V30.4c0-2.6 2-4.7 4.6-4.9.6 0 1.2.1 1.7.4V18.5Z"
-            fill="#f7f1e8"
-            stroke="#c17f59"
-            strokeWidth="1.7"
+            d="M46 8.5c.7-2.4 3.2-3.6 5.4-2.6 1.6.8 2.4 2.5 2.2 4.3l-.8 11.2 1.4-1.6c1.4-1.7 4-1.6 5.3.3 1 1.5.8 3.5-.4 4.8l-8.6 9.4c-1.6 1.8-2.5 4.1-2.6 6.5l-.2 3.4c0 2.3-1.9 4.2-4.2 4.2h-9.6c-2.1 0-3.9-1.5-4.2-3.6l-1.6-9.4c-.4-2.2.3-4.5 1.9-6.1l7.6-7.6V12.2c0-2.3 1.9-4.1 4.2-4.1 1.4 0 2.7.7 3.4 1.9V8.5Z"
+            fill="none"
+            stroke="white"
+            strokeWidth="2.6"
             strokeLinejoin="round"
+            strokeLinecap="round"
           />
-          <path d="M38.2 8.5v11.5" stroke="#c17f59" strokeWidth="2.2" strokeLinecap="round" />
-          <circle cx="38.2" cy="7.2" r="2.1" fill="var(--naje-accent-2)" stroke="#c17f59" strokeWidth="1.1" />
         </motion.svg>
       </div>
-      <span className="max-w-[9.5rem] text-center text-[9px] font-black leading-tight tracking-wide text-[var(--naje-accent-2)]/90">
+      <span className="max-w-[9.5rem] text-center text-[9px] font-black leading-tight tracking-wide text-white/70">
         {label}
       </span>
     </div>

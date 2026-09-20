@@ -24,25 +24,27 @@
   --naje-p: #7c5cfa;
   --naje-s: #e394ea;
   --naje-on-accent: #ffffff;
-  --naje-canvas: color-mix(in srgb, var(--naje-s) 10%, #f6f3fb);
+  --naje-canvas: #f4f3f6;
   --naje-elevated: #ffffff;
-  --naje-card: color-mix(in srgb, var(--naje-s) 14%, #f3f0f7);
-  --naje-ink: #16141c;
-  --naje-muted: color-mix(in srgb, var(--naje-p) 28%, #5c5868);
-  --naje-line: color-mix(in srgb, var(--naje-p) 22%, transparent);
+  --naje-card: #ffffff;
+  --naje-ink: #17151d;
+  --naje-muted: #5a5663;
+  --naje-line: color-mix(in srgb, var(--naje-p) 14%, #e4e2e8);
   --naje-accent: var(--naje-p);
   --naje-accent-2: var(--naje-s);
-  --naje-accent-soft: color-mix(in srgb, var(--naje-p) 12%, transparent);
-  --naje-glow: color-mix(in srgb, var(--naje-p) 30%, transparent);
+  --naje-accent-soft: color-mix(in srgb, var(--naje-p) 9%, transparent);
+  --naje-glow: color-mix(in srgb, var(--naje-p) 16%, transparent);
 }
 
 .dark {
-  --naje-canvas: color-mix(in srgb, var(--naje-p) 11%, #08090c);
-  --naje-elevated: color-mix(in srgb, var(--naje-p) 16%, #12141a);
-  --naje-card: color-mix(in srgb, var(--naje-p) 13%, #101218);
+  --naje-canvas: #090a0d;
+  --naje-elevated: #12141a;
+  --naje-card: #101218;
   --naje-ink: #f4efe6;
-  --naje-muted: color-mix(in srgb, var(--naje-s) 28%, #9a958c);
-  --naje-line: color-mix(in srgb, var(--naje-s) 20%, transparent);
+  --naje-muted: #9a958c;
+  --naje-line: color-mix(in srgb, var(--naje-s) 16%, transparent);
+  --naje-accent-soft: color-mix(in srgb, var(--naje-p) 14%, transparent);
+  --naje-glow: color-mix(in srgb, var(--naje-p) 22%, transparent);
 }
 
 html[data-naje-color="azure"] { --naje-p: #3b8ed8; --naje-s: #8ec9f2; --naje-on-accent: #ffffff; }
@@ -177,23 +179,32 @@ div#root:nth-of-type(1) > div:nth-of-type(1) > main:nth-of-type(1) > div:nth-of-
 
 /* Light-mode readability for dark-first studio screens (Creatively, Naje Ad) */
 html:not(.dark) .naje-chroma {
-  --color-white: var(--naje-ink);
-  --color-slate-200: color-mix(in srgb, var(--naje-ink) 78%, white);
-  --color-slate-300: color-mix(in srgb, var(--naje-ink) 62%, white);
-  --color-slate-400: var(--naje-muted);
+  --color-white: #1c1924;
+  --color-slate-200: #3a3644;
+  --color-slate-300: #4e4958;
+  --color-slate-400: #5c5668;
+  --color-indigo-400: color-mix(in srgb, var(--naje-p) 78%, black);
+  --color-purple-400: color-mix(in srgb, var(--naje-p) 72%, black);
+  --color-violet-400: color-mix(in srgb, var(--naje-p) 74%, black);
+  --color-fuchsia-400: color-mix(in srgb, var(--naje-s) 42%, black);
+  --color-teal-400: #0f766e;
+  --color-pink-400: color-mix(in srgb, var(--naje-p) 70%, black);
 }
 html:not(.dark) .naje-chroma :is(
-  [class*="bg-indigo-"],
-  [class*="bg-purple-"],
-  [class*="bg-violet-"],
-  [class*="bg-fuchsia-"],
-  [class*="bg-gradient-to"]
+  [class*="bg-indigo-"]:not([class*="bg-clip-text"]),
+  [class*="bg-purple-"]:not([class*="bg-clip-text"]),
+  [class*="bg-violet-"]:not([class*="bg-clip-text"]),
+  [class*="bg-fuchsia-"]:not([class*="bg-clip-text"])
 ) {
   --color-white: #ffffff;
 }
-html:not(.dark) .naje-chroma .mix-blend-screen {
-  mix-blend-mode: multiply;
-  opacity: 0.55;
+html:not(.dark) .naje-chroma .mix-blend-screen,
+html:not(.dark) .naje-chroma .mix-blend-overlay {
+  display: none !important;
+}
+html:not(.dark) .naje-chroma :is(.bg-white\/\[0\.04\], .bg-white\/5, .bg-white\/\[0\.08\]) {
+  background-color: #ffffff !important;
+  box-shadow: 0 10px 28px -16px rgba(20, 16, 28, 0.18);
 }
 
 @keyframes najeShimmer { 0% { transform: translateX(0); } 100% { transform: translateX(400%); } }
