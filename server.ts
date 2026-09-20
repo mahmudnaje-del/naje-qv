@@ -37,8 +37,11 @@ import {
   estimateOmniPoints,
   extensionSteps,
   composeExtensionPrompt,
+  composeDirectorChunkPrompt,
   type OmniAdModel,
   type OmniResolution,
+  type BeatInterval,
+  type BeatSlot,
 } from './src/lib/omniAd.ts';
 import { unpackSiteZip, buildFileTree, buildCodeContext, WorkspaceFile } from './src/lib/workspaceZip.ts';
 import { calcVoicePointsCost, spokenTextFromVoiceScript } from './src/lib/voicePricing.ts';
@@ -3552,6 +3555,19 @@ app.post('/api/naje-ad/generate', async (req, res) => {
         }))
       : [];
 
+    const rawInterval = Number(body.beatInterval);
+    const beatInterval: BeatInterval | null =
+      rawInterval === 5 || rawInterval === 10 || rawInterval === 20 || rawInterval === 40
+        ? (rawInterval as BeatInterval)
+        : null;
+    const beats: BeatSlot[] = Array.isArray(body.beats)
+      ? body.beats.slice(0, 8).map((b: any) => ({
+          from: Math.max(1, Math.min(40, Number(b?.from) || 1)),
+          to: Math.max(1, Math.min(40, Number(b?.to) || 1)),
+          text: typeof b?.text === 'string' ? b.text.slice(0, 400) : '',
+        })).filter((b: BeatSlot) => b.to >= b.from)
+      : [];
+
     const jobPayload: any = {
       ownerId: uid,
       userId: uid,
@@ -3571,6 +3587,8 @@ app.post('/api/naje-ad/generate', async (req, res) => {
       resolution: selectedRes,
       refImages,
       sceneCards,
+      beatInterval,
+      beats,
       consumedBalance: deductedPoints,
       createdAt: Date.now(),
       lastActionError: null,
@@ -3788,9 +3806,10 @@ app.post('/api/naje-ad/extend', async (req, res) => {
         const ai = createGenAIClient();
         const aspect: '16:9' | '9:16' = job.aspectRatio === '9:16' ? '9:16' : '16:9';
         const nextDur = Math.min(40, currentDur + 10);
+        const chunkIndex = Math.floor(currentDur / 10);
         const interaction = await createOmniInteraction(ai, {
           modelIds: omniModelChain('omni-1.1'),
-          input: composeExtensionPrompt(job.prompt || '', 10, nextDur),
+          input: directorInputForChunk(job, chunkIndex, nextDur),
           previousInteractionId: job.interactionId,
           aspectRatio: aspect,
           resolution,
@@ -3842,6 +3861,25 @@ app.post('/api/naje-ad/extend', async (req, res) => {
   }
 });
 
+function directorInputForChunk(job: any, chunkIndex: number, totalDuration: number): string {
+  const beats: BeatSlot[] = Array.isArray(job?.beats) ? job.beats : [];
+  const iv = Number(job?.beatInterval);
+  const beatInterval: BeatInterval | null =
+    iv === 5 || iv === 10 || iv === 20 || iv === 40 ? (iv as BeatInterval) : null;
+  const hasBeats = Boolean(beatInterval) || beats.some((b) => (b?.text || '').trim());
+  if (!hasBeats) {
+    if (chunkIndex === 0) return job?.prompt || '';
+    return composeExtensionPrompt(job?.prompt || '', 10, totalDuration);
+  }
+  return composeDirectorChunkPrompt({
+    brief: job?.prompt || '',
+    beats,
+    beatInterval,
+    chunkIndex,
+    totalDuration,
+  });
+}
+
 async function runOmniAdJob(jobId: string, uid: string, token: string, job: any) {
   const deductedPoints = Number(job?.consumedBalance) || 0;
   try {
@@ -3860,7 +3898,7 @@ async function runOmniAdJob(jobId: string, uid: string, token: string, job: any)
 
     const first = await createOmniInteraction(ai, {
       modelIds: omniModelChain(model),
-      input: buildOmniInput(job.prompt, images),
+      input: buildOmniInput(directorInputForChunk(job, 0, duration), images),
       aspectRatio: aspect,
       resolution,
       task: images.length ? (images.length > 1 ? 'reference_to_video' : 'image_to_video') : 'text_to_video',
@@ -3878,7 +3916,7 @@ async function runOmniAdJob(jobId: string, uid: string, token: string, job: any)
       }, token);
       const ext = await createOmniInteraction(ai, {
         modelIds: omniModelChain('omni-1.1'),
-        input: composeExtensionPrompt(job.prompt || '', 10, duration),
+        input: directorInputForChunk(job, s + 1, duration),
         previousInteractionId: extracted.interactionId,
         aspectRatio: aspect,
         resolution,

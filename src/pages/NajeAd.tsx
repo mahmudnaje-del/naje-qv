@@ -6,10 +6,12 @@ import { useAppStore } from '../store';
 import { auth, db } from '../firebase';
 import { usePricingConfig } from '../hooks/usePricingConfig';
 import { hasFeatureAccess } from '../lib/featureAccess';
-import { AdDnaState, DIALECT_OPTIONS, INITIAL_AD_DNA_STATE } from '../lib/adDnaEngine';
+import { AdDnaState, INITIAL_AD_DNA_STATE } from '../lib/adDnaEngine';
 import { AVATAR_REGISTRY } from '../data/avatars/avatarRegistry';
 import { LOCATION_REGISTRY } from '../data/locations/locationRegistry';
 import {
+  BeatInterval,
+  BeatSlot,
   NAJE_VIDEO_PRO_LABEL,
   OmniDuration,
   OmniResolution,
@@ -17,6 +19,7 @@ import {
   composeOmniAdPrompt,
   defaultSceneBoard,
   estimateOmniPoints,
+  mergeBeatSlots,
 } from '../lib/omniAd';
 import FeaturePaywallModal from '../components/FeaturePaywallModal';
 import { CastingRoom } from '../components/najeAd/CastingRoom';
@@ -47,7 +50,7 @@ export default function NajeAd() {
   const pointsRate = typeof najeAd?.pointsRatePerSecond === 'number' ? najeAd.pointsRatePerSecond : 2.5;
   const resMul = najeAd?.resolutionMultiplier;
 
-  const [dna, setDna] = useState<AdDnaState>(INITIAL_AD_DNA_STATE);
+  const [dna, setDna] = useState<AdDnaState>({ ...INITIAL_AD_DNA_STATE, language: '', dialect: '' });
   const [sceneCards, setSceneCards] = useState<SceneBoardCard[]>(() => defaultSceneBoard());
   const [customCharacter, setCustomCharacter] = useState<string | null>(null);
   const [customLocation, setCustomLocation] = useState<string | null>(null);
@@ -56,17 +59,19 @@ export default function NajeAd() {
 
   const [duration, setDuration] = useState<OmniDuration>(10);
   const [resolution, setResolution] = useState<OmniResolution>('720p');
-  const [cameraMotion, setCameraMotion] = useState('cinematic_pan');
-  const [lighting, setLighting] = useState('studio');
-  const [marketingGoal, setMarketingGoal] = useState('showcase');
-  const [audioMode, setAudioMode] = useState('native');
-  const [pace, setPace] = useState('medium');
-  const [colorGrade, setColorGrade] = useState('warm');
-  const [productPlacement, setProductPlacement] = useState('hero');
-  const [cta, setCta] = useState('hold');
-  const [voiceCast, setVoiceCast] = useState('talent');
-  const [musicEnergy, setMusicEnergy] = useState('soft');
-  const [hookStyle, setHookStyle] = useState('product_first');
+  const [cameraMotion, setCameraMotion] = useState('');
+  const [lighting, setLighting] = useState('');
+  const [marketingGoal, setMarketingGoal] = useState('');
+  const [audioMode, setAudioMode] = useState('');
+  const [pace, setPace] = useState('');
+  const [colorGrade, setColorGrade] = useState('');
+  const [productPlacement, setProductPlacement] = useState('');
+  const [cta, setCta] = useState('');
+  const [voiceCast, setVoiceCast] = useState('');
+  const [musicEnergy, setMusicEnergy] = useState('');
+  const [hookStyle, setHookStyle] = useState('');
+  const [beatInterval, setBeatInterval] = useState<BeatInterval | null>(null);
+  const [beatSlots, setBeatSlots] = useState<BeatSlot[]>([]);
   const [prompt, setPrompt] = useState('');
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -144,8 +149,9 @@ export default function NajeAd() {
   const handleGenerate = async (e?: React.FormEvent) => {
     e?.preventDefault();
     const hasTalent = Boolean(avatar || customCharacter || sceneCards.some((c) => c.kind === 'character' || c.kind === 'character_extra'));
-    if (!prompt.trim() && !productCard?.name && !hasTalent) {
-      setErrorMessage('أضف منتجاً أو شخصية أو اكتب فكرة الإعلان.');
+    const hasBeats = beatSlots.some((s) => s.text.trim());
+    if (!prompt.trim() && !productCard?.name && !hasTalent && !hasBeats) {
+      setErrorMessage('أضف منتجاً أو شخصية أو اكتب فكرة الإعلان أو عبّئ توجيه الثواني.');
       return;
     }
     setErrorMessage(null);
@@ -200,6 +206,8 @@ export default function NajeAd() {
         lighting,
         marketingGoal,
         audioMode,
+        beatInterval,
+        beats: beatSlots.map((s) => ({ from: s.from, to: s.to, text: s.text })),
       });
       if (data?.jobId) setActiveJobId(data.jobId);
       else setIsSubmitting(false);
@@ -348,12 +356,14 @@ export default function NajeAd() {
 
         <ProControlGrid
           duration={duration}
-          onDuration={setDuration}
+          onDuration={(v) => {
+            setDuration(v);
+            if (beatInterval) setBeatSlots((prev) => mergeBeatSlots(v, beatInterval, prev));
+          }}
           resolution={resolution}
           onResolution={setResolution}
           aspectRatio={dna.aspectRatio}
           onAspect={(v) => updateDna({ aspectRatio: v })}
-          platform={dna.platform}
           onPlatform={(v) => updateDna({ platform: v })}
           cameraMotion={cameraMotion}
           onCamera={setCameraMotion}
@@ -366,10 +376,7 @@ export default function NajeAd() {
           dialect={dna.dialect}
           onDialect={(v) => updateDna({ dialect: v })}
           language={dna.language}
-          onLanguage={(v) => {
-            const dialects = DIALECT_OPTIONS[v] || [];
-            updateDna({ language: v, dialect: dialects[0]?.id || '' });
-          }}
+          onLanguage={(v) => updateDna({ language: v, dialect: '' })}
           pace={pace}
           onPace={setPace}
           colorGrade={colorGrade}
@@ -384,6 +391,14 @@ export default function NajeAd() {
           onMusicEnergy={setMusicEnergy}
           hookStyle={hookStyle}
           onHookStyle={setHookStyle}
+          beatInterval={beatInterval}
+          onBeatInterval={(v) => {
+            setBeatInterval(v);
+            if (!v) setBeatSlots([]);
+            else setBeatSlots((prev) => mergeBeatSlots(duration, v, prev));
+          }}
+          beatSlots={beatSlots}
+          onBeatSlots={setBeatSlots}
           pointsRate={pointsRate}
           resolutionMultiplier={resMul}
         />

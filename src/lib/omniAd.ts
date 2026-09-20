@@ -2,6 +2,7 @@ import { AD_STYLES, getAdStyle } from '../data/adStyles';
 import { AVATAR_REGISTRY } from '../data/avatars/avatarRegistry';
 import { LOCATION_REGISTRY } from '../data/locations/locationRegistry';
 import type { AdDnaState } from './adDnaEngine';
+import { DIALECT_OPTIONS } from './adDnaEngine';
 
 export const OMNI_11_ID = 'gemini-omni-1.1-flash';
 export const OMNI_11_FALLBACK_ID = 'gemini-omni-1.1-flash-preview';
@@ -10,6 +11,138 @@ export const NAJE_VIDEO_PRO_LABEL = 'Naje Video Pro';
 export type OmniAdModel = 'omni-1.1';
 export type OmniResolution = '360p' | '720p' | '1080p' | '4k';
 export type OmniDuration = 10 | 20 | 30 | 40;
+
+export type BeatInterval = 5 | 10 | 20 | 40;
+export type BeatSlot = { from: number; to: number; text: string };
+
+export const BEAT_INTERVALS: BeatInterval[] = [5, 10, 20, 40];
+
+/** Continuity director persona — not a 151st visual avatar. Packs user beats into Omni's 10s generate/extend windows. */
+export const NAJE_DIRECTOR_NAME = 'مخرج ناجي';
+export const NAJE_DIRECTOR_ID = 'naje_director';
+
+export function buildBeatSlots(durationSec: number, interval: BeatInterval): BeatSlot[] {
+  const duration = Math.min(40, Math.max(10, durationSec));
+  const step = Math.min(interval, duration);
+  const slots: BeatSlot[] = [];
+  let cursor = 0;
+  while (cursor < duration) {
+    const to = Math.min(duration, cursor + step);
+    const from = cursor === 0 ? 1 : cursor;
+    slots.push({ from, to, text: '' });
+    cursor = to;
+  }
+  return slots;
+}
+
+export function mergeBeatSlots(durationSec: number, interval: BeatInterval, prev: BeatSlot[]): BeatSlot[] {
+  return buildBeatSlots(durationSec, interval).map((slot) => {
+    const old = prev.find((p) => p.from === slot.from && p.to === slot.to);
+    return old ? { ...slot, text: old.text } : slot;
+  });
+}
+
+export function omniChunkWindow(chunkIndex: number) {
+  const start = chunkIndex * 10;
+  const end = start + 10;
+  return { start, end, displayFrom: start === 0 ? 1 : start, displayTo: end };
+}
+
+function beatStartSec(b: BeatSlot) {
+  return b.from <= 1 ? 0 : b.from;
+}
+
+export function beatsOverlappingWindow(beats: BeatSlot[], start: number, end: number): BeatSlot[] {
+  return (beats || []).filter((b) => beatStartSec(b) < end && b.to > start);
+}
+
+function formatBeatLine(b: BeatSlot) {
+  const body = (b.text || '').trim();
+  return `${b.from}→${b.to}s: ${body || '(no specific action written — continue naturally)'}`;
+}
+
+export function composeDirectorChunkPrompt(opts: {
+  brief: string;
+  beats?: BeatSlot[];
+  beatInterval?: BeatInterval | null;
+  chunkIndex: number;
+  totalDuration: number;
+}): string {
+  const beats = opts.beats || [];
+  const totalDuration = Math.min(40, Math.max(10, opts.totalDuration));
+  const win = omniChunkWindow(opts.chunkIndex);
+  const winEnd = Math.min(win.end, totalDuration);
+  const isExtend = opts.chunkIndex > 0;
+  const parts: string[] = [];
+
+  parts.push(
+    `You are ${NAJE_DIRECTOR_NAME} (Naje Director), continuity director for Naje Video Pro (Gemini Omni 1.1). ` +
+      `Omni produces ~10 seconds per call, then extends the same take in +10s video-to-video steps with prior-context analysis. ` +
+      `Never jump-cut. Keep identity, wardrobe, product, lighting, geography and audio continuous.`
+  );
+
+  if (isExtend) {
+    parts.push(
+      `This call is a SCENE EXTENSION of the previous clip. Analyze up to 10 seconds of prior motion, identity and audio. Continue from the last frame as one continuous shot.`
+    );
+  } else {
+    parts.push('This call GENERATES the opening ~10 seconds of the commercial.');
+  }
+
+  if (opts.beatInterval) {
+    const iv = opts.beatInterval;
+    const pack =
+      iv < 10
+        ? `Pack two or more ${iv}s user notes into this single 10s window, in order.`
+        : iv > 10
+        ? `This 10s window is only a slice of a longer ${iv}s user beat — play the matching portion, do not rush the whole beat into 10s.`
+        : `One user beat maps to this 10s window.`;
+    parts.push(`User clock: ${iv}-second beats across ${totalDuration}s. ${pack}`);
+  }
+
+  const filled = beats.filter((b) => (b.text || '').trim());
+  if (filled.length) {
+    parts.push('Full user timeline (continuity context only — do not play future beats yet):');
+    parts.push(filled.map(formatBeatLine).join('\n'));
+  }
+
+  const now = beatsOverlappingWindow(beats, win.start, winEnd).filter((b) => (b.text || '').trim());
+  parts.push(`EXECUTE ONLY seconds ${win.displayFrom}–${winEnd} of the ${totalDuration}s runtime.`);
+  if (now.length) {
+    parts.push('Action for this 10-second window:');
+    parts.push(now.map(formatBeatLine).join('\n'));
+  } else if (isExtend) {
+    parts.push('No new beat text for this window — continue the same commercial toward the product payoff.');
+  }
+
+  if (opts.brief.trim()) {
+    parts.push(isExtend ? `Original director brief (do not restart it):\n${opts.brief.trim()}` : opts.brief.trim());
+  }
+
+  parts.push(
+    `Output about 10 seconds. Total intended runtime ${totalDuration}s. Photoreal live-action, anatomically correct hands and faces, no garbled on-screen text.`
+  );
+  return parts.join('\n');
+}
+
+export function resolveChoice(
+  list: { id: string; label: string; prompt?: string }[],
+  value?: string | null
+): { id: string; label: string; prompt: string } | null {
+  if (!value) return null;
+  const found = list.find((x) => x.id === value);
+  if (found) return { id: found.id, label: found.label, prompt: found.prompt || found.label };
+  if (value.startsWith('custom:')) {
+    const rest = value.slice(7);
+    const pipe = rest.indexOf('|');
+    const label = (pipe >= 0 ? rest.slice(0, pipe) : rest).trim();
+    const prompt = ((pipe >= 0 ? rest.slice(pipe + 1) : rest).trim() || label);
+    if (!label) return null;
+    return { id: value, label, prompt };
+  }
+  return null;
+}
+
 
 export const OMNI_DURATIONS: OmniDuration[] = [10, 20, 30, 40];
 
@@ -305,16 +438,29 @@ export function composeOmniAdPrompt(input: {
   aspectRatio: '16:9' | '9:16';
 }): string {
   const style = getAdStyle(input.styleId);
-  const cam = CAMERA_MOTIONS.find((c) => c.id === input.cameraMotion);
-  const light = LIGHTING_LOOKS.find((l) => l.id === input.lighting);
-  const audio = AUDIO_MODES.find((a) => a.id === input.audioMode);
-  const goal = MARKETING_GOALS.find((g) => g.id === input.marketingGoal);
-  const pace = PACE_OPTIONS.find((p) => p.id === input.pace);
-  const grade = COLOR_GRADES.find((g) => g.id === input.colorGrade);
-  const place = PRODUCT_PLACEMENTS.find((p) => p.id === input.productPlacement);
-  const cta = CTA_MODES.find((c) => c.id === input.cta);
-  const music = MUSIC_ENERGY.find((m) => m.id === input.musicEnergy);
-  const hook = HOOK_STYLES.find((h) => h.id === input.hookStyle);
+  const cam = resolveChoice(CAMERA_MOTIONS, input.cameraMotion);
+  const light = resolveChoice(LIGHTING_LOOKS, input.lighting);
+  const audio = resolveChoice(AUDIO_MODES, input.audioMode);
+  const goal = resolveChoice(MARKETING_GOALS, input.marketingGoal);
+  const pace = resolveChoice(PACE_OPTIONS, input.pace);
+  const grade = resolveChoice(COLOR_GRADES, input.colorGrade);
+  const place = resolveChoice(PRODUCT_PLACEMENTS, input.productPlacement);
+  const cta = resolveChoice(CTA_MODES, input.cta);
+  const music = resolveChoice(MUSIC_ENERGY, input.musicEnergy);
+  const hook = resolveChoice(HOOK_STYLES, input.hookStyle);
+  const voice = resolveChoice(VOICE_CASTS, input.voiceCast);
+  const langChoice = resolveChoice(
+    [
+      { id: 'ar', label: 'Arabic' },
+      { id: 'en', label: 'English' },
+      { id: 'fr', label: 'French' },
+      { id: 'es', label: 'Spanish' },
+      { id: 'tr', label: 'Turkish' },
+      { id: 'de', label: 'German' },
+    ],
+    input.dna.language
+  );
+  const dialectChoice = resolveChoice(DIALECT_OPTIONS[input.dna.language] || [], input.dna.dialect);
   const cards = input.sceneCards || [];
 
   const parts: string[] = [];
@@ -341,7 +487,7 @@ export function composeOmniAdPrompt(input: {
   }
 
   if (style) parts.push(`Ad style: ${style.prompt}`);
-  if (goal) parts.push(`Marketing goal: ${goal.label}.`);
+  if (goal) parts.push(`Marketing goal: ${goal.prompt}.`);
   if (hook) parts.push(`Hook: ${hook.prompt}.`);
   if (cam) parts.push(`Camera: ${cam.prompt}.`);
   if (light) parts.push(`Lighting: ${light.prompt}.`);
@@ -351,13 +497,17 @@ export function composeOmniAdPrompt(input: {
   if (cta) parts.push(`Close: ${cta.prompt}.`);
   if (audio) parts.push(audio.prompt);
   if (music) parts.push(`Music: ${music.prompt}.`);
-  if (input.voiceCast === 'female') parts.push('If voice-over: confident adult female.');
-  if (input.voiceCast === 'male') parts.push('If voice-over: warm adult male.');
-  if (input.voiceCast === 'talent') parts.push('Spoken lines come from the on-camera talent only.');
-  if (input.voiceCast === 'none') parts.push('No voice-over narrator.');
+  if (voice) {
+    if (voice.id === 'female') parts.push('If voice-over: confident adult female.');
+    else if (voice.id === 'male') parts.push('If voice-over: warm adult male.');
+    else if (voice.id === 'talent') parts.push('Spoken lines come from the on-camera talent only.');
+    else if (voice.id === 'none') parts.push('No voice-over narrator.');
+    else parts.push(`Voice / narrator: ${voice.prompt}.`);
+  }
 
-  const lang = input.dna.language === 'en' ? 'English' : input.dna.language === 'ar' ? 'Arabic' : input.dna.language;
-  parts.push(`Spoken language if any: ${lang}${input.dna.dialect ? ` (${input.dna.dialect})` : ''}.`);
+  if (langChoice) {
+    parts.push(`Spoken language if any: ${langChoice.prompt}${dialectChoice ? ` (${dialectChoice.label})` : ''}.`);
+  }
   parts.push(`Aspect ${input.aspectRatio}, photoreal live-action commercial, anatomically correct hands and faces, no garbled on-screen text, no extra fingers, 24fps cinematic motion.`);
   parts.push(`Target length about ${Math.min(10, input.durationSec)} seconds for this generation (longer runtimes are produced by scene extension).`);
   return parts.join('\n');
