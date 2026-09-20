@@ -1,8 +1,8 @@
 import { GoogleGenAI } from '@google/genai';
-import { buildDesignerInstruction } from './councilOfMinds';
-import { OUTPUT_TOKEN_LIMITS } from './modelRegistry';
-import { chromiumSemaphore } from './pdf-engine';
-import { INFOGRAPHIC_THEMES, InfographicThemeConfig, InfographicThemeKey } from '../data/infographicThemes';
+import { buildDesignerInstruction } from './councilOfMinds.ts';
+import { OUTPUT_TOKEN_LIMITS } from './modelRegistry.ts';
+import { chromiumSemaphore } from './pdf-engine.ts';
+import { INFOGRAPHIC_THEMES, InfographicThemeConfig, InfographicThemeKey } from '../data/infographicThemes.ts';
 
 export { INFOGRAPHIC_THEMES, type InfographicThemeConfig, type InfographicThemeKey };
 

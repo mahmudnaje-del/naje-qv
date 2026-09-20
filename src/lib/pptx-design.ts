@@ -1,4 +1,4 @@
-import { isArabic } from './naje-engine';
+import { isArabic } from './naje-engine.ts';
 
 // PPTXGENJS HARD RULES — violating any of these corrupts the file or silently drops output.
 // 1. Hex colors: no "#", no 8-digit alpha hex. "D4AF37" is valid. "#D4AF37" and "D4AF3780" corrupt the file.

@@ -50,24 +50,25 @@ service cloud.firestore {
     }
 
     // All owned collections: read/write only your own documents, or admin access.
-    match /chats/{id}           { allow read: if owns(resource) || isAdmin(); allow create: if signedIn() && request.resource.data.ownerId == request.auth.uid; allow update, delete: if (owns(resource) && ownerPinned()) || isAdmin(); }
-    match /messages/{id}        { allow read: if owns(resource) || isAdmin(); allow create: if signedIn() && request.resource.data.ownerId == request.auth.uid; allow update, delete: if (owns(resource) && ownerPinned()) || isAdmin(); }
-    match /projects/{id}        { allow read: if owns(resource) || isAdmin(); allow create: if signedIn() && request.resource.data.ownerId == request.auth.uid; allow update, delete: if (owns(resource) && ownerPinned()) || isAdmin(); }
+    match /chats/{id}           { allow read: if owns(resource) || isAdmin(); allow create: if signedIn() && request.resource.data.ownerId == request.auth.uid; allow update: if (owns(resource) && ownerPinned()) || isAdmin(); allow delete: if owns(resource) || isAdmin(); }
+    match /messages/{id}        { allow read: if owns(resource) || isAdmin(); allow create: if signedIn() && request.resource.data.ownerId == request.auth.uid; allow update: if (owns(resource) && ownerPinned()) || isAdmin(); allow delete: if owns(resource) || isAdmin(); }
+    match /projects/{id}        { allow read: if owns(resource) || isAdmin(); allow create: if signedIn() && request.resource.data.ownerId == request.auth.uid; allow update: if (owns(resource) && ownerPinned()) || isAdmin(); allow delete: if owns(resource) || isAdmin(); }
     match /projects/{projectId}/memory_items/{id} {
       allow read, write: if signedIn() && (
         isAdmin() ||
         get(/databases/$(database)/documents/projects/$(projectId)).data.ownerId == request.auth.uid
       );
     }
-    match /generated_media/{id} { allow read: if owns(resource) || isAdmin(); allow create: if signedIn() && request.resource.data.ownerId == request.auth.uid; allow update, delete: if (owns(resource) && ownerPinned()) || isAdmin(); }
-    match /generation_jobs/{id} { allow read: if owns(resource) || isAdmin(); allow create: if signedIn() && request.resource.data.ownerId == request.auth.uid; allow update, delete: if (owns(resource) && ownerPinned()) || isAdmin(); }
-    match /notifications/{id}   { allow read: if owns(resource) || isAdmin(); allow create: if signedIn() && request.resource.data.ownerId == request.auth.uid; allow update, delete: if (owns(resource) && ownerPinned()) || isAdmin(); }
-    match /favorites/{id}       { allow read: if owns(resource) || isAdmin(); allow create: if signedIn() && (request.resource.data.ownerId == request.auth.uid || request.resource.data.userId == request.auth.uid); allow update, delete: if (owns(resource) && ownerPinned()) || isAdmin(); }
-    match /autonoma_missions/{id} { allow read: if owns(resource) || isAdmin(); allow create: if signedIn() && request.resource.data.ownerId == request.auth.uid; allow update, delete: if (owns(resource) && ownerPinned()) || isAdmin(); }
+    match /generated_media/{id} { allow read: if owns(resource) || isAdmin(); allow create: if signedIn() && request.resource.data.ownerId == request.auth.uid; allow update: if (owns(resource) && ownerPinned()) || isAdmin(); allow delete: if owns(resource) || isAdmin(); }
+    match /generation_jobs/{id} { allow read: if owns(resource) || isAdmin(); allow create: if signedIn() && request.resource.data.ownerId == request.auth.uid; allow update: if (owns(resource) && ownerPinned()) || isAdmin(); allow delete: if owns(resource) || isAdmin(); }
+    match /notifications/{id}   { allow read: if owns(resource) || isAdmin(); allow create: if signedIn() && request.resource.data.ownerId == request.auth.uid; allow update: if (owns(resource) && ownerPinned()) || isAdmin(); allow delete: if owns(resource) || isAdmin(); }
+    match /favorites/{id}       { allow read: if owns(resource) || isAdmin(); allow create: if signedIn() && (request.resource.data.ownerId == request.auth.uid || request.resource.data.userId == request.auth.uid); allow update: if (owns(resource) && ownerPinned()) || isAdmin(); allow delete: if owns(resource) || isAdmin(); }
+    match /autonoma_missions/{id} { allow read: if owns(resource) || isAdmin(); allow create: if signedIn() && request.resource.data.ownerId == request.auth.uid; allow update: if (owns(resource) && ownerPinned()) || isAdmin(); allow delete: if owns(resource) || isAdmin(); }
     match /edit_history/{id}    {
       allow read: if owns(resource) || isAdmin();
       allow create: if signedIn() && (request.resource.data.ownerId == request.auth.uid || request.resource.data.userId == request.auth.uid);
-      allow update, delete: if (owns(resource) && ownerPinned()) || isAdmin();
+      allow update: if (owns(resource) && ownerPinned()) || isAdmin();
+      allow delete: if owns(resource) || isAdmin();
     }
 
     // Feedback signals (Naje AI user feedback & thumbs up/down ratings)
@@ -87,7 +88,8 @@ service cloud.firestore {
     match /creatively_designs/{id}{
       allow read: if owns(resource) || isAdmin();
       allow create: if signedIn() && (request.resource.data.ownerId == request.auth.uid || request.resource.data.userId == request.auth.uid);
-      allow update, delete: if (owns(resource) && ownerPinned()) || isAdmin();
+      allow update: if (owns(resource) && ownerPinned()) || isAdmin();
+      allow delete: if owns(resource) || isAdmin();
     }
     match /config/{id}            { allow read: if signedIn() || id == 'system_status'; allow write: if isAdmin(); }
     match /format_presets/{id}   { allow read: if signedIn(); allow write: if isAdmin(); }

@@ -1,7 +1,7 @@
-import { DARK_LUXE, LIGHT_EDITORIAL, textOpts, pixelMotif, card, badge, cardHeight, assertFits, COORDS, DeckPalette } from './pptx-design';
+import { DARK_LUXE, LIGHT_EDITORIAL, textOpts, pixelMotif, card, badge, cardHeight, assertFits, COORDS, DeckPalette } from './pptx-design.ts';
 import { Type, Schema as GeminiSchema, GoogleGenAI } from "@google/genai";
-import { createGenAIClient } from './genaiClient';
-import { getNajeModel, resolveEngineModel } from './modelEnvConfig';
+import { createGenAIClient } from './genaiClient.ts';
+import { getNajeModel, resolveEngineModel } from './modelEnvConfig.ts';
 import { z } from 'zod';
 import path from 'path';
 import fs from 'fs';

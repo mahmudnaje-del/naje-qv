@@ -1,9 +1,9 @@
 import { GoogleGenAI, Type } from '@google/genai';
-import { createGenAIClient } from './genaiClient';
-import { FALLBACK_DEFAULTS } from './modelRegistry';
-import { Fact, verifyFacts, verifyRenderedDeck, GroundingReport } from './grounding';
-import { LAYOUTS, Layout, barChart, lineChart, donutChart, progressBars, flowDiagram, icon } from './slides-html';
-import { fetchRealPhotography } from './naje-engine';
+import { createGenAIClient } from './genaiClient.ts';
+import { FALLBACK_DEFAULTS } from './modelRegistry.ts';
+import { Fact, verifyFacts, verifyRenderedDeck, GroundingReport } from './grounding.ts';
+import { LAYOUTS, Layout, barChart, lineChart, donutChart, progressBars, flowDiagram, icon } from './slides-html.ts';
+import { fetchRealPhotography } from './naje-engine.ts';
 import fs from 'fs';
 import path from 'path';
 import sharp from 'sharp';

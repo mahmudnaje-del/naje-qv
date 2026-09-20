@@ -1,67 +1,64 @@
-// Fast boot: bind health ports in milliseconds, then load the real server.
-// Studio's probe fails after 10s if ffmpeg/Vite/tsx compile block listen().
-import fs from 'node:fs';
-import path from 'node:path';
-import http from 'node:http';
+// Universal Instant-Boot Entrypoint for Cloud Run and Production Environments
+import http from 'http';
+import fs from 'fs';
+import path from 'path';
 import express from 'express';
 
-const app = express();
-app.get(['/api/health', '/health', '/healthz', '/_ah/health', '/_health', '/ping', '/livez', '/readyz'], (_req, res) => {
-  res.status(200).json({ status: 'ok', timestamp: Date.now() });
+const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
+console.log(`[Fast Boot] Pre-binding port ${port} immediately for Cloud Run probes...`);
+
+let appHandler = null;
+
+const server = http.createServer((req, res) => {
+  if (appHandler) {
+    return appHandler(req, res);
+  }
+  // Respond immediately to Cloud Run health probes and GET / during warm-up
+  if (
+    req.url === '/api/health' ||
+    req.url === '/health' ||
+    req.url === '/healthz' ||
+    req.url === '/_ah/health' ||
+    req.url === '/_health' ||
+    req.url === '/ping' ||
+    req.url === '/livez' ||
+    req.url === '/readyz' ||
+    req.method === 'HEAD'
+  ) {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    return res.end(JSON.stringify({ status: 'ok', initializing: true, timestamp: Date.now() }));
+  }
+  
+  // For GET /, stream early index.html if available
+  const indexPath = [
+    path.join(process.cwd(), 'dist', 'index.html'),
+    path.join(process.cwd(), 'index.html')
+  ].find(p => fs.existsSync(p));
+  
+  if (indexPath) {
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+    return fs.createReadStream(indexPath).pipe(res);
+  }
+
+  res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+  res.end('<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>Naje AI</title></head><body><div style="font-family:sans-serif;padding:2rem;text-align:center;">جارٍ إقلاع منصة ناجي للذكاء الاصطناعي...</div></body></html>');
 });
 
-function bindPort(port, role) {
-  const srv = http.createServer(app);
-  srv.setTimeout(600000);
-  srv.keepAliveTimeout = 600000;
-  srv.headersTimeout = 601000;
-  srv.on('error', (err) => {
-    if (err.code === 'EADDRINUSE') {
-      console.log(`[Port Notice] ${role} port ${port} already bound or in use by proxy.`);
-    } else {
-      console.error(`[Port Error] ${role} listener error on ${port}:`, err?.message || err);
+server.setTimeout(600000);
+server.keepAliveTimeout = 600000;
+server.headersTimeout = 601000;
+
+server.listen(port, '0.0.0.0', async () => {
+  console.log(`[Fast Boot] Port ${port} is ACTIVE and LISTENING for Cloud Run TCP socket probe.`);
+  try {
+    const app = express();
+    appHandler = app;
+    const { startServer } = await import('./dist/server.cjs');
+    if (typeof startServer === 'function') {
+      await startServer(app);
+      console.log(`[Fast Boot] Full application router initialized and ready on port ${port}.`);
     }
-  });
-  srv.listen(port, '0.0.0.0', () => {
-    console.log(`[Boot] ${role} active on http://0.0.0.0:${port}`);
-  });
-  return srv;
-}
-
-const envPort = process.env.PORT ? parseInt(process.env.PORT, 10) : 8080;
-const ingressPort = (envPort && !isNaN(envPort)) ? envPort : 8080;
-bindPort(ingressPort, 'Cloud Run Ingress');
-if (ingressPort !== 3000) bindPort(3000, 'App Port (3000)');
-
-async function loadAppModule() {
-  const forceCjs = process.env.NAJE_USE_CJS === '1';
-  const tsxAlreadyOn = process.execArgv.some((a) => String(a).includes('tsx'));
-  if (!forceCjs && tsxAlreadyOn) {
-    // Computed specifier so tsx cannot pre-bundle server.ts before we listen.
-    const tsEntry = './server.' + 'ts';
-    return await import(tsEntry);
+  } catch (err) {
+    console.error('[Fast Boot] Error initializing full application router:', err);
   }
-  if (fs.existsSync(path.join(process.cwd(), 'dist', 'server.cjs'))) {
-    return await import('./dist/server.cjs');
-  }
-  if (fs.existsSync(path.join(process.cwd(), 'server.cjs'))) {
-    return await import('./server.cjs');
-  }
-  const tsEntry = './server.' + 'ts';
-  return await import(tsEntry);
-}
-
-let mod;
-try {
-  mod = await loadAppModule();
-} catch (err) {
-  console.error('[Boot] failed to load application module:', err);
-  throw err;
-}
-
-const start = mod.startServer || mod.default?.startServer;
-if (typeof start === 'function') {
-  await start(app);
-} else {
-  console.error('[Boot] startServer export missing; health ports are up but API routes were not attached');
-}
+});

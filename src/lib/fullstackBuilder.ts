@@ -6,12 +6,12 @@ import {
   ProjectContract, 
   ProjectContractFile,
   LinkerDiagnostic 
-} from '../types/agent';
-import { PricingConfig, getAgentToolCost } from './agentPricing';
-import { buildPersonaInstruction, criticReviewRequest, getThinkingConfig } from './councilOfMinds';
-import { OUTPUT_TOKEN_LIMITS } from './modelRegistry';
-import { createGenAIClient } from './genaiClient';
-import { getNajeModel, resolveEngineModel } from './modelEnvConfig';
+} from '../types/agent.ts';
+import { PricingConfig, getAgentToolCost } from './agentPricing.ts';
+import { buildPersonaInstruction, criticReviewRequest, getThinkingConfig } from './councilOfMinds.ts';
+import { OUTPUT_TOKEN_LIMITS } from './modelRegistry.ts';
+import { createGenAIClient } from './genaiClient.ts';
+import { getNajeModel, resolveEngineModel } from './modelEnvConfig.ts';
 
 const ai = createGenAIClient();
 

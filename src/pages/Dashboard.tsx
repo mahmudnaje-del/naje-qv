@@ -516,43 +516,15 @@ export default function Dashboard() {
             </div>
           </Link>
 
-          <Link 
-            to="/naje-developer" 
-            onClick={() => { setSidebarOpen(false); setUserGalleriesOpen('none'); }}
+          <button 
+            type="button"
+            onClick={() => { 
+              setSidebarOpen(false); 
+              setUserGalleriesOpen('none'); 
+              handleCreateNewChat('najeDeveloper');
+            }}
             className={cn(
-              "w-full h-11 md:h-9 flex items-center justify-between px-3 rounded-xl text-xs font-bold transition-all border border-transparent",
-              location.pathname.includes('naje-developer')
-                ? "bg-white dark:bg-purple-950/45 text-purple-950 dark:text-purple-200 border border-purple-300 dark:border-purple-500/40 shadow-md shadow-purple-500/10 font-extrabold" 
-                : "text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-900/60"
-            )}
-          >
-            <div className="flex items-center gap-2.5">
-              <Code2 className="w-4 h-4 text-sky-500" />
-              <span>ناجي المطور</span>
-            </div>
-          </Link>
-
-          <Link 
-            to="/naje-source" 
-            onClick={() => { setSidebarOpen(false); setUserGalleriesOpen('none'); }}
-            className={cn(
-              "w-full h-11 md:h-9 flex items-center justify-between px-3 rounded-xl text-xs font-bold transition-all border border-transparent",
-              location.pathname.includes('naje-source')
-                ? "bg-white dark:bg-purple-950/45 text-purple-950 dark:text-purple-200 border border-purple-300 dark:border-purple-500/40 shadow-md shadow-purple-500/10 font-extrabold" 
-                : "text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-900/60"
-            )}
-          >
-            <div className="flex items-center gap-2.5">
-              <BookOpen className="w-4 h-4 text-emerald-500" />
-              <span>ناجي من مصادرك</span>
-            </div>
-          </Link>
-
-          <Link 
-            to="/naje-developer" 
-            onClick={() => { setSidebarOpen(false); setUserGalleriesOpen('none'); }}
-            className={cn(
-              "w-full h-11 md:h-9 flex items-center justify-between px-3 rounded-xl text-xs font-bold transition-all border border-transparent",
+              "w-full h-11 md:h-9 flex items-center justify-between px-3 rounded-xl text-xs font-bold transition-all border border-transparent cursor-pointer",
               location.pathname.includes('naje-developer')
                 ? "bg-white dark:bg-purple-950/45 text-purple-950 dark:text-purple-200 border border-purple-300 dark:border-purple-500/40 shadow-md shadow-purple-500/10 font-extrabold" 
                 : "text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-900/60"
@@ -565,13 +537,17 @@ export default function Dashboard() {
             <span className="text-[9px] bg-sky-500/10 text-sky-600 dark:text-sky-400 font-extrabold px-1.5 py-0.5 rounded border border-sky-500/20">
               $10
             </span>
-          </Link>
+          </button>
 
-          <Link 
-            to="/naje-source" 
-            onClick={() => { setSidebarOpen(false); setUserGalleriesOpen('none'); }}
+          <button 
+            type="button"
+            onClick={() => { 
+              setSidebarOpen(false); 
+              setUserGalleriesOpen('none'); 
+              handleCreateNewChat('najeSource');
+            }}
             className={cn(
-              "w-full h-11 md:h-9 flex items-center justify-between px-3 rounded-xl text-xs font-bold transition-all border border-transparent",
+              "w-full h-11 md:h-9 flex items-center justify-between px-3 rounded-xl text-xs font-bold transition-all border border-transparent cursor-pointer",
               location.pathname.includes('naje-source')
                 ? "bg-white dark:bg-purple-950/45 text-purple-950 dark:text-purple-200 border border-purple-300 dark:border-purple-500/40 shadow-md shadow-purple-500/10 font-extrabold" 
                 : "text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-900/60"
@@ -584,45 +560,7 @@ export default function Dashboard() {
             <span className="text-[9px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-extrabold px-1.5 py-0.5 rounded border border-emerald-500/20">
               $5
             </span>
-          </Link>
-
-          <Link 
-            to="/naje-developer" 
-            onClick={() => { setSidebarOpen(false); setUserGalleriesOpen('none'); }}
-            className={cn(
-              "w-full h-11 md:h-9 flex items-center justify-between px-3 rounded-xl text-xs font-bold transition-all border border-transparent",
-              location.pathname.includes('naje-developer')
-                ? "bg-white dark:bg-purple-950/45 text-purple-950 dark:text-purple-200 border border-purple-300 dark:border-purple-500/40 shadow-md shadow-purple-500/10 font-extrabold" 
-                : "text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-900/60"
-            )}
-          >
-            <div className="flex items-center gap-2.5">
-              <Code2 className="w-4 h-4 text-sky-500" />
-              <span>ناجي المطور</span>
-            </div>
-            <span className="text-[9px] bg-sky-500/10 text-sky-600 dark:text-sky-400 font-extrabold px-1.5 py-0.5 rounded border border-sky-500/20">
-              $10
-            </span>
-          </Link>
-
-          <Link 
-            to="/naje-source" 
-            onClick={() => { setSidebarOpen(false); setUserGalleriesOpen('none'); }}
-            className={cn(
-              "w-full h-11 md:h-9 flex items-center justify-between px-3 rounded-xl text-xs font-bold transition-all border border-transparent",
-              location.pathname.includes('naje-source')
-                ? "bg-white dark:bg-purple-950/45 text-purple-950 dark:text-purple-200 border border-purple-300 dark:border-purple-500/40 shadow-md shadow-purple-500/10 font-extrabold" 
-                : "text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-900/60"
-            )}
-          >
-            <div className="flex items-center gap-2.5">
-              <BookOpen className="w-4 h-4 text-emerald-500" />
-              <span>ناجي من مصادرك</span>
-            </div>
-            <span className="text-[9px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-extrabold px-1.5 py-0.5 rounded border border-emerald-500/20">
-              $5
-            </span>
-          </Link>
+          </button>
 
           <Link 
             to="/creative-studio" 
@@ -1075,12 +1013,11 @@ export default function Dashboard() {
 
         {/* Global Top Header (visible on all screens when NOT in a Chat view or specialized custom headers) */}
         {!location.pathname.includes('/chat') && 
-         !location.pathname.includes('/naje-developer') && 
-         !location.pathname.includes('/naje-source') && 
-         !location.pathname.endsWith('naje-developer') && 
-         !location.pathname.endsWith('naje-source') && (
+         !location.pathname.includes('naje-developer') && 
+         !location.pathname.includes('naje-source') && 
+         !location.pathname.includes('naje-agent') && (
           <header className={`flex items-center justify-between px-3 sm:px-4 py-2 sm:py-2.5 flex-shrink-0 z-30 h-12 sm:h-14 ${location.pathname.includes('/creative') ? 'bg-[#030303]' : 'naje-glass-card-lg rounded-none border-t-0 border-r-0 border-l-0'}`}>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3 shrink-0">
               {/* Hamburger Menu (Mobile only) */}
               <button 
                 onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -1091,9 +1028,9 @@ export default function Dashboard() {
               </button>
               
               {/* Brand Logo & Name */}
-              <Link to="/" onClick={() => { setActiveProjectId(null); setUserGalleriesOpen('none'); }} className="flex items-center gap-2 group">
-                <NajeLogo size="md" className="group-hover:scale-105 transition-all" />
-                <span className={`font-extrabold text-sm transition-colors ${location.pathname.includes('/creative') ? 'text-white group-hover:text-amber-400' : 'text-gray-900 dark:text-white group-hover:text-indigo-600 dark:text-indigo-400'}`}>استوديو ناجي</span>
+              <Link to="/" onClick={() => { setActiveProjectId(null); setUserGalleriesOpen('none'); }} className="flex items-center gap-2 group shrink-0">
+                <NajeLogo size="md" className="group-hover:scale-105 transition-all shrink-0" />
+                <span className={`font-extrabold text-sm whitespace-nowrap shrink-0 transition-colors ${location.pathname.includes('/creative') ? 'text-white group-hover:text-amber-400' : 'text-gray-900 dark:text-white group-hover:text-indigo-600 dark:text-indigo-400'}`}>استوديو ناجي</span>
               </Link>
             </div>
             

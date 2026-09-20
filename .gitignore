@@ -6,11 +6,7 @@ coverage/
 .env*
 !.env.example
 
-# Preserve production artifacts for Cloud Run deployments
-!dist/
-!dist/**
-!server.cjs
-!server.js
+dist/
 
 # Scratch and mutation scripts
 bun.lock

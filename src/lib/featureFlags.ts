@@ -1,5 +1,5 @@
 import { doc, onSnapshot } from 'firebase/firestore';
-import { db } from '../firebase';
+import { db } from '../firebase.ts';
 import { useState, useEffect } from 'react';
 
 export interface FeatureFlags {

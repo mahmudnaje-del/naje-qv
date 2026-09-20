@@ -1,8 +1,8 @@
 import { GoogleGenAI } from '@google/genai';
-import { AgentToolCall, AgentArtifact, AgentCodeFile, AgentAuditEntry } from '../types/agent';
-import { pcmToWav, parseSampleRateFromMimeType } from './audioContainer';
-import { getAgentToolCost } from './agentPricing';
-import { executeFullstackEngineerMission } from './fullstackBuilder';
+import { AgentToolCall, AgentArtifact, AgentCodeFile, AgentAuditEntry } from '../types/agent.ts';
+import { pcmToWav, parseSampleRateFromMimeType } from './audioContainer.ts';
+import { getAgentToolCost } from './agentPricing.ts';
+import { executeFullstackEngineerMission } from './fullstackBuilder.ts';
 import { 
   buildPersonaInstruction, 
   criticReviewRequest, 
@@ -10,11 +10,11 @@ import {
   reasonBestVoice, 
   detectAndParseDialogue,
   buildDesignerInstruction
-} from './councilOfMinds';
-import { generateInfographicSpec, renderInfographic } from './infographicEngine';
-import { OUTPUT_TOKEN_LIMITS } from './modelRegistry';
-import { createGenAIClient } from './genaiClient';
-import { getNajeModel, resolveEngineModel } from './modelEnvConfig';
+} from './councilOfMinds.ts';
+import { generateInfographicSpec, renderInfographic } from './infographicEngine.ts';
+import { OUTPUT_TOKEN_LIMITS } from './modelRegistry.ts';
+import { createGenAIClient } from './genaiClient.ts';
+import { getNajeModel, resolveEngineModel } from './modelEnvConfig.ts';
 
 const ai = createGenAIClient();
 

@@ -1,6 +1,6 @@
 import { getMessaging, getToken, isSupported } from 'firebase/messaging';
 import { doc, updateDoc, arrayUnion } from 'firebase/firestore';
-import { app, db } from '../firebase';
+import { app, db } from '../firebase.ts';
 
 export async function isPushNotificationSupported(): Promise<boolean> {
   if (typeof window === 'undefined' || !('serviceWorker' in navigator) || !('Notification' in window)) {

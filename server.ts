@@ -2,8 +2,8 @@ import fs from "fs";
 import dns from "dns";
 import http from "http";
 import { URL } from "url";
-import { pcmToWav, parseSampleRateFromMimeType } from "./src/lib/audioContainer";
-import { generateMaximumCreativity } from "./src/lib/creativeEngine";
+import { pcmToWav, parseSampleRateFromMimeType } from "./src/lib/audioContainer.ts";
+import { generateMaximumCreativity } from "./src/lib/creativeEngine.ts";
 import express from "express";
 import path from "path";
 
@@ -26,14 +26,14 @@ import { getAuth } from "firebase-admin/auth";
 import { getStorage } from "firebase-admin/storage";
 import { getMessaging as getMessagingAdmin } from "firebase-admin/messaging";
 import dotenv from "dotenv";
-import { FALLBACK_DEFAULTS, SEED_ENDPOINTS, OUTPUT_TOKEN_LIMITS } from './src/lib/modelRegistry';
-import { getNajeModel, resolveEngineModel } from './src/lib/modelEnvConfig';
-import { getAgentToolCost } from './src/lib/agentPricing';
-import { buildPersonaInstruction, criticReviewRequest, getThinkingConfig } from './src/lib/councilOfMinds';
+import { FALLBACK_DEFAULTS, SEED_ENDPOINTS, OUTPUT_TOKEN_LIMITS } from './src/lib/modelRegistry.ts';
+import { getNajeModel, resolveEngineModel } from './src/lib/modelEnvConfig.ts';
+import { getAgentToolCost } from './src/lib/agentPricing.ts';
+import { buildPersonaInstruction, criticReviewRequest, getThinkingConfig } from './src/lib/councilOfMinds.ts';
 import os from 'os';
-import { buildInitialPlan, splitDuration, VideoPlan, ShotPlan } from './src/lib/videoOrchestrator';
-import { unpackSiteZip, buildFileTree, buildCodeContext, WorkspaceFile } from './src/lib/workspaceZip';
-import { calcVoicePointsCost, spokenTextFromVoiceScript } from './src/lib/voicePricing';
+import { buildInitialPlan, splitDuration, VideoPlan, ShotPlan } from './src/lib/videoOrchestrator.ts';
+import { unpackSiteZip, buildFileTree, buildCodeContext, WorkspaceFile } from './src/lib/workspaceZip.ts';
+import { calcVoicePointsCost, spokenTextFromVoiceScript } from './src/lib/voicePricing.ts';
 
 let ffmpegMod: any = null;
 async function getFfmpeg() {
@@ -118,7 +118,7 @@ try {
   console.warn("Could not load firebase-applet-config.json, using defaults:", e);
 }
 
-const PROJECT_ID = process.env.GOOGLE_CLOUD_PROJECT || process.env.GCP_PROJECT || configProjectId;
+const PROJECT_ID = configProjectId || process.env.GOOGLE_CLOUD_PROJECT || process.env.GCP_PROJECT;
 const DATABASE_ID = configDatabaseId;
 const STORAGE_BUCKET = configStorageBucket;
 const BASE_URL = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/${DATABASE_ID}/documents`;
@@ -2691,8 +2691,10 @@ export async function startServer(existingApp?: express.Express) {
     const origin = req.headers.origin;
     const isAllowed = origin && (
       ALLOWED_ORIGINS.has(origin) ||
-      /^https:\/\/[a-z0-9-]+-373938905126\.[a-z0-9-]+\.run\.app$/.test(origin) ||
-      /^https:\/\/[a-z0-9-]+-32227028098\.[a-z0-9-]+\.run\.app$/.test(origin)
+      /\.run\.app$/.test(origin) ||
+      /\.google\.com$/.test(origin) ||
+      /\.web\.app$/.test(origin) ||
+      /\.firebaseapp\.com$/.test(origin)
     );
     if (isAllowed && origin) {
       res.header('Access-Control-Allow-Origin', origin);
@@ -2720,6 +2722,21 @@ export async function startServer(existingApp?: express.Express) {
   // Health check endpoint for Cloud Run, container startup, and load balancer probes
   app.get(['/api/health', '/health', '/healthz', '/_ah/health', '/_health', '/ping', '/livez', '/readyz'], (req, res) => {
     res.status(200).json({ status: "ok", timestamp: Date.now() });
+  });
+  app.head(['/', '/api/health', '/health', '/healthz'], (req, res) => {
+    res.status(200).end();
+  });
+
+  // Early root probe responder: ensures Cloud Run startup probes at '/' immediately return 200 with index.html
+  app.get('/', (req, res, next) => {
+    const earlyIndex = [
+      path.join(process.cwd(), 'dist', 'index.html'),
+      path.join(process.cwd(), 'index.html')
+    ].find(p => fs.existsSync(p));
+    if (earlyIndex) {
+      return res.sendFile(earlyIndex);
+    }
+    next();
   });
 
   // Bind ports immediately so Studio's 10s health probe succeeds even while
@@ -2753,7 +2770,9 @@ export async function startServer(existingApp?: express.Express) {
   const ingressPortEarly = (envPortEarly && !isNaN(envPortEarly)) ? envPortEarly : 8080;
   if (!alreadyListening) {
     bindPort(ingressPortEarly, "Cloud Run Ingress");
-    if (ingressPortEarly !== 3000) bindPort(3000, "App Port (3000)");
+    if (ingressPortEarly !== 3000) {
+      bindPort(3000, "App Port (3000)");
+    }
   }
 
 
@@ -11269,10 +11288,12 @@ app.post("/api/agent/execute-tool-stream", async (req, res) => {
 
       const workspaceId = String(req.body?.workspaceId || '');
       const prompt = String(req.body?.prompt || '').trim();
+      const images = Array.isArray(req.body?.images) ? req.body.images.slice(0, 4) : [];
       const intent = String(req.body?.intent || 'chat');
       const focusPath = req.body?.focusPath ? String(req.body.focusPath) : '';
       const history = Array.isArray(req.body?.history) ? req.body.history.slice(-12) : [];
-      if (!prompt) return res.status(400).json({ error: 'اكتب رسالة.' });
+      if (!prompt && images.length === 0) return res.status(400).json({ error: 'اكتب رسالة أو أرفق صورة.' });
+      const promptText = prompt || 'حلل الصورة المرفقة واشرح ما فيها استناداً لأكواد ومشروع الموقع.';
 
       const loaded = await loadWorkspaceFiles(workspaceId, auth.uid);
       if (!loaded) return res.status(404).json({ error: 'ارفع أرشيف الموقع أولاً.' });
@@ -11312,7 +11333,26 @@ ${codeCtx}
         const text = String(h.content || '').slice(0, 4000);
         if (text) contents.push({ role, parts: [{ text }] });
       }
-      contents.push({ role: 'user', parts: [{ text: prompt }] });
+      const userParts: any[] = [{ text: promptText }];
+      for (const img of images) {
+        if (typeof img === 'string' && img.trim()) {
+          const mimeMatch = img.match(/^data:(image\/[a-zA-Z+]+);base64,/);
+          const mimeType = mimeMatch ? mimeMatch[1] : 'image/jpeg';
+          const cleanBase64 = img.replace(/^data:image\/[a-zA-Z+]+;base64,/, '');
+          userParts.push({
+            inlineData: { mimeType, data: cleanBase64 }
+          });
+        } else if (img && typeof img === 'object' && img.base64) {
+          const cleanBase64 = String(img.base64).replace(/^data:image\/[a-zA-Z+]+;base64,/, '');
+          userParts.push({
+            inlineData: {
+              mimeType: String(img.mimeType || 'image/jpeg'),
+              data: cleanBase64
+            }
+          });
+        }
+      }
+      contents.push({ role: 'user', parts: userParts });
 
       const tools = [{
         functionDeclarations: [{
@@ -11406,7 +11446,7 @@ ${codeCtx}
     }
   });
 
-  app.post('/api/source/add', async (req, res) => {
+  app.post('/api/source/add', json15mb, async (req, res) => {
     try {
       const auth = await requireAuth(req, res);
       if (!auth) return;
@@ -11414,7 +11454,7 @@ ${codeCtx}
       if (!checkFeatureAccess(res, userState.doc, 'najeSource')) return;
 
       let workspaceId = String(req.body?.workspaceId || '');
-      const type = String(req.body?.type || 'text');
+      let type = String(req.body?.type || 'text');
       const title = String(req.body?.title || '').slice(0, 200);
       let content = String(req.body?.content || '');
       const url = String(req.body?.url || '').trim();
@@ -11432,6 +11472,44 @@ ${codeCtx}
 
       const existing = await dbAdmin.collection('source_workspaces').doc(workspaceId).collection('items').get();
       if (existing.size >= 24) return res.status(400).json({ error: 'وصلت للحد الأقصى (24 مصدر). احذف مصدراً أولاً.' });
+
+      if (req.body?.fileBase64) {
+        const rawBase64 = String(req.body.fileBase64).replace(/^data:[^;]+;base64,/, '');
+        const buffer = Buffer.from(rawBase64, 'base64');
+        const fileNameLower = String(title || req.body?.fileName || '').toLowerCase();
+        
+        if (fileNameLower.endsWith('.pdf') || req.body?.mimeType?.includes('pdf') || type === 'pdf') {
+          try {
+            const pdfParseModule = await import('pdf-parse');
+            const pdfParse = pdfParseModule.default || pdfParseModule;
+            const pdfData = await pdfParse(buffer);
+            content = (pdfData.text || '').trim();
+            type = 'pdf';
+            if (!content) {
+              return res.status(400).json({ error: 'لم نتمكن من قراءة نصوص من ملف PDF (قد يكون الملف عبارة عن صور ممسوحة).' });
+            }
+          } catch (e: any) {
+            console.error('[pdf-parse error]', e);
+            return res.status(400).json({ error: 'تعذّر استخراج النص من ملف PDF.' });
+          }
+        } else if (fileNameLower.endsWith('.docx') || fileNameLower.endsWith('.doc') || req.body?.mimeType?.includes('word') || type === 'doc' || type === 'docx') {
+          try {
+            const mammothModule = await import('mammoth');
+            const mammoth = mammothModule.default || mammothModule;
+            const docResult = await mammoth.extractRawText({ buffer });
+            content = (docResult.value || '').trim();
+            type = 'doc';
+            if (!content) {
+              return res.status(400).json({ error: 'لم نتمكن من استخراج نصوص من مستند الوورد.' });
+            }
+          } catch (e: any) {
+            console.error('[mammoth error]', e);
+            return res.status(400).json({ error: 'تعذّر استخراج النص من مستند الوورد.' });
+          }
+        } else {
+          content = buffer.toString('utf-8');
+        }
+      }
 
       if (type === 'url') {
         if (!isSafeOutboundUrl(url)) return res.status(400).json({ error: 'الرابط غير مسموح.' });
@@ -11531,9 +11609,11 @@ ${codeCtx}
 
       const workspaceId = String(req.body?.workspaceId || '');
       const prompt = String(req.body?.prompt || '').trim();
+      const images = Array.isArray(req.body?.images) ? req.body.images.slice(0, 4) : [];
       const allowWeb = req.body?.allowWeb === true;
       const history = Array.isArray(req.body?.history) ? req.body.history.slice(-12) : [];
-      if (!prompt) return res.status(400).json({ error: 'اكتب رسالة.' });
+      if (!prompt && images.length === 0) return res.status(400).json({ error: 'اكتب رسالة أو أرفق صورة.' });
+      const promptText = prompt || 'حلل الصورة المرفقة وأجب عنها استناداً إلى المصادر المعتمدة.';
       if (!workspaceId) return res.status(400).json({ error: 'أضف مصدراً أولاً.' });
 
       const snap = await dbAdmin.collection('source_workspaces').doc(workspaceId).get();
@@ -11569,14 +11649,33 @@ ${sourceBlock}`;
         const text = String(h.content || '').slice(0, 4000);
         if (text) contents.push({ role, parts: [{ text }] });
       }
+      const userParts: any[] = [{ text: promptText }];
+      for (const img of images) {
+        if (typeof img === 'string' && img.trim()) {
+          const mimeMatch = img.match(/^data:(image\/[a-zA-Z+]+);base64,/);
+          const mimeType = mimeMatch ? mimeMatch[1] : 'image/jpeg';
+          const cleanBase64 = img.replace(/^data:image\/[a-zA-Z+]+;base64,/, '');
+          userParts.push({
+            inlineData: { mimeType, data: cleanBase64 }
+          });
+        } else if (img && typeof img === 'object' && img.base64) {
+          const cleanBase64 = String(img.base64).replace(/^data:image\/[a-zA-Z+]+;base64,/, '');
+          userParts.push({
+            inlineData: {
+              mimeType: String(img.mimeType || 'image/jpeg'),
+              data: cleanBase64
+            }
+          });
+        }
+      }
+      for (const s of sources.filter(s => s.imageBase64).slice(0, 4)) {
+        userParts.push({
+          inlineData: { mimeType: s.mimeType || 'image/jpeg', data: s.imageBase64 }
+        });
+      }
       contents.push({
         role: 'user',
-        parts: [
-          { text: prompt },
-          ...sources.filter(s => s.imageBase64).slice(0, 4).map(s => ({
-            inlineData: { mimeType: s.mimeType || 'image/jpeg', data: s.imageBase64 }
-          }))
-        ]
+        parts: userParts
       });
 
       const tools: any[] = [];
@@ -11641,7 +11740,8 @@ ${sourceBlock}`;
     path.join(appDirname, 'dist')
   ];
   const distPath = candidateDistPaths.find(p => fs.existsSync(path.join(p, 'index.html')));
-  const isProduction = Boolean(isProdBundle && distPath);
+  const isProduction = process.env.NODE_ENV === 'production' || Boolean(distPath);
+  console.log(`[Static Serving] Mode: ${isProduction ? 'production' : 'development'}, distPath: ${distPath || 'none'}`);
 
   // Serve public directory as static assets (logos, manifest, etc.)
   app.use(express.static(path.join(process.cwd(), 'public'), { dotfiles: 'allow' }));
@@ -11651,18 +11751,30 @@ ${sourceBlock}`;
     res.status(404).json({ error: `API route ${req.method} ${req.originalUrl} not found` });
   });
 
-  if (!isProduction) {
-    const { createServer: createViteServer } = await import("vite");
-    const vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: "spa",
-    });
-    app.use(vite.middlewares);
-  } else if (distPath) {
+  if (distPath) {
     app.use(express.static(distPath));
     app.get('*', (req, res) => {
       const indexPath = path.join(distPath, 'index.html');
       res.sendFile(indexPath);
+    });
+  } else if (!isProduction) {
+    try {
+      const { createServer: createViteServer } = await import("vite");
+      const vite = await createViteServer({
+        server: { middlewareMode: true },
+        appType: "spa",
+      });
+      app.use(vite.middlewares);
+    } catch (viteErr) {
+      console.warn("[Server] Vite dev middleware could not be loaded:", viteErr);
+    }
+  } else {
+    app.get('*', (req, res) => {
+      const rootIndex = path.join(process.cwd(), 'index.html');
+      if (fs.existsSync(rootIndex)) {
+        return res.sendFile(rootIndex);
+      }
+      res.status(200).send('<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>Naje AI</title></head><body><div id="root">جارٍ تحميل منصة ناجي للذكاء الاصطناعي...</div></body></html>');
     });
   }
   
@@ -11678,18 +11790,9 @@ ${sourceBlock}`;
   executeSeeds();
 }
 
-function shouldAutoStartServer(): boolean {
-  const entry = (process.argv[1] || '').replace(/\\/g, '/');
-  return (
-    entry.endsWith('/server.ts') ||
-    entry.endsWith('/server.cjs') ||
-    entry.endsWith('/dist/server.cjs')
-  );
-}
-
-if (shouldAutoStartServer()) {
-  startServer().catch((err) => {
-    console.error('[Server] fatal start error:', err);
-  });
-}
+// Automatically start the server on execution
+startServer().catch((err) => {
+  console.error('[Server] Fatal startup error:', err);
+  process.exit(1);
+});
 

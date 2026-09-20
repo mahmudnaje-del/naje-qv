@@ -1,10 +1,10 @@
 import { GoogleGenAI } from '@google/genai';
-import { AgentPlanProposal, AgentChatTurnResponse } from '../types/agent';
-import { getAgentToolCost, PricingConfig } from './agentPricing';
-import { OUTPUT_TOKEN_LIMITS } from './modelRegistry';
-import { getThinkingConfig } from './councilOfMinds';
-import { createGenAIClient } from './genaiClient';
-import { getNajeModel, resolveEngineModel } from './modelEnvConfig';
+import { AgentPlanProposal, AgentChatTurnResponse } from '../types/agent.ts';
+import { getAgentToolCost, PricingConfig } from './agentPricing.ts';
+import { OUTPUT_TOKEN_LIMITS } from './modelRegistry.ts';
+import { getThinkingConfig } from './councilOfMinds.ts';
+import { createGenAIClient } from './genaiClient.ts';
+import { getNajeModel, resolveEngineModel } from './modelEnvConfig.ts';
 
 const ai = createGenAIClient();
 

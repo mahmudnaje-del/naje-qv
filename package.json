@@ -3,12 +3,14 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
+  "packageManager": "npm@10.9.8",
   "engines": {
-    "node": "22.x"
+    "node": ">=20.0.0"
   },
+  "main": "dist/server.cjs",
   "scripts": {
-    "dev": "node server.js",
-    "build": "vite build && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs && cp dist/server.cjs server.cjs",
+    "dev": "tsx server.ts",
+    "build": "vite build && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs",
     "gcp-build": "npm run build",
     "start": "node dist/server.cjs",
     "clean": "rm -rf dist server.cjs",
@@ -40,6 +42,7 @@
     "jszip": "^3.10.1",
     "lucide-react": "^0.546.0",
     "lucide-static": "^1.25.0",
+    "mammoth": "^1.12.3",
     "motion": "^12.23.24",
     "pdf-parse": "^1.1.1",
     "pptxgenjs": "^4.0.1",

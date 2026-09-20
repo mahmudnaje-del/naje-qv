@@ -1,5 +1,5 @@
 import { GoogleGenAI } from '@google/genai';
-import { buildPersonaInstruction } from './councilOfMinds';
+import { buildPersonaInstruction } from './councilOfMinds.ts';
 
 export const NAJE_CORE_IDENTITY_SHARED = `أنت "ناجي" (Naje AI) — منصة ذكاء اصطناعي توليدية عربية أولاً.
 

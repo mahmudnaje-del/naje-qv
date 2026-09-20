@@ -1,5 +1,5 @@
 import { GoogleGenAI } from '@google/genai';
-import { buildPersonaInstruction } from './councilOfMinds';
+import { buildPersonaInstruction } from './councilOfMinds.ts';
 
 export interface BrandProfile {
   archetype: string;

@@ -13,7 +13,21 @@ export default defineConfig(() => {
       dedupe: ['react', 'react-dom'],
     },
     build: {
-      chunkSizeWarningLimit: 2000,
+      chunkSizeWarningLimit: 4000,
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (id.includes('node_modules')) {
+              if (id.includes('firebase')) return 'vendor-firebase';
+              if (id.includes('jspdf') || id.includes('html2canvas') || id.includes('pptxgenjs') || id.includes('mammoth')) return 'vendor-docs';
+              if (id.includes('lucide-react')) return 'vendor-icons';
+              if (id.includes('recharts') || id.includes('d3')) return 'vendor-charts';
+              if (id.includes('highlight.js')) return 'vendor-highlight';
+              if (id.includes('react-router-dom')) return 'vendor-router';
+            }
+          },
+        },
+      },
     },
     server: {
       // HMR is disabled in AI Studio via DISABLE_HMR env var.

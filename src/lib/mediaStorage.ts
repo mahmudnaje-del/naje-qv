@@ -1,8 +1,8 @@
 import { getStorage, ref, uploadString, getDownloadURL } from 'firebase/storage';
 import { updateDoc } from 'firebase/firestore';
-import { app } from '../firebase';
+import { app } from '../firebase.ts';
 
-import { auth } from '../firebase';
+import { auth } from '../firebase.ts';
 
 export async function uploadBase64ToStorage(path: string, base64Data: string, mediaType: string): Promise<string> {
   const prefix = mediaType === 'video' ? 'data:video/mp4;base64,' : mediaType === 'voice' ? 'data:audio/wav;base64,' : 'data:image/png;base64,';

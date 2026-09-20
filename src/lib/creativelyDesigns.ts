@@ -1,5 +1,5 @@
 import { collection, addDoc, getDocs, query, where, orderBy } from 'firebase/firestore';
-import { db, auth } from '../firebase';
+import { db, auth } from '../firebase.ts';
 
 export interface CreativelyDesign {
   id?: string;

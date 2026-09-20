@@ -1,6 +1,6 @@
 import { JSDOM } from 'jsdom';
 import { Type } from '@google/genai';
-import { resolveEngineModel } from './modelEnvConfig';
+import { resolveEngineModel } from './modelEnvConfig.ts';
 
 export interface Fact {
   id: string;

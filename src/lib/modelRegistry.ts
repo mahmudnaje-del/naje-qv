@@ -1,5 +1,5 @@
-import { ModelEndpoint } from '../types';
-import { getNajeModel, resolveEngineModel } from './modelEnvConfig';
+import { ModelEndpoint } from '../types.ts';
+import { getNajeModel, resolveEngineModel } from './modelEnvConfig.ts';
 
 export const POINT_USD_VALUE = 0.02; // 1 Naje Point = $0.02 USD revenue equivalent
 

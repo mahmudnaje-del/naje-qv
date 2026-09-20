@@ -1,7 +1,7 @@
 import { GoogleGenAI } from '@google/genai';
-import { OUTPUT_TOKEN_LIMITS } from './modelRegistry';
-import { getOrCreateExplicitCache, getCriticCachedInstruction } from './geminiCaching';
-import { getNajeModel, resolveEngineModel } from './modelEnvConfig';
+import { OUTPUT_TOKEN_LIMITS } from './modelRegistry.ts';
+import { getOrCreateExplicitCache, getCriticCachedInstruction } from './geminiCaching.ts';
+import { getNajeModel, resolveEngineModel } from './modelEnvConfig.ts';
 
 const PERSONAS_MODEL = () => resolveEngineModel(getNajeModel('personas'));
 

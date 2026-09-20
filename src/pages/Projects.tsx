@@ -152,8 +152,8 @@ export default function Projects() {
         ownerId: user.uid,
         projectId: activeProjectId || '',
         type,
-        title: type === 'ui' ? 'مساحة تصميم واجهات جديدة'
-             : type === 'voice' ? 'مساحة تسجيلات صوتية جديدة'
+        title: type === 'ui' ? 'مساحة تصميم واجهات مواقع جديدة'
+             : type === 'voice' ? 'مساحة حوارات صوتية جديدة'
              : type === 'text' ? 'مساحة تحليل نصوص جديدة'
              : type === 'image' ? 'مساحة صور جديدة'
              : type === 'video' ? 'مساحة فيديو جديدة'
@@ -455,16 +455,16 @@ export default function Projects() {
                     أهلاً بك، {user?.displayName || 'مبدع ناجي'}
                   </h1>
                   <p className="text-indigo-200/90 text-xs mt-2 leading-relaxed">
-                    مرحباً بك في الاستوديو الإبداعي. انشئ دردشة جديدة لتبدأ العمل التوليدي فوراً، أو اختر مساحة عمل من الأسفل.
+                    مرحباً بك في الاستوديو الإبداعي. أنشئ مشروعاً جديداً لتنظيم ملفاتك ودردشاتك، أو اختر مساحة عمل من الأسفل.
                   </p>
                 </div>
 
                 <button 
-                  onClick={() => setNewChatModalOpen(true)} 
+                  onClick={() => setShowNewProjectModal(true)} 
                   className="self-start bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2.5 rounded-xl font-bold transition shadow-lg shadow-indigo-500/20 flex items-center gap-2 cursor-pointer text-xs border border-transparent hover:scale-[1.02]"
                 >
                   <Plus className="w-4 h-4" />
-                  <span>بدء مساحة إبداعية</span>
+                  <span>إنشاء مشروع</span>
                 </button>
               </div>
             </div>
@@ -487,7 +487,7 @@ export default function Projects() {
                 onClick={() => handleDirectCreateChat('voice')}
                 disabled={directCreatingType !== null}
                 className="p-3.5 bg-white dark:bg-[#11141c] hover:bg-emerald-50/50 dark:hover:bg-[#12221b] border border-emerald-500/30 dark:border-emerald-500/20 rounded-2xl flex flex-col items-center text-center gap-2 transition cursor-pointer group shadow-sm hover:shadow-md hover:border-emerald-400 active:scale-95 disabled:opacity-60"
-                title="فتح دردشة صوتية مباشرة"
+                title="توليد حوارات صوتية مباشرة"
               >
                 <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center group-hover:scale-110 transition-transform relative">
                   {directCreatingType === 'voice' ? (
@@ -500,7 +500,7 @@ export default function Projects() {
                   )}
                 </div>
                 <span className="text-xs font-extrabold text-slate-900 dark:text-white flex items-center gap-1">
-                  <span>الدردشة الصوتية</span>
+                  <span>توليد حوارات صوتية</span>
                 </span>
               </button>
 
@@ -532,12 +532,12 @@ export default function Projects() {
                 onClick={() => handleDirectCreateChat('ui')}
                 disabled={directCreatingType !== null}
                 className="p-3.5 bg-white dark:bg-[#11141c] hover:bg-amber-50/50 dark:hover:bg-[#251d12] border border-slate-200/80 dark:border-slate-800 rounded-2xl flex flex-col items-center text-center gap-2 transition cursor-pointer group shadow-sm hover:shadow-md hover:border-amber-300 dark:hover:border-amber-800 active:scale-95 disabled:opacity-60"
-                title="فتح مساحة تصميم واجهات مباشرة"
+                title="تصميم واجهات مواقع مباشرة"
               >
                 <div className="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center group-hover:scale-110 transition-transform">
                   {directCreatingType === 'ui' ? <NajeSpinner className="w-4 h-4" /> : <Layout className="w-4 h-4" />}
                 </div>
-                <span className="text-xs font-extrabold text-slate-900 dark:text-white">تصميم واجهات</span>
+                <span className="text-xs font-extrabold text-slate-900 dark:text-white">تصميم واجهات مواقع</span>
               </button>
 
               <button
@@ -830,7 +830,7 @@ export default function Projects() {
                   onClick={() => handleDirectCreateChat('voice')}
                   disabled={directCreatingType !== null}
                   className="p-2.5 bg-white/90 dark:bg-[#11141c] hover:bg-emerald-50/50 dark:hover:bg-[#12221b] border border-emerald-500/30 dark:border-emerald-500/20 rounded-xl flex flex-col items-center text-center gap-1.5 transition cursor-pointer group shadow-xs hover:border-emerald-400 active:scale-95 disabled:opacity-60"
-                  title="فتح دردشة صوتية مباشرة"
+                  title="توليد حوارات صوتية مباشرة"
                 >
                   <div className="w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center group-hover:scale-110 transition-transform relative">
                     {directCreatingType === 'voice' ? (
@@ -873,7 +873,7 @@ export default function Projects() {
                   onClick={() => handleDirectCreateChat('ui')}
                   disabled={directCreatingType !== null}
                   className="p-2.5 bg-white/90 dark:bg-[#11141c] hover:bg-amber-50/50 dark:hover:bg-[#251d12] border border-slate-200/80 dark:border-slate-800 rounded-xl flex flex-col items-center text-center gap-1.5 transition cursor-pointer group shadow-xs hover:border-amber-300 dark:hover:border-amber-800 active:scale-95 disabled:opacity-60"
-                  title="فتح مساحة تصميم واجهات مباشرة"
+                  title="تصميم واجهات مواقع مباشرة"
                 >
                   <div className="w-7 h-7 rounded-lg bg-amber-500/10 text-amber-500 flex items-center justify-center group-hover:scale-110 transition-transform">
                     {directCreatingType === 'ui' ? <NajeSpinner className="w-3.5 h-3.5" /> : <Layout className="w-3.5 h-3.5" />}
