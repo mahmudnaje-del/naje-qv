@@ -494,14 +494,14 @@ export const SEED_ENDPOINTS: ModelEndpoint[] = [
     labelAr: 'فيديو — Naje Video Pro', 
     modelId: getNajeModel('video_pro'), 
     fallbackModelId: getNajeModel('video_pro'),
-    paramNotes: 'Naje Video Pro Multimodal Video', 
+    paramNotes: 'Gemini Omni Flash / 1.1 — scene extend to 40s, NL edit, 360p–4K', 
     maxOutputTokens: 8192,
     pricingType: 'per_generation',
-    realCostPer: { unit: 'per_second', usd: 0.05 }, 
+    realCostPer: { unit: 'per_second', usd: 0.10 }, 
     isUnconfirmedCost: true, 
-    pointsPrice: 20,
+    pointsPrice: 25,
     isBackground: false,
-    supportedDurations: [5, 10],
+    supportedDurations: [10, 20, 30, 40],
     supportsImageInput: true
   },
 

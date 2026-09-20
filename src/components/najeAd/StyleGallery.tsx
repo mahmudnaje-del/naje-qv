@@ -1,115 +1,79 @@
-import React, { useState, useMemo } from 'react';
-import { Search, Sparkles } from 'lucide-react';
-import { VIDEO_STYLE_TEMPLATES, VideoStyleTemplate } from '../../data/videoStyleTemplates';
+import React, { useMemo, useState } from 'react';
+import { Search } from 'lucide-react';
+import { AD_STYLES, AdStyle } from '../../data/adStyles';
 import { CircularCardCarousel } from './CircularCardCarousel';
 
-export interface StyleGalleryProps {
-  selectedStyleId: string | null;
-  onSelectStyle: (styleId: string | null) => void;
-}
-
-export const StyleGallery: React.FC<StyleGalleryProps> = ({
+export function StyleGallery({
   selectedStyleId,
-  onSelectStyle
-}) => {
+  onSelectStyle,
+}: {
+  selectedStyleId: string | null;
+  onSelectStyle: (styleId: string) => void;
+}) {
   const [searchTerm, setSearchTerm] = useState('');
   const [centerIndex, setCenterIndex] = useState(0);
-
-  const filteredTemplates = useMemo(() => {
-    return VIDEO_STYLE_TEMPLATES.filter(t => {
-      const matchSearch = t.name.includes(searchTerm) || t.desc.includes(searchTerm);
-      return matchSearch;
-    });
-  }, [searchTerm]);
-
-  const renderCard = (template: VideoStyleTemplate, isCenter: boolean) => (
-    <div className="w-[85vw] max-w-64 sm:w-72 flex flex-col h-full bg-[#1c1f26] rounded-2xl overflow-hidden border border-gray-800">
-      <div className="relative w-full aspect-[4/3] bg-gray-900 shrink-0">
-        <img 
-          src={template.image} 
-          alt={template.name} 
-          className="w-full h-full object-cover"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#1c1f26] via-transparent to-transparent opacity-80" />
-      </div>
-      
-      <div className="p-4 flex-1 flex flex-col items-center justify-start text-center">
-        <h4 className="font-bold text-white text-[15px] mb-1.5">{template.name}</h4>
-        {isCenter && (
-          <p className="text-[12px] text-gray-400 leading-relaxed font-medium line-clamp-3">
-            {template.desc}
-          </p>
-        )}
-      </div>
-    </div>
+  const filtered = useMemo(
+    () => AD_STYLES.filter((t) => t.name.includes(searchTerm) || t.desc.includes(searchTerm)),
+    [searchTerm]
   );
+  const current = AD_STYLES.find((s) => s.id === selectedStyleId);
 
   return (
-    <div className="flex flex-col w-full text-right" dir="rtl">
-      <div className="p-6 border-b border-gray-800/60 flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-400 flex items-center justify-center flex-shrink-0">
-            <Sparkles className="w-5 h-5" />
-          </div>
-          <div>
-            <h3 className="text-lg font-black text-white">معرض الأساليب الإخراجية</h3>
-            <p className="text-xs text-gray-400 mt-1">اختر الأسلوب الفني أو القالب البصري للإعلان</p>
-          </div>
+    <div className="space-y-3 text-right" dir="rtl">
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div>
+          <h2 className="text-base font-black text-white">أسلوب الإعلان</h2>
+          <p className="text-[11px] text-white/45">
+            الحالي: <span className="font-bold text-[#e8b86d]">{current?.name || 'اختر أسلوباً إعلانياً'}</span>
+          </p>
         </div>
+        <div className="relative w-full md:w-64">
+          <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/35" />
+          <input
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="ابحث عن أسلوب إعلان..."
+            className="w-full rounded-xl border border-white/10 bg-black/35 py-2 pr-10 pl-3 text-xs text-white placeholder:text-white/30 focus:border-[#e8b86d] focus:outline-none"
+          />
+        </div>
+      </div>
 
-        <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
-          <div className="flex flex-col gap-2 w-full sm:w-auto">
-            <div className="text-xs text-gray-400 flex items-center justify-center sm:justify-start gap-1.5">
-              <span>الأسلوب الحالي:</span>
-              <span className="font-bold text-white">
-                {selectedStyleId
-                  ? VIDEO_STYLE_TEMPLATES.find(t => t.id === selectedStyleId)?.name
-                  : 'واقعي (افتراضي)'}
-              </span>
-            </div>
-            <button
-              type="button"
-            onClick={() => onSelectStyle(null)}
-            className={`w-full sm:w-auto px-4 py-2.5 rounded-xl border text-xs font-bold transition flex justify-center items-center gap-2 ${
-              selectedStyleId === null 
-                ? 'bg-purple-600/20 border-purple-500 text-purple-400' 
-                : 'bg-[#1c1f26] border-gray-700 text-gray-400 hover:text-white hover:border-gray-500'
+      <CircularCardCarousel<AdStyle>
+        items={filtered}
+        getKey={(t) => t.id}
+        isSelected={(t) => t.id === selectedStyleId}
+        onSelect={(t) => onSelectStyle(t.id)}
+        centerIndex={centerIndex}
+        onCenterIndexChange={setCenterIndex}
+        frameClassName="h-[380px] sm:h-[400px]"
+        renderCard={(t, isCenter) => (
+          <div
+            className={`overflow-hidden rounded-2xl border ${isCenter ? 'w-[78vw] max-w-64' : 'w-40'} ${
+              t.id === selectedStyleId ? 'border-[#d4a574]' : 'border-white/10'
             }`}
           >
-            تخطي واستخدام أسلوب واقعي
-          </button>
-          </div>
-          
-          <div className="relative w-full sm:w-[220px]">
-            <Search className="w-4 h-4 text-gray-500 absolute right-3 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              placeholder="ابحث عن أسلوب فني..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-[#1c1f26] border border-gray-800 rounded-xl pr-9 pl-4 py-2 text-xs text-white focus:outline-none focus:border-purple-500 transition placeholder:text-gray-600"
-            />
-          </div>
-        </div>
-      </div>
-
-      <div className="p-6">
-        {filteredTemplates.length > 0 ? (
-          <CircularCardCarousel<VideoStyleTemplate>
-            items={filteredTemplates}
-            getKey={(t) => t.id}
-            isSelected={(t) => t.id === selectedStyleId}
-            onSelect={(t) => onSelectStyle(t.id)}
-            renderCard={renderCard}
-            centerIndex={centerIndex}
-            onCenterIndexChange={setCenterIndex}
-          />
-        ) : (
-          <div className="py-12 text-center text-gray-500 text-sm">
-            لا توجد قوالب مطابقة للبحث
+            <div className="flex aspect-[5/3] items-end p-3" style={{ background: `linear-gradient(145deg, ${t.gradient[0]}, ${t.gradient[1]})` }}>
+              <span className="text-sm font-black text-white drop-shadow">{t.name}</span>
+            </div>
+            {isCenter && (
+              <div className="bg-[#12141c] p-3">
+                <p className="text-[11px] leading-relaxed text-white/55">{t.desc}</p>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onSelectStyle(t.id);
+                  }}
+                  className="mt-2 w-full rounded-xl py-1.5 text-[11px] font-black text-black"
+                  style={{ background: t.accent }}
+                >
+                  اعتماد الأسلوب
+                </button>
+              </div>
+            )}
           </div>
         )}
-      </div>
+      />
     </div>
   );
-};
+}

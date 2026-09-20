@@ -29,6 +29,8 @@ interface NajeAdConfig {
   durationOptionsSec: number[];
   maxShotsPerVideo: number;
   defaultModelEndpointId: string;
+  resolutionMultiplier?: { '360p'?: number; '720p'?: number; '1080p'?: number; '4k'?: number };
+  editMultiplier?: number;
 }
 
 interface GenerationJob {
@@ -46,24 +48,26 @@ interface GenerationJob {
   resultUrl?: string;
   prompt?: string;
   createdAt?: number;
+  omniModel?: string;
   error?: string;
 }
 
-const AVAILABLE_DURATION_PRESETS = [4, 6, 8, 10, 12, 14, 16, 24, 30];
+const AVAILABLE_DURATION_PRESETS = [10, 20, 30, 40];
 
 const MODEL_OPTIONS = [
-  { id: 'video_standard', label: 'Naje Video (قياسي — NAJE_MODEL_VIDEO_CORE)', provider: 'Veo' },
-  { id: 'video_veo_lite', label: 'Naje Video Lite (خفيف — NAJE_MODEL_VIDEO_CORE)', provider: 'Veo' },
-  { id: 'video_omni', label: 'Naje Video Pro (متقدم — NAJE_MODEL_VIDEO_PRO)', provider: 'Veo Pro' },
+  { id: 'video_omni', label: 'Gemini Omni 1.1 Flash (تمديد حتى 40ث + تحرير طبيعي)', provider: 'Omni 1.1' },
+  { id: 'omni-flash', label: 'Gemini Omni Flash (الإصدار الأول — حتى 10ث)', provider: 'Omni Flash' },
 ];
 
 export const AdminNajeAd: React.FC = () => {
   const [config, setConfig] = useState<NajeAdConfig>({
     enabled: true,
     pointsRatePerSecond: 2.5,
-    durationOptionsSec: [4, 6, 8, 10, 12, 14, 16, 24, 30],
-    maxShotsPerVideo: 4,
-    defaultModelEndpointId: 'video_standard'
+    durationOptionsSec: [10, 20, 30, 40],
+    maxShotsPerVideo: 1,
+    defaultModelEndpointId: 'video_omni',
+    resolutionMultiplier: { '360p': 0.35, '720p': 1, '1080p': 1.5, '4k': 3 },
+    editMultiplier: 0.5
   });
 
   const [initialConfig, setInitialConfig] = useState<NajeAdConfig | null>(null);
@@ -90,9 +94,11 @@ export const AdminNajeAd: React.FC = () => {
             pointsRatePerSecond: typeof data.config.pointsRatePerSecond === 'number' ? data.config.pointsRatePerSecond : 2.5,
             durationOptionsSec: Array.isArray(data.config.durationOptionsSec) && data.config.durationOptionsSec.length > 0
               ? data.config.durationOptionsSec
-              : [4, 6, 8, 10, 12, 14, 16, 24, 30],
-            maxShotsPerVideo: data.config.maxShotsPerVideo || 4,
-            defaultModelEndpointId: data.config.defaultModelEndpointId || 'video_standard'
+              : [10, 20, 30, 40],
+            maxShotsPerVideo: data.config.maxShotsPerVideo || 1,
+            defaultModelEndpointId: data.config.defaultModelEndpointId || 'video_omni',
+            resolutionMultiplier: data.config.resolutionMultiplier || { '360p': 0.35, '720p': 1, '1080p': 1.5, '4k': 3 },
+            editMultiplier: typeof data.config.editMultiplier === 'number' ? data.config.editMultiplier : 0.5
           };
           setConfig(merged);
           setInitialConfig(merged);
@@ -183,7 +189,7 @@ export const AdminNajeAd: React.FC = () => {
 
   // Economic analysis
   const rate = config.pointsRatePerSecond || 2.5;
-  const estimatedCostPerSecUSD = 0.05; // Google Veo ~ $0.05/sec
+  const estimatedCostPerSecUSD = 0.10; // Gemini Omni ~ $0.10/sec at 720p
   const pointsValueUSD = POINT_USD_VALUE; // e.g. $0.005 to $0.01 per point
   const revenueUSDPerSec = rate * pointsValueUSD;
   const estimatedMarginPercent = revenueUSDPerSec > 0 
@@ -210,7 +216,7 @@ export const AdminNajeAd: React.FC = () => {
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-xl font-black text-gray-900 dark:text-white">إدارة محرك Naje Ad (Multi-Shot Video)</h2>
+                <h2 className="text-xl font-black text-gray-900 dark:text-white">إدارة محرك Naje Ad (Gemini Omni)</h2>
                 <span className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full border ${
                   config.enabled 
                     ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30' 
@@ -220,7 +226,7 @@ export const AdminNajeAd: React.FC = () => {
                 </span>
               </div>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                التحكم بأسعار التوليد بالثانية، خيارات المدد الزمنية المتاحة للمستخدم، ونموذج التوليد الافتراضي.
+                التحكم بأسعار التوليد بالثانية، مدد 10–40، ومضاعفات الدقة (360p مسودة / 720p / 1080p / 4K).
               </p>
             </div>
           </div>
@@ -263,9 +269,9 @@ export const AdminNajeAd: React.FC = () => {
           </div>
 
           <div className="p-3.5 rounded-2xl bg-gray-50 dark:bg-gray-950/60 border border-gray-200/60 dark:border-gray-800/60">
-            <span className="text-[11px] font-bold text-gray-500 block">أقصى لقطات متتابعة</span>
+            <span className="text-[11px] font-bold text-gray-500 block">محرك التوليد</span>
             <span className="text-lg font-black text-purple-600 dark:text-purple-400 font-mono mt-0.5 block">
-              {config.maxShotsPerVideo} لقطات
+              Omni Flash
             </span>
           </div>
 
@@ -377,18 +383,34 @@ export const AdminNajeAd: React.FC = () => {
               </div>
             </div>
 
-            {/* Max Shots */}
+            {/* Resolution multipliers */}
             <div className="space-y-2">
               <label className="block text-xs font-bold text-gray-700 dark:text-gray-300">
-                أقصى عدد لقطات مسموح بدمجها للمشهد الواحد:
+                مضاعف السعر حسب الدقة (نسبة إلى 720p):
               </label>
-              <input
-                type="number"
-                value={2}
-                disabled
-                className="w-32 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl px-4 py-2 text-xs font-bold text-gray-500 dark:text-gray-400 font-mono outline-none cursor-not-allowed opacity-70"
-              />
-              <span className="text-[11px] text-gray-500 block mt-1">(مغلق مؤقتاً: النظام حالياً يدعم لقطتين 2-Shots كحد أقصى للحفاظ على استمرارية الشخصية)</span>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {(['360p', '720p', '1080p', '4k'] as const).map((key) => (
+                  <label key={key} className="rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-950 p-3 text-center">
+                    <span className="block text-[11px] font-bold text-gray-500 mb-1">{key}</span>
+                    <input
+                      type="number"
+                      step="0.05"
+                      min="0.1"
+                      max="10"
+                      value={config.resolutionMultiplier?.[key] ?? (key === '360p' ? 0.35 : key === '1080p' ? 1.5 : key === '4k' ? 3 : 1)}
+                      onChange={(e) => setConfig({
+                        ...config,
+                        resolutionMultiplier: {
+                          ...(config.resolutionMultiplier || {}),
+                          [key]: Math.max(0.1, parseFloat(e.target.value) || 1),
+                        }
+                      })}
+                      className="w-full bg-transparent text-center text-sm font-black font-mono outline-none"
+                    />
+                  </label>
+                ))}
+              </div>
+              <p className="text-[11px] text-gray-500">360p للمسودة الاقتصادية — 1080p و4K ترقية احترافية عبر Omni 1.1.</p>
             </div>
           </div>
         </div>
@@ -411,22 +433,23 @@ export const AdminNajeAd: React.FC = () => {
                   <thead className="bg-gray-50 dark:bg-gray-950 text-gray-500 border-b border-gray-200 dark:border-gray-800">
                     <tr>
                       <th className="p-2.5 font-bold">المدة</th>
-                      <th className="p-2.5 font-bold">اللقطات</th>
-                      <th className="p-2.5 font-bold">تكلفة النقاط</th>
-                      <th className="p-2.5 font-bold">القيمة التقديرية</th>
+                      <th className="p-2.5 font-bold">360p</th>
+                      <th className="p-2.5 font-bold">720p</th>
+                      <th className="p-2.5 font-bold">1080p</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100 dark:divide-gray-800/60">
                     {config.durationOptionsSec.map((sec) => {
-                      const costPts = Math.ceil(sec * config.pointsRatePerSecond);
-                      const shotsCount = sec > 8 ? 2 : 1;
-                      const approxUSD = (costPts * POINT_USD_VALUE).toFixed(2);
+                      const mul = config.resolutionMultiplier || { '360p': 0.35, '720p': 1, '1080p': 1.5, '4k': 3 };
+                      const p720 = Math.ceil(sec * config.pointsRatePerSecond * (mul['720p'] || 1) * 1.1);
+                      const p360 = Math.ceil(sec * config.pointsRatePerSecond * (mul['360p'] || 0.35));
+                      const p1080 = Math.ceil(sec * config.pointsRatePerSecond * (mul['1080p'] || 1.5) * 1.1);
                       return (
                         <tr key={sec} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/20">
                           <td className="p-2.5 font-bold text-gray-900 dark:text-white">{sec} ثواني</td>
-                          <td className="p-2.5 text-gray-500">{shotsCount === 1 ? 'لقطة (1)' : 'لقطتان (2)'}</td>
-                          <td className="p-2.5 font-black text-amber-500 font-mono">{costPts} نقطة</td>
-                          <td className="p-2.5 text-gray-400 font-mono">~${approxUSD}</td>
+                          <td className="p-2.5 font-mono text-gray-500">{p360}</td>
+                          <td className="p-2.5 font-black text-amber-500 font-mono">{p720}</td>
+                          <td className="p-2.5 font-mono text-gray-500">{p1080}</td>
                         </tr>
                       );
                     })}
@@ -448,7 +471,7 @@ export const AdminNajeAd: React.FC = () => {
                 </span>
               </div>
               <p className="text-[11px] text-gray-500 leading-relaxed">
-                يتم احتساب الهامش بناءً على التكلفة الحقيقية لـ Google Veo (~$0.05/ثانية) مقارنة بسعر النقطة الافتراضي للجمهور.
+                يتم احتساب الهامش بناءً على تكلفة Gemini Omni 1.1 (~$0.10/ثانية عند 720p) مقارنة بسعر النقطة الافتراضي.
               </p>
             </div>
           </div>
@@ -498,7 +521,7 @@ export const AdminNajeAd: React.FC = () => {
                         {job.prompt || 'مشهد إعلاني'}
                       </td>
                       <td className="py-3 text-gray-600 dark:text-gray-300 font-mono">
-                        {job.totalDurationSec || 8}s ({job.shotsCount || 1} shots)
+                        {job.totalDurationSec || 10}s · {job.omniModel || 'omni'}
                       </td>
                       <td className="py-3 font-black text-amber-500 font-mono">
                         {job.consumedBalance || 20} نقطة

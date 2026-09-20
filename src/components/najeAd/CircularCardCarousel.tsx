@@ -10,6 +10,7 @@ export interface CircularCarouselProps<T> {
   centerIndex: number;
   onCenterIndexChange: (newIndex: number) => void;
   frameClassName?: string;
+  onUserSwipe?: () => void;
 }
 
 function useViewportWidth() {
@@ -31,6 +32,7 @@ export function CircularCardCarousel<T>({
   centerIndex,
   onCenterIndexChange,
   frameClassName = 'h-[540px] sm:h-[580px]',
+  onUserSwipe,
 }: CircularCarouselProps<T>) {
   const total = items.length;
   const width = useViewportWidth();
@@ -51,6 +53,7 @@ export function CircularCardCarousel<T>({
       if (lockedRef.current || flippedRef.current) return;
       lockedRef.current = true;
       flippedRef.current = true;
+      onUserSwipe?.();
       onCenterIndexChange(wrapIndex(centerIndex + direction));
       window.setTimeout(() => {
         lockedRef.current = false;
@@ -58,7 +61,7 @@ export function CircularCardCarousel<T>({
         flippedRef.current = false;
       }, 160);
     },
-    [centerIndex, onCenterIndexChange, wrapIndex]
+    [centerIndex, onCenterIndexChange, onUserSwipe, wrapIndex]
   );
 
   if (total === 0) {

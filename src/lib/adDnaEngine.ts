@@ -1,7 +1,7 @@
 import { AVATAR_REGISTRY, NajiAvatar } from '../data/avatars/avatarRegistry.ts';
 import { LOCATION_REGISTRY, NajiLocation } from '../data/locations/locationRegistry.ts';
 
-import { VIDEO_STYLE_TEMPLATES } from '../data/videoStyleTemplates.ts';
+import { AD_STYLES } from '../data/adStyles';
 export interface AdDnaState {
   selectedStyleTemplateId: string | null;
   selectedAvatarId: string | null;
@@ -31,13 +31,13 @@ export interface FieldStatusMap {
 
 export const INITIAL_AD_DNA_STATE: AdDnaState = {
   selectedStyleTemplateId: null,
-  selectedAvatarId: 'NAJI-001',
-  selectedLocationId: 'LOC-001',
+  selectedAvatarId: null,
+  selectedLocationId: null,
   language: 'ar',
   dialect: 'standard_modern',
   platform: 'general',
-  style: 'cinematic_commercial',
-  aspectRatio: '16:9',
+  style: 'hero_product',
+  aspectRatio: '9:16',
   lighting: 'soft_daylight',
   cameraAngle: 'eye_level_50mm',
   tone: 'professional_warm'
@@ -246,7 +246,7 @@ export function composeMasterAdPrompt(basePrompt: string, state: AdDnaState): st
   // 5. Strict Directives
   const strictDirectives: string[] = [];
   const selectedTemplate = state.selectedStyleTemplateId
-    ? VIDEO_STYLE_TEMPLATES.find(t => t.id === state.selectedStyleTemplateId)
+    ? AD_STYLES.find(t => t.id === state.selectedStyleTemplateId)
     : null;
     
   const REALISTIC_STYLE_DIRECTIVE = '100% photorealistic live-action cinematography — shot on a professional full-frame cinema camera with authentic film-like color grading and natural depth of field. Natural human skin texture with visible pores and subtle realistic imperfections. Anatomically correct hands, fingers, and facial features. Physically plausible motion. The result must be indistinguishable from real unedited camera footage of a real adult human — no illustration, no CGI, no anime, no cartoon, no synthetic sheen, no unnatural symmetry, no deformed hands.';

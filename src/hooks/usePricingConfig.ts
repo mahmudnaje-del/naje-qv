@@ -47,6 +47,8 @@ export interface PricingConfig {
     durationOptionsSec: number[];
     maxShotsPerVideo: number;
     defaultModelEndpointId: string;
+    resolutionMultiplier?: { '360p'?: number; '720p'?: number; '1080p'?: number; '4k'?: number };
+    editMultiplier?: number;
   };
 }
 
@@ -93,9 +95,11 @@ export const DEFAULT_PRICING_CONFIG: PricingConfig = {
   najeAd: {
     enabled: true,
     pointsRatePerSecond: 2.5,
-    durationOptionsSec: [4, 6, 8, 10, 12, 14, 16, 24, 30],
-    maxShotsPerVideo: 4,
-    defaultModelEndpointId: 'video_standard'
+    durationOptionsSec: [10, 20, 30, 40],
+    maxShotsPerVideo: 1,
+    defaultModelEndpointId: 'video_omni',
+    resolutionMultiplier: { '360p': 0.35, '720p': 1.0, '1080p': 1.5, '4k': 3.0 },
+    editMultiplier: 0.5
   }
 };
 

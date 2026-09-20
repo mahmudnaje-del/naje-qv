@@ -31,7 +31,16 @@ import { getNajeModel, resolveEngineModel } from './src/lib/modelEnvConfig.ts';
 import { getAgentToolCost } from './src/lib/agentPricing.ts';
 import { buildPersonaInstruction, criticReviewRequest, getThinkingConfig } from './src/lib/councilOfMinds.ts';
 import os from 'os';
-import { buildInitialPlan, splitDuration, VideoPlan, ShotPlan } from './src/lib/videoOrchestrator.ts';
+import {
+  OMNI_FLASH_ID,
+  OMNI_11_ID,
+  OMNI_11_FALLBACK_ID,
+  estimateOmniPoints,
+  extensionSteps,
+  composeExtensionPrompt,
+  type OmniAdModel,
+  type OmniResolution,
+} from './src/lib/omniAd.ts';
 import { unpackSiteZip, buildFileTree, buildCodeContext, WorkspaceFile } from './src/lib/workspaceZip.ts';
 import { calcVoicePointsCost, spokenTextFromVoiceScript } from './src/lib/voicePricing.ts';
 
@@ -1153,6 +1162,34 @@ function buildSkillsBlock(skills: any[], docType: string): string {
   return `\n\n===== دليل المهارات (التزم به حرفياً أثناء التنفيذ) =====\n${body}\n===== نهاية دليل المهارات =====\n`;
 }
 
+function normalizeNajeAdConfig(cfg: any) {
+  const base = {
+    enabled: true,
+    pointsRatePerSecond: 2.5,
+    durationOptionsSec: [10, 20, 30, 40],
+    maxShotsPerVideo: 1,
+    defaultModelEndpointId: 'video_omni',
+    resolutionMultiplier: { '360p': 0.35, '720p': 1.0, '1080p': 1.5, '4k': 3.0 },
+    editMultiplier: 0.5,
+  };
+  const merged = { ...base, ...(cfg || {}) };
+  const opts = Array.isArray(merged.durationOptionsSec) ? merged.durationOptionsSec.map(Number) : [];
+  const hasOmniDurations = opts.some((d: number) => d === 10 || d === 20 || d === 30 || d === 40);
+  if (!hasOmniDurations) merged.durationOptionsSec = [10, 20, 30, 40];
+  const endpoint = String(merged.defaultModelEndpointId || '');
+  if (endpoint === 'video_standard' || endpoint === 'video_veo_lite') {
+    merged.defaultModelEndpointId = 'video_omni';
+  }
+  merged.resolutionMultiplier = {
+    '360p': 0.35, '720p': 1.0, '1080p': 1.5, '4k': 3.0,
+    ...(merged.resolutionMultiplier || {}),
+  };
+  if (typeof merged.editMultiplier !== 'number' || merged.editMultiplier <= 0) {
+    merged.editMultiplier = 0.5;
+  }
+  return merged;
+}
+
 async function getPricing(token?: string) {
   if (pricingCache && (Date.now() - pricingCache.fetchedAt) < PRICING_CACHE_TTL_MS) {
     return pricingCache.data;
@@ -1184,9 +1221,11 @@ async function getPricing(token?: string) {
     najeAd: {
       enabled: true,
       pointsRatePerSecond: 2.5,
-      durationOptionsSec: [4, 6, 8, 10, 12, 14, 16, 24, 30],
-      maxShotsPerVideo: 2,
-      defaultModelEndpointId: 'video_standard'
+      durationOptionsSec: [10, 20, 30, 40],
+      maxShotsPerVideo: 1,
+      defaultModelEndpointId: 'video_omni',
+      resolutionMultiplier: { '360p': 0.35, '720p': 1.0, '1080p': 1.5, '4k': 3.0 },
+      editMultiplier: 0.5
     }
   };
   try {
@@ -1235,7 +1274,7 @@ async function getPricing(token?: string) {
       ui: uiDoc ? { ...defaults.ui, ...uiDoc } : defaults.ui,
       voice: voiceDoc ? { ...defaults.voice, ...voiceDoc } : defaults.voice,
       agent: agentDoc ? { ...defaults.agent, ...agentDoc } : defaults.agent,
-      najeAd: najeAdDoc ? { ...defaults.najeAd, ...najeAdDoc } : defaults.najeAd,
+      najeAd: normalizeNajeAdConfig(najeAdDoc ? { ...defaults.najeAd, ...najeAdDoc } : defaults.najeAd),
     };
     pricingCache = { data, fetchedAt: Date.now() };
     return data;
@@ -2712,7 +2751,7 @@ export async function startServer(existingApp?: express.Express) {
   const json15mb = express.json({ limit: '15mb' });
   const json50mb = express.json({ limit: '50mb' });
   app.use((req, res, next) => {
-    const parser = req.path === '/api/upload-media' ? json50mb : json15mb;
+    const parser = (req.path === '/api/upload-media' || req.path.startsWith('/api/naje-ad/')) ? json50mb : json15mb;
     return parser(req, res, next);
   });
   app.use(express.urlencoded({ extended: true, limit: '15mb' }));
@@ -2975,128 +3014,257 @@ app.post('/api/upload-media', async (req, res) => {
 });
 
 // ==========================================
-// NAJI AD — MULTI-SHOT VIDEO GENERATION ENGINE
+// NAJE AD — GEMINI OMNI FLASH / 1.1 PIPELINE
+// Scene generate (10s) + extend in 10s steps to 40s + natural-language edit.
 // ==========================================
 
-async function generateSingleVeoShot(ai: any, params: {
-  prompt: string;
-  durationSeconds: number;
-  aspectRatio: '16:9' | '9:16';
-  resolution: '720p' | '1080p';
-  modelId?: string;
-  imageInput?: { imageBytes: string; mimeType: string };
-  onProgress?: (attempt: number) => Promise<void>;
-}): Promise<Buffer> {
-  const videoModelId = resolveEngineModel(params.modelId || 'veo-lite');
-  const veoParams: any = {
-    model: videoModelId,
-    prompt: params.prompt,
-    config: {
-      numberOfVideos: 1,
-      resolution: params.resolution,
-      aspectRatio: params.aspectRatio,
-      durationSeconds: params.durationSeconds
-    }
-  };
+const OMNI_AD_TIMEOUT_MS = 600000;
+const STALE_JOB_THRESHOLD_MS = 25 * 60 * 1000;
 
-  if (params.imageInput && params.imageInput.imageBytes) {
-    veoParams.image = {
-      imageBytes: params.imageInput.imageBytes,
-      mimeType: params.imageInput.mimeType || 'image/jpeg'
-    };
-  }
-
-  let operation;
-  try {
-    operation = await ai.models.generateVideos(veoParams);
-  } catch (veoErr: any) {
-    if (params.resolution !== '720p') {
-      console.warn(`[Veo Gen] Failed with resolution=${params.resolution}, retrying with 720p fallback:`, veoErr?.message || veoErr);
-      veoParams.config.resolution = '720p';
-      operation = await ai.models.generateVideos(veoParams);
-    } else {
-      throw veoErr;
-    }
-  }
-
-  const op = new GenerateVideosOperation();
-  op.name = operation.name;
-
-  let done = false;
-  let attempt = 0;
-  const maxAttempts = 75;
-  while (!done && attempt < maxAttempts) {
-    const updated = await ai.operations.getVideosOperation({ operation: op });
-    if (updated.done) {
-      done = true;
-      const uri = updated.response?.generatedVideos?.[0]?.video?.uri;
-      if (!uri) throw new Error("لم يتم العثور على رابط تحميل الفيديو الناتج من Veo.");
-
-      let videoRes = await fetch(uri, {
-        headers: { 'x-goog-api-key': process.env.GEMINI_API_KEY! }
-      });
-      if (!videoRes.ok) {
-        const altUri = uri.includes('?') ? `${uri}&key=${process.env.GEMINI_API_KEY}` : `${uri}?key=${process.env.GEMINI_API_KEY}`;
-        videoRes = await fetch(altUri);
-      }
-      if (!videoRes.ok) {
-        throw new Error(`تعذر تنزيل ملف الفيديو من الخادم (رمز الاستجابة: ${videoRes.status})`);
-      }
-      const arrayBuffer = await videoRes.arrayBuffer();
-      return Buffer.from(arrayBuffer);
-    }
-    attempt++;
-    if (params.onProgress) {
-      await params.onProgress(attempt).catch(() => {});
-    }
-    await new Promise(resolve => setTimeout(resolve, 4000));
-  }
-
-  if (!done) {
-    throw new Error("انتهت مهلة انتظار توليد اللقطة من محرك الفيديو.");
-  }
-  throw new Error("فشل توليد الفيديو.");
+function stripInlineB64(raw: unknown): string | null {
+  if (typeof raw !== 'string' || !raw.trim()) return null;
+  const trimmed = raw.trim();
+  const i = trimmed.indexOf(',');
+  const data = trimmed.startsWith('data:') && i >= 0 ? trimmed.slice(i + 1) : trimmed;
+  if (data.length < 32 || data.length > 12 * 1024 * 1024) return null;
+  return data;
 }
 
+function guessImageMime(b64: string, fallback = 'image/jpeg'): string {
+  if (b64.startsWith('/9j/')) return 'image/jpeg';
+  if (b64.startsWith('iVBOR')) return 'image/png';
+  if (b64.startsWith('UklGR')) return 'image/webp';
+  if (b64.startsWith('R0lGOD')) return 'image/gif';
+  return fallback;
+}
 
-async function extractFirstFrameFromFile(videoPath: string, outputPath: string): Promise<Buffer> {
-  const ffmpeg = await getFfmpeg();
-  return new Promise((resolve, reject) => {
-    ffmpeg(videoPath).seekInput(0).frames(1).output(outputPath)
-      .on('end', async () => { try { resolve(await fs.promises.readFile(outputPath)); } catch(e){ reject(e); } })
-      .on('error', err => reject(err)).run();
+function sanitizeAssetId(id: unknown): string | null {
+  if (typeof id !== 'string') return null;
+  const t = id.trim();
+  if (!/^[A-Za-z0-9_-]{1,80}$/.test(t)) return null;
+  return t;
+}
+
+function normalizeOmniResolution(raw: unknown): OmniResolution {
+  const v = String(raw || '').toLowerCase();
+  if (v === '360p' || v === '720p' || v === '1080p' || v === '4k') return v;
+  return '720p';
+}
+
+function normalizeOmniModel(raw: unknown, durationSec: number, resolution: OmniResolution): OmniAdModel {
+  if (durationSec > 10 || resolution === '1080p' || resolution === '4k') return 'omni-1.1';
+  return raw === 'omni-flash' ? 'omni-flash' : 'omni-1.1';
+}
+
+function omniModelChain(model: OmniAdModel): string[] {
+  if (model === 'omni-flash') return [OMNI_FLASH_ID, OMNI_11_FALLBACK_ID, OMNI_11_ID];
+  return [OMNI_11_ID, OMNI_11_FALLBACK_ID];
+}
+
+async function readPublicAssetB64(relUnderPublic: string): Promise<{ data: string; mime: string } | null> {
+  const publicRoot = path.resolve(appDirname, 'public');
+  const abs = path.resolve(publicRoot, relUnderPublic);
+  if (!abs.startsWith(publicRoot + path.sep) && abs !== publicRoot) return null;
+  try {
+    const buf = await fs.promises.readFile(abs);
+    if (!buf.length || buf.length > 8 * 1024 * 1024) return null;
+    const ext = path.extname(abs).toLowerCase();
+    const mime = ext === '.webp' ? 'image/webp' : ext === '.png' ? 'image/png' : 'image/jpeg';
+    return { data: buf.toString('base64'), mime };
+  } catch {
+    return null;
+  }
+}
+
+async function persistNajeAdRefImage(uid: string, jobId: string, kind: string, b64: string, mime: string): Promise<string | null> {
+  try {
+    const buf = Buffer.from(b64, 'base64');
+    if (!buf.length || buf.length > 8 * 1024 * 1024) return null;
+    const ext = mime.includes('png') ? 'png' : mime.includes('webp') ? 'webp' : 'jpg';
+    const storagePath = `users/${uid}/naje_ad/refs/${jobId}_${kind}.${ext}`;
+    const bucket = getStorage().bucket(STORAGE_BUCKET);
+    await bucket.file(storagePath).save(buf, { metadata: { contentType: mime }, resumable: false });
+    return storagePath;
+  } catch (e) {
+    console.warn('[Omni Ad] ref upload failed', kind, e);
+    return null;
+  }
+}
+
+async function loadNajeAdRefImage(storagePath: string): Promise<{ data: string; mime: string } | null> {
+  try {
+    const bucket = getStorage().bucket(STORAGE_BUCKET);
+    const [buf] = await bucket.file(storagePath).download();
+    if (!buf?.length) return null;
+    const mime = storagePath.endsWith('.png') ? 'image/png' : storagePath.endsWith('.webp') ? 'image/webp' : 'image/jpeg';
+    return { data: buf.toString('base64'), mime };
+  } catch {
+    return null;
+  }
+}
+
+async function gatherOmniRefImages(job: any): Promise<Array<{ data: string; mime: string; role: string }>> {
+  const images: Array<{ data: string; mime: string; role: string }> = [];
+  const refs = job?.refImages || {};
+  const loaders: Array<[string, string]> = [
+    [refs.product, 'hero product'],
+    [refs.character, 'on-camera talent likeness'],
+    [refs.location, 'environment / location'],
+  ];
+  for (const [p, role] of loaders) {
+    if (typeof p === 'string' && p) {
+      const img = await loadNajeAdRefImage(p);
+      if (img) images.push({ ...img, role });
+    }
+  }
+  if (!refs.character) {
+    const avatarId = sanitizeAssetId(job?.selectedAvatarId);
+    if (avatarId) {
+      const img = await readPublicAssetB64(path.join('avatars', `${avatarId}.jpg`));
+      if (img) images.push({ ...img, role: 'on-camera talent likeness' });
+    }
+  }
+  if (!refs.location) {
+    const locationId = sanitizeAssetId(job?.selectedLocationId);
+    if (locationId) {
+      const img = await readPublicAssetB64(path.join('locations', `${locationId}.webp`));
+      if (img) images.push({ ...img, role: 'environment / location' });
+    }
+  }
+  return images.slice(0, 3);
+}
+
+function buildOmniInput(prompt: string, images: Array<{ data: string; mime: string; role: string }>) {
+  if (!images.length) return prompt;
+  const parts: any[] = [];
+  const tags: string[] = [];
+  images.forEach((img, i) => {
+    parts.push({ type: 'image', data: img.data, mime_type: img.mime });
+    tags.push(`<IMAGE_REF_${i}> is the ${img.role} reference — match it exactly.`);
   });
-}
-async function checkShotContinuity(ai: any, lastFrameShot1: Buffer, firstFrameShot2: Buffer): Promise<{ passed: boolean; reason?: string }> {
-  try {
-    const b1 = lastFrameShot1.toString('base64');
-    const b2 = firstFrameShot2.toString('base64');
-    const verifyResp = await ai.models.generateContent({
-      model: 'gemini-3.5-flash-lite',
-      contents: [{
-        role: 'user',
-        parts: [
-          { inlineData: { data: b1, mimeType: 'image/jpeg' } },
-          { inlineData: { data: b2, mimeType: 'image/jpeg' } },
-          { text: "Compare these two consecutive video frames. They should show the same person with consistent facial features, and a plausible continuation of position/pose. Respond with passed=false only if there is an OBVIOUS, SEVERE discontinuity (e.g., completely different face, impossible pose jump) — minor lighting or angle differences are normal and should not fail the check.\nReturn JSON: { \"passed\": boolean, \"reason\": \"short explanation\" }" }
-        ]
-      }],
-      config: { responseMimeType: "application/json" }
-    });
-    const parsed = JSON.parse(verifyResp.text || "{}");
-    return { passed: parsed.passed !== false, reason: parsed.reason };
-  } catch (e) { return { passed: true }; }
+  parts.push({ type: 'text', text: `${prompt}\n${tags.join('\n')}` });
+  return parts;
 }
 
+async function downloadOmniVideoUri(uri: string): Promise<Buffer> {
+  const key = process.env.GEMINI_API_KEY || '';
+  let res = await fetch(uri, { headers: key ? { 'x-goog-api-key': key } : undefined });
+  if (!res.ok) {
+    const alt = uri.includes('?') ? `${uri}&key=${key}` : `${uri}?key=${key}`;
+    res = await fetch(alt);
+  }
+  if (!res.ok) throw new Error(`تعذر تنزيل الفيديو (${res.status})`);
+  return Buffer.from(await res.arrayBuffer());
+}
 
-const MAX_SHOTS_PER_JOB = 4;
-const PER_SHOT_POLL_BUDGET_MS = 75 * 4000; // 300,000ms = 5 minutes per shot (matches generateSingleVeoShot: maxAttempts=75, interval=4000ms)
-// Worst-case budget calculation:
-// 4 shots * 5 min = 20 min normal generation
-// + up to 3 continuity retry attempts (3 * 5 min = 15 min)
-// + ffmpeg frame extraction, concatenation, quality audits & Google Cloud Storage upload (15 min)
-// Total safe derived budget: ~50 minutes (3,000,000 ms)
-const STALE_JOB_THRESHOLD_MS = (MAX_SHOTS_PER_JOB * PER_SHOT_POLL_BUDGET_MS * 2) + (10 * 60 * 1000);
+function collectOmniVideoParts(interaction: any): Array<{ data?: string; uri?: string; mime_type?: string }> {
+  const out: Array<{ data?: string; uri?: string; mime_type?: string }> = [];
+  if (interaction?.output_video) out.push(interaction.output_video);
+  for (const o of interaction?.outputs || []) {
+    if (o?.type === 'video') out.push(o);
+  }
+  for (const step of interaction?.steps || []) {
+    for (const c of step?.content || []) {
+      if (c?.type === 'video') out.push(c);
+    }
+  }
+  return out;
+}
+
+async function extractOmniVideoBuffer(ai: any, interaction: any): Promise<{ buffer: Buffer; mime: string; interactionId: string }> {
+  let current = interaction;
+  const interactionId = current?.id || '';
+  for (let attempt = 0; attempt < 48; attempt++) {
+    const videos = collectOmniVideoParts(current);
+    for (const v of videos) {
+      if (v?.data) {
+        return { buffer: Buffer.from(v.data, 'base64'), mime: v.mime_type || 'video/mp4', interactionId: current.id || interactionId };
+      }
+      if (v?.uri) {
+        const buffer = await downloadOmniVideoUri(v.uri);
+        return { buffer, mime: v.mime_type || 'video/mp4', interactionId: current.id || interactionId };
+      }
+    }
+    const status = String(current?.status || current?.state || '').toLowerCase();
+    if (['failed', 'error', 'cancelled'].includes(status)) {
+      throw new Error(current?.error?.message || 'فشل توليد الفيديو عبر Omni');
+    }
+    if (!current?.id) break;
+    await new Promise((r) => setTimeout(r, 5000));
+    try {
+      current = await ai.interactions.get(current.id);
+    } catch {
+      try {
+        current = await ai.interactions.get({ name: current.id });
+      } catch {
+        break;
+      }
+    }
+  }
+  throw new Error('لم يحتوي رد النموذج على محتوى فيديو صالح.');
+}
+
+async function createOmniInteraction(ai: any, params: {
+  modelIds: string[];
+  input: any;
+  previousInteractionId?: string;
+  aspectRatio: '16:9' | '9:16';
+  resolution: OmniResolution;
+  task?: 'text_to_video' | 'image_to_video' | 'reference_to_video';
+}) {
+  const isLarge = params.resolution === '1080p' || params.resolution === '4k';
+  const response_format: any = {
+    type: 'video',
+    aspect_ratio: params.aspectRatio,
+    resolution: params.resolution,
+  };
+  if (isLarge) response_format.delivery = 'uri';
+
+  let lastErr: any;
+  for (const model of params.modelIds) {
+    const body: any = {
+      model,
+      input: params.input,
+      store: true,
+      response_format,
+    };
+    if (params.previousInteractionId) {
+      body.previous_interaction_id = params.previousInteractionId;
+    } else if (params.task) {
+      body.generation_config = { video_config: { task: params.task } };
+    }
+    try {
+      console.log(`[Omni Ad] interactions.create model=${model} prev=${params.previousInteractionId ? 'yes' : 'no'} res=${params.resolution}`);
+      return await ai.interactions.create(body, { timeout: OMNI_AD_TIMEOUT_MS });
+    } catch (err: any) {
+      lastErr = err;
+      console.warn(`[Omni Ad] ${model} failed:`, err?.message || err);
+    }
+  }
+  throw lastErr || new Error('تعذر توليد الفيديو عبر Gemini Omni');
+}
+
+async function uploadNajeAdMp4(uid: string, jobId: string, buffer: Buffer): Promise<string> {
+  const storagePath = `users/${uid}/naje_ad/${jobId}_${Date.now()}.mp4`;
+  const bucket = getStorage().bucket(STORAGE_BUCKET);
+  const file = bucket.file(storagePath);
+  await file.save(buffer, { metadata: { contentType: 'video/mp4' }, public: true, resumable: false });
+  return `https://storage.googleapis.com/${bucket.name}/${storagePath}`;
+}
+
+async function requireNajeAdUser(req: any, res: any): Promise<{ uid: string; token: string } | null> {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    res.status(401).json({ error: 'غير مصرح لك بالوصول' });
+    return null;
+  }
+  const token = authHeader.split('Bearer ')[1];
+  const decodedToken = await getAuth().verifyIdToken(token);
+  const uid = decodedToken.uid;
+  const userSnap = await dbAdmin.collection('users').doc(uid).get();
+  if (!checkFeatureAccess(res, userSnap.data(), 'najeAd')) return null;
+  return { uid, token };
+}
 
 
 async function tryAcquireSlot(jobId: string, uid: string): Promise<boolean> {
@@ -3254,557 +3422,506 @@ async function getQueuePosition(jobId: string): Promise<number> {
 
 async function startPromotedJob(jobId: string, uid: string) {
   try {
-     let data: any = null;
-     if (isDbAdminAvailable) {
-       const doc = await dbAdmin.collection('generation_jobs').doc(jobId).get().catch(() => null);
-       if (doc && doc.exists) data = doc.data();
-     }
-     if (!data) {
-       const token = userTokenCache.get(uid);
-       if (token) {
-         data = await getDocRest("generation_jobs", jobId, token).catch(() => null);
-       }
-     }
-     if (!data) { await releaseSlot(jobId); return; }
-     const chargeResult = await mutateBalanceAtomic(uid, -data.consumedBalance, { requireSufficient: true });
-     if (!chargeResult.ok) {
-        const token = userTokenCache.get(uid);
-        if (token) {
-          await setDocRest("generation_jobs", jobId, {
-            status: 'failed',
-            error: 'نفذ رصيدك من النقاط أثناء الانتظار في الطابور.'
-          }, token).catch(() => null);
-        }
-        const res = await releaseSlot(jobId);
-        if (res.promotedJobId && res.promotedUid) startPromotedJob(res.promotedJobId, res.promotedUid);
-        return;
-     }
-     const token = userTokenCache.get(uid) || "";
-     if (token) {
-       await setDocRest("generation_jobs", jobId, { status: 'planning', progress: 10 }, token).catch(() => null);
-     }
-     runNajeAdGeneration(jobId, uid, data.plan, data.prompt, data.brandProfile, data.aspectRatio, data.resolution, data.videoModelEndpoint, data.consumedBalance, token);
+    let data: any = null;
+    if (isDbAdminAvailable) {
+      const doc = await dbAdmin.collection('generation_jobs').doc(jobId).get().catch(() => null);
+      if (doc && doc.exists) data = doc.data();
+    }
+    if (!data) {
+      const token = userTokenCache.get(uid);
+      if (token) {
+        data = await getDocRest('generation_jobs', jobId, token).catch(() => null);
+      }
+    }
+    if (!data) { await releaseSlot(jobId); return; }
+    const chargeResult = await mutateBalanceAtomic(uid, -data.consumedBalance, { requireSufficient: true });
+    if (!chargeResult.ok) {
+      const token = userTokenCache.get(uid);
+      if (token) {
+        await setDocRest('generation_jobs', jobId, {
+          status: 'failed',
+          error: 'نفذ رصيدك من النقاط أثناء الانتظار في الطابور.'
+        }, token).catch(() => null);
+      }
+      const res = await releaseSlot(jobId);
+      if (res.promotedJobId && res.promotedUid) startPromotedJob(res.promotedJobId, res.promotedUid);
+      return;
+    }
+    const token = userTokenCache.get(uid) || '';
+    if (token) {
+      await setDocRest('generation_jobs', jobId, { status: 'generating', progress: 12, stepLabel: 'بدأت المهمة من الطابور…', lastActionError: null }, token).catch(() => null);
+    }
+    runOmniAdJob(jobId, uid, token, { ...data, consumedBalance: data.consumedBalance });
   } catch (e) {
-     console.error("Promoted job start failed", e);
+    console.error('Promoted job start failed', e);
   }
-}
-
-async function extractLastFrameFromFile(videoPath: string, outputPath: string, durationSec: number): Promise<Buffer> {
-  const ffmpeg = await getFfmpeg();
-  return new Promise((resolve, reject) => {
-    const seekTime = Math.max(0, durationSec - 0.15);
-    ffmpeg(videoPath)
-      .seekInput(seekTime)
-      .frames(1)
-      .output(outputPath)
-      .on('end', async () => {
-        try {
-          const buf = await fs.promises.readFile(outputPath);
-          resolve(buf);
-        } catch (e) {
-          reject(e);
-        }
-      })
-      .on('error', (_err) => {
-        ffmpeg(videoPath)
-          .frames(1)
-          .output(outputPath)
-          .on('end', async () => {
-            try {
-              const buf = await fs.promises.readFile(outputPath);
-              resolve(buf);
-            } catch (e) {
-              reject(e);
-            }
-          })
-          .on('error', (err2) => reject(err2))
-          .run();
-      })
-      .run();
-  });
-}
-
-async function concatenateVideoFiles(videoPaths: string[], outputPath: string): Promise<string> {
-  const ffmpeg = await getFfmpeg();
-  return new Promise((resolve, reject) => {
-    const listPath = `${outputPath}.concat.txt`;
-    const listContent = videoPaths.map(p => `file '${p.replace(/'/g, "'\\''")}'`).join('\n');
-    fs.writeFileSync(listPath, listContent);
-
-    ffmpeg()
-      .input(listPath)
-      .inputOptions(['-f', 'concat', '-safe', '0'])
-      .outputOptions(['-c', 'copy'])
-      .output(outputPath)
-      .on('end', () => {
-        try { fs.unlinkSync(listPath); } catch (e) {}
-        resolve(outputPath);
-      })
-      .on('error', (err) => {
-        console.warn("[FFmpeg concat] Direct copy failed, retrying with re-encode:", err?.message || err);
-        ffmpeg()
-          .input(listPath)
-          .inputOptions(['-f', 'concat', '-safe', '0'])
-          .outputOptions(['-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-preset', 'ultrafast'])
-          .output(outputPath)
-          .on('end', () => {
-            try { fs.unlinkSync(listPath); } catch (e) {}
-            resolve(outputPath);
-          })
-          .on('error', (reErr) => {
-            try { fs.unlinkSync(listPath); } catch (e) {}
-            reject(reErr);
-          })
-          .run();
-      })
-      .run();
-  });
 }
 
 app.post('/api/naje-ad/generate', async (req, res) => {
   let uid = '';
   let token = '';
-  let deductedPoints = 0;
-  // Security fix (Master Brief #19 Part C): Server-generated unique jobId
-  // Completely ignore or reject client-supplied path/unvalidated IDs
   const jobId = `naje_ad_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 
   try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return res.status(401).json({ error: "غير مصرح لك بالوصول" });
+    const auth = await requireNajeAdUser(req, res);
+    if (!auth) return;
+    uid = auth.uid;
+    token = auth.token;
+
+    const body = req.body || {};
+    const prompt = typeof body.prompt === 'string' ? body.prompt.trim() : '';
+    if (!prompt) {
+      return res.status(400).json({ error: 'يرجى كتابة وصف الفيديو المطلوب' });
     }
-    token = authHeader.split("Bearer ")[1];
-    const decodedToken = await getAuth().verifyIdToken(token);
-    uid = decodedToken.uid;
-
-    const _userDocSnapForGate = await dbAdmin.collection('users').doc(uid).get();
-    if (!checkFeatureAccess(res, _userDocSnapForGate.data(), 'najeAd')) return;
-
-    const {
-      prompt,
-      duration = 8,
-      aspectRatio = '16:9',
-      resolution = '720p',
-      model = 'veo',
-      brandProfile
-    } = req.body || {};
-
-    if (!prompt || typeof prompt !== 'string' || !prompt.trim()) {
-      return res.status(400).json({ error: "يرجى كتابة وصف الفيديو المطلوب" });
+    if (prompt.length > 8000) {
+      return res.status(400).json({ error: 'طول وصف الفيديو يتجاوز الحد الأقصى المسموح به.' });
     }
 
-    // Input bounds check (Master Brief #19 Part D.2)
-    if (prompt.length > 5000) {
-      return res.status(400).json({ error: "طول وصف الفيديو يتجاوز الحد الأقصى المسموح به (5,000 حرف)." });
-    }
-
-    if (brandProfile?.referenceImageBase64) {
-      if (typeof brandProfile.referenceImageBase64 !== 'string') {
-        return res.status(400).json({ error: "صيغة الصورة المرجعية غير صالحة." });
-      }
-      if (brandProfile.referenceImageBase64.length > 14 * 1024 * 1024) {
-        return res.status(400).json({ error: "حجم الصورة المرجعية يتجاوز الحد الأقصى المسموح به (10 ميجابايت)." });
-      }
-    }
-
-    const selectedAspect = aspectRatio === '9:16' ? '9:16' : '16:9';
-    const selectedRes = resolution === '1080p' ? '1080p' : '720p';
-
-    // 1. Content Safety Check
     const safety = await isSafePrompt(prompt, uid, 'video', token);
     if (!safety.safe) {
-      return res.status(400).json({ error: safety.reason || "تم حظر هذا الطلب لمخالفته شروط سلامة المحتوى" });
+      return res.status(400).json({ error: safety.reason || 'تم حظر هذا الطلب لمخالفته شروط سلامة المحتوى' });
     }
 
-    // 2. Fetch live pricing and feature config for Naje Ad
     const fullPricing = await getPricing(token);
-    const najeAdConfig = fullPricing.najeAd || {
-      enabled: true,
-      pointsRatePerSecond: 2.5,
-      durationOptionsSec: [4, 6, 8, 10, 12, 14, 16, 24, 30],
-      maxShotsPerVideo: 4,
-      defaultModelEndpointId: 'video_standard'
-    };
-
+    const najeAdConfig = normalizeNajeAdConfig(fullPricing.najeAd);
     if (najeAdConfig.enabled === false) {
-      return res.status(403).json({ error: "خدمة Naje Ad متوقفة مؤقتاً للتطوير والإدارة" });
+      return res.status(403).json({ error: 'خدمة Naje Ad متوقفة مؤقتاً للتطوير والإدارة' });
     }
 
-    const minDur = Math.min(...(najeAdConfig.durationOptionsSec || [4, 6, 8, 10, 12, 14, 16, 24, 30]));
-    const maxDur = Math.max(...(najeAdConfig.durationOptionsSec || [4, 6, 8, 10, 12, 14, 16, 24, 30]));
-    const requestedDuration = Math.min(Math.max(minDur, parseInt(duration) || 8), maxDur);
+    const durationOptions: number[] = najeAdConfig.durationOptionsSec || [10, 20, 30, 40];
+    const requestedDuration = Math.min(40, Math.max(10, parseInt(body.duration, 10) || 10));
+    const snapped = durationOptions.includes(requestedDuration)
+      ? requestedDuration
+      : durationOptions.reduce((best, d) => Math.abs(d - requestedDuration) < Math.abs(best - requestedDuration) ? d : best, durationOptions[0]);
 
+    const selectedAspect: '16:9' | '9:16' = body.aspectRatio === '9:16' ? '9:16' : '16:9';
+    const selectedRes = normalizeOmniResolution(body.resolution);
+    const omniModel = normalizeOmniModel(body.model, snapped, selectedRes);
     const pointsRate = typeof najeAdConfig.pointsRatePerSecond === 'number' ? najeAdConfig.pointsRatePerSecond : 2.5;
-    let endpointId = najeAdConfig.defaultModelEndpointId || 'video_standard';
-    if (endpointId === 'video_omni') {
-      endpointId = 'video_standard';
-    }
-    let videoModelEndpoint = await getModelEndpointConfig(endpointId, 'veo-3.1-lite-generate-preview');
-    if (!videoModelEndpoint.supportedDurations || videoModelEndpoint.supportedDurations.join(',') !== '4,6,8') {
-      console.warn('Endpoint', endpointId, 'does not support [4,6,8]. Falling back to video_standard.');
-      endpointId = 'video_standard';
-      videoModelEndpoint = await getModelEndpointConfig(endpointId, 'veo-3.1-lite-generate-preview');
-    }
-
-    // Build Plan
-    const videoPlan = buildInitialPlan({
-      rawPrompt: prompt.trim(),
-      totalDurationSec: requestedDuration,
-      aspectRatio: selectedAspect,
-      model: videoModelEndpoint.modelId,
-      brandProfile,
-      pointsRatePerSecond: pointsRate
+    const deductedPoints = estimateOmniPoints({
+      durationSec: snapped,
+      resolution: selectedRes,
+      model: omniModel,
+      pointsRatePerSecond: pointsRate,
+      resolutionMultiplier: najeAdConfig.resolutionMultiplier,
     });
 
-    deductedPoints = videoPlan.totalEstimatedCostPoints;
+    const productB64 = stripInlineB64(body.productImageBase64);
+    const characterB64 = stripInlineB64(body.characterImageBase64);
+    const locationB64 = stripInlineB64(body.locationImageBase64);
+    const refImages: Record<string, string> = {};
+    if (productB64) {
+      const p = await persistNajeAdRefImage(uid, jobId, 'product', productB64, guessImageMime(productB64));
+      if (p) refImages.product = p;
+    }
+    if (characterB64) {
+      const p = await persistNajeAdRefImage(uid, jobId, 'character', characterB64, guessImageMime(characterB64));
+      if (p) refImages.character = p;
+    }
+    if (locationB64) {
+      const p = await persistNajeAdRefImage(uid, jobId, 'location', locationB64, guessImageMime(locationB64));
+      if (p) refImages.location = p;
+    }
 
-    // 3. Check queue slot BEFORE charging
+    const jobPayload: any = {
+      ownerId: uid,
+      userId: uid,
+      type: 'naje_ad_video',
+      engine: 'gemini_omni',
+      prompt,
+      productName: typeof body.productName === 'string' ? body.productName.slice(0, 200) : '',
+      selectedAvatarId: sanitizeAssetId(body.selectedAvatarId),
+      selectedLocationId: sanitizeAssetId(body.selectedLocationId),
+      cameraMotion: typeof body.cameraMotion === 'string' ? body.cameraMotion : '',
+      lighting: typeof body.lighting === 'string' ? body.lighting : '',
+      marketingGoal: typeof body.marketingGoal === 'string' ? body.marketingGoal : '',
+      audioMode: typeof body.audioMode === 'string' ? body.audioMode : '',
+      omniModel,
+      totalDurationSec: snapped,
+      aspectRatio: selectedAspect,
+      resolution: selectedRes,
+      refImages,
+      consumedBalance: deductedPoints,
+      createdAt: Date.now(),
+      lastActionError: null,
+    };
+
     const acquired = await tryAcquireSlot(jobId, uid);
     if (!acquired) {
       const position = await getQueuePosition(jobId);
-      await setDocRest("generation_jobs", jobId, {
-        ownerId: uid,
-        userId: uid,
+      await setDocRest('generation_jobs', jobId, {
+        ...jobPayload,
         status: 'queued',
         queuePosition: position,
         progress: 0,
         stepLabel: 'في طابور الانتظار...',
-        type: 'naje_ad_video',
-        plan: videoPlan,
-        totalSteps: videoPlan.shots.length * 2 + 1,
-        currentStepIndex: 0,
-        totalDurationSec: videoPlan.totalDurationSec,
-        aspectRatio: selectedAspect,
-        resolution: selectedRes,
-        consumedBalance: deductedPoints,
-        prompt: prompt,
-        brandProfile: brandProfile || null,
-        videoModelEndpoint: videoModelEndpoint,
-        createdAt: Date.now()
-      }, token).catch(e => console.error("Firestore job init failed:", e));
-      
-      return res.json({
-        status: 'queued',
-        jobId,
-        plan: videoPlan,
-        queuePosition: position
-      });
+      }, token).catch((e) => console.error('Firestore job init failed:', e));
+      return res.json({ status: 'queued', jobId, queuePosition: position });
     }
 
-    // Acquired immediately - charge and start
     const chargeResult = await mutateBalanceAtomic(uid, -deductedPoints, { requireSufficient: true });
     if (!chargeResult.ok) {
       await releaseSlot(jobId);
       return res.status(402).json({
-        error: `رصيد النقاط غير كافٍ. يتطلب هذا الفيديو (${videoPlan.totalDurationSec} ثانية عبر ${videoPlan.shots.length} لقطات) ${deductedPoints} نقطة. رصيدك الحالي: ${chargeResult.newBalance} نقطة.`,
+        error: `رصيد النقاط غير كافٍ. يتطلب هذا الإعلان (${snapped} ثانية / ${selectedRes}) ${deductedPoints} نقطة. رصيدك الحالي: ${chargeResult.newBalance} نقطة.`,
         currentBalance: chargeResult.newBalance,
         requiredPoints: deductedPoints
       });
     }
 
-    await setDocRest("generation_jobs", jobId, {
-      ownerId: uid,
-      userId: uid,
-      status: 'planning',
+    await setDocRest('generation_jobs', jobId, {
+      ...jobPayload,
+      status: 'generating',
       progress: 10,
-      stepLabel: 'جاري تحليل المشهد وبناء تسلسل اللقطات مع تثبيت الأسلوب...',
-      type: 'naje_ad_video',
-      plan: videoPlan,
-      totalSteps: videoPlan.shots.length * 2 + 1,
-      currentStepIndex: 0,
-      totalDurationSec: videoPlan.totalDurationSec,
-      aspectRatio: selectedAspect,
-      resolution: selectedRes,
-      consumedBalance: deductedPoints,
-      prompt: prompt,
-      brandProfile: brandProfile || null,
-      videoModelEndpoint: videoModelEndpoint,
-      createdAt: Date.now()
-    }, token).catch(e => console.error("Firestore job init failed:", e));
+      stepLabel: 'جاري تجهيز المشهد عبر Gemini Omni...',
+    }, token).catch((e) => console.error('Firestore job init failed:', e));
 
     res.json({
-      status: 'planning',
+      status: 'generating',
       jobId,
-      plan: videoPlan,
       deductedPoints,
       newBalance: chargeResult.newBalance
     });
 
-    runNajeAdGeneration(jobId, uid, videoPlan, prompt, brandProfile, selectedAspect, selectedRes, videoModelEndpoint, deductedPoints, token);
+    runOmniAdJob(jobId, uid, token, jobPayload);
   } catch (err: any) {
-    console.error("[Naje Ad API Error]:", err);
-    return res.status(500).json({ error: err?.message || "حدث خطأ أثناء معالجة طلب توليد الفيديو" });
+    console.error('[Naje Ad API Error]:', err);
+    return res.status(500).json({ error: err?.message || 'حدث خطأ أثناء معالجة طلب توليد الفيديو' });
   }
 });
 
-async function runNajeAdGeneration(
-  jobId: string,
-  uid: string,
-  videoPlan: any,
-  prompt: string,
-  brandProfile: any,
-  selectedAspect: '16:9' | '9:16',
-  selectedRes: '720p' | '1080p',
-  videoModelEndpoint: any,
-  deductedPoints: number,
-  token: string
-) {
-  const workDir = path.join(os.tmpdir(), `naje_ad_${jobId}_${Date.now()}`);
-  const shotVideoPaths: string[] = [];
-  const intermediateFramePaths: string[] = [];
-
+app.post('/api/naje-ad/edit', async (req, res) => {
   try {
-    await fs.promises.mkdir(workDir, { recursive: true });
-    const ai = createGenAIClient();
-    const totalShots = videoPlan?.shots?.length || 1;
-    let previousShotPath: string | null = null;
-    let previousLastFrameBuffer: Buffer | null = null;
+    const auth = await requireNajeAdUser(req, res);
+    if (!auth) return;
+    const { uid, token } = auth;
+    const jobId = typeof req.body?.jobId === 'string' ? req.body.jobId : '';
+    const instruction = typeof req.body?.instruction === 'string' ? req.body.instruction.trim() : '';
+    if (!jobId || !jobId.startsWith('naje_ad_')) return res.status(400).json({ error: 'معرف المهمة غير صالح' });
+    if (!instruction) return res.status(400).json({ error: 'اكتب تعليمات التحرير' });
+    if (instruction.length > 2000) return res.status(400).json({ error: 'تعليمات التحرير طويلة جداً' });
 
-    const memBefore = process.memoryUsage();
-    console.log(`[Naje Ad Pipeline] Starting job ${jobId} for user ${uid}: ${videoPlan.totalDurationSec}s across ${totalShots} shot(s). Temp dir: ${workDir} | Heap: ${Math.round(memBefore.heapUsed / 1024 / 1024)}MB / RSS: ${Math.round(memBefore.rss / 1024 / 1024)}MB`);
+    const job = await getDocRest('generation_jobs', jobId, token).catch(() => null);
+    if (!job || (job.ownerId !== uid && job.userId !== uid)) {
+      return res.status(404).json({ error: 'المهمة غير موجودة' });
+    }
+    if (!job.interactionId) {
+      return res.status(400).json({ error: 'لا يمكن تحرير هذا الفيديو — أعد التوليد عبر Omni أولاً.' });
+    }
 
-    for (let i = 0; i < totalShots; i++) {
-      const shot = videoPlan.shots[i];
-      const shotNumber = i + 1;
-      const isFirstShot = i === 0;
+    const safety = await isSafePrompt(instruction, uid, 'video', token);
+    if (!safety.safe) {
+      return res.status(400).json({ error: safety.reason || 'تم حظر هذا الطلب' });
+    }
 
-      let imageInput: { imageBytes: string; mimeType: string } | undefined = undefined;
+    const fullPricing = await getPricing(token);
+    const najeAdConfig = normalizeNajeAdConfig(fullPricing.najeAd);
+    const resolution = normalizeOmniResolution(job.resolution);
+    const pointsRate = typeof najeAdConfig.pointsRatePerSecond === 'number' ? najeAdConfig.pointsRatePerSecond : 2.5;
+    const deductedPoints = Math.max(1, Math.ceil(
+      estimateOmniPoints({
+        durationSec: 10,
+        resolution,
+        model: 'omni-1.1',
+        pointsRatePerSecond: pointsRate,
+        resolutionMultiplier: najeAdConfig.resolutionMultiplier,
+      }) * (najeAdConfig.editMultiplier || 0.5)
+    ));
 
-      if (isFirstShot) {
-        await setDocRest("generation_jobs", jobId, {
-          status: 'generating_shot_1',
-          progress: Math.round(15 + (1 / (totalShots * 2 + 1)) * 60),
-          currentStepIndex: 1,
-          stepLabel: totalShots === 1
-            ? `جاري توليد الفيديو (${shot.durationSec} ثواني)...`
-            : `جاري توليد اللقطة الأولى من ${totalShots} (${shot.durationSec} ثواني)...`,
-        }, token);
-      } else {
-        // Continuity frame extraction from previous shot
-        await setDocRest("generation_jobs", jobId, {
-          status: 'extracting_continuity',
-          progress: Math.round(15 + ((i * 2) / (totalShots * 2 + 1)) * 60),
-          currentStepIndex: i * 2,
-          stepLabel: `جاري استخراج الإطار المرجعي لضمان الاستمرارية البصرية للقطة ${shotNumber} من ${totalShots}...`,
-        }, token);
-
-        const framePath = path.join(workDir, `continuity_frame_${i}.jpg`);
-        intermediateFramePaths.push(framePath);
-        const lastFrameBuf = await extractLastFrameFromFile(previousShotPath!, framePath, videoPlan.shots[i - 1].durationSec);
-        previousLastFrameBuffer = lastFrameBuf;
-        const lastFrameBase64 = lastFrameBuf.toString('base64');
-        imageInput = {
-          imageBytes: lastFrameBase64,
-          mimeType: 'image/jpeg'
-        };
-
-        await setDocRest("generation_jobs", jobId, {
-          status: 'generating_shot_2',
-          progress: Math.round(15 + ((i * 2 + 1) / (totalShots * 2 + 1)) * 60),
-          currentStepIndex: i * 2 + 1,
-          stepLabel: `جاري توليد اللقطة ${shotNumber} من ${totalShots} (${shot.durationSec} ثواني) بالربط البصري...`,
-        }, token);
-      }
-
-      // Compile & Audit prompt for this specific shot
-      const shotPrompt = await compileVideoPrompt(shot.prompt, shot.durationSec, selectedAspect, 'veo', brandProfile);
-      const auditedShot = await auditVideoPrompt(ai, shotPrompt, shot.durationSec, selectedAspect, prompt);
-
-      // Generate single shot via Veo
-      let shotBuffer: Buffer | null = await generateSingleVeoShot(ai, {
-        prompt: auditedShot,
-        durationSeconds: shot.durationSec,
-        aspectRatio: selectedAspect,
-        resolution: selectedRes,
-        modelId: videoModelEndpoint.modelId,
-        imageInput,
-        onProgress: async (attempt) => {
-          const baseProgress = Math.round(15 + ((i * 2 + 1) / (totalShots * 2 + 1)) * 60);
-          const dynamicProg = Math.min(baseProgress + Math.round((50 / (totalShots * 2 + 1)) * (attempt / 75)), 85);
-          await updateDocFieldsRest("generation_jobs", jobId, { progress: dynamicProg }, ["progress"], token).catch(() => {});
-        }
+    const chargeResult = await mutateBalanceAtomic(uid, -deductedPoints, { requireSufficient: true });
+    if (!chargeResult.ok) {
+      return res.status(402).json({
+        error: `رصيد غير كافٍ لتحرير الفيديو (${deductedPoints} نقطة).`,
+        currentBalance: chargeResult.newBalance,
+        requiredPoints: deductedPoints
       });
-
-      const shotPath = path.join(workDir, `shot_${shotNumber}.mp4`);
-      await fs.promises.writeFile(shotPath, shotBuffer);
-      shotBuffer = null; // Free buffer immediately to avoid memory bloating
-
-      // Continuity quality check at EVERY boundary (i > 0)
-      if (!isFirstShot && previousLastFrameBuffer) {
-        await setDocRest("generation_jobs", jobId, {
-          status: 'quality_check',
-          progress: Math.min(86, Math.round(15 + ((i * 2 + 1.5) / (totalShots * 2 + 1)) * 60)),
-          stepLabel: `جاري فحص الاستمرارية والجودة بين اللقطة ${i} واللقطة ${shotNumber}...`
-        }, token);
-
-        const firstFramePath = path.join(workDir, `continuity_frame_${shotNumber}_first.jpg`);
-        intermediateFramePaths.push(firstFramePath);
-        let firstFrameBuffer: Buffer | null = await extractFirstFrameFromFile(shotPath, firstFramePath);
-        const quality = await checkShotContinuity(ai, previousLastFrameBuffer, firstFrameBuffer);
-        firstFrameBuffer = null; // Free memory
-
-        if (!quality.passed) {
-          console.warn(`[Naje Ad Pipeline] Continuity check failed at boundary ${i} -> ${shotNumber}:`, quality.reason);
-          await setDocRest("generation_jobs", jobId, {
-            status: 'quality_check',
-            stepLabel: `جودة الاستمرارية منخفضة للقطة ${shotNumber}، جاري إعادة التوليد التلقائي...`
-          }, token);
-
-          let retryBuffer: Buffer | null = await generateSingleVeoShot(ai, {
-            prompt: auditedShot,
-            durationSeconds: shot.durationSec,
-            aspectRatio: selectedAspect,
-            resolution: selectedRes,
-            modelId: videoModelEndpoint.modelId,
-            imageInput
-          });
-
-          await fs.promises.writeFile(shotPath, retryBuffer);
-          retryBuffer = null; // Free memory
-
-          const firstFramePathRetry = path.join(workDir, `continuity_frame_${shotNumber}_first_retry.jpg`);
-          intermediateFramePaths.push(firstFramePathRetry);
-          let firstFrameBufferRetry: Buffer | null = await extractFirstFrameFromFile(shotPath, firstFramePathRetry);
-          const qualityRetry = await checkShotContinuity(ai, previousLastFrameBuffer, firstFrameBufferRetry);
-          firstFrameBufferRetry = null; // Free memory
-
-          if (!qualityRetry.passed) {
-            throw new Error(`quality_check_failed: فشل الحفاظ على استمرارية الملامح عند اللقطة ${shotNumber} بعد المحاولة الإضافية.`);
-          }
-        }
-      }
-
-      shotVideoPaths.push(shotPath);
-      previousShotPath = shotPath;
     }
 
-    let finalVideoPath = shotVideoPaths[0];
-
-    // --- CONCATENATION (If Multi-Shot) ---
-    if (shotVideoPaths.length > 1) {
-      await setDocRest("generation_jobs", jobId, {
-        status: 'concatenating',
-        progress: 88,
-        currentStepIndex: totalShots * 2,
-        stepLabel: `جاري دمج ${shotVideoPaths.length} لقطات سينمائياً وإنتاج الفيديو الكامل...`,
-      }, token);
-
-      const mergedPath = path.join(workDir, 'final_merged.mp4');
-      await concatenateVideoFiles(shotVideoPaths, mergedPath);
-      finalVideoPath = mergedPath;
-
-      // Free disk / tmpfs memory immediately by removing individual shots & frames
-      for (const sp of shotVideoPaths) {
-        try { await fs.promises.unlink(sp); } catch (_) {}
-      }
-      for (const fp of intermediateFramePaths) {
-        try { await fs.promises.unlink(fp); } catch (_) {}
-      }
-    }
-
-    // --- FINAL RENDER & UPLOAD ---
-    await setDocRest("generation_jobs", jobId, {
-      status: 'finalizing',
-      progress: 95,
-      stepLabel: 'جاري حفظ الفيديو وتجهيز الرابط النهائي للعرض والتحميل...',
+    await setDocRest('generation_jobs', jobId, {
+      status: 'editing',
+      progress: 20,
+      stepLabel: 'جاري تطبيق التحرير باللغة الطبيعية…',
+      lastActionError: null,
+      lastActionCost: deductedPoints,
     }, token);
 
-    const finalVideoBuffer = await fs.promises.readFile(finalVideoPath);
-    const memPeak = process.memoryUsage();
-    console.log(`[Naje Ad Pipeline] Job ${jobId} final video size: ${(finalVideoBuffer.length / 1024 / 1024).toFixed(2)}MB | Peak Heap: ${Math.round(memPeak.heapUsed / 1024 / 1024)}MB / RSS: ${Math.round(memPeak.rss / 1024 / 1024)}MB`);
-    let finalMediaUrl = '';
-    let storageSuccess = false;
+    res.json({ status: 'editing', jobId, deductedPoints, newBalance: chargeResult.newBalance });
 
-    const uploadAttempt = async () => {
-      const storagePath = `users/${uid}/naje_ad/${jobId}_${Date.now()}.mp4`;
-      const bucket = getStorage().bucket(STORAGE_BUCKET);
-      const file = bucket.file(storagePath);
-      await file.save(finalVideoBuffer, {
-        metadata: { contentType: 'video/mp4' },
-        public: true,
-        resumable: false
-      });
-      return `https://storage.googleapis.com/${bucket.name}/${storagePath}`;
-    };
-
-    try {
-      finalMediaUrl = await uploadAttempt();
-      storageSuccess = true;
-    } catch (storageErr) {
-      console.warn("[Naje Ad] Storage upload failed on first attempt, retrying:", storageErr);
+    (async () => {
       try {
-        finalMediaUrl = await uploadAttempt();
-        storageSuccess = true;
-      } catch (retryErr) {
-        console.error("[Naje Ad] Storage upload failed after retry:", retryErr);
-        await setDocRest("generation_jobs", jobId, {
-          status: 'failed',
+        const ai = createGenAIClient();
+        const aspect: '16:9' | '9:16' = job.aspectRatio === '9:16' ? '9:16' : '16:9';
+        const interaction = await createOmniInteraction(ai, {
+          modelIds: omniModelChain('omni-1.1'),
+          input: `Edit the previous commercial. Apply only this change, keep everything else identical: ${instruction}`,
+          previousInteractionId: job.interactionId,
+          aspectRatio: aspect,
+          resolution,
+        });
+        const extracted = await extractOmniVideoBuffer(ai, interaction);
+        const url = await uploadNajeAdMp4(uid, jobId, extracted.buffer);
+        await setDocRest('generation_jobs', jobId, {
+          status: 'completed',
           progress: 100,
-          stepLabel: 'فشل رفع الفيديو إلى مساحة التخزين السحابية (Storage Error)'
+          stepLabel: 'تم تطبيق التحرير',
+          mediaUrl: url,
+          videoUrl: url,
+          resultUrl: url,
+          interactionId: extracted.interactionId,
+          lastEditInstruction: instruction,
+          lastActionError: null,
+          consumedBalance: (job.consumedBalance || 0) + deductedPoints,
+          completedAt: Date.now(),
         }, token);
-        await mutateBalanceAtomic(uid, deductedPoints, {});
-        return;
+        await createDocRest('generated_media', {
+          ownerId: uid,
+          userId: uid,
+          type: 'video',
+          mediaType: 'video',
+          mediaUrl: url,
+          url,
+          videoUrl: url,
+          prompt: instruction,
+          parentJobId: jobId,
+          engine: 'gemini_omni_edit',
+          consumedBalance: deductedPoints,
+          createdAt: Date.now()
+        }, token).catch(() => null);
+      } catch (e: any) {
+        console.error('[Omni Ad Edit] failed', e);
+        await mutateBalanceAtomic(uid, deductedPoints, {}).catch(() => null);
+        await setDocRest('generation_jobs', jobId, {
+          status: 'completed',
+          progress: 100,
+          stepLabel: 'فشل التحرير — تم الإبقاء على النسخة السابقة',
+          lastActionError: e?.message || 'فشل التحرير',
+        }, token).catch(() => null);
       }
+    })();
+  } catch (err: any) {
+    console.error('[Naje Ad Edit Error]:', err);
+    return res.status(500).json({ error: err?.message || 'فشل التحرير' });
+  }
+});
+
+app.post('/api/naje-ad/extend', async (req, res) => {
+  try {
+    const auth = await requireNajeAdUser(req, res);
+    if (!auth) return;
+    const { uid, token } = auth;
+    const jobId = typeof req.body?.jobId === 'string' ? req.body.jobId : '';
+    if (!jobId || !jobId.startsWith('naje_ad_')) return res.status(400).json({ error: 'معرف المهمة غير صالح' });
+
+    const job = await getDocRest('generation_jobs', jobId, token).catch(() => null);
+    if (!job || (job.ownerId !== uid && job.userId !== uid)) {
+      return res.status(404).json({ error: 'المهمة غير موجودة' });
+    }
+    if (!job.interactionId) {
+      return res.status(400).json({ error: 'لا يمكن تمديد هذا الفيديو — أعد التوليد عبر Omni أولاً.' });
+    }
+    const currentDur = Math.min(40, Math.max(10, Number(job.totalDurationSec) || 10));
+    if (currentDur >= 40) {
+      return res.status(400).json({ error: 'وصلت للحد الأقصى 40 ثانية.' });
     }
 
-    // Save to generated_media collection
+    const fullPricing = await getPricing(token);
+    const najeAdConfig = normalizeNajeAdConfig(fullPricing.najeAd);
+    const resolution = normalizeOmniResolution(job.resolution);
+    const pointsRate = typeof najeAdConfig.pointsRatePerSecond === 'number' ? najeAdConfig.pointsRatePerSecond : 2.5;
+    const deductedPoints = estimateOmniPoints({
+      durationSec: 10,
+      resolution,
+      model: 'omni-1.1',
+      pointsRatePerSecond: pointsRate,
+      resolutionMultiplier: najeAdConfig.resolutionMultiplier,
+    });
+
+    const chargeResult = await mutateBalanceAtomic(uid, -deductedPoints, { requireSufficient: true });
+    if (!chargeResult.ok) {
+      return res.status(402).json({
+        error: `رصيد غير كافٍ لتمديد المشهد (${deductedPoints} نقطة).`,
+        currentBalance: chargeResult.newBalance,
+        requiredPoints: deductedPoints
+      });
+    }
+
+    await setDocRest('generation_jobs', jobId, {
+      status: 'extending',
+      progress: 25,
+      stepLabel: 'تمديد المشهد +10 ثوانٍ مع تحليل الاستمرارية…',
+      lastActionError: null,
+      lastActionCost: deductedPoints,
+    }, token);
+
+    res.json({ status: 'extending', jobId, deductedPoints, newBalance: chargeResult.newBalance });
+
+    (async () => {
+      try {
+        const ai = createGenAIClient();
+        const aspect: '16:9' | '9:16' = job.aspectRatio === '9:16' ? '9:16' : '16:9';
+        const nextDur = Math.min(40, currentDur + 10);
+        const interaction = await createOmniInteraction(ai, {
+          modelIds: omniModelChain('omni-1.1'),
+          input: composeExtensionPrompt(job.prompt || '', 10, nextDur),
+          previousInteractionId: job.interactionId,
+          aspectRatio: aspect,
+          resolution,
+        });
+        const extracted = await extractOmniVideoBuffer(ai, interaction);
+        const url = await uploadNajeAdMp4(uid, jobId, extracted.buffer);
+        await setDocRest('generation_jobs', jobId, {
+          status: 'completed',
+          progress: 100,
+          stepLabel: `تم تمديد المشهد إلى ${nextDur} ثانية`,
+          mediaUrl: url,
+          videoUrl: url,
+          resultUrl: url,
+          interactionId: extracted.interactionId,
+          totalDurationSec: nextDur,
+          lastActionError: null,
+          consumedBalance: (job.consumedBalance || 0) + deductedPoints,
+          completedAt: Date.now(),
+        }, token);
+        await createDocRest('generated_media', {
+          ownerId: uid,
+          userId: uid,
+          type: 'video',
+          mediaType: 'video',
+          mediaUrl: url,
+          url,
+          videoUrl: url,
+          prompt: job.prompt,
+          parentJobId: jobId,
+          engine: 'gemini_omni_extend',
+          totalDurationSec: nextDur,
+          consumedBalance: deductedPoints,
+          createdAt: Date.now()
+        }, token).catch(() => null);
+      } catch (e: any) {
+        console.error('[Omni Ad Extend] failed', e);
+        await mutateBalanceAtomic(uid, deductedPoints, {}).catch(() => null);
+        await setDocRest('generation_jobs', jobId, {
+          status: 'completed',
+          progress: 100,
+          stepLabel: 'فشل التمديد — تم الإبقاء على النسخة السابقة',
+          lastActionError: e?.message || 'فشل تمديد المشهد',
+        }, token).catch(() => null);
+      }
+    })();
+  } catch (err: any) {
+    console.error('[Naje Ad Extend Error]:', err);
+    return res.status(500).json({ error: err?.message || 'فشل تمديد المشهد' });
+  }
+});
+
+async function runOmniAdJob(jobId: string, uid: string, token: string, job: any) {
+  const deductedPoints = Number(job?.consumedBalance) || 0;
+  try {
+    const ai = createGenAIClient();
+    const duration = Math.min(40, Math.max(10, Number(job.totalDurationSec) || 10));
+    const aspect: '16:9' | '9:16' = job.aspectRatio === '9:16' ? '9:16' : '16:9';
+    const resolution = normalizeOmniResolution(job.resolution);
+    const model = normalizeOmniModel(job.omniModel, duration, resolution);
+    const images = await gatherOmniRefImages(job);
+
+    await setDocRest('generation_jobs', jobId, {
+      status: 'generating',
+      progress: 18,
+      stepLabel: `جاري توليد المشهد الأول عبر ${model === 'omni-flash' ? 'Gemini Omni Flash' : 'Gemini Omni 1.1 Flash'}…`,
+    }, token);
+
+    const first = await createOmniInteraction(ai, {
+      modelIds: omniModelChain(model),
+      input: buildOmniInput(job.prompt, images),
+      aspectRatio: aspect,
+      resolution,
+      task: images.length ? (images.length > 1 ? 'reference_to_video' : 'image_to_video') : 'text_to_video',
+    });
+    let extracted = await extractOmniVideoBuffer(ai, first);
+    let currentDuration = 10;
+    const steps = extensionSteps(duration);
+
+    for (let s = 0; s < steps; s++) {
+      await setDocRest('generation_jobs', jobId, {
+        status: 'extending',
+        progress: Math.min(85, 40 + s * 15),
+        stepLabel: `تمديد المشهد +10 ثوانٍ (${s + 1}/${steps}) مع تحليل حتى 10 ثوانٍ للاستمرارية…`,
+        interactionId: extracted.interactionId,
+      }, token);
+      const ext = await createOmniInteraction(ai, {
+        modelIds: omniModelChain('omni-1.1'),
+        input: composeExtensionPrompt(job.prompt || '', 10, duration),
+        previousInteractionId: extracted.interactionId,
+        aspectRatio: aspect,
+        resolution,
+      });
+      extracted = await extractOmniVideoBuffer(ai, ext);
+      currentDuration = Math.min(40, currentDuration + 10);
+    }
+
+    await setDocRest('generation_jobs', jobId, {
+      status: 'finalizing',
+      progress: 92,
+      stepLabel: 'جاري حفظ الفيديو وتجهيز الرابط…',
+      interactionId: extracted.interactionId,
+    }, token);
+
+    let finalMediaUrl = '';
+    try {
+      finalMediaUrl = await uploadNajeAdMp4(uid, jobId, extracted.buffer);
+    } catch (storageErr) {
+      console.warn('[Omni Ad] Storage upload retry', storageErr);
+      finalMediaUrl = await uploadNajeAdMp4(uid, jobId, extracted.buffer);
+    }
+
     await createDocRest('generated_media', {
       ownerId: uid,
       userId: uid,
       type: 'video',
       mediaType: 'video',
       mediaUrl: finalMediaUrl,
-      prompt,
-      totalDurationSec: videoPlan.totalDurationSec,
-      shotsCount: videoPlan.shots.length,
-      plan: videoPlan,
+      url: finalMediaUrl,
+      videoUrl: finalMediaUrl,
+      prompt: job.prompt,
+      totalDurationSec: currentDuration,
+      engine: 'gemini_omni',
+      omniModel: model,
       consumedBalance: deductedPoints,
-      aspectRatio: selectedAspect,
-      resolution: selectedRes,
+      aspectRatio: aspect,
+      resolution,
       createdAt: Date.now()
-    }, token).catch(e => console.error("Failed to save to generated_media:", e));
+    }, token).catch((e) => console.error('Failed to save to generated_media:', e));
 
-    // Mark completed
-    await setDocRest("generation_jobs", jobId, {
+    await setDocRest('generation_jobs', jobId, {
       status: 'completed',
       progress: 100,
-      stepLabel: 'تم توليد وإخراج الفيديو بنجاح!',
+      stepLabel: 'تم توليد الإعلان بنجاح',
       mediaUrl: finalMediaUrl,
       videoUrl: finalMediaUrl,
       resultUrl: finalMediaUrl,
-      totalDurationSec: videoPlan.totalDurationSec,
-      shotsCount: videoPlan.shots.length,
+      interactionId: extracted.interactionId,
+      totalDurationSec: currentDuration,
       consumedBalance: deductedPoints,
       completedAt: Date.now()
     }, token);
-
   } catch (pipelineErr: any) {
-    console.error(`[Naje Ad Pipeline Error] Job ${jobId} failed:`, pipelineErr);
-    
-    // In case of error, refund points
+    console.error(`[Omni Ad Pipeline] Job ${jobId} failed:`, pipelineErr);
     if (deductedPoints > 0) {
-      await mutateBalanceAtomic(uid, deductedPoints, {}).catch(e => console.error("Refund failed:", e));
+      await mutateBalanceAtomic(uid, deductedPoints, {}).catch((e) => console.error('Refund failed:', e));
     }
-    await setDocRest("generation_jobs", jobId, {
+    await setDocRest('generation_jobs', jobId, {
       status: 'failed',
       error: pipelineErr?.message || 'تعذر استكمال توليد الفيديو. تم استرجاع نقاطك بالكامل.',
       refundedPoints: deductedPoints,
       failedAt: Date.now()
-    }, token).catch(e => console.error("Job update failed:", e));
+    }, token).catch((e) => console.error('Job update failed:', e));
   } finally {
-    try {
-      await fs.promises.rm(workDir, { recursive: true, force: true });
-    } catch (_cleanErr) {}
-    
-    // Release Slot and promote next
-    const res = await releaseSlot(jobId);
-    if (res.promotedJobId && res.promotedUid) {
-      startPromotedJob(res.promotedJobId, res.promotedUid);
+    const released = await releaseSlot(jobId);
+    if (released.promotedJobId && released.promotedUid) {
+      startPromotedJob(released.promotedJobId, released.promotedUid);
     }
   }
 }
-  
 
 
 app.post('/api/redeem-code', async (req, res) => {
@@ -9883,13 +10000,7 @@ app.get("/api/admin/naje-ad-config", async (req, res) => {
 
     const pricing = await getPricing(token);
     return res.json({
-      config: pricing.najeAd || {
-        enabled: true,
-        pointsRatePerSecond: 2.5,
-        durationOptionsSec: [4, 6, 8, 10, 12, 14, 16, 24, 30],
-        maxShotsPerVideo: 2,
-        defaultModelEndpointId: 'video_standard'
-      }
+      config: normalizeNajeAdConfig(pricing.najeAd)
     });
   } catch (err: any) {
     console.error("GET /api/admin/naje-ad-config error:", err);
@@ -9917,7 +10028,7 @@ app.put("/api/admin/naje-ad-config", async (req, res) => {
       return res.status(403).json({ error: "غير مصرح لك بتحديث إعدادات Naje Ad." });
     }
 
-    const { enabled, pointsRatePerSecond, durationOptionsSec, maxShotsPerVideo, defaultModelEndpointId } = req.body || {};
+    const { enabled, pointsRatePerSecond, durationOptionsSec, maxShotsPerVideo, defaultModelEndpointId, resolutionMultiplier, editMultiplier } = req.body || {};
 
     const updatePayload: any = {
       updatedAt: Date.now(),
@@ -9931,24 +10042,27 @@ app.put("/api/admin/naje-ad-config", async (req, res) => {
       updatePayload.defaultModelEndpointId = defaultModelEndpointId.trim();
     }
 
-    const targetEndpoint = updatePayload.defaultModelEndpointId || 'video_standard';
-    const videoModelEndpoint = await getModelEndpointConfig(targetEndpoint, 'veo-3.1-lite-generate-preview');
-    const availableDurations = videoModelEndpoint.supportedDurations && videoModelEndpoint.supportedDurations.length > 0 
-      ? videoModelEndpoint.supportedDurations 
-      : [4, 6, 8];
-    const effectiveMaxShots = updatePayload.maxShotsPerVideo || (typeof maxShotsPerVideo === 'number' ? maxShotsPerVideo : 4);
-    const maxPossibleDuration = Math.max(...availableDurations) * effectiveMaxShots;
-
     if (Array.isArray(durationOptionsSec) && durationOptionsSec.length > 0) {
-      const parsed = durationOptionsSec.map(Number).sort((a: number, b: number) => a - b);
-      const invalid = parsed.find(d => d > maxPossibleDuration);
-      if (invalid) {
-        return res.status(400).json({ error: `المدة ${invalid} ثانية تتجاوز الحد الأقصى المسموح به (${maxPossibleDuration} ثانية) للنموذج المختار بناءً على دعم ${effectiveMaxShots} لقطات.` });
+      const parsed = durationOptionsSec.map(Number).filter((d: number) => d >= 10 && d <= 40).sort((a: number, b: number) => a - b);
+      if (parsed.length === 0) {
+        return res.status(400).json({ error: 'يجب اختيار مدة واحدة على الأقل بين 10 و 40 ثانية.' });
       }
       updatePayload.durationOptionsSec = parsed;
     }
 
     if (typeof maxShotsPerVideo === 'number' && maxShotsPerVideo > 0) updatePayload.maxShotsPerVideo = maxShotsPerVideo;
+    if (resolutionMultiplier && typeof resolutionMultiplier === 'object') {
+      const allowed = ['360p', '720p', '1080p', '4k'];
+      const cleaned: any = {};
+      for (const k of allowed) {
+        const n = Number((resolutionMultiplier as any)[k]);
+        if (Number.isFinite(n) && n > 0 && n <= 10) cleaned[k] = n;
+      }
+      if (Object.keys(cleaned).length) updatePayload.resolutionMultiplier = cleaned;
+    }
+    if (typeof editMultiplier === 'number' && editMultiplier > 0 && editMultiplier <= 2) {
+      updatePayload.editMultiplier = editMultiplier;
+    }
 
     if (dbAdmin) {
       await dbAdmin.collection('model_pricing').doc('naje_ad').set(updatePayload, { merge: true });

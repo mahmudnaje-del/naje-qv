@@ -54,7 +54,7 @@ export function getNajeModel(role: NajeModelRole): string {
     case 'video_core':
       return readEnv(['NAJE_MODEL_VIDEO_CORE', 'Naje-video-lite', 'Naje-video', 'MODEL_VIDEO_CORE', 'NAJE_VIDEO_LITE', 'NAJE_VIDEO'], 'veo-3.1-lite-generate-001');
     case 'video_pro':
-      return readEnv(['NAJE_MODEL_VIDEO_PRO', 'Naje-video-pro', 'MODEL_VIDEO_PRO', 'NAJE_VIDEO_PRO'], 'gemini-omni-1.1-flash-preview');
+      return readEnv(['NAJE_MODEL_VIDEO_PRO', 'Naje-video-pro', 'MODEL_VIDEO_PRO', 'NAJE_VIDEO_PRO'], 'gemini-omni-1.1-flash');
     case 'voice_core':
       return readEnv(['NAJE_MODEL_VOICE_CORE', 'Naje-voice-core', 'MODEL_VOICE_CORE', 'NAJE_VOICE_CORE', 'NAJE_MODEL_VOICE', 'Naje-voice'], 'gemini-3.1-flash-tts-preview');
     case 'voice_pro':
@@ -133,6 +133,12 @@ export function resolveEngineModel(modelOrAlias: string): string {
   }
   if (lower === 'veo-pro' || lower === 'veo-3.1-pro' || lower === 'veo-3.1-generate' || lower === 'veo-3.1-generate-001' || lower === 'veo-3.1-generate-preview') {
     return 'veo-3.1-generate-001';
+  }
+  if (lower === 'gemini-omni-flash-preview' || lower === 'gemini-omni-flash' || lower === 'omni-flash') {
+    return 'gemini-omni-flash-preview';
+  }
+  if (lower === 'gemini-omni-1.1-flash' || lower === 'omni-1.1' || lower === 'gemini-omni-1.1') {
+    return 'gemini-omni-1.1-flash';
   }
   if (lower.includes('omni')) {
     return 'gemini-omni-1.1-flash-preview';
