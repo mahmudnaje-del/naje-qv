@@ -270,7 +270,7 @@ export const AdminNajeAd: React.FC = () => {
           <div className="p-3.5 rounded-2xl bg-gray-50 dark:bg-gray-950/60 border border-gray-200/60 dark:border-gray-800/60">
             <span className="text-[11px] font-bold text-gray-500 block">محرك التوليد</span>
             <span className="text-lg font-black text-purple-600 dark:text-purple-400 font-mono mt-0.5 block">
-              Omni Flash
+              Naje Video Pro
             </span>
           </div>
 

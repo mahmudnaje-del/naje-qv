@@ -124,6 +124,7 @@ export type SceneCardKind =
   | 'location'
   | 'character_extra'
   | 'location_extra'
+  | 'second_product'
   | 'logo'
   | 'first_frame'
   | 'last_frame'
@@ -133,7 +134,32 @@ export type SceneCardKind =
   | 'onscreen_text'
   | 'end_card'
   | 'before'
-  | 'after';
+  | 'after'
+  | 'vehicle'
+  | 'pet'
+  | 'crowd'
+  | 'broll'
+  | 'weather'
+  | 'time_of_day'
+  | 'handheld_device';
+
+export const PRIMARY_SCENE_KINDS: SceneCardKind[] = ['product', 'character', 'location'];
+
+export const TIMED_SCENE_KINDS: SceneCardKind[] = [
+  'character_extra',
+  'location_extra',
+  'second_product',
+  'before',
+  'after',
+  'crowd',
+  'vehicle',
+  'weather',
+  'time_of_day',
+];
+
+export function isTimedKind(kind: SceneCardKind) {
+  return TIMED_SCENE_KINDS.includes(kind);
+}
 
 export interface SceneBoardCard {
   id: string;
@@ -150,10 +176,21 @@ export interface SceneBoardCard {
 export const SCENE_TRANSITIONS = [
   { id: 'seamless', label: 'انتقال سلس', prompt: 'seamless continuous transition' },
   { id: 'walk_in', label: 'يدخل إلى الكادر', prompt: 'talent walks into frame' },
+  { id: 'walk_out', label: 'يخرج من الكادر', prompt: 'talent exits frame as the next beat begins' },
   { id: 'reveal', label: 'كشف درامي', prompt: 'dramatic reveal' },
   { id: 'match_cut', label: 'قص متطابق', prompt: 'match-cut on motion or shape' },
   { id: 'pan', label: 'بان إلى المشهد', prompt: 'camera pan into the new beat' },
   { id: 'morph', label: 'تحول المكان', prompt: 'environment morphs while talent continuity holds' },
+  { id: 'focus_rack', label: 'سحب فوكاس', prompt: 'rack focus onto the new subject' },
+  { id: 'orbit', label: 'دوران يكشف', prompt: 'orbital move that reveals the new element' },
+];
+
+export const SCENE_ADD_GROUPS: { title: string; ids: SceneCardKind[] }[] = [
+  { title: 'الأساس', ids: ['product', 'character', 'location'] },
+  { title: 'ظهور عند ثانية', ids: ['character_extra', 'location_extra', 'second_product'] },
+  { title: 'هوية وتكوين', ids: ['logo', 'packaging', 'prop', 'color_ref', 'first_frame', 'last_frame'] },
+  { title: 'قصة وإغلاق', ids: ['before', 'after', 'onscreen_text', 'end_card', 'broll'] },
+  { title: 'عالم المشهد', ids: ['vehicle', 'pet', 'crowd', 'weather', 'time_of_day', 'handheld_device'] },
 ];
 
 export const SCENE_ADD_OPTIONS: {
@@ -165,7 +202,7 @@ export const SCENE_ADD_OPTIONS: {
   { id: 'product', label: 'منتج', desc: 'البطل البصري للإعلان', accent: '#d4a574' },
   { id: 'character', label: 'شخصية', desc: 'الممثل على الكاميرا', accent: '#7dd3c7' },
   { id: 'location', label: 'مكان', desc: 'موقع التصوير الأساسي', accent: '#93c5fd' },
-  { id: 'character_extra', label: 'شخصية إضافية', desc: 'تظهر عند ثانية محددة', accent: '#6ee7b7' },
+  { id: 'character_extra', label: 'شخصية إضافية', desc: 'تظهر عند الثانية التي تختارها', accent: '#6ee7b7' },
   { id: 'location_extra', label: 'مكان إضافي', desc: 'انتقال للموقع عند ثانية محددة', accent: '#818cf8' },
   { id: 'logo', label: 'شعار العلامة', desc: 'قفل هوية في الكرت أو المنتج', accent: '#e8b86d' },
   { id: 'first_frame', label: 'الإطار الأول', desc: 'قفل أول لقطة', accent: '#f9a8d4' },
@@ -177,10 +214,26 @@ export const SCENE_ADD_OPTIONS: {
   { id: 'end_card', label: 'كرت النهاية', desc: 'شعار + دعوة في آخر ثانية', accent: '#a78bfa' },
   { id: 'before', label: 'قبل', desc: 'المشكلة قبل المنتج', accent: '#94a3b8' },
   { id: 'after', label: 'بعد', desc: 'النتيجة بعد الاستخدام', accent: '#86efac' },
+  { id: 'second_product', label: 'منتج ثانٍ', desc: 'يظهر لاحقاً في المشهد', accent: '#f6d58a' },
+  { id: 'vehicle', label: 'سيارة', desc: 'مركبة تدخل أو تُعرض', accent: '#cbd5e1' },
+  { id: 'pet', label: 'حيوان أليف', desc: 'رفيق في المشهد', accent: '#fdba74' },
+  { id: 'crowd', label: 'مجموعة', desc: 'حضور بشري حول البطل', accent: '#c4b5fd' },
+  { id: 'broll', label: 'لقطة تفاصيل', desc: 'ماكرو أو قصة بصرية جانبية', accent: '#7dd3c7' },
+  { id: 'weather', label: 'طقس', desc: 'مطر أو ضباب عند ثانية', accent: '#93c5fd' },
+  { id: 'time_of_day', label: 'تحول الوقت', desc: 'من نهار إلى ليل داخل المشهد', accent: '#fcd34d' },
+  { id: 'handheld_device', label: 'هاتف في اليد', desc: 'شاشة حقيقية مقروءة', accent: '#38bdf8' },
 ];
 
 export function newSceneCardId() {
   return `sc_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`;
+}
+
+export function defaultSceneBoard(): SceneBoardCard[] {
+  return [
+    { id: 'sc_product', kind: 'product' },
+    { id: 'sc_character', kind: 'character' },
+    { id: 'sc_location', kind: 'location' },
+  ];
 }
 
 export function resolutionMeta(id: OmniResolution) {
@@ -220,6 +273,14 @@ function kindRole(kind: SceneCardKind): string {
     case 'end_card': return 'end-card composition';
     case 'before': return 'before-state reference';
     case 'after': return 'after-state reference';
+    case 'second_product': return 'second product that appears later';
+    case 'vehicle': return 'vehicle in scene';
+    case 'pet': return 'pet companion in scene';
+    case 'crowd': return 'background crowd / group';
+    case 'broll': return 'detail / B-roll insert';
+    case 'weather': return 'weather event';
+    case 'time_of_day': return 'time-of-day shift';
+    case 'handheld_device': return 'smartphone held in hand with a readable screen';
     default: return kind;
   }
 }

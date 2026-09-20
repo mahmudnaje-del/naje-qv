@@ -52,8 +52,18 @@ export function StyleGallery({
               t.id === selectedStyleId ? 'border-[#d4a574]' : 'border-white/10'
             }`}
           >
-            <div className="relative aspect-[3/2] overflow-hidden">
-              <img src={t.image} alt={t.name} className="h-full w-full object-cover" />
+            <div
+              className="relative aspect-[3/2] overflow-hidden"
+              style={{ background: `linear-gradient(145deg, ${t.gradient[0]}, ${t.gradient[1]})` }}
+            >
+              <img
+                src={t.image}
+                alt={t.name}
+                className="h-full w-full object-cover"
+                onError={(e) => {
+                  (e.currentTarget as HTMLImageElement).style.display = 'none';
+                }}
+              />
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
               <span className="absolute right-2 bottom-2 text-sm font-black text-white drop-shadow">{t.name}</span>
             </div>

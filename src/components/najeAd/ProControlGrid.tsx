@@ -106,13 +106,6 @@ export function ProControlGrid(props: {
 
   return (
     <div className="grid grid-cols-1 gap-3 lg:grid-cols-2" dir="rtl">
-      <Box title="المحرك" hint="تمديد المشهد حتى 40 ثانية، تحرير باللغة الطبيعية، إطار أول/أخير، و4K">
-        <div className="inline-flex items-center gap-2 rounded-xl border border-[#d4a574]/40 bg-[#d4a574]/15 px-3 py-2 text-[11px] font-black text-[#f4efe6]">
-          {NAJE_VIDEO_PRO_LABEL}
-          <span className="rounded-full bg-white/10 px-1.5 py-0.5 text-[9px] font-bold text-[#e8b86d]">Gemini Omni 1.1 Flash</span>
-        </div>
-      </Box>
-
       <Box title="المدة" hint="التوليد 10 ثوانٍ ثم تمديد المشهد بزيادات 10 ثوانٍ">
         {OMNI_DURATIONS.map((d) => (
           <Chip key={d} active={props.duration === d} onClick={() => props.onDuration(d)}>

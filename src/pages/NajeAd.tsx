@@ -15,6 +15,7 @@ import {
   OmniResolution,
   SceneBoardCard,
   composeOmniAdPrompt,
+  defaultSceneBoard,
   estimateOmniPoints,
 } from '../lib/omniAd';
 import FeaturePaywallModal from '../components/FeaturePaywallModal';
@@ -47,7 +48,7 @@ export default function NajeAd() {
   const resMul = najeAd?.resolutionMultiplier;
 
   const [dna, setDna] = useState<AdDnaState>(INITIAL_AD_DNA_STATE);
-  const [sceneCards, setSceneCards] = useState<SceneBoardCard[]>([]);
+  const [sceneCards, setSceneCards] = useState<SceneBoardCard[]>(() => defaultSceneBoard());
   const [customCharacter, setCustomCharacter] = useState<string | null>(null);
   const [customLocation, setCustomLocation] = useState<string | null>(null);
   const [showCastHint, setShowCastHint] = useState(true);
@@ -253,7 +254,7 @@ export default function NajeAd() {
               </div>
               <h1 className="text-2xl font-black tracking-tight text-white">استوديو الإعلان المتحرك</h1>
               <p className="mt-1 max-w-xl text-xs leading-relaxed text-white/50">
-                {NAJE_VIDEO_PRO_LABEL} — توليد، تمديد المشهد حتى 40 ثانية، وتحرير باللغة الطبيعية على Gemini Omni 1.1 Flash.
+                {NAJE_VIDEO_PRO_LABEL} — توليد، تمديد المشهد حتى 40 ثانية، وتحرير باللغة الطبيعية.
               </p>
             </div>
             <div className="rounded-2xl border border-white/10 bg-black/30 px-4 py-2 text-right">
