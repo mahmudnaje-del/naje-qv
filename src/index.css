@@ -184,6 +184,27 @@ html:not(.dark) .naje-chroma :is(.bg-white\/\[0\.04\], .bg-white\/5, .bg-white\/
   color: #f4efe6;
 }
 
+/* CV By Naje — ink navy + gold career atelier, independent of app theme */
+.naje-cv-studio {
+  color-scheme: dark;
+  --naje-p: #c4a35a;
+  --naje-s: #e8c36a;
+  --naje-on-accent: #1a140c;
+  --naje-accent: #c4a35a;
+  --naje-accent-2: #e8c36a;
+  --naje-canvas: #0b1220;
+  --naje-elevated: #121a2b;
+  --naje-card: #101826;
+  --naje-ink: #f3ead8;
+  --naje-muted: #9aa3b5;
+  --naje-line: rgba(196, 163, 90, 0.22);
+  --naje-accent-soft: rgba(196, 163, 90, 0.14);
+  --naje-glow: rgba(196, 163, 90, 0.24);
+  --color-white: #ffffff;
+  background-color: #0b1220;
+  color: #f3ead8;
+}
+
 /* Creatively keeps its original dark studio — independent of app theme */
 .naje-creative-studio {
   color-scheme: dark;

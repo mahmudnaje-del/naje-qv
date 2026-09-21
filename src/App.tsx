@@ -30,6 +30,7 @@ const NajeDeveloper = lazyWithRetry(() => import('./pages/NajeDeveloper'));
 const NajeSource = lazyWithRetry(() => import('./pages/NajeSource'));
 const NajePrompt = lazyWithRetry(() => import('./pages/NajePrompt'));
 const NajeIdent = lazyWithRetry(() => import('./pages/NajeIdent'));
+const NajeCv = lazyWithRetry(() => import('./pages/NajeCv'));
 const Store = lazyWithRetry(() => import('./pages/Store'));
 const AuthAction = lazyWithRetry(() => import('./pages/AuthAction'));
 const NotFound = lazyWithRetry(() => import('./pages/NotFound'));
@@ -88,6 +89,8 @@ export default function App() {
               <Route path="naje-prompt" element={<NajePrompt />} />
               <Route path="naje-ident" element={<NajeIdent />} />
               <Route path="naje-intro" element={<Navigate to="/naje-ident" replace />} />
+              <Route path="naje-cv" element={<NajeCv />} />
+              <Route path="cv-by-naje" element={<Navigate to="/naje-cv" replace />} />
               <Route path="naje-developer" element={<NajeDeveloper />} />
               <Route path="naje-source" element={<NajeSource />} />
               <Route path="store" element={<Store />} />

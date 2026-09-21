@@ -626,6 +626,22 @@ export default function Dashboard() {
             </div>
           </Link>
 
+          <Link
+            to="/naje-cv"
+            onClick={() => { setSidebarOpen(false); setUserGalleriesOpen('none'); }}
+            className={cn(
+              "w-full h-11 md:h-9 flex items-center justify-between px-3 rounded-xl text-xs font-bold transition-all border border-transparent",
+              location.pathname.includes('naje-cv')
+                ? "bg-white dark:bg-purple-950/45 text-purple-950 dark:text-purple-200 border border-purple-300 dark:border-purple-500/40 shadow-md shadow-purple-500/10 font-extrabold"
+                : "text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-900/60"
+            )}
+          >
+            <div className="flex items-center gap-2.5">
+              <FileText className="w-4 h-4 text-amber-600" />
+              <span>CV By Naje</span>
+            </div>
+          </Link>
+
           <button 
             onClick={() => handleCreateNewChat('voice')}
             className={cn(
@@ -1048,12 +1064,12 @@ export default function Dashboard() {
          !location.pathname.includes('naje-developer') && 
          !location.pathname.includes('naje-source') && 
          !location.pathname.includes('naje-agent') && (
-          <header className={`flex items-center justify-between px-3 sm:px-4 py-2 sm:py-2.5 flex-shrink-0 z-30 h-12 sm:h-14 ${location.pathname.includes('/creative') ? 'bg-[#030303] naje-creative-studio' : (location.pathname.includes('naje-ad') || location.pathname.includes('naje-ident')) ? 'bg-[#0b0c10] naje-ad-studio' : 'naje-glass-card-lg rounded-none border-t-0 border-r-0 border-l-0'}`}>
+          <header className={`flex items-center justify-between px-3 sm:px-4 py-2 sm:py-2.5 flex-shrink-0 z-30 h-12 sm:h-14 ${location.pathname.includes('/creative') ? 'bg-[#030303] naje-creative-studio' : location.pathname.includes('naje-cv') ? 'bg-[#0b1220] naje-cv-studio' : (location.pathname.includes('naje-ad') || location.pathname.includes('naje-ident')) ? 'bg-[#0b0c10] naje-ad-studio' : 'naje-glass-card-lg rounded-none border-t-0 border-r-0 border-l-0'}`}>
             <div className="flex items-center gap-2 sm:gap-3 shrink-0">
               {/* Hamburger Menu (Mobile only) */}
               <button 
                 onClick={() => setSidebarOpen(!sidebarOpen)}
-                className={`p-1.5 rounded-xl transition flex items-center justify-center cursor-pointer ${location.pathname.includes('/creative') || location.pathname.includes('naje-ad') || location.pathname.includes('naje-ident') ? 'text-slate-300 hover:text-white hover:bg-white/10' : 'text-gray-800 dark:text-purple-100 dark:hover:text-white hover:text-gray-900 hover:bg-white dark:hover:bg-gray-900'}`}
+                className={`p-1.5 rounded-xl transition flex items-center justify-center cursor-pointer ${location.pathname.includes('/creative') || location.pathname.includes('naje-ad') || location.pathname.includes('naje-ident') || location.pathname.includes('naje-cv') ? 'text-slate-300 hover:text-white hover:bg-white/10' : 'text-gray-800 dark:text-purple-100 dark:hover:text-white hover:text-gray-900 hover:bg-white dark:hover:bg-gray-900'}`}
                 title="توسيع/طي القائمة"
               >
                 <PanelRight className="w-5 h-5" />
@@ -1062,19 +1078,19 @@ export default function Dashboard() {
               {/* Brand Logo & Name */}
               <Link to="/" onClick={() => { setActiveProjectId(null); setUserGalleriesOpen('none'); }} className="flex items-center gap-2 group shrink-0">
                 <NajeLogo size="md" className="group-hover:scale-105 transition-all shrink-0" />
-                <span className={`font-extrabold text-sm whitespace-nowrap shrink-0 transition-colors ${location.pathname.includes('/creative') || location.pathname.includes('naje-ad') || location.pathname.includes('naje-ident') ? 'text-white group-hover:text-amber-400' : 'text-gray-900 dark:text-white group-hover:text-indigo-600 dark:text-indigo-400'}`}>استوديو ناجي</span>
+                <span className={`font-extrabold text-sm whitespace-nowrap shrink-0 transition-colors ${location.pathname.includes('/creative') || location.pathname.includes('naje-ad') || location.pathname.includes('naje-ident') || location.pathname.includes('naje-cv') ? 'text-white group-hover:text-amber-400' : 'text-gray-900 dark:text-white group-hover:text-indigo-600 dark:text-indigo-400'}`}>استوديو ناجي</span>
               </Link>
             </div>
             
             {/* User Name + Balance + New Chat Button */}
             <div className="flex items-center gap-3">
               <NotificationDropdown />
-              <BalanceTopDropdown isCreativeMode={location.pathname.includes('/creative') || location.pathname.includes('naje-ad') || location.pathname.includes('naje-ident')} />
+              <BalanceTopDropdown isCreativeMode={location.pathname.includes('/creative') || location.pathname.includes('naje-ad') || location.pathname.includes('naje-ident') || location.pathname.includes('naje-cv')} />
 
               {/* Top Bar "+ دردشة جديدة" Button */}
               <button 
                 onClick={() => setNewChatModalOpen(true)}
-                className={`p-2 rounded-xl transition cursor-pointer flex items-center justify-center shadow-lg active:scale-[0.98] ${location.pathname.includes('naje-ad') || location.pathname.includes('naje-ident') ? 'bg-[#d4a574] hover:bg-[#e8b86d] text-[#1a140c] shadow-[0_8px_18px_-8px_rgba(212,165,116,0.55)]' : location.pathname.includes('/creative') ? 'bg-amber-600 hover:bg-amber-500 text-white shadow-amber-500/15' : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-500/15'}`}
+                className={`p-2 rounded-xl transition cursor-pointer flex items-center justify-center shadow-lg active:scale-[0.98] ${location.pathname.includes('naje-cv') ? 'bg-[#c4a35a] hover:bg-[#e8c36a] text-[#1a140c] shadow-[0_8px_18px_-8px_rgba(196,163,90,0.55)]' : location.pathname.includes('naje-ad') || location.pathname.includes('naje-ident') ? 'bg-[#d4a574] hover:bg-[#e8b86d] text-[#1a140c] shadow-[0_8px_18px_-8px_rgba(212,165,116,0.55)]' : location.pathname.includes('/creative') ? 'bg-amber-600 hover:bg-amber-500 text-white shadow-amber-500/15' : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-500/15'}`}
                 title="دردشة جديدة"
               >
                 <Plus className="w-4 h-4" />
@@ -1325,6 +1341,23 @@ export default function Dashboard() {
                     <div className="flex flex-col text-right sm:text-center">
                       <span className="text-xs font-bold text-gray-900 dark:text-white">انترو ونهاية</span>
                       <span className="text-[10px] text-gray-800 dark:text-gray-400 mt-0.5">هوية متحركة 5 أو 10 ثوانٍ لصنّاع المحتوى والشركات</span>
+                    </div>
+                  </div>
+                  <ChevronLeft className="w-4 h-4 text-gray-900 dark:text-gray-300 sm:hidden flex-shrink-0" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => { setNewChatModalOpen(false); navigate('/naje-cv'); }}
+                  className="w-full sm:h-[140px] min-h-[72px] h-auto px-4 py-3 sm:p-5 bg-gray-50 dark:bg-gray-900 border border-amber-600/20 hover:border-amber-600/40 rounded-xl flex flex-row sm:flex-col items-center justify-between sm:justify-center sm:text-center gap-3 sm:gap-4 transition cursor-pointer group sm:col-span-2"
+                >
+                  <div className="flex flex-row sm:flex-col items-center gap-3 sm:gap-2 min-w-0 sm:w-full">
+                    <div className="w-10 h-10 rounded-full bg-amber-600/10 text-amber-700 dark:text-amber-400 flex items-center justify-center flex-shrink-0">
+                      <FileText className="w-5 h-5" />
+                    </div>
+                    <div className="flex flex-col text-right sm:text-center">
+                      <span className="text-xs font-bold text-gray-900 dark:text-white">CV By Naje</span>
+                      <span className="text-[10px] text-gray-800 dark:text-gray-400 mt-0.5">سيرتك الذاتية — قوالب، مدرب HR، PDF و Word</span>
                     </div>
                   </div>
                   <ChevronLeft className="w-4 h-4 text-gray-900 dark:text-gray-300 sm:hidden flex-shrink-0" />
