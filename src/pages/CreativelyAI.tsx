@@ -293,6 +293,22 @@ export default function CreativelyAI() {
   const [prompt, setPrompt] = useState('');
   const [useCreativePro, setUseCreativePro] = useState(false);
   const [df, setDf] = useState<Record<string, any>>({});
+
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem('naje-prompt-handoff');
+      if (!raw) return;
+      const j = JSON.parse(raw);
+      const best = String(j?.bestFor || '').toLowerCase();
+      const text = typeof j?.prompt === 'string' ? j.prompt.trim() : '';
+      if (!text) return;
+      if (best !== 'image' && best !== 'ui') return;
+      setPrompt((prev) => prev || text);
+      sessionStorage.removeItem('naje-prompt-handoff');
+    } catch {
+      /* ignore */
+    }
+  }, []);
   const [simNight, setSimNight] = useState(true);
   const [logoName, setLogoName] = useState('');
   const [dimension, setDimension] = useState<string>('2D');

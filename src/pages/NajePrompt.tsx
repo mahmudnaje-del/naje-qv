@@ -12,30 +12,47 @@ import ClarificationCard from '../components/najePrompt/ClarificationCard';
 import ReadyCard from '../components/najePrompt/ReadyCard';
 import HistoryStrip from '../components/najePrompt/HistoryStrip';
 import EmptyPromptState from '../components/najePrompt/EmptyPromptState';
+import ConstraintsPinBar from '../components/najePrompt/ConstraintsPinBar';
+import RefinementTrail from '../components/najePrompt/RefinementTrail';
+import ResultCard from '../components/najePrompt/ResultCard';
 import {
   MODE_ASK_LIMIT,
   MODE_OPTIONS,
   MODEL_OPTIONS,
+  READY_STACK_CAP,
+  applyPinnedToUnderstanding,
   buildAskPrompt,
+  extractConstraintHints,
   historyToReady,
   humanError,
+  isExecutableBestFor,
   loadHistory,
+  mergeUnique,
   parseEngineResponse,
+  refineTrailLabel,
   resolveModel,
   saveHistoryItem,
   storeHandoff,
+  toAskNajeFiles,
   uid,
+  withAttachmentContext,
+  type BestFor,
   type HistoryItem,
+  type ImageIntent,
   type ModelChoice,
+  type PromptAttachment,
   type PromptMode,
   type QaTurn,
   type ReadyResult,
+  type TrailItem,
+  type Understanding,
 } from '../lib/najePromptEngine';
 
 type ChatItem =
-  | { id: string; kind: 'user'; text: string }
+  | { id: string; kind: 'user'; text: string; files?: PromptAttachment[]; imageIntent?: ImageIntent }
   | { id: string; kind: 'clarification'; question: { id: string; q: string; options: string[] }; why?: string; answered?: string }
-  | { id: string; kind: 'ready'; payload: ReadyResult }
+  | { id: string; kind: 'ready'; payload: ReadyResult; version: number }
+  | { id: string; kind: 'result'; text: string; bestFor: BestFor; title: string }
   | { id: string; kind: 'error'; text: string };
 
 type ClarifyItem = Extract<ChatItem, { kind: 'clarification' }>;
@@ -58,6 +75,14 @@ export default function NajePrompt() {
   const [qa, setQa] = useState<QaTurn[]>([]);
   const [askedCount, setAskedCount] = useState(0);
   const [lastReady, setLastReady] = useState<ReadyResult | null>(null);
+  const [attachments, setAttachments] = useState<PromptAttachment[]>([]);
+  const [imageIntent, setImageIntent] = useState<ImageIntent>('inspire');
+  const [sessionFiles, setSessionFiles] = useState<PromptAttachment[]>([]);
+  const [pinnedAvoid, setPinnedAvoid] = useState<string[]>([]);
+  const [pinnedMust, setPinnedMust] = useState<string[]>([]);
+  const [readyStack, setReadyStack] = useState<ReadyResult[]>([]);
+  const [trail, setTrail] = useState<TrailItem[]>([]);
+  const [busyHint, setBusyHint] = useState('ناجي يقرأ الفكرة…');
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const composerRef = useRef<HTMLDivElement>(null);
@@ -72,6 +97,13 @@ export default function NajePrompt() {
     askedCount,
     lastReady,
     routeReason,
+    attachments,
+    imageIntent,
+    sessionFiles,
+    pinnedAvoid,
+    pinnedMust,
+    readyStack,
+    trail,
   });
   live.current = {
     messages,
@@ -83,6 +115,13 @@ export default function NajePrompt() {
     askedCount,
     lastReady,
     routeReason,
+    attachments,
+    imageIntent,
+    sessionFiles,
+    pinnedAvoid,
+    pinnedMust,
+    readyStack,
+    trail,
   };
 
   useEffect(() => {
@@ -93,9 +132,31 @@ export default function NajePrompt() {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
   }, [messages, busy]);
 
+  const pinConstraints = useCallback((avoid: string[], must: string[]) => {
+    const nextAvoid = mergeUnique(live.current.pinnedAvoid, avoid);
+    const nextMust = mergeUnique(live.current.pinnedMust, must);
+    live.current.pinnedAvoid = nextAvoid;
+    live.current.pinnedMust = nextMust;
+    setPinnedAvoid(nextAvoid);
+    setPinnedMust(nextMust);
+    return { avoid: nextAvoid, must: nextMust };
+  }, []);
+
+  const pushTrail = useCallback((item: TrailItem) => {
+    const next = [...live.current.trail, item].slice(-10);
+    live.current.trail = next;
+    setTrail(next);
+  }, []);
+
   const resetConversation = useCallback(() => {
     turnSeq.current += 1;
     live.current.busy = false;
+    live.current.sessionFiles = [];
+    live.current.pinnedAvoid = [];
+    live.current.pinnedMust = [];
+    live.current.readyStack = [];
+    live.current.trail = [];
+    live.current.lastReady = null;
     setMessages([]);
     setDraft('');
     setBusy(false);
@@ -104,6 +165,14 @@ export default function NajePrompt() {
     setQa([]);
     setAskedCount(0);
     setLastReady(null);
+    setAttachments([]);
+    setImageIntent('inspire');
+    setSessionFiles([]);
+    setPinnedAvoid([]);
+    setPinnedMust([]);
+    setReadyStack([]);
+    setTrail([]);
+    setBusyHint('ناجي يقرأ الفكرة…');
   }, []);
 
   const copyPrompt = useCallback(async (payload: ReadyResult) => {
@@ -124,38 +193,159 @@ export default function NajePrompt() {
   const restoreHistory = useCallback((item: HistoryItem) => {
     turnSeq.current += 1;
     live.current.busy = false;
-    setBusy(false);
     const ready = historyToReady(item);
-    setMessages([{ id: uid('r'), kind: 'ready', payload: ready }]);
+    live.current.lastReady = ready;
+    live.current.readyStack = [ready];
+    live.current.trail = [
+      { id: uid('t'), kind: 'idea', label: 'الفكرة' },
+      { id: uid('t'), kind: 'ready', label: 'جاهز v1' },
+    ];
+    live.current.sessionFiles = [];
+    live.current.pinnedAvoid = [];
+    live.current.pinnedMust = [];
+    setBusy(false);
+    setMessages([{ id: uid('r'), kind: 'ready', payload: ready, version: 1 }]);
     setOriginalIdea(item.title);
     setQa([]);
     setAskedCount(0);
     setLastReady(ready);
     setRouteReason(null);
     setDraft('');
+    setAttachments([]);
+    setImageIntent('inspire');
+    setSessionFiles([]);
+    setPinnedAvoid([]);
+    setPinnedMust([]);
+    setReadyStack([ready]);
+    setTrail(live.current.trail);
   }, []);
 
-  const runTurn = useCallback(async (text: string, source: 'composer' | 'clarify' | 'refine') => {
+  const removePinned = useCallback((kind: 'avoid' | 'must', value: string) => {
+    const nextAvoid = kind === 'avoid' ? live.current.pinnedAvoid.filter((v) => v !== value) : live.current.pinnedAvoid;
+    const nextMust = kind === 'must' ? live.current.pinnedMust.filter((v) => v !== value) : live.current.pinnedMust;
+    live.current.pinnedAvoid = nextAvoid;
+    live.current.pinnedMust = nextMust;
+    setPinnedAvoid(nextAvoid);
+    setPinnedMust(nextMust);
+    const current = live.current.lastReady;
+    if (!current) return;
+    const patched: ReadyResult = {
+      ...current,
+      understanding: {
+        ...current.understanding,
+        avoid: nextAvoid,
+        must: nextMust,
+      },
+    };
+    live.current.lastReady = patched;
+    setLastReady(patched);
+    setReadyStack((stack) => {
+      if (!stack.length) return stack;
+      const next = [...stack];
+      next[next.length - 1] = patched;
+      live.current.readyStack = next;
+      return next;
+    });
+    setMessages((prev) => {
+      const idx = [...prev].map((m, i) => ({ m, i })).reverse().find((row) => row.m.kind === 'ready')?.i;
+      if (idx == null) return prev;
+      const copy = [...prev];
+      const item = copy[idx];
+      if (item.kind !== 'ready') return prev;
+      copy[idx] = { ...item, payload: patched };
+      return copy;
+    });
+  }, []);
+
+  const undoReady = useCallback(() => {
+    const stack = live.current.readyStack;
+    if (stack.length < 2) return;
+    const nextStack = stack.slice(0, -1);
+    const prev = nextStack[nextStack.length - 1];
+    live.current.readyStack = nextStack;
+    live.current.lastReady = prev;
+    setReadyStack(nextStack);
+    setLastReady(prev);
+    setMessages((prevMsgs) => {
+      const idx = [...prevMsgs].map((m, i) => ({ m, i })).reverse().find((row) => row.m.kind === 'ready')?.i;
+      if (idx == null) return prevMsgs;
+      const copy = [...prevMsgs];
+      const item = copy[idx];
+      if (item.kind !== 'ready') return prevMsgs;
+      copy[idx] = { ...item, payload: prev, version: nextStack.length };
+      return copy;
+    });
+    setTrail((steps) => {
+      const copy = [...steps];
+      while (copy.length) {
+        const last = copy.pop();
+        if (last?.kind === 'ready') break;
+      }
+      if (copy.length && copy[copy.length - 1].kind === 'refine') copy.pop();
+      live.current.trail = copy;
+      return copy;
+    });
+  }, []);
+
+  const runTurn = useCallback(async (
+    text: string,
+    source: 'composer' | 'clarify' | 'refine',
+    extras?: { files?: PromptAttachment[]; imageIntent?: ImageIntent },
+  ) => {
     const trimmed = text.trim();
-    if (!trimmed) return;
+    const incomingFiles = extras?.files || [];
+    if (!trimmed && incomingFiles.length === 0) return;
     const snap = live.current;
     if (snap.busy) return;
 
     const pending = [...snap.messages].reverse().find(isOpenClarification);
     const asClarify = source === 'clarify' || (source === 'composer' && pending);
     const nextQa = asClarify && pending
-      ? [...snap.qa, { q: pending.question.q, a: trimmed }]
+      ? [...snap.qa, { q: pending.question.q, a: trimmed || 'مرفق' }]
       : snap.qa;
-    const seedIdea = snap.originalIdea || (source === 'refine' ? snap.lastReady?.title || trimmed : trimmed);
+    const seedIdea = snap.originalIdea
+      || (source === 'refine' ? snap.lastReady?.title || trimmed : trimmed)
+      || (incomingFiles.length ? 'فكرة مرفقة' : 'فكرة');
     const isRefine = source === 'refine' || (Boolean(snap.lastReady) && !asClarify && Boolean(snap.originalIdea));
     const maxAsk = MODE_ASK_LIMIT[snap.mode];
     const forceReady = isRefine || snap.askedCount >= maxAsk;
+    const turnIntent = extras?.imageIntent || snap.imageIntent;
+    const mergedFiles = [...snap.sessionFiles];
+    for (const file of incomingFiles) {
+      if (!mergedFiles.some((row) => row.id === file.id)) mergedFiles.push(file);
+    }
+    const sessionKeep = mergedFiles.slice(-3);
+    const extracted = source === 'refine'
+      ? { avoid: [] as string[], must: [] as string[] }
+      : extractConstraintHints(trimmed);
+    const pinned = pinConstraints(extracted.avoid, extracted.must);
+    const userMessage = withAttachmentContext(trimmed, sessionKeep, turnIntent);
 
     live.current.busy = true;
+    live.current.sessionFiles = sessionKeep;
+    setBusyHint('ناجي يقرأ الفكرة…');
     setBusy(true);
+    setSessionFiles(sessionKeep);
     const myTurn = ++turnSeq.current;
+
+    if (source === 'composer' && !snap.trail.length) {
+      pushTrail({ id: uid('t'), kind: 'idea', label: 'الفكرة' });
+    }
+    if (source === 'refine') {
+      pushTrail({ id: uid('t'), kind: 'refine', label: refineTrailLabel(trimmed) });
+    }
+
     setMessages((prev) => {
-      const withUser: ChatItem[] = [...prev, { id: uid('u'), kind: 'user', text: trimmed }];
+      const withUser: ChatItem[] = [
+        ...prev,
+        {
+          id: uid('u'),
+          kind: 'user',
+          text: trimmed,
+          files: incomingFiles.length ? incomingFiles : undefined,
+          imageIntent: incomingFiles.some((f) => f.kind === 'image') ? turnIntent : undefined,
+        },
+      ];
       if (asClarify && pending) {
         return withUser.map((item) =>
           item.kind === 'clarification' && item.id === pending.id
@@ -167,7 +357,11 @@ export default function NajePrompt() {
     });
     if (!snap.originalIdea) setOriginalIdea(seedIdea);
     if (asClarify) setQa(nextQa);
-    if (source === 'composer') setDraft('');
+    if (source === 'composer') {
+      setDraft('');
+      setAttachments([]);
+      setImageIntent('inspire');
+    }
 
     const { model, reason } = resolveModel(snap.modelChoice, seedIdea);
     if (reason && !snap.routeReason) setRouteReason(reason);
@@ -180,10 +374,17 @@ export default function NajePrompt() {
         forceReady: readyNow || forceReady,
         originalIdea: seedIdea,
         qa: nextQa,
-        lastReady: snap.lastReady,
-        userMessage: trimmed,
+        lastReady: live.current.lastReady || snap.lastReady,
+        userMessage,
+        attachments: sessionKeep,
+        imageIntent: turnIntent,
+        pinnedAvoid: pinned.avoid,
+        pinnedMust: pinned.must,
       });
-      const raw = await askNaje(prompt, { model });
+      const raw = await askNaje(prompt, {
+        model,
+        files: toAskNajeFiles(sessionKeep),
+      });
       return parseEngineResponse(raw);
     };
 
@@ -200,6 +401,11 @@ export default function NajePrompt() {
           throw new Error('تعذّر إغلاق البرومبت. جرّب تعيد صياغة الفكرة.');
         }
         setAskedCount(snap.askedCount + 1);
+        pushTrail({
+          id: uid('t'),
+          kind: 'ask',
+          label: snap.askedCount === 0 ? 'سؤال' : `سؤال ${snap.askedCount + 1}`,
+        });
         setMessages((prev) => [
           ...prev,
           {
@@ -213,13 +419,31 @@ export default function NajePrompt() {
       }
 
       if (result?.mode === 'ready') {
-        setLastReady(result);
+        const fromResult = extractConstraintHints(result.understanding.constraints.join('\n'));
+        const nextPinned = pinConstraints(
+          mergeUnique(result.understanding.avoid, fromResult.avoid),
+          mergeUnique(result.understanding.must, fromResult.must),
+        );
+        const ready: ReadyResult = {
+          ...result,
+          understanding: applyPinnedToUnderstanding(result.understanding, nextPinned.avoid, nextPinned.must),
+        };
+        const stack = [...live.current.readyStack, ready].slice(-READY_STACK_CAP);
+        live.current.lastReady = ready;
+        live.current.readyStack = stack;
+        setLastReady(ready);
+        setReadyStack(stack);
         setHistory(saveHistoryItem({
-          title: result.title,
-          prompt: result.prompt,
-          bestFor: result.bestFor,
+          title: ready.title,
+          prompt: ready.prompt,
+          bestFor: ready.bestFor,
         }));
-        setMessages((prev) => [...prev, { id: uid('r'), kind: 'ready', payload: result }]);
+        pushTrail({
+          id: uid('t'),
+          kind: 'ready',
+          label: stack.length === 1 ? 'جاهز v1' : `v${stack.length}`,
+        });
+        setMessages((prev) => [...prev, { id: uid('r'), kind: 'ready', payload: ready, version: stack.length }]);
         return;
       }
 
@@ -235,16 +459,16 @@ export default function NajePrompt() {
         setBusy(false);
       }
     }
-  }, []);
+  }, [pinConstraints, pushTrail]);
 
   const sendDraft = useCallback(() => {
     const text = draft.trim();
-    if (!text) {
+    if (!text && attachments.length === 0) {
       toast.error('احكي فكرتك أولاً');
       return;
     }
-    void runTurn(text, 'composer');
-  }, [draft, runTurn]);
+    void runTurn(text, 'composer', { files: attachments, imageIntent });
+  }, [draft, attachments, imageIntent, runTurn]);
 
   const pickChip = useCallback((chip: string) => {
     setDraft(chip);
@@ -253,6 +477,58 @@ export default function NajePrompt() {
       area?.focus();
     });
   }, []);
+
+  const executeReady = useCallback(async (payload: ReadyResult) => {
+    const snap = live.current;
+    if (snap.busy) return;
+    if (!isExecutableBestFor(payload.bestFor)) return;
+    live.current.busy = true;
+    setBusyHint('ناجي ينفّذ البرومبت…');
+    setBusy(true);
+    const myTurn = ++turnSeq.current;
+    const { model } = resolveModel(snap.modelChoice, payload.prompt);
+    try {
+      const raw = await askNaje(payload.prompt, { model });
+      if (myTurn !== turnSeq.current) return;
+      const text = String(raw || '').trim();
+      if (!text) throw new Error('ما رجع ناتج. جرّب مرة ثانية.');
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: uid('out'),
+          kind: 'result',
+          text,
+          bestFor: payload.bestFor,
+          title: payload.title,
+        },
+      ]);
+    } catch (err) {
+      if (myTurn !== turnSeq.current) return;
+      const message = humanError(err);
+      setMessages((prev) => [...prev, { id: uid('e'), kind: 'error', text: message }]);
+      toast.error(message);
+    } finally {
+      if (myTurn === turnSeq.current) {
+        live.current.busy = false;
+        setBusy(false);
+      }
+    }
+  }, []);
+
+  const updateUnderstanding = useCallback((next: Understanding) => {
+    const current = live.current.lastReady;
+    if (!current) return;
+    const patched: ReadyResult = { ...current, understanding: next };
+    live.current.lastReady = patched;
+    setLastReady(patched);
+    const instruction = [
+      'حدّث البرومبت بناءً على الفهم المعدّل مع الحفاظ على النية والقيود.',
+      `الهدف: ${next.goal || '—'}`,
+      `الجمهور: ${next.audience || '—'}`,
+      `الصيغة: ${next.format || '—'}`,
+    ].join('\n');
+    void runTurn(instruction, 'refine');
+  }, [runTurn]);
 
   const lastReadyMsg = useMemo(
     () => [...messages].reverse().find((m): m is ReadyItem => m.kind === 'ready'),
@@ -277,7 +553,7 @@ export default function NajePrompt() {
               <button
                 type="button"
                 onClick={resetConversation}
-                className="inline-flex items-center gap-1 rounded-full border border-zinc-200 px-2.5 py-1 text-[11px] font-black text-naje-muted dark:border-zinc-700"
+                className="inline-flex min-h-11 items-center gap-1 rounded-full border border-zinc-200 px-2.5 py-1 text-[11px] font-black text-naje-muted dark:border-zinc-700"
               >
                 <Plus className="h-3 w-3" />
                 جديد
@@ -293,7 +569,7 @@ export default function NajePrompt() {
                   type="button"
                   onClick={() => setModelChoice(opt.id)}
                   className={cn(
-                    'rounded-full px-2.5 py-1 text-[11px] font-black transition',
+                    'min-h-8 rounded-full px-2.5 py-1 text-[11px] font-black transition',
                     modelChoice === opt.id
                       ? 'bg-indigo-600 text-white'
                       : 'text-naje-muted hover:text-naje-ink',
@@ -311,7 +587,7 @@ export default function NajePrompt() {
                   title={opt.hint}
                   onClick={() => setMode(opt.id)}
                   className={cn(
-                    'rounded-full px-2.5 py-1 text-[11px] font-black transition',
+                    'min-h-8 rounded-full px-2.5 py-1 text-[11px] font-black transition',
                     mode === opt.id
                       ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900'
                       : 'text-naje-muted hover:text-naje-ink',
@@ -328,6 +604,7 @@ export default function NajePrompt() {
           )}
 
           <HistoryStrip items={history} onSelect={restoreHistory} />
+          <RefinementTrail steps={trail} />
         </div>
       </header>
 
@@ -338,8 +615,24 @@ export default function NajePrompt() {
             <EmptyPromptState onPick={pickChip} />
           ) : (
             <div className="space-y-3">
+              {(pinnedAvoid.length > 0 || pinnedMust.length > 0) && (
+                <ConstraintsPinBar
+                  avoid={pinnedAvoid}
+                  must={pinnedMust}
+                  onRemove={removePinned}
+                />
+              )}
               {messages.map((item, index) => {
-                if (item.kind === 'user') return <PromptBubble key={item.id} text={item.text} />;
+                if (item.kind === 'user') {
+                  return (
+                    <PromptBubble
+                      key={item.id}
+                      text={item.text}
+                      files={item.files}
+                      imageIntent={item.imageIntent}
+                    />
+                  );
+                }
                 if (item.kind === 'clarification') {
                   const isLast = index === messages.length - 1;
                   return (
@@ -355,15 +648,30 @@ export default function NajePrompt() {
                   );
                 }
                 if (item.kind === 'ready') {
+                  const isLatest = lastReadyMsg?.id === item.id;
                   return (
                     <ReadyCard
                       key={item.id}
                       data={item.payload}
                       busy={busy}
-                      showRefine={lastReadyMsg?.id === item.id}
+                      showRefine={isLatest}
+                      canUndo={isLatest && readyStack.length > 1}
                       onCopy={() => void copyPrompt(item.payload)}
                       onHandoff={(path) => handoff(path, item.payload)}
                       onRefine={(instruction) => void runTurn(instruction, 'refine')}
+                      onExecute={isLatest ? () => void executeReady(item.payload) : undefined}
+                      onUndo={isLatest ? undoReady : undefined}
+                      onUpdateUnderstanding={isLatest ? updateUnderstanding : undefined}
+                    />
+                  );
+                }
+                if (item.kind === 'result') {
+                  return (
+                    <ResultCard
+                      key={item.id}
+                      title={item.title}
+                      text={item.text}
+                      bestFor={item.bestFor}
                     />
                   );
                 }
@@ -383,7 +691,7 @@ export default function NajePrompt() {
               {busy && (
                 <div className="flex items-center gap-3 py-2">
                   <NajeThinking size={36} />
-                  <span className="text-xs font-bold text-naje-muted">ناجي يقرأ الفكرة…</span>
+                  <span className="text-xs font-bold text-naje-muted">{busyHint}</span>
                 </div>
               )}
               <div ref={bottomRef} />
@@ -398,6 +706,10 @@ export default function NajePrompt() {
               onSend={sendDraft}
               disabled={busy}
               placeholder={lastReadyMsg ? 'عدّل البرومبت أو اطلب شي جديد…' : 'احكيلي شو بدك تعمل...'}
+              attachments={attachments}
+              onAttachmentsChange={setAttachments}
+              imageIntent={imageIntent}
+              onImageIntentChange={setImageIntent}
             />
           </div>
         </div>

@@ -95,9 +95,13 @@ export default function NajeAd() {
       const raw = sessionStorage.getItem('naje-prompt-handoff');
       if (!raw) return;
       const j = JSON.parse(raw);
-      if (typeof j?.prompt === 'string' && j.prompt.trim() && (j.bestFor === 'ad' || j.bestFor === 'video' || !j.bestFor)) {
-        setPrompt((prev) => prev || j.prompt);
-      }
+      const best = String(j?.bestFor || '').toLowerCase();
+      const promptText = typeof j?.prompt === 'string' ? j.prompt.trim() : '';
+      if (!promptText) return;
+      const forAd = best === 'ad' || best === 'video' || best === '';
+      if (!forAd) return;
+      setPrompt((prev) => prev || promptText);
+      sessionStorage.removeItem('naje-prompt-handoff');
     } catch {
       /* ignore */
     }

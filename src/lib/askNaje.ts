@@ -2,6 +2,12 @@ import { auth } from '../firebase';
 
 export type NajeTextModel = 'lite' | 'core' | 'max';
 
+export type AskNajeFile = {
+  data: string;
+  mimeType: string;
+  name?: string;
+};
+
 export function parseModelJson(raw: string): any | null {
   const t = String(raw || '').trim();
   if (!t) return null;
@@ -43,10 +49,20 @@ function accumulateSse(raw: string): string {
 
 export async function askNaje(
   prompt: string,
-  opts?: { model?: NajeTextModel; history?: Array<{ role: string; content: string }> }
+  opts?: {
+    model?: NajeTextModel;
+    history?: Array<{ role: string; content: string }>;
+    files?: AskNajeFile[];
+  },
 ): Promise<string> {
   const token = await auth.currentUser?.getIdToken();
   if (!token) throw new Error('يلزم تسجيل الدخول');
+  const files = (opts?.files || [])
+    .filter((f) => f && f.data && f.mimeType)
+    .map((f) => ({
+      data: f.data,
+      mimeType: f.mimeType,
+    }));
   const res = await fetch('/api/generate', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -55,6 +71,7 @@ export async function askNaje(
       prompt,
       history: opts?.history || [],
       model: opts?.model || 'core',
+      ...(files.length ? { files } : {}),
     }),
   });
   const raw = await res.text();

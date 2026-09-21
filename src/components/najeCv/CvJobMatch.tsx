@@ -12,7 +12,7 @@ export function CvJobMatch({
   onPosting: (text: string) => void;
   onAddSkill: (keyword: string) => void;
 }) {
-  const { hit, missing, ratio, keys } = jobKeywordCoverage(cv);
+  const { hit, missing, ratio, keys, strong, partial } = jobKeywordCoverage(cv);
   const ready = cv.jobPosting.trim().length >= 20;
 
   return (
@@ -36,12 +36,24 @@ export function CvJobMatch({
             تغطية الكلمات: {hit.length} من {keys.length}
             <span className="mr-2 font-mono text-[11px] text-white/45">({Math.round(ratio * 100)}٪ تداخل لفظي)</span>
           </p>
-          {hit.length > 0 && (
+          {strong.length > 0 && (
             <div>
-              <p className="mb-1 text-[10px] font-black text-emerald-300">موجودة في سيرتك</p>
+              <p className="mb-1 text-[10px] font-black text-emerald-300">تطابق قوي — في المسمّى أو المهارات</p>
               <div className="flex flex-wrap gap-1">
-                {hit.map((k) => (
+                {strong.map((k) => (
                   <span key={k} className="rounded-lg border border-emerald-400/25 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-100">
+                    {k}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+          {partial.length > 0 && (
+            <div>
+              <p className="mb-1 text-[10px] font-black text-sky-200">تطابق جزئي — ورد في الملخص أو الخبرات</p>
+              <div className="flex flex-wrap gap-1">
+                {partial.map((k) => (
+                  <span key={k} className="rounded-lg border border-sky-400/25 bg-sky-500/10 px-2 py-0.5 text-[10px] font-bold text-sky-100">
                     {k}
                   </span>
                 ))}
@@ -50,7 +62,7 @@ export function CvJobMatch({
           )}
           {missing.length > 0 && (
             <div>
-              <p className="mb-1 text-[10px] font-black text-amber-200">ناقصة — أضفها فقط إن كنت تتقنها</p>
+              <p className="mb-1 text-[10px] font-black text-amber-200">ناقص — أضفه فقط إن كنت تتقنه. ناجي لا يضيف مهارة نيابةً عنك.</p>
               <div className="flex flex-wrap gap-1.5">
                 {missing.map((k) => (
                   <button

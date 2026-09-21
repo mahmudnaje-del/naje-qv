@@ -47,7 +47,7 @@ export function Chip({
       type="button"
       disabled={disabled}
       onClick={onClick}
-      className={`inline-flex items-center rounded-xl border px-3 py-1.5 text-[11px] font-bold transition disabled:opacity-40 ${
+      className={`inline-flex min-h-[44px] items-center rounded-xl border px-3 py-2 text-[11px] font-bold transition disabled:opacity-40 ${
         active
           ? 'border-[#d4a574] bg-[#d4a574]/15 text-white shadow-[0_0_18px_rgba(212,165,116,0.18)]'
           : 'border-white/10 bg-black/30 text-white/65 hover:border-white/25 hover:text-white'

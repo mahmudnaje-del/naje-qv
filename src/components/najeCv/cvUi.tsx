@@ -29,6 +29,9 @@ export function Box({
   hint,
   action,
   children,
+  collapsed,
+  onToggle,
+  active,
 }: {
   id?: string;
   icon: React.ReactNode;
@@ -36,10 +39,33 @@ export function Box({
   hint?: string;
   action?: React.ReactNode;
   children: React.ReactNode;
+  collapsed?: boolean;
+  onToggle?: () => void;
+  active?: boolean;
 }) {
   return (
-    <section id={id} className="scroll-mt-28 rounded-2xl border border-white/10 bg-white/[0.035] p-3 sm:p-4">
-      <div className="mb-3 flex items-start justify-between gap-2">
+    <section
+      id={id}
+      className={`scroll-mt-28 rounded-2xl border p-3 sm:p-4 ${
+        active ? 'border-[#c4a35a]/45 bg-white/[0.05]' : 'border-white/10 bg-white/[0.035]'
+      }`}
+    >
+      <div
+        className={`mb-3 flex items-start justify-between gap-2 ${onToggle ? 'cursor-pointer lg:cursor-default' : ''}`}
+        onClick={onToggle}
+        onKeyDown={
+          onToggle
+            ? (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  onToggle();
+                }
+              }
+            : undefined
+        }
+        role={onToggle ? 'button' : undefined}
+        tabIndex={onToggle ? 0 : undefined}
+      >
         <div>
           <h3 className="inline-flex items-center gap-2 text-sm font-black text-white">
             {icon}
@@ -47,9 +73,16 @@ export function Box({
           </h3>
           {hint && <p className="mt-1 text-[10px] leading-relaxed text-white/40">{hint}</p>}
         </div>
-        {action}
+        {action ? (
+          <div
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => e.stopPropagation()}
+          >
+            {action}
+          </div>
+        ) : null}
       </div>
-      {children}
+      <div className={collapsed ? 'hidden lg:block' : ''}>{children}</div>
     </section>
   );
 }

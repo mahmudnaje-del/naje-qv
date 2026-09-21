@@ -1,5 +1,5 @@
 import React from 'react';
-import { FileText, MessageCircle, Sparkles, Upload } from 'lucide-react';
+import { FileText, MessageCircle, Sparkles, Upload, User } from 'lucide-react';
 import {
   applyMarketDefaults,
   applyPersonaDefaults,
@@ -17,11 +17,13 @@ export function CvHero({
   onInterview,
   onImport,
   onDemo,
+  onUseProfile,
 }: {
   onCreate: () => void;
   onInterview: () => void;
   onImport: () => void;
   onDemo: () => void;
+  onUseProfile?: () => void;
 }) {
   return (
     <div className="mx-auto max-w-3xl px-1 py-6 sm:py-10">
@@ -30,7 +32,7 @@ export function CvHero({
       </div>
       <h1 className="text-3xl font-black leading-tight text-white sm:text-4xl">ابنِ سيرة ذاتية تتحدث عنك</h1>
       <p className="mt-3 max-w-xl text-sm leading-relaxed text-white/55 sm:text-base">
-        أدخل معلوماتك كما هي. ناجي يحوّلها إلى ملف مهني للإنسان وATS.
+        استوديو هوية مهنية. أدخل معلوماتك كما هي — ناجي يصوغ، ولا يخترع.
       </p>
       <div className="mt-8 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
         <button type="button" onClick={onCreate} className={`${goldBtn} h-auto flex-col items-start gap-1 px-4 py-4 text-right`}>
@@ -49,7 +51,17 @@ export function CvHero({
           </span>
           <span className="text-[10px] font-bold text-white/45">Word أو نص. PDF: الصق المحتوى — لا نفكّكه زوراً.</span>
         </button>
-        <button type="button" onClick={onDemo} className={`${ghostGoldBtn} h-auto flex-col items-start gap-1 px-4 py-4 text-right`}>
+        <button
+          type="button"
+          onClick={onUseProfile}
+          className={`${ghostGoldBtn} h-auto flex-col items-start gap-1 px-4 py-4 text-right`}
+        >
+          <span className="inline-flex items-center gap-1.5 text-sm font-black">
+            <User className="h-4 w-4" /> استخدم ملفي في ناجي
+          </span>
+          <span className="text-[10px] font-bold text-white/45">الاسم والبريد والصورة — ثم تُراجع في الاستوديو.</span>
+        </button>
+        <button type="button" onClick={onDemo} className={`${ghostGoldBtn} h-auto flex-col items-start gap-1 px-4 py-4 text-right sm:col-span-2`}>
           <span className="inline-flex items-center gap-1.5 text-sm font-black">
             <Sparkles className="h-4 w-4" /> استكشف بمثال
           </span>

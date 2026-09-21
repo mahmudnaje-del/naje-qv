@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Check, ImagePlus, Sparkles, Trash2 } from 'lucide-react';
+import { CvPhotoStyle, PHOTO_STYLES } from '../../lib/cvStudio';
 
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
@@ -110,6 +111,48 @@ export async function enhanceHeadshot(dataUrl: string): Promise<string> {
   return canvas.toDataURL('image/jpeg', 0.92);
 }
 
+/** Color-grade only. Same face, same crop — no identity swap. */
+export async function gradePhotoStyle(dataUrl: string, style: CvPhotoStyle): Promise<string> {
+  if (style === 'natural') return dataUrl;
+  const img = await loadImage(dataUrl);
+  const canvas = document.createElement('canvas');
+  canvas.width = img.width;
+  canvas.height = img.height;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return dataUrl;
+  ctx.drawImage(img, 0, 0);
+  const image = ctx.getImageData(0, 0, img.width, img.height);
+  const d = image.data;
+  const grades: Record<Exclude<CvPhotoStyle, 'natural'>, { contrast: number; sat: number; warmth: number; lift: number; vignette: number }> = {
+    corporate: { contrast: 1.12, sat: 0.9, warmth: -10, lift: 2, vignette: 0.22 },
+    executive: { contrast: 1.18, sat: 0.84, warmth: 4, lift: -6, vignette: 0.32 },
+    creative: { contrast: 1.08, sat: 1.16, warmth: 14, lift: 6, vignette: 0.14 },
+    minimal: { contrast: 0.94, sat: 0.52, warmth: 2, lift: 18, vignette: 0.08 },
+  };
+  const g = grades[style];
+  const w = img.width;
+  const h = img.height;
+  for (let i = 0; i < d.length; i += 4) {
+    const x = (i / 4) % w;
+    const y = Math.floor(i / 4 / w);
+    let r = (d[i] - 128) * g.contrast + 128 + g.lift + g.warmth;
+    let gr = (d[i + 1] - 128) * g.contrast + 128 + g.lift;
+    let b = (d[i + 2] - 128) * g.contrast + 128 + g.lift - g.warmth * 0.55;
+    const luma = r * 0.3 + gr * 0.59 + b * 0.11;
+    r = luma + (r - luma) * g.sat;
+    gr = luma + (gr - luma) * g.sat;
+    b = luma + (b - luma) * g.sat;
+    const dx = x / w - 0.5;
+    const dy = y / h - 0.5;
+    const v = 1 - g.vignette * (dx * dx + dy * dy) * 2.8;
+    d[i] = Math.max(0, Math.min(255, r * v));
+    d[i + 1] = Math.max(0, Math.min(255, gr * v));
+    d[i + 2] = Math.max(0, Math.min(255, b * v));
+  }
+  ctx.putImageData(image, 0, 0);
+  return canvas.toDataURL('image/jpeg', 0.92);
+}
+
 function dimWarning(w: number, h: number): string | null {
   const ratio = w / Math.max(1, h);
   const min = Math.min(w, h);
@@ -129,14 +172,19 @@ export function PhotoBooth({
   photo,
   enhanced,
   onChange,
+  photoStyle = 'natural',
+  onStyleChange,
 }: {
   photo: string | null;
   enhanced: boolean;
   onChange: (photo: string | null, enhanced: boolean) => void;
+  photoStyle?: CvPhotoStyle;
+  onStyleChange?: (style: CvPhotoStyle) => void;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const sourceRef = useRef<string | null>(photo);
   const lastOutRef = useRef<string | null>(photo);
+  const preStyleRef = useRef<string | null>(photo);
   const [source, setSource] = useState<string | null>(photo);
   const [busy, setBusy] = useState<'crop' | 'enhance' | null>(null);
   const [focus, setFocus] = useState({ x: 0.5, y: 0.32 });
@@ -146,6 +194,7 @@ export function PhotoBooth({
     if (!photo) {
       sourceRef.current = null;
       lastOutRef.current = null;
+      preStyleRef.current = null;
       setSource(null);
       setFocus({ x: 0.5, y: 0.32 });
       return;
@@ -153,6 +202,7 @@ export function PhotoBooth({
     if (photo !== lastOutRef.current) {
       sourceRef.current = photo;
       lastOutRef.current = photo;
+      if (!preStyleRef.current) preStyleRef.current = photo;
       setSource(photo);
     }
   }, [photo]);
@@ -177,6 +227,7 @@ export function PhotoBooth({
 
   const applyCrop = async (src: string, fx: number, fy: number, isEnhanced: boolean) => {
     const next = await cropToHeadshot(src, fx, fy);
+    preStyleRef.current = next;
     lastOutRef.current = next;
     onChange(next, isEnhanced);
   };
@@ -194,6 +245,9 @@ export function PhotoBooth({
       setBusy('crop');
       try {
         await applyCrop(dataUrl, fx, fy, false);
+      } catch {
+        lastOutRef.current = dataUrl;
+        onChange(dataUrl, false);
       } finally {
         setBusy(null);
       }
@@ -214,6 +268,29 @@ export function PhotoBooth({
     setBusy('crop');
     try {
       await applyCrop(src, fx, fy, enhanced);
+    } catch {
+      /* remote photos may taint canvas — keep displayed photo */
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const applyStyle = async (style: CvPhotoStyle) => {
+    const src = preStyleRef.current || sourceRef.current || photo;
+    onStyleChange?.(style);
+    if (!src || !enhanced) return;
+    if (style === 'natural') {
+      lastOutRef.current = src;
+      onChange(src, true);
+      return;
+    }
+    setBusy('enhance');
+    try {
+      const graded = await gradePhotoStyle(src, style);
+      lastOutRef.current = graded;
+      onChange(graded, true);
+    } catch {
+      /* keep current pixels if canvas is tainted */
     } finally {
       setBusy(null);
     }
@@ -226,10 +303,17 @@ export function PhotoBooth({
     try {
       const graded = await enhanceHeadshot(src);
       sourceRef.current = graded;
+      preStyleRef.current = graded;
       setSource(graded);
-      const next = await cropToHeadshot(graded, focus.x, focus.y);
+      let next = await cropToHeadshot(graded, focus.x, focus.y);
+      preStyleRef.current = next;
+      if (photoStyle && photoStyle !== 'natural') {
+        next = await gradePhotoStyle(next, photoStyle);
+      }
       lastOutRef.current = next;
       onChange(next, true);
+    } catch {
+      /* CORS / tainted canvas — do not invent a processed photo */
     } finally {
       setBusy(null);
     }
@@ -305,8 +389,10 @@ export function PhotoBooth({
               onClick={() => {
                 sourceRef.current = null;
                 lastOutRef.current = null;
+                preStyleRef.current = null;
                 setSource(null);
                 setWarn(null);
+                onStyleChange?.('natural');
                 onChange(null, false);
               }}
               className="inline-flex items-center gap-1 text-[10px] text-white/40"
@@ -315,6 +401,28 @@ export function PhotoBooth({
             </button>
           )}
         </div>
+        {enhanced && photo ? (
+          <div className="space-y-1">
+            <p className="text-[9px] leading-relaxed text-white/45">تحسين إضاءة — لا نغيّر ملامحك</p>
+            <div className="flex flex-wrap gap-1">
+              {PHOTO_STYLES.map((s) => (
+                <button
+                  key={s.id}
+                  type="button"
+                  disabled={!!busy}
+                  onClick={() => applyStyle(s.id)}
+                  className={`rounded-lg border px-2 py-0.5 text-[9px] font-black ${
+                    photoStyle === s.id
+                      ? 'border-[#c4a35a] bg-[#c4a35a]/20 text-white'
+                      : 'border-white/10 text-white/55'
+                  }`}
+                >
+                  {s.en}
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : null}
         <p className="text-[9px] text-white/30">تحسين محلي: تباين وإضاءة فقط — بلا تغيير ملامح.</p>
       </div>
       <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={(e) => pick(e.target.files?.[0])} />

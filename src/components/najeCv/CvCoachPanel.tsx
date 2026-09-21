@@ -3,29 +3,40 @@ import { ShieldAlert } from 'lucide-react';
 import {
   atsRisk,
   atsRiskLabel,
+  CAREER_BREAK_CHIPS,
+  careerGaps,
   completeness,
   CvData,
   firstTwoLines,
   HrTip,
+  recruiterScan,
   scoreCv,
 } from '../../lib/cvStudio';
-import { ghostGoldBtn } from './cvUi';
+import { chipOff, chipOn, ghostGoldBtn } from './cvUi';
 
 export function CvCoachPanel({
   cv,
   dismissed,
   onDismiss,
   onImprove,
+  scanMode,
+  onToggleScan,
+  onCareerBreak,
 }: {
   cv: CvData;
   dismissed: string[];
   onDismiss: (id: string) => void;
   onImprove: (id: string) => void;
+  scanMode?: boolean;
+  onToggleScan?: () => void;
+  onCareerBreak?: (value: string) => void;
 }) {
   const { score, tips } = scoreCv(cv);
   const risk = atsRisk(cv);
   const ticks = completeness(cv);
   const two = firstTwoLines(cv);
+  const scan = recruiterScan(cv);
+  const gaps = careerGaps(cv);
   const visible = tips.filter((t) => !dismissed.includes(t.id));
   const scoreColor = score >= 75 ? 'text-emerald-400' : score >= 50 ? 'text-[#e8c36a]' : 'text-rose-300';
   const riskColor = risk.level === 'high' ? 'text-rose-300' : risk.level === 'moderate' ? 'text-amber-200' : 'text-emerald-300';
@@ -60,11 +71,60 @@ export function CvCoachPanel({
         </div>
 
         <div className="mb-3 rounded-xl border border-white/10 bg-black/30 p-3">
-          <p className="mb-1 text-[10px] font-black tracking-wide text-[#e8c36a]">اختبار السطرين الأولين</p>
-          <p className="text-[15px] font-black text-white">{two.name || '— الاسم —'}</p>
-          <p className="text-[12px] font-bold text-[#c4a35a]">{two.headline || '— المسمّى —'}</p>
-          <p className="mt-1 text-[11px] leading-relaxed text-white/65">{two.summaryFirst || '— أول سطر في الملخص —'}</p>
+          <div className="mb-1 flex items-center justify-between gap-2">
+            <p className="text-[10px] font-black tracking-wide text-[#e8c36a]">اختبار السطرين الأولين</p>
+            {onToggleScan ? (
+              <button type="button" onClick={onToggleScan} className={`${ghostGoldBtn} py-1 text-[9px]`}>
+                {scanMode ? 'إخفاء المسح' : 'محاكاة مسح المسؤول'}
+              </button>
+            ) : null}
+          </div>
+          <p
+            className={`text-[15px] font-black ${scan.name === 'ok' ? 'text-emerald-300' : 'text-rose-300'}`}
+          >
+            {two.name || '— الاسم —'}
+          </p>
+          <p
+            className={`text-[12px] font-bold ${scan.headline === 'ok' ? 'text-emerald-300' : 'text-rose-300'}`}
+          >
+            {two.headline || '— المسمّى —'}
+          </p>
+          <p
+            className={`mt-1 text-[11px] leading-relaxed ${
+              scan.summaryFirst === 'ok'
+                ? 'text-emerald-200/80'
+                : scan.summaryFirst === 'generic'
+                  ? 'text-amber-200'
+                  : 'text-white/45'
+            }`}
+          >
+            {two.summaryFirst || '— أول سطر في الملخص —'}
+          </p>
+          <p className="mt-2 text-[9px] leading-relaxed text-white/40">
+            نفس ألوان محاكاة المسح على المعاينة: أخضر يظهر، أحمر فارغ، أصفر عام أو تواريخ ناقصة. ليست تنبؤاً بقرار التوظيف.
+          </p>
         </div>
+
+        {gaps.length > 0 && (
+          <div className="mb-3 rounded-xl border border-amber-400/25 bg-amber-500/8 p-2.5">
+            <p className="text-[11px] font-black text-amber-100">هل تريد تفسير هذه الفترة؟</p>
+            <p className="mt-0.5 text-[10px] leading-relaxed text-white/50">
+              فجوة أكثر من 12 شهراً. ليست افتراض مشكلة.
+            </p>
+            <div className="mt-2 flex flex-wrap gap-1">
+              {CAREER_BREAK_CHIPS.map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => onCareerBreak?.(c)}
+                  className={`rounded-lg border px-2 py-1 text-[10px] font-black ${cv.careerBreak === c ? chipOn : chipOff}`}
+                >
+                  {c}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         <p className="mb-1.5 text-[10px] font-black text-white/50">اكتمال الأقسام</p>
         <div className="mb-3 flex flex-wrap gap-1">

@@ -8,6 +8,7 @@ import { estimateOmniPoints } from '../lib/omniAd';
 import {
   apiAspect,
   applyHandoff,
+  applyHeroPreset,
   applyTemplate,
   applyVariation,
   composeMotionPrompt,
@@ -17,6 +18,7 @@ import {
   resolveSlot,
   saveDraft,
   stripDataUrl,
+  type HeroPresetId,
   type IdentSlot,
   type MotionDraft,
   type MotionKind,
@@ -27,9 +29,11 @@ import StudioBootSplash from '../components/StudioBootSplash';
 import { BrandKit } from '../components/najeMotion/BrandKit';
 import { DirectionPanel } from '../components/najeMotion/DirectionPanel';
 import { FormatBar } from '../components/najeMotion/FormatBar';
+import { HeroLaunch } from '../components/najeMotion/HeroLaunch';
 import { KindCards } from '../components/najeMotion/KindCards';
 import { Monitor, type SlotResult } from '../components/najeMotion/Monitor';
 import { MotionPlanView } from '../components/najeMotion/MotionPlanView';
+import { PromptPreview } from '../components/najeMotion/PromptPreview';
 import { StyleTemplates } from '../components/najeMotion/StyleTemplates';
 import { Chip, FieldLabel, StudioCard } from '../components/najeMotion/StudioUi';
 import { usePricingConfig } from '../hooks/usePricingConfig';
@@ -49,6 +53,7 @@ export default function NajeIdent() {
   const [results, setResults] = useState<Partial<Record<IdentSlot, SlotResult>>>({});
   const [paywall, setPaywall] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [studioEntered, setStudioEntered] = useState(() => Boolean(loadDraft().brandName.trim()));
   const generatingSlotRef = useRef<IdentSlot | null>(null);
   const kindRef = useRef(draft.kind);
 
@@ -67,7 +72,10 @@ export default function NajeIdent() {
 
   useEffect(() => {
     const handoff = readPromptHandoff();
-    if (handoff) setDraft((prev) => applyHandoff(prev, handoff));
+    if (handoff) {
+      setDraft((prev) => applyHandoff(prev, handoff));
+      setStudioEntered(true);
+    }
   }, []);
 
   useEffect(() => {
@@ -103,11 +111,20 @@ export default function NajeIdent() {
     return () => unsub();
   }, [jobId]);
 
-  const selectKind = (kind: MotionKind) => {
+  const selectKind = (kind: MotionKind, preset?: HeroPresetId) => {
+    if (preset) {
+      setDraft((prev) => applyHeroPreset(prev, preset));
+      return;
+    }
     patch({
       kind,
       activePiece: kind === 'outro' ? 'outro' : 'intro',
     });
+  };
+
+  const enterStudio = (kind: MotionKind, preset?: HeroPresetId) => {
+    setDraft((prev) => applyHeroPreset(prev, preset || kind));
+    setStudioEntered(true);
   };
 
   const generate = async (nextDraft?: MotionDraft) => {
@@ -199,140 +216,183 @@ export default function NajeIdent() {
     return `إنتاج ${piece} — ${draft.duration}ث`;
   };
 
+  const hasResults = Object.values(results).some((r) => r?.videoUrl);
+  const showHero = !studioEntered && !hasResults;
+  const presetBadge =
+    draft.projectType === 'podcast' || draft.projectType === 'channel' ? draft.projectType : '';
+
   return (
-    <div className="naje-ad-studio relative h-full overflow-y-auto bg-[#0b0c10] px-3 pb-28 pt-4 text-[#f4efe6] sm:px-6 lg:pb-8" dir="rtl">
+    <div
+      className={`naje-ad-studio relative h-full overflow-y-auto bg-[#0b0c10] px-3 pt-4 text-[#f4efe6] sm:px-6 ${
+        showHero ? 'pb-8' : 'pb-28 lg:pb-8'
+      }`}
+      dir="rtl"
+    >
       <StudioBootSplash dark />
       <FeaturePaywallModal isOpen={paywall} onClose={() => setPaywall(false)} feature="najeAd" />
 
       <div className="mx-auto max-w-6xl space-y-4">
-        <header className="rounded-2xl border border-white/8 bg-[radial-gradient(1200px_circle_at_100%_-20%,rgba(212,165,116,0.22),transparent_45%),linear-gradient(180deg,#16120e,#0b0c10)] p-4 shadow-2xl sm:rounded-[28px] sm:p-5">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="min-w-0">
-              <div className="mb-1.5 inline-flex items-center gap-2 rounded-full border border-[#d4a574]/30 bg-[#d4a574]/10 px-2.5 py-0.5 text-[10px] font-black tracking-[0.14em] text-[#e8b86d]">
-                <Clapperboard className="h-3.5 w-3.5" /> NAJE MOTION
-              </div>
-              <h1 className="text-xl font-black leading-snug tracking-tight text-white sm:text-2xl">
-                اصنع مقدمتك وخاتمتك بأسلوبك
-              </h1>
-              <p className="mt-1 max-w-xl text-xs leading-relaxed text-white/50">
-                حوّل شعارك وهويتك إلى مقدمة أو خاتمة فيديو خلال دقائق.
-              </p>
-              <p className="mt-1.5 text-[11px] font-bold text-[#e8b86d]">اصنع حضورك قبل أن يبدأ المحتوى.</p>
-            </div>
-            <div className="rounded-2xl border border-white/10 bg-black/30 px-3 py-1.5 text-right sm:px-4 sm:py-2">
-              <div className="text-[10px] text-white/40">رصيدك</div>
-              <div className="font-mono text-base font-black text-[#e8b86d] sm:text-lg">
-                {(user?.balance ?? 0).toLocaleString()} نقطة
+        {showHero ? (
+          <>
+            <div className="flex justify-end">
+              <div className="rounded-2xl border border-white/10 bg-black/30 px-3 py-1.5 text-right sm:px-4 sm:py-2">
+                <div className="text-[10px] text-white/40">رصيدك</div>
+                <div className="font-mono text-base font-black text-[#e8b86d] sm:text-lg">
+                  {(user?.balance ?? 0).toLocaleString()} نقطة
+                </div>
               </div>
             </div>
-          </div>
-          <div className="mt-4">
-            <KindCards value={draft.kind} onChange={selectKind} />
-          </div>
-          {draft.kind === 'both' && (
-            <div className="mt-3 rounded-2xl border border-white/8 bg-black/25 p-3">
-              <p className="mb-2 text-[10px] leading-relaxed text-white/45">
-                الاثنان بالتتابع: نُخرج الانترو أولاً، ثم الأوترو كعملية ثانية. تبقى النتيجتان.
-              </p>
-              <div className="grid grid-cols-2 gap-2">
-                <Chip
-                  active={draft.activePiece === 'intro'}
-                  onClick={() => patch({ activePiece: 'intro' })}
-                  className="w-full justify-center py-2.5"
-                >
-                  إخراج الانترو{results.intro?.videoUrl ? ' — جاهز' : ''}
-                </Chip>
-                <Chip
-                  active={draft.activePiece === 'outro'}
-                  onClick={() => patch({ activePiece: 'outro' })}
-                  className="w-full justify-center py-2.5"
-                >
-                  إخراج الأوترو{results.outro?.videoUrl ? ' — جاهز' : ''}
-                </Chip>
+            <HeroLaunch onChoose={enterStudio} />
+          </>
+        ) : (
+          <>
+            <header className="rounded-2xl border border-white/8 bg-[radial-gradient(1200px_circle_at_100%_-20%,rgba(212,165,116,0.22),transparent_45%),linear-gradient(180deg,#16120e,#0b0c10)] p-4 shadow-2xl sm:rounded-[28px] sm:p-5">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="min-w-0">
+                  {!hasResults && (
+                    <button
+                      type="button"
+                      onClick={() => setStudioEntered(false)}
+                      className="mb-2 inline-flex min-h-[44px] items-center text-[11px] font-black text-white/45 hover:text-[#e8b86d]"
+                    >
+                      رجوع للبداية
+                    </button>
+                  )}
+                  <div className="mb-1.5 inline-flex items-center gap-2 rounded-full border border-[#d4a574]/30 bg-[#d4a574]/10 px-2.5 py-0.5 text-[10px] font-black tracking-[0.14em] text-[#e8b86d]">
+                    <Clapperboard className="h-3.5 w-3.5" /> NAJE MOTION
+                  </div>
+                  <h1 className="text-xl font-black leading-snug tracking-tight text-white sm:text-2xl">
+                    اصنع مقدمتك وخاتمتك بأسلوبك
+                  </h1>
+                  <p className="mt-1 max-w-xl text-xs leading-relaxed text-white/50">
+                    حوّل شعارك وهويتك إلى مقدمة أو خاتمة فيديو احترافية خلال دقائق.
+                  </p>
+                  <p className="mt-1.5 text-[11px] font-bold text-[#e8b86d]">اصنع حضورك قبل أن يبدأ المحتوى.</p>
+                </div>
+                <div className="rounded-2xl border border-white/10 bg-black/30 px-3 py-1.5 text-right sm:px-4 sm:py-2">
+                  <div className="text-[10px] text-white/40">رصيدك</div>
+                  <div className="font-mono text-base font-black text-[#e8b86d] sm:text-lg">
+                    {(user?.balance ?? 0).toLocaleString()} نقطة
+                  </div>
+                </div>
               </div>
-              {results.intro?.videoUrl && !results.outro?.videoUrl && draft.activePiece === 'intro' && (
-                <p className="mt-2 text-[10px] font-bold text-[#e8b86d]">الانترو جاهز. انتقل إلى الأوترو للعملية الثانية.</p>
+              <div className="mt-4">
+                <KindCards value={draft.kind} onChange={selectKind} preset={presetBadge} />
+              </div>
+              {draft.kind === 'both' && (
+                <div className="mt-3 rounded-2xl border border-white/8 bg-black/25 p-3">
+                  <p className="mb-2 text-[10px] leading-relaxed text-white/45">
+                    الاثنان بالتتابع: نُخرج الانترو أولاً، ثم الأوترو كعملية ثانية. تبقى النتيجتان.
+                  </p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Chip
+                      active={draft.activePiece === 'intro'}
+                      onClick={() => patch({ activePiece: 'intro' })}
+                      className="w-full justify-center py-2.5"
+                    >
+                      إخراج الانترو{results.intro?.videoUrl ? ' — جاهز' : ''}
+                    </Chip>
+                    <Chip
+                      active={draft.activePiece === 'outro'}
+                      onClick={() => patch({ activePiece: 'outro' })}
+                      className="w-full justify-center py-2.5"
+                    >
+                      إخراج الأوترو{results.outro?.videoUrl ? ' — جاهز' : ''}
+                    </Chip>
+                  </div>
+                  {results.intro?.videoUrl && !results.outro?.videoUrl && draft.activePiece === 'intro' && (
+                    <p className="mt-2 text-[10px] font-bold text-[#e8b86d]">الانترو جاهز. انتقل إلى الأوترو للعملية الثانية.</p>
+                  )}
+                </div>
               )}
+            </header>
+
+            {error && (
+              <div className="flex items-center justify-between gap-3 rounded-2xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-xs text-rose-200">
+                <span className="inline-flex items-center gap-2">
+                  <AlertCircle className="h-4 w-4" /> {error}
+                </span>
+                <button type="button" onClick={() => setError(null)} className="min-h-[44px] font-bold">
+                  إغلاق
+                </button>
+              </div>
+            )}
+
+            <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
+              <div className="space-y-4">
+                <FormatBar
+                  duration={draft.duration}
+                  aspect={draft.aspect}
+                  resolution={draft.resolution}
+                  onDuration={(duration) => patch({ duration })}
+                  onAspect={(aspect) => patch({ aspect })}
+                  onResolution={(resolution) => patch({ resolution })}
+                />
+                <BrandKit draft={draft} onChange={patch} />
+                <StyleTemplates styleId={draft.styleId} onSelect={(id) => setDraft((prev) => applyTemplate(prev, id))} />
+                <DirectionPanel draft={draft} slot={slot} onChange={patch} />
+                <StudioCard title="صف رؤيتك" hint="اختياري. يُلحق بتوجيه المخرج كما هو.">
+                  <FieldLabel>الرؤية</FieldLabel>
+                  <textarea
+                    rows={4}
+                    value={draft.vision}
+                    maxLength={1200}
+                    onChange={(e) => patch({ vision: e.target.value })}
+                    placeholder="مثال: كشف بطيء من الظلام، الشعار يتمدد بضوء نحاسي ثم يثبت في الوسط…"
+                    className="w-full resize-none rounded-2xl border border-white/10 bg-black/40 p-3 text-sm text-white placeholder:text-white/30 focus:border-[#d4a574] focus:outline-none"
+                  />
+                </StudioCard>
+              </div>
+
+              <div className="space-y-4 lg:sticky lg:top-3">
+                <MotionPlanView beats={beats} duration={draft.duration} />
+                <PromptPreview draft={draft} slot={slot} beats={beats} />
+
+                <button
+                  type="button"
+                  disabled={busy || najeAd?.enabled === false}
+                  onClick={() => void generate()}
+                  className="hidden min-h-[44px] w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-l from-[#d4a574] via-[#e8b86d] to-[color-mix(in_srgb,#e8b86d_70%,white)] py-3.5 text-sm font-black text-[#1a140c] shadow-[0_12px_40px_-12px_rgba(212,165,116,0.45)] disabled:opacity-50 lg:flex"
+                >
+                  {busy ? <NajeThinking size={22} /> : <Sparkles className="h-4 w-4" />}
+                  {busy ? generateLabel() : `${generateLabel()} · ${points} نقطة`}
+                </button>
+
+                <Monitor
+                  busy={busy}
+                  stepLabel={stepLabel}
+                  progress={job?.progress || 0}
+                  generatingSlot={generatingSlot}
+                  results={results}
+                  activeSlot={slot}
+                  kind={draft.kind}
+                  aspect={draft.aspect}
+                  platform={draft.platform}
+                  duration={draft.duration}
+                  brandName={draft.brandName}
+                  hasLogo={Boolean(draft.logo)}
+                  onRegenerate={() => void generate()}
+                  onVariation={runVariation}
+                />
+              </div>
             </div>
-          )}
-        </header>
-
-        {error && (
-          <div className="flex items-center justify-between gap-3 rounded-2xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-xs text-rose-200">
-            <span className="inline-flex items-center gap-2">
-              <AlertCircle className="h-4 w-4" /> {error}
-            </span>
-            <button type="button" onClick={() => setError(null)} className="font-bold">
-              إغلاق
-            </button>
-          </div>
+          </>
         )}
+      </div>
 
-        <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
-          <div className="space-y-4">
-            <FormatBar
-              duration={draft.duration}
-              aspect={draft.aspect}
-              resolution={draft.resolution}
-              onDuration={(duration) => patch({ duration })}
-              onAspect={(aspect) => patch({ aspect })}
-              onResolution={(resolution) => patch({ resolution })}
-            />
-            <BrandKit draft={draft} onChange={patch} />
-            <StyleTemplates styleId={draft.styleId} onSelect={(id) => setDraft((prev) => applyTemplate(prev, id))} />
-            <DirectionPanel draft={draft} slot={slot} onChange={patch} />
-            <StudioCard title="صف رؤيتك" hint="اختياري. يُلحق بتوجيه المخرج كما هو.">
-              <FieldLabel>الرؤية</FieldLabel>
-              <textarea
-                rows={4}
-                value={draft.vision}
-                maxLength={1200}
-                onChange={(e) => patch({ vision: e.target.value })}
-                placeholder="مثال: كشف بطيء من الظلام، الشعار يتمدد بضوء نحاسي ثم يثبت في الوسط…"
-                className="w-full resize-none rounded-2xl border border-white/10 bg-black/40 p-3 text-sm text-white placeholder:text-white/30 focus:border-[#d4a574] focus:outline-none"
-              />
-            </StudioCard>
-          </div>
-
-          <div className="space-y-4 lg:sticky lg:top-3">
-            <MotionPlanView beats={beats} duration={draft.duration} />
-
-            <button
-              type="button"
-              disabled={busy || najeAd?.enabled === false}
-              onClick={() => void generate()}
-              className="hidden w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-l from-[#d4a574] via-[#e8b86d] to-[color-mix(in_srgb,#e8b86d_70%,white)] py-3.5 text-sm font-black text-[#1a140c] shadow-[0_12px_40px_-12px_rgba(212,165,116,0.45)] disabled:opacity-50 lg:flex"
-            >
-              {busy ? <NajeThinking size={22} /> : <Sparkles className="h-4 w-4" />}
-              {busy ? generateLabel() : `${generateLabel()} · ${points} نقطة`}
-            </button>
-
-            <Monitor
-              busy={busy}
-              stepLabel={stepLabel}
-              progress={job?.progress || 0}
-              generatingSlot={generatingSlot}
-              results={results}
-              activeSlot={slot}
-              kind={draft.kind}
-              onRegenerate={() => void generate()}
-              onVariation={runVariation}
-            />
-          </div>
+      {!showHero && (
+        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-white/10 bg-[#0b0c10]/95 p-3 backdrop-blur lg:hidden">
+          <button
+            type="button"
+            disabled={busy || najeAd?.enabled === false}
+            onClick={() => void generate()}
+            className="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-l from-[#d4a574] via-[#e8b86d] to-[color-mix(in_srgb,#e8b86d_70%,white)] py-3.5 text-sm font-black text-[#1a140c] disabled:opacity-50"
+          >
+            {busy ? <NajeThinking size={22} /> : <Sparkles className="h-4 w-4" />}
+            {busy ? generateLabel() : `${generateLabel()} · ${points} نقطة`}
+          </button>
         </div>
-      </div>
-
-      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-white/10 bg-[#0b0c10]/95 p-3 backdrop-blur lg:hidden">
-        <button
-          type="button"
-          disabled={busy || najeAd?.enabled === false}
-          onClick={() => void generate()}
-          className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-l from-[#d4a574] via-[#e8b86d] to-[color-mix(in_srgb,#e8b86d_70%,white)] py-3.5 text-sm font-black text-[#1a140c] disabled:opacity-50"
-        >
-          {busy ? <NajeThinking size={22} /> : <Sparkles className="h-4 w-4" />}
-          {busy ? generateLabel() : `${generateLabel()} · ${points} نقطة`}
-        </button>
-      </div>
+      )}
     </div>
   );
 }

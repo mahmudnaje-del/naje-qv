@@ -16,7 +16,7 @@ import {
 
 function NameLine({ cv, className }: { cv: CvData; className?: string }) {
   return (
-    <h1 className={className}>
+    <h1 className={className} data-cv-scan={cv.fullName.trim().length >= 3 ? 'name-ok' : 'name-empty'}>
       {cv.fullName || (cv.lang === 'ar' ? 'اسمك الثلاثي' : 'Your full name')}
     </h1>
   );
@@ -24,7 +24,11 @@ function NameLine({ cv, className }: { cv: CvData; className?: string }) {
 
 function Headline({ cv, className }: { cv: CvData; className?: string }) {
   if (!cv.headline) return null;
-  return <p className={className}>{cv.headline}</p>;
+  return (
+    <p className={className} data-cv-scan="headline-ok">
+      {cv.headline}
+    </p>
+  );
 }
 
 /** Photo locked to the physical right of the sheet; inner copy follows cv.lang. */
@@ -33,14 +37,16 @@ function PhotoRightHeader({
   photo,
   children,
   className,
+  style,
 }: {
   cv: CvData;
   photo: React.ReactNode;
   children: React.ReactNode;
   className?: string;
+  style?: React.CSSProperties;
 }) {
   return (
-    <header className={`flex items-start gap-4 ${className || ''}`} style={{ direction: 'ltr' }}>
+    <header className={`flex items-start gap-4 ${className || ''}`} style={{ direction: 'ltr', ...style }}>
       <div className="min-w-0 flex-1" style={{ direction: cv.lang === 'ar' ? 'rtl' : 'ltr' }}>
         {children}
       </div>
@@ -69,10 +75,10 @@ function NajeSheet({ cv, sheetId }: { cv: CvData; sheetId?: string }) {
 function GulfSheet({ cv, sheetId }: { cv: CvData; sheetId?: string }) {
   return (
     <Paper cv={cv} sheetId={sheetId} padding="38px 44px 44px">
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-[3px] bg-[#c4a35a]" />
-      <PhotoRightHeader cv={cv} photo={<CvPhoto cv={cv} shape="circle" size={92} />} className="border-b border-[#c4a35a] pb-3">
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-[3px]" style={{ backgroundColor: 'var(--cv-accent, #c4a35a)' }} />
+      <PhotoRightHeader cv={cv} photo={<CvPhoto cv={cv} shape="circle" size={92} />} className="border-b pb-3" style={{ borderColor: 'var(--cv-accent, #c4a35a)' }}>
         <NameLine cv={cv} className="text-[22px] font-black leading-tight text-[#1a140c]" />
-        <Headline cv={cv} className="mt-0.5 text-[12px] font-bold text-[#8a6a28]" />
+        <Headline cv={cv} className="mt-0.5 text-[12px] font-bold [color:var(--cv-accent-ink,#8a6a28)]" />
         <div className="mt-1.5">
           <ContactLine cv={cv} className="text-[8.5px] leading-snug text-slate-600" />
         </div>
@@ -131,10 +137,10 @@ function GoldSheet({ cv, sheetId }: { cv: CvData; sheetId?: string }) {
       <PhotoRightHeader cv={cv} photo={<CvPhoto cv={cv} shape="circle" size={80} />}>
         <NameLine cv={cv} className="text-[28px] font-black leading-[1.15] tracking-tight text-[#1a140c]" />
         <div className="mt-2.5 flex items-center gap-2">
-          <span className="h-px w-10 bg-[#c4a35a]" />
-          <span className="h-px flex-1 bg-[#c4a35a]/35" />
+          <span className="h-px w-10" style={{ backgroundColor: 'var(--cv-accent, #c4a35a)' }} />
+          <span className="h-px flex-1" style={{ backgroundColor: 'color-mix(in srgb, var(--cv-accent, #c4a35a) 35%, transparent)' }} />
         </div>
-        <Headline cv={cv} className="mt-2 text-[12px] font-bold tracking-[0.08em] text-[#8a6a28]" />
+        <Headline cv={cv} className="mt-2 text-[12px] font-bold tracking-[0.08em] [color:var(--cv-accent-ink,#8a6a28)]" />
         <div className="mt-2">
           <ContactLine cv={cv} className="text-[8.5px] leading-relaxed text-slate-500" />
         </div>
@@ -175,8 +181,14 @@ function ModernSheet({ cv, sheetId }: { cv: CvData; sheetId?: string }) {
               }}
             />
           ) : null}
-          <h1 className="text-[17px] font-black leading-tight text-[#f3ead8]">{cv.fullName || '—'}</h1>
-          {cv.headline ? <p className="mt-1 text-[10px] font-bold text-[#c4a35a]">{cv.headline}</p> : null}
+          <h1 className="text-[17px] font-black leading-tight text-[#f3ead8]" data-cv-scan={cv.fullName.trim().length >= 3 ? 'name-ok' : 'name-empty'}>
+            {cv.fullName || '—'}
+          </h1>
+          {cv.headline ? (
+            <p className="mt-1 text-[10px] font-bold" style={{ color: 'var(--cv-accent, #c4a35a)' }} data-cv-scan="headline-ok">
+              {cv.headline}
+            </p>
+          ) : null}
 
           <div className="mt-5 space-y-1 text-[8px] leading-relaxed text-white/70" style={{ overflowWrap: 'anywhere' }}>
             {cv.phone ? (
@@ -204,7 +216,9 @@ function ModernSheet({ cv, sheetId }: { cv: CvData; sheetId?: string }) {
 
           {cv.showPersonal && sidePersonal.length > 0 ? (
             <div className="mt-5">
-              <p className="mb-1.5 text-[8px] font-black tracking-[0.16em] text-[#c4a35a]">{t.personal}</p>
+              <p className="mb-1.5 text-[8px] font-black tracking-[0.16em]" style={{ color: 'var(--cv-accent, #c4a35a)' }}>
+                {t.personal}
+              </p>
               <div className="space-y-1 text-[8px] text-white/75">
                 {sidePersonal.map(([k, v]) => (
                   <p key={k}>
@@ -218,7 +232,9 @@ function ModernSheet({ cv, sheetId }: { cv: CvData; sheetId?: string }) {
 
           {hasSkills(cv) ? (
             <div className="mt-5">
-              <p className="mb-1.5 text-[8px] font-black tracking-[0.16em] text-[#c4a35a]">{t.skills}</p>
+              <p className="mb-1.5 text-[8px] font-black tracking-[0.16em]" style={{ color: 'var(--cv-accent, #c4a35a)' }}>
+                {t.skills}
+              </p>
               <div className="flex flex-col gap-1 text-[8px] leading-snug text-white/80">
                 {skills.map((s) => (
                   <span key={s}>{s}</span>
@@ -229,7 +245,9 @@ function ModernSheet({ cv, sheetId }: { cv: CvData; sheetId?: string }) {
 
           {hasLangs(cv) ? (
             <div className="mt-5">
-              <p className="mb-1.5 text-[8px] font-black tracking-[0.16em] text-[#c4a35a]">{t.langs}</p>
+              <p className="mb-1.5 text-[8px] font-black tracking-[0.16em]" style={{ color: 'var(--cv-accent, #c4a35a)' }}>
+                {t.langs}
+              </p>
               <p className="text-[8px] leading-relaxed text-white/80">{langs.map((l) => l.name).join('  ·  ')}</p>
             </div>
           ) : null}

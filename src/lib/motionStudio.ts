@@ -5,6 +5,10 @@ export type MotionAspect = '16:9' | '9:16' | '1:1';
 export type MotionRes = '720p' | '1080p';
 export type MotionIntensity = 'subtle' | 'balanced' | 'dynamic';
 export type MotionLanguage = 'ar' | 'en' | 'bilingual';
+export type MotionPlatform = 'youtube' | 'tiktok' | 'instagram' | 'podcast' | 'corporate' | '';
+export type MotionSound = 'none' | 'cinematic' | 'corporate' | 'digital' | 'impact' | 'whoosh' | 'minimal';
+export type HeroPresetId = 'podcast' | 'channel';
+export type StyleCategory = 'luxe' | 'broadcast' | 'energy' | 'learn';
 
 export interface MotionDraft {
   kind: MotionKind;
@@ -32,6 +36,14 @@ export interface MotionDraft {
   outroCta: string;
   customCta: string;
   vision: string;
+  website: string;
+  accent: string;
+  textColor: string;
+  platform: MotionPlatform;
+  projectType: string;
+  brandRules: string;
+  brandLock: boolean;
+  sound: MotionSound;
 }
 
 export interface MotionBeat {
@@ -54,6 +66,8 @@ export interface StyleTemplate {
     'motion' | 'intensity' | 'camera' | 'lighting' | 'bgStyle' | 'logoBehavior' | 'textAnim'
   >;
   audioHint: string;
+  category: StyleCategory;
+  categoryAr: string;
 }
 
 export const MOTION_STORAGE_KEY = 'naje-motion-draft-v1';
@@ -64,6 +78,84 @@ export const KIND_OPTIONS: { id: MotionKind; ar: string; hint: string }[] = [
   { id: 'outro', ar: 'أوترو', hint: 'كرت النهاية ودعوة واضحة' },
   { id: 'both', ar: 'الاثنان', hint: 'انترو ثم أوترو كعمليتين متتابعتين' },
   { id: 'logo', ar: 'تحريك الشعار', hint: 'وخزة تُحيي العلامة وتثبتها' },
+];
+
+export const HERO_PRESETS: {
+  id: HeroPresetId;
+  ar: string;
+  hint: string;
+  kind: MotionKind;
+  styleId: string;
+  patch: Partial<MotionDraft>;
+}[] = [
+  {
+    id: 'podcast',
+    ar: 'بودكاست',
+    hint: 'إعداد جاهز: انترو دافئ بأسلوب بودكاست — ليست نوعاً جديداً للمحرّك',
+    kind: 'intro',
+    styleId: 'podcast',
+    patch: {
+      kind: 'intro',
+      industry: 'podcast',
+      styleId: 'podcast',
+      projectType: 'podcast',
+      platform: 'podcast',
+      audience: 'creator',
+    },
+  },
+  {
+    id: 'channel',
+    ar: 'حزمة قناة',
+    hint: 'إعداد جاهز: انترو وأوترو سينمائي — عمليتان متتابعتان لا ملف واحد',
+    kind: 'both',
+    styleId: 'cinematic',
+    patch: {
+      kind: 'both',
+      industry: 'channel',
+      styleId: 'cinematic',
+      projectType: 'channel',
+      platform: 'youtube',
+      audience: 'channel',
+    },
+  },
+];
+
+export const PLATFORMS: { id: Exclude<MotionPlatform, ''>; ar: string }[] = [
+  { id: 'youtube', ar: 'يوتيوب' },
+  { id: 'tiktok', ar: 'تيك توك' },
+  { id: 'instagram', ar: 'إنستغرام' },
+  { id: 'podcast', ar: 'بودكاست' },
+  { id: 'corporate', ar: 'شركات' },
+];
+
+export const PROJECT_TYPES: { id: string; ar: string }[] = [
+  { id: 'youtube_intro', ar: 'انترو يوتيوب' },
+  { id: 'youtube_outro', ar: 'أوترو يوتيوب' },
+  { id: 'shorts', ar: 'شورتس' },
+  { id: 'podcast', ar: 'بودكاست' },
+  { id: 'corporate', ar: 'شركات' },
+  { id: 'channel', ar: 'حزمة قناة' },
+  { id: 'logo_sting', ar: 'وخزة شعار' },
+];
+
+export const SOUND_OPTIONS: { id: MotionSound; ar: string; en: string }[] = [
+  { id: 'none', ar: 'صامت', en: 'silent ident — no designed sting, no music bed, no vocals' },
+  { id: 'cinematic', ar: 'سينمائي', en: 'cinematic low swell and a tasteful impact, no melody that sings, no vocals' },
+  { id: 'corporate', ar: 'شركات', en: 'polished corporate ident sting, no speech' },
+  { id: 'digital', ar: 'رقمي', en: 'clean digital tick and a short precision hit, no speech' },
+  { id: 'impact', ar: 'ضربة', en: 'short athletic ident hit, no crowd, no commentary' },
+  { id: 'whoosh', ar: 'وش', en: 'brief tasteful whoosh into a clean lockup, no vocals' },
+  { id: 'minimal', ar: 'خفيف', en: 'almost silent: a single soft tick, then stillness' },
+];
+
+export const SOUND_HONESTY = 'الصوت يُخبز في توجيه المخرج — ليس مكتبة موسيقى منفصلة';
+
+export const STYLE_CATEGORIES: { id: StyleCategory | 'all'; ar: string }[] = [
+  { id: 'all', ar: 'الكل' },
+  { id: 'luxe', ar: 'فاخر' },
+  { id: 'broadcast', ar: 'بث' },
+  { id: 'energy', ar: 'طاقة' },
+  { id: 'learn', ar: 'تعليم' },
 ];
 
 export const INDUSTRIES: { id: string; ar: string }[] = [
@@ -152,13 +244,21 @@ export const OUTRO_CTAS: { id: string; ar: string; en: string }[] = [
   { id: 'custom', ar: 'مخصص', en: 'custom end line, spelled exactly as supplied' },
 ];
 
-export const COLOR_PALETTES: { id: string; ar: string; primary: string; secondary: string; bgColor: string }[] = [
-  { id: 'copper', ar: 'نحاس الاستوديو', primary: '#d4a574', secondary: '#e8b86d', bgColor: '#0b0c10' },
-  { id: 'ink_gold', ar: 'ذهب ليلي', primary: '#c9a227', secondary: '#f4efe6', bgColor: '#08090c' },
-  { id: 'teal', ar: 'تركواز', primary: '#7dd3c7', secondary: '#d4a574', bgColor: '#071014' },
-  { id: 'broadcast', ar: 'بث', primary: '#c45c4a', secondary: '#f4efe6', bgColor: '#0c0b0b' },
-  { id: 'pitch', ar: 'ملعب', primary: '#b8e05a', secondary: '#f4efe6', bgColor: '#0a0c08' },
-  { id: 'royal', ar: 'ملكي', primary: '#8b7cf6', secondary: '#e8b86d', bgColor: '#0c0b12' },
+export const COLOR_PALETTES: {
+  id: string;
+  ar: string;
+  primary: string;
+  secondary: string;
+  accent: string;
+  bgColor: string;
+  textColor: string;
+}[] = [
+  { id: 'copper', ar: 'نحاس الاستوديو', primary: '#d4a574', secondary: '#e8b86d', accent: '#c45c4a', bgColor: '#0b0c10', textColor: '#f4efe6' },
+  { id: 'ink_gold', ar: 'ذهب ليلي', primary: '#c9a227', secondary: '#f4efe6', accent: '#d4a574', bgColor: '#08090c', textColor: '#f4efe6' },
+  { id: 'teal', ar: 'تركواز', primary: '#7dd3c7', secondary: '#d4a574', accent: '#e8b86d', bgColor: '#071014', textColor: '#e8f6f4' },
+  { id: 'broadcast', ar: 'بث', primary: '#c45c4a', secondary: '#f4efe6', accent: '#e8b86d', bgColor: '#0c0b0b', textColor: '#f4efe6' },
+  { id: 'pitch', ar: 'ملعب', primary: '#b8e05a', secondary: '#f4efe6', accent: '#7dd3c7', bgColor: '#0a0c08', textColor: '#f4efe6' },
+  { id: 'royal', ar: 'ملكي', primary: '#8b7cf6', secondary: '#e8b86d', accent: '#d4a574', bgColor: '#0c0b12', textColor: '#f0eefc' },
 ];
 
 export const STYLE_TEMPLATES: StyleTemplate[] = [
@@ -169,6 +269,8 @@ export const STYLE_TEMPLATES: StyleTemplate[] = [
     hint: 'كشف رزين، معدن وذهب، ضوء حجمي',
     motionLevel: 'subtle',
     motionLevelAr: 'هادئ',
+    category: 'luxe',
+    categoryAr: 'فاخر',
     gradient: ['#2a1c10', '#d4a574'],
     defaults: {
       motion: 'light_sweep',
@@ -188,6 +290,8 @@ export const STYLE_TEMPLATES: StyleTemplate[] = [
     hint: 'تجميع هندسي، شبكة ضوء نظيفة',
     motionLevel: 'balanced',
     motionLevelAr: 'متوازن',
+    category: 'energy',
+    categoryAr: 'طاقة',
     gradient: ['#0b1c1c', '#7dd3c7'],
     defaults: {
       motion: 'assemble',
@@ -207,6 +311,8 @@ export const STYLE_TEMPLATES: StyleTemplate[] = [
     hint: 'بث واثق، حواف حادة، ثبات سريع',
     motionLevel: 'balanced',
     motionLevelAr: 'متوازن',
+    category: 'broadcast',
+    categoryAr: 'بث',
     gradient: ['#1a1010', '#c45c4a'],
     defaults: {
       motion: 'camera_push',
@@ -226,6 +332,8 @@ export const STYLE_TEMPLATES: StyleTemplate[] = [
     hint: 'ألوان دافئة، حركة مرحة دون فوضى',
     motionLevel: 'dynamic',
     motionLevelAr: 'ديناميكي',
+    category: 'energy',
+    categoryAr: 'طاقة',
     gradient: ['#2a1a08', '#e8b86d'],
     defaults: {
       motion: 'particle',
@@ -245,6 +353,8 @@ export const STYLE_TEMPLATES: StyleTemplate[] = [
     hint: 'ضباب حجمي، كشف بطيء، فيلم',
     motionLevel: 'subtle',
     motionLevelAr: 'هادئ',
+    category: 'luxe',
+    categoryAr: 'فاخر',
     gradient: ['#121018', '#d4a574'],
     defaults: {
       motion: 'reveal',
@@ -264,6 +374,8 @@ export const STYLE_TEMPLATES: StyleTemplate[] = [
     hint: 'حركة قليلة، فراغ فاخر، وضوح',
     motionLevel: 'subtle',
     motionLevelAr: 'هادئ',
+    category: 'luxe',
+    categoryAr: 'فاخر',
     gradient: ['#161616', '#f4efe6'],
     defaults: {
       motion: 'minimal_fade',
@@ -283,6 +395,8 @@ export const STYLE_TEMPLATES: StyleTemplate[] = [
     hint: 'طاقة واثقة، اقتراب حاسم',
     motionLevel: 'dynamic',
     motionLevelAr: 'ديناميكي',
+    category: 'energy',
+    categoryAr: 'طاقة',
     gradient: ['#10180c', '#b8e05a'],
     defaults: {
       motion: 'camera_push',
@@ -302,6 +416,8 @@ export const STYLE_TEMPLATES: StyleTemplate[] = [
     hint: 'هندسي، نظيف، ثقة مؤسسية',
     motionLevel: 'balanced',
     motionLevelAr: 'متوازن',
+    category: 'broadcast',
+    categoryAr: 'بث',
     gradient: ['#101218', '#d4a574'],
     defaults: {
       motion: 'assemble',
@@ -321,6 +437,8 @@ export const STYLE_TEMPLATES: StyleTemplate[] = [
     hint: 'طاقة، غليتش منضبط يُحل فوراً',
     motionLevel: 'dynamic',
     motionLevelAr: 'ديناميكي',
+    category: 'energy',
+    categoryAr: 'طاقة',
     gradient: ['#140c1c', '#8b7cf6'],
     defaults: {
       motion: 'glitch',
@@ -340,6 +458,8 @@ export const STYLE_TEMPLATES: StyleTemplate[] = [
     hint: 'حميمي، ضوء دافئ، ثبات الاسم',
     motionLevel: 'balanced',
     motionLevelAr: 'متوازن',
+    category: 'broadcast',
+    categoryAr: 'بث',
     gradient: ['#1a140c', '#e8b86d'],
     defaults: {
       motion: 'reveal',
@@ -351,6 +471,69 @@ export const STYLE_TEMPLATES: StyleTemplate[] = [
       textAnim: 'fade',
     },
     audioHint: 'warm analog whoosh and a soft ident hit, no spoken intro',
+  },
+  {
+    id: 'elegant',
+    name: 'أنيق',
+    nameEn: 'Elegant',
+    hint: 'خطوط رفيعة، كشف هادئ، تباين ناعم',
+    motionLevel: 'subtle',
+    motionLevelAr: 'هادئ',
+    category: 'luxe',
+    categoryAr: 'فاخر',
+    gradient: ['#1a1612', '#e8d5b5'],
+    defaults: {
+      motion: 'minimal_fade',
+      intensity: 'subtle',
+      camera: 'static',
+      lighting: 'soft',
+      bgStyle: 'gradient',
+      logoBehavior: 'center_hold',
+      textAnim: 'tracking',
+    },
+    audioHint: 'a single crystalline tick, then silence — no melody, no vocals',
+  },
+  {
+    id: 'documentary',
+    name: 'وثائقي',
+    nameEn: 'Documentary',
+    hint: 'ضوء طبيعي، كشف بطيء، جدية هادئة',
+    motionLevel: 'subtle',
+    motionLevelAr: 'هادئ',
+    category: 'broadcast',
+    categoryAr: 'بث',
+    gradient: ['#141210', '#c4a574'],
+    defaults: {
+      motion: 'reveal',
+      intensity: 'subtle',
+      camera: 'slow_push',
+      lighting: 'cinematic',
+      bgStyle: 'dark',
+      logoBehavior: 'center_hold',
+      textAnim: 'fade',
+    },
+    audioHint: 'low documentary swell, no narration, no score melody, no vocals',
+  },
+  {
+    id: 'education',
+    name: 'تعليمي',
+    nameEn: 'Education',
+    hint: 'وضوح، ثقة هادئة، قراءة فورية',
+    motionLevel: 'balanced',
+    motionLevelAr: 'متوازن',
+    category: 'learn',
+    categoryAr: 'تعليم',
+    gradient: ['#101418', '#7dd3c7'],
+    defaults: {
+      motion: 'assemble',
+      intensity: 'balanced',
+      camera: 'static',
+      lighting: 'soft',
+      bgStyle: 'solid',
+      logoBehavior: 'center_hold',
+      textAnim: 'slide',
+    },
+    audioHint: 'clean educational sting, short and friendly, no lecture voice',
   },
 ];
 
@@ -388,6 +571,14 @@ export function emptyDraft(): MotionDraft {
     outroCta: 'subscribe',
     customCta: '',
     vision: '',
+    website: '',
+    accent: '#c45c4a',
+    textColor: '#f4efe6',
+    platform: '',
+    projectType: '',
+    brandRules: '',
+    brandLock: true,
+    sound: 'cinematic',
   };
 }
 
@@ -413,18 +604,55 @@ export function applyTemplate(draft: MotionDraft, styleId: string): MotionDraft 
   return { ...draft, styleId, ...t.defaults };
 }
 
+const IDENTITY_LOCK_KEYS: (keyof MotionDraft)[] = [
+  'logo',
+  'primary',
+  'secondary',
+  'accent',
+  'bgColor',
+  'textColor',
+  'brandName',
+  'duration',
+  'aspect',
+  'website',
+];
+
 export function applyVariation(draft: MotionDraft, variationId: string): MotionDraft {
   const v = VARIATIONS.find((x) => x.id === variationId);
   if (!v) return draft;
-  return { ...draft, ...v.patch };
+  const patch: Partial<MotionDraft> = { ...v.patch };
+  if (draft.brandLock) {
+    for (const key of IDENTITY_LOCK_KEYS) {
+      delete patch[key];
+    }
+  }
+  return { ...draft, ...patch };
 }
+
+const SOUND_IDS: MotionSound[] = ['none', 'cinematic', 'corporate', 'digital', 'impact', 'whoosh', 'minimal'];
+const PLATFORM_IDS: MotionPlatform[] = ['youtube', 'tiktok', 'instagram', 'podcast', 'corporate', ''];
 
 export function loadDraft(): MotionDraft {
   try {
     const raw = localStorage.getItem(MOTION_STORAGE_KEY);
     if (!raw) return emptyDraft();
     const parsed = JSON.parse(raw) as Partial<MotionDraft>;
-    return { ...emptyDraft(), ...parsed, logo: typeof parsed.logo === 'string' ? parsed.logo : null };
+    const base = emptyDraft();
+    return {
+      ...base,
+      ...parsed,
+      logo: typeof parsed.logo === 'string' ? parsed.logo : null,
+      brandLock: parsed.brandLock !== false,
+      sound: SOUND_IDS.includes(parsed.sound as MotionSound) ? (parsed.sound as MotionSound) : base.sound,
+      platform: PLATFORM_IDS.includes(parsed.platform as MotionPlatform)
+        ? (parsed.platform as MotionPlatform)
+        : base.platform,
+      accent: isHex(String(parsed.accent || '')) ? String(parsed.accent) : base.accent,
+      textColor: isHex(String(parsed.textColor || '')) ? String(parsed.textColor) : base.textColor,
+      website: typeof parsed.website === 'string' ? parsed.website : '',
+      brandRules: typeof parsed.brandRules === 'string' ? parsed.brandRules : '',
+      projectType: typeof parsed.projectType === 'string' ? parsed.projectType : '',
+    };
   } catch {
     return emptyDraft();
   }
@@ -478,6 +706,65 @@ export function applyHandoff(draft: MotionDraft, handoff: PromptHandoff): Motion
     next.activePiece = 'outro';
   }
   return next;
+}
+
+export function applyHeroPreset(draft: MotionDraft, choice: MotionKind | HeroPresetId): MotionDraft {
+  if (choice === 'podcast' || choice === 'channel') {
+    const preset = HERO_PRESETS.find((p) => p.id === choice);
+    if (!preset) return draft;
+    const next: MotionDraft = {
+      ...draft,
+      ...preset.patch,
+      kind: preset.kind,
+      activePiece: preset.kind === 'outro' ? 'outro' : 'intro',
+    };
+    return applyTemplate(next, preset.styleId);
+  }
+  const projectType =
+    choice === 'logo'
+      ? 'logo_sting'
+      : choice === 'outro'
+        ? 'youtube_outro'
+        : choice === 'both'
+          ? ''
+          : 'youtube_intro';
+  return {
+    ...draft,
+    kind: choice,
+    activePiece: choice === 'outro' ? 'outro' : 'intro',
+    projectType,
+  };
+}
+
+export function slotLabelAr(slot: IdentSlot): string {
+  if (slot === 'outro') return 'أوترو';
+  if (slot === 'logo') return 'تحريك الشعار';
+  return 'انترو';
+}
+
+export function najeUnderstood(draft: MotionDraft, slot: IdentSlot): string {
+  const style = STYLE_TEMPLATES.find((s) => s.id === draft.styleId);
+  const motion = MOTIONS.find((m) => m.id === draft.motion);
+  const sound = SOUND_OPTIONS.find((s) => s.id === draft.sound);
+  const brand = draft.brandName.trim() || 'بدون اسم بعد';
+  const parts = [
+    brand,
+    slotLabelAr(slot),
+    `${draft.duration}ث`,
+    style?.name || draft.styleId,
+    motion?.ar || draft.motion,
+    draft.aspect,
+  ];
+  if (sound && draft.sound !== 'none') parts.push(sound.ar);
+  if (draft.brandLock) parts.push('هوية مقفولة');
+  return parts.join(' · ');
+}
+
+export function motionFilename(brandName: string, slot: IdentSlot, duration: MotionDuration): string {
+  const raw = (brandName || 'Naje').trim() || 'Naje';
+  const brand = raw.replace(/[<>:"/\\|?*\u0000-\u001f]+/g, '').replace(/\s+/g, '_').slice(0, 48) || 'Naje';
+  const piece = slot === 'outro' ? 'Outro' : slot === 'logo' ? 'Logo' : 'Intro';
+  return `${brand}_${piece}_${duration}s.mp4`;
 }
 
 function pick<T extends { id: string }>(list: T[], id: string): T | undefined {
@@ -554,6 +841,25 @@ function aspectBlock(aspect: MotionAspect): string {
   return 'Aspect 9:16 vertical (Shorts / TikTok). Keep logo and type in the central safe area, away from UI chrome at top and bottom.';
 }
 
+function platformBlock(platform: MotionPlatform): string {
+  if (platform === 'youtube') {
+    return 'Platform: YouTube. Keep logo and type inside 16:9 title-safe. Leave the lower-right and lower-third clear of essential marks so player UI does not cover the lockup.';
+  }
+  if (platform === 'tiktok') {
+    return 'Platform: TikTok 9:16. Keep the mark in the central safe area. Nothing essential in the top 12% (username), bottom 18% (captions/buttons), or right 14% (engagement rail).';
+  }
+  if (platform === 'instagram') {
+    return 'Platform: Instagram Reels. Central 9:16 safe area. Avoid top and bottom UI chrome.';
+  }
+  if (platform === 'podcast') {
+    return 'Platform: podcast cover / video podcast. Prefer a centered lockup that still reads as a square-ish cover.';
+  }
+  if (platform === 'corporate') {
+    return 'Platform: corporate / internal / broadcast. Generous title-safe, no social UI chrome, no subscribe sticker.';
+  }
+  return '';
+}
+
 function durationBlock(duration: MotionDuration, plan: MotionBeat[]): string {
   const beats = plan.map((b) => `${b.from.toFixed(1)}–${b.to.toFixed(1)}s: ${b.title} — ${b.body}`).join(' | ');
   if (duration === 5) {
@@ -598,9 +904,11 @@ export function composeMotionPrompt(draft: MotionDraft, slot: IdentSlot): string
   );
   lines.push(durationBlock(draft.duration, plan));
   lines.push(aspectBlock(draft.aspect));
+  const plat = platformBlock(draft.platform);
+  if (plat) lines.push(plat);
   lines.push(
-    `Brand colors locked: primary ${draft.primary}, secondary ${draft.secondary}, background ${draft.bgColor}. ` +
-      `Grade every frame to this palette. No random neon unless lighting is neon.`
+    `Brand colors locked: primary ${draft.primary}, secondary ${draft.secondary}, accent ${draft.accent}, background ${draft.bgColor}, text ${draft.textColor}. ` +
+      `Grade every frame to this palette. On-screen type uses ${draft.textColor}. Accent ${draft.accent} only as a controlled highlight. No random neon unless lighting is neon.`
   );
 
   if (draft.tagline.trim()) {
@@ -610,6 +918,13 @@ export function composeMotionPrompt(draft: MotionDraft, slot: IdentSlot): string
     );
   } else {
     lines.push('No tagline unless the brand name itself needs a short hold caption.');
+  }
+
+  if (draft.website.trim()) {
+    lines.push(
+      `On-screen website only if it fits the lockup, spelled exactly: "${draft.website.trim()}". ` +
+        `Do not invent a different URL. If it cannot be spelled perfectly, omit it rather than misspell it.`
+    );
   }
 
   lines.push(languageBlock(draft));
@@ -639,9 +954,14 @@ export function composeMotionPrompt(draft: MotionDraft, slot: IdentSlot): string
 
   if (slot === 'outro') {
     const custom = draft.outroCta === 'custom' ? draft.customCta.trim() : '';
+    const site =
+      draft.outroCta === 'website' && draft.website.trim()
+        ? ` URL lockup spelled exactly: "${draft.website.trim()}".`
+        : '';
     lines.push(
       `OUTRO close: ${cta?.en || 'clean end-card'}.` +
         (custom ? ` Custom line, spelled exactly: "${custom}".` : '') +
+        site +
         ' Platform-safe margins. End on a clean logo hold.'
     );
   } else if (slot === 'logo') {
@@ -650,10 +970,29 @@ export function composeMotionPrompt(draft: MotionDraft, slot: IdentSlot): string
     lines.push('INTRO close: end on a clean logo hold with breathing room so an editor can cut to content. No dialogue. No subscribe end-card.');
   }
 
-  if (style?.audioHint) {
+  const sound = pick(SOUND_OPTIONS, draft.sound);
+  if (draft.sound === 'none') {
+    lines.push(
+      'Audio: silent ident. No music bed, no designed sting, no vocals, no dialogue. Do not invent a separate soundtrack file.'
+    );
+  } else if (sound) {
+    lines.push(
+      `Audio (baked into this direction — not a separate music library or soundtrack file): ${sound.en}. No dialogue, no lyrics, no presenter, no voice-over.`
+    );
+  } else if (style?.audioHint) {
     lines.push(`Audio (native, design only): ${style.audioHint}. No dialogue, no lyrics, no presenter, no voice-over.`);
   } else {
     lines.push('Audio: short ident whoosh/impact only. No dialogue, no lyrics, no voice-over.');
+  }
+
+  if (draft.brandRules.trim()) {
+    lines.push(`Brand rules (obey; never violate for decoration): ${draft.brandRules.trim().slice(0, 800)}`);
+  }
+
+  if (draft.brandLock) {
+    lines.push(
+      'Brand lock ON: never invent a new logo, never change the supplied name, never drift the palette, never restyle duration or frame. Hold the given identity.'
+    );
   }
 
   if (draft.vision.trim()) {
@@ -697,9 +1036,13 @@ function luma(r: number, g: number, b: number) {
 }
 
 /** Real canvas sampling: 4 corners + center. Inset toward center if a corner is transparent. */
-export function sampleLogoPalette(
-  dataUrl: string
-): Promise<{ primary: string; secondary: string; bgColor: string }> {
+export function sampleLogoPalette(dataUrl: string): Promise<{
+  primary: string;
+  secondary: string;
+  accent: string;
+  bgColor: string;
+  textColor: string;
+}> {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => {
@@ -744,12 +1087,22 @@ export function sampleLogoPalette(
         const bySat = [...samples].sort((a, b) => sat(b.r, b.g, b.b) - sat(a.r, a.g, a.b));
         const byLuma = [...samples].sort((a, b) => luma(a.r, a.g, a.b) - luma(b.r, b.g, b.b));
         const primary = bySat[0];
-        const bg = byLuma[0];
         const secondary = bySat[1] || byLuma[byLuma.length - 1] || primary;
+        const accent = bySat[2] || bySat[1] || primary;
+        const bg = byLuma[0];
+        const light = byLuma[byLuma.length - 1] || primary;
+        const text =
+          luma(light.r, light.g, light.b) < 140
+            ? luma(bg.r, bg.g, bg.b) < 80
+              ? { r: 244, g: 239, b: 230 }
+              : { r: 11, g: 12, b: 16 }
+            : light;
         resolve({
           primary: rgbToHex(primary.r, primary.g, primary.b),
           secondary: rgbToHex(secondary.r, secondary.g, secondary.b),
+          accent: rgbToHex(accent.r, accent.g, accent.b),
           bgColor: rgbToHex(bg.r, bg.g, bg.b),
+          textColor: rgbToHex(text.r, text.g, text.b),
         });
       } catch (e) {
         reject(e);

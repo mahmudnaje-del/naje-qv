@@ -8,6 +8,8 @@ import {
   LOGO_BEHAVIORS,
   MOTIONS,
   OUTRO_CTAS,
+  SOUND_HONESTY,
+  SOUND_OPTIONS,
   TEXT_ANIMS,
   type IdentSlot,
   type MotionDraft,
@@ -37,6 +39,13 @@ export function DirectionPanel({
       <ChipRow title="الشدة">
         {INTENSITIES.map((x) => (
           <Chip key={x.id} active={draft.intensity === x.id} onClick={() => onChange({ intensity: x.id })}>
+            {x.ar}
+          </Chip>
+        ))}
+      </ChipRow>
+      <ChipRow title="الصوت" hint={SOUND_HONESTY}>
+        {SOUND_OPTIONS.map((x) => (
+          <Chip key={x.id} active={draft.sound === x.id} onClick={() => onChange({ sound: x.id })}>
             {x.ar}
           </Chip>
         ))}
@@ -94,6 +103,10 @@ export function DirectionPanel({
           )}
         </>
       )}
+      <p className="rounded-xl border border-white/8 bg-black/25 px-3 py-2 text-[10px] leading-relaxed text-white/40">
+        قواعد العلامة تُكتب في بطاقة الهوية وتُخبز في توجيه المخرج.
+        {draft.brandRules.trim() ? ` مفعّل: ${draft.brandRules.trim().slice(0, 90)}` : ' أضف مثلاً: لا نيون.'}
+      </p>
     </div>
   );
 
@@ -104,7 +117,7 @@ export function DirectionPanel({
           <button
             type="button"
             onClick={() => setOpen((v) => !v)}
-            className="flex w-full items-center justify-between gap-2 text-right"
+            className="flex min-h-[44px] w-full items-center justify-between gap-2 text-right"
           >
             <div>
               <h2 className="text-sm font-black text-white">إخراج</h2>

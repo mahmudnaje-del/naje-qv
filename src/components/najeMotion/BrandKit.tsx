@@ -1,10 +1,12 @@
 import React, { useRef, useState } from 'react';
-import { Upload, X } from 'lucide-react';
+import { Lock, Unlock, Upload, X } from 'lucide-react';
 import {
   AUDIENCES,
   COLOR_PALETTES,
   INDUSTRIES,
   LANGUAGES,
+  PLATFORMS,
+  PROJECT_TYPES,
   isHex,
   sampleLogoPalette,
   type MotionDraft,
@@ -115,6 +117,41 @@ export function BrandKit({
             placeholder="اختياري"
           />
         </div>
+        <div>
+          <FieldLabel>الموقع</FieldLabel>
+          <input
+            dir="ltr"
+            value={draft.website}
+            onChange={(e) => onChange({ website: e.target.value })}
+            placeholder="example.com"
+            className="w-full rounded-2xl border border-white/10 bg-black/40 px-3 py-2.5 text-left text-sm text-white placeholder:text-white/30 focus:border-[#d4a574] focus:outline-none"
+          />
+          <p className="mt-1 text-[10px] text-white/35">يظهر على الشاشة فقط إن وُجد، ويُكتب كما هو حرفياً.</p>
+        </div>
+
+        <ChipRow title="المنصة">
+          {PLATFORMS.map((x) => (
+            <Chip
+              key={x.id}
+              active={draft.platform === x.id}
+              onClick={() => onChange({ platform: draft.platform === x.id ? '' : x.id })}
+            >
+              {x.ar}
+            </Chip>
+          ))}
+        </ChipRow>
+
+        <ChipRow title="نوع المشروع">
+          {PROJECT_TYPES.map((x) => (
+            <Chip
+              key={x.id}
+              active={draft.projectType === x.id}
+              onClick={() => onChange({ projectType: draft.projectType === x.id ? '' : x.id })}
+            >
+              {x.ar}
+            </Chip>
+          ))}
+        </ChipRow>
 
         <ChipRow title="المجال">
           {INDUSTRIES.map((x) => (
@@ -172,14 +209,14 @@ export function BrandKit({
                 type="button"
                 onClick={extract}
                 disabled={sampling}
-                className="rounded-xl border border-[#d4a574]/40 bg-[#d4a574]/10 px-3 py-1.5 text-[11px] font-bold text-[#e8b86d] disabled:opacity-50"
+                className="min-h-[44px] rounded-xl border border-[#d4a574]/40 bg-[#d4a574]/10 px-3 py-1.5 text-[11px] font-bold text-[#e8b86d] disabled:opacity-50"
               >
                 {sampling ? 'يقرأ اللوحة…' : 'اعتبار الألوان من الشعار'}
               </button>
               <button
                 type="button"
                 onClick={() => onChange({ logo: null })}
-                className="inline-flex items-center gap-1 rounded-xl border border-white/10 px-3 py-1.5 text-[11px] font-bold text-white/60"
+                className="inline-flex min-h-[44px] items-center gap-1 rounded-xl border border-white/10 px-3 py-1.5 text-[11px] font-bold text-white/60"
               >
                 <X className="h-3 w-3" /> إزالة
               </button>
@@ -190,26 +227,43 @@ export function BrandKit({
 
         <div>
           <FieldLabel>الألوان</FieldLabel>
-          <div className="mb-2 flex gap-2">
+          <div className="mb-2 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
             <ColorField label="أساسي" value={draft.primary} onChange={(primary) => onChange({ primary })} />
             <ColorField label="ثانوي" value={draft.secondary} onChange={(secondary) => onChange({ secondary })} />
+            <ColorField label="تمييز" value={draft.accent} onChange={(accent) => onChange({ accent })} />
             <ColorField label="خلفية" value={draft.bgColor} onChange={(bgColor) => onChange({ bgColor })} />
+            <ColorField label="نص" value={draft.textColor} onChange={(textColor) => onChange({ textColor })} />
           </div>
           <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-6">
             {COLOR_PALETTES.map((p) => {
-              const on = draft.primary === p.primary && draft.secondary === p.secondary && draft.bgColor === p.bgColor;
+              const on =
+                draft.primary === p.primary &&
+                draft.secondary === p.secondary &&
+                draft.accent === p.accent &&
+                draft.bgColor === p.bgColor &&
+                draft.textColor === p.textColor;
               return (
                 <button
                   key={p.id}
                   type="button"
-                  onClick={() => onChange({ primary: p.primary, secondary: p.secondary, bgColor: p.bgColor })}
-                  className={`rounded-xl border p-1.5 ${on ? 'border-[#d4a574]' : 'border-white/10'}`}
+                  onClick={() =>
+                    onChange({
+                      primary: p.primary,
+                      secondary: p.secondary,
+                      accent: p.accent,
+                      bgColor: p.bgColor,
+                      textColor: p.textColor,
+                    })
+                  }
+                  className={`min-h-[44px] rounded-xl border p-1.5 ${on ? 'border-[#d4a574]' : 'border-white/10'}`}
                   title={p.ar}
                 >
                   <span className="flex h-7 overflow-hidden rounded-lg">
                     <span className="flex-1" style={{ background: p.primary }} />
                     <span className="flex-1" style={{ background: p.secondary }} />
+                    <span className="flex-1" style={{ background: p.accent }} />
                     <span className="flex-1" style={{ background: p.bgColor }} />
+                    <span className="flex-1" style={{ background: p.textColor }} />
                   </span>
                   <span className="mt-1 block text-center text-[9px] font-bold text-white/50">{p.ar}</span>
                 </button>
@@ -217,6 +271,36 @@ export function BrandKit({
             })}
           </div>
         </div>
+
+        <div>
+          <FieldLabel>قواعد العلامة</FieldLabel>
+          <textarea
+            rows={3}
+            value={draft.brandRules}
+            maxLength={800}
+            onChange={(e) => onChange({ brandRules: e.target.value })}
+            placeholder="مثال: لا نيون، لا حروف مفككة، لا شعار ثلاثي الأبعاد"
+            className="w-full resize-none rounded-2xl border border-white/10 bg-black/40 p-3 text-sm text-white placeholder:text-white/30 focus:border-[#d4a574] focus:outline-none"
+          />
+        </div>
+
+        <button
+          type="button"
+          onClick={() => onChange({ brandLock: !draft.brandLock })}
+          className={`flex min-h-[44px] w-full items-center justify-between gap-2 rounded-2xl border px-3 py-2.5 text-right ${
+            draft.brandLock
+              ? 'border-[#d4a574]/50 bg-[#d4a574]/10 text-[#e8b86d]'
+              : 'border-white/10 bg-black/30 text-white/60'
+          }`}
+        >
+          <span>
+            <span className="block text-[12px] font-black">عند إعادة التوليد تبقى الهوية مقفولة</span>
+            <span className="mt-0.5 block text-[10px] text-white/45">
+              الشعار والألوان والاسم والمدة والإطار لا تُصفَّر مع النسخ.
+            </span>
+          </span>
+          {draft.brandLock ? <Lock className="h-4 w-4 shrink-0" /> : <Unlock className="h-4 w-4 shrink-0" />}
+        </button>
       </div>
     </StudioCard>
   );

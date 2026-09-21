@@ -6,6 +6,8 @@ import {
   DEGREE_LABELS,
   LANG_LEVELS,
   bulletsOf,
+  isGenericSummaryLine,
+  paperAccentVars,
   rangeLabel,
 } from '../../lib/cvStudio';
 
@@ -15,9 +17,9 @@ export const CV_FONT = '"Cairo", "Segoe UI", Tahoma, sans-serif';
 
 export type Tone = CvTemplate;
 
-export function Ltr({ children, className }: { children: React.ReactNode; className?: string }) {
+export function Ltr({ children, className, ...rest }: React.HTMLAttributes<HTMLSpanElement>) {
   return (
-    <span dir="ltr" className={className} style={{ unicodeBidi: 'isolate' }}>
+    <span dir="ltr" className={className} style={{ unicodeBidi: 'isolate' }} {...rest}>
       {children}
     </span>
   );
@@ -209,7 +211,7 @@ export function CvPhoto({
   const h = height ?? size;
   const radius = shape === 'circle' ? '50%' : shape === 'square' ? '0px' : '0px';
   const border =
-    shape === 'circle' ? '2px solid #c4a35a' : shape === 'square' ? '1px solid #1b2838' : '1px solid #d4d4d8';
+    shape === 'circle' ? '2px solid var(--cv-accent, #c4a35a)' : shape === 'square' ? '1px solid #1b2838' : '1px solid #d4d4d8';
   return (
     <img
       src={cv.photo}
@@ -279,10 +281,10 @@ export function Section({
     naje: `mb-1.5 border-b-[1.5px] border-black pb-[3px] text-[9.5px] font-black tracking-[0.16em] text-black ${
       upper ? 'uppercase' : ''
     }`,
-    gulf: 'mb-1.5 border-b border-[#c4a35a] pb-[3px] text-[9.5px] font-black tracking-[0.1em] text-[#1a140c]',
+    gulf: 'mb-1.5 border-b pb-[3px] text-[9.5px] font-black tracking-[0.1em] text-[#1a140c] [border-color:var(--cv-accent,#c4a35a)]',
     jadarat: 'mb-1.5 bg-[#e8eef4] px-2 py-[5px] text-[10.5px] font-bold text-[#1a2a3a]',
-    gold: `mb-0 text-[8.5px] font-black tracking-[0.22em] text-[#8a6a28] ${upper ? 'uppercase' : ''}`,
-    modern: `mb-1.5 border-b border-[#c4a35a]/45 pb-[3px] text-[9.5px] font-black tracking-[0.14em] text-[#6e5420] ${
+    gold: `mb-0 text-[8.5px] font-black tracking-[0.22em] [color:var(--cv-accent-ink,#8a6a28)] ${upper ? 'uppercase' : ''}`,
+    modern: `mb-1.5 border-b pb-[3px] text-[9.5px] font-black tracking-[0.14em] [border-color:color-mix(in_srgb,var(--cv-accent,#c4a35a)_45%,transparent)] [color:var(--cv-accent-ink,#6e5420)] ${
       upper ? 'uppercase' : ''
     }`,
     academic: `mb-1.5 border-b border-slate-800 pb-[3px] text-[10px] font-bold tracking-[0.12em] text-slate-900 ${
@@ -292,7 +294,7 @@ export function Section({
   return (
     <section className={mt}>
       <h3 className={heads[tone]}>{title}</h3>
-      {tone === 'gold' && <div className="mb-2.5 mt-1 h-px w-11 bg-[#c4a35a]" />}
+      {tone === 'gold' && <div className="mb-2.5 mt-1 h-px w-11" style={{ backgroundColor: 'var(--cv-accent, #c4a35a)' }} />}
       {children}
     </section>
   );
@@ -316,7 +318,12 @@ export function ExperienceBlock({ cv, tone }: { cv: CvData; tone: Tone }) {
               {e.company ? <span className="font-semibold text-slate-600"> — {e.company}</span> : null}
               {e.employmentType ? <span className="font-normal text-slate-500"> · {e.employmentType}</span> : null}
             </p>
-            <Ltr className="shrink-0 text-[8px] text-slate-500">{rangeLabel(e.start, e.end, e.current, cv.lang)}</Ltr>
+            <Ltr
+              className="shrink-0 text-[8px] text-slate-500"
+              data-cv-scan={e.start ? 'date-ok' : 'date-missing'}
+            >
+              {rangeLabel(e.start, e.end, e.current, cv.lang)}
+            </Ltr>
           </div>
           {e.city ? <p className="text-[8px] text-slate-500">{e.city}</p> : null}
           <div className="mt-0.5 space-y-0.5">
@@ -590,12 +597,17 @@ export function GulfMetaRow({ cv }: { cv: CvData }) {
   if (!cells.length) return null;
   return (
     <div
-      className="mt-3 grid gap-2 border-t border-[#c4a35a]/80 pt-2"
-      style={{ gridTemplateColumns: `repeat(${cells.length}, minmax(0, 1fr))` }}
+      className="mt-3 grid gap-2 border-t pt-2"
+      style={{
+        gridTemplateColumns: `repeat(${cells.length}, minmax(0, 1fr))`,
+        borderColor: 'color-mix(in srgb, var(--cv-accent, #c4a35a) 80%, transparent)',
+      }}
     >
       {cells.map(([k, v]) => (
         <div key={k}>
-          <p className="text-[7.5px] font-black tracking-[0.14em] text-[#8a6a28]">{k}</p>
+          <p className="text-[7.5px] font-black tracking-[0.14em]" style={{ color: 'var(--cv-accent-ink, #8a6a28)' }}>
+            {k}
+          </p>
           <p className="text-[9px] font-bold text-slate-800">{v}</p>
         </div>
       ))}
@@ -618,9 +630,19 @@ export function BodySections({
   const nodes: Record<string, React.ReactNode> = {};
 
   if (cv.summary.trim() && !skip.has('summary')) {
+    const first =
+      cv.summary
+        .trim()
+        .split(/\n/)
+        .map((s) => s.trim())
+        .find(Boolean) || '';
+    const summaryScan = !first ? 'summary-empty' : isGenericSummaryLine(first) ? 'summary-generic' : 'summary-ok';
     nodes.summary = (
       <Section key="summary" title={t.summary} tone={tone} ar={ar}>
-        <p className={tone === 'gold' ? 'text-[10.5px] leading-relaxed text-slate-800' : 'text-[10px] leading-snug text-slate-800'}>
+        <p
+          data-cv-scan={summaryScan}
+          className={tone === 'gold' ? 'text-[10.5px] leading-relaxed text-slate-800' : 'text-[10px] leading-snug text-slate-800'}
+        >
           {cv.summary}
         </p>
       </Section>
@@ -746,21 +768,26 @@ export function Paper({
   sheetId?: string;
   padding?: string;
 }) {
+  const { accent, ink } = paperAccentVars(cv);
   return (
     <article
       id={sheetId}
       dir={cv.lang === 'ar' ? 'rtl' : 'ltr'}
       className={`relative bg-white text-slate-900 shadow-[0_24px_60px_-28px_rgba(0,0,0,0.55)] ${className || ''}`}
-      style={{
-        width: A4_W,
-        minHeight: A4_H,
-        padding: padding ?? '42px 48px 48px',
-        fontFamily: CV_FONT,
-        backgroundColor: '#ffffff',
-        boxSizing: 'border-box',
-        overflow: 'hidden',
-        color: '#0f172a',
-      }}
+      style={
+        {
+          width: A4_W,
+          minHeight: A4_H,
+          padding: padding ?? '42px 48px 48px',
+          fontFamily: CV_FONT,
+          backgroundColor: '#ffffff',
+          boxSizing: 'border-box',
+          overflow: 'hidden',
+          color: '#0f172a',
+          ['--cv-accent']: accent,
+          ['--cv-accent-ink']: ink,
+        } as React.CSSProperties
+      }
     >
       {children}
     </article>
