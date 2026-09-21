@@ -3,6 +3,8 @@ import {
   LayoutTemplate, KeyRound, Sparkles, Image as ImageIcon, Frame, Film, Wand2, Download, Upload, X, ChevronLeft, Plus, Lock, Star, Lightbulb, Users, Building2, Heart, Landmark, User, Check, Ruler, LayoutGrid, Maximize2, Eye, Brain, Cpu, Layers, Compass, Sliders, Play, Share2, Pencil, Trash2, Shield, Folder, ExternalLink, RefreshCw, AlertCircle, ArrowLeft, Send
 } from "lucide-react";
 import NajeSpinner from "../components/NajeSpinner";
+import NajeThinking from "../components/NajeThinking";
+import StudioBootSplash from "../components/StudioBootSplash";
 import { FORM_CONFIGS } from "../lib/formConfigs";
 import BrainCreativeTour from "../components/creatively/BrainCreativeTour";
 import { ChatDesigner } from "../components/creatively/ChatDesigner";
@@ -2011,6 +2013,7 @@ if (currentScreen === 'welcome') {
 
   return (
     <div className={`naje-creative-studio w-full ${mode === 'chat' ? 'h-full flex-1 overflow-hidden py-0 md:py-12 px-0 md:px-8' : 'min-h-full flex-1 overflow-y-auto overflow-x-hidden pt-6 pb-32 sm:pb-24 md:py-16 px-4 md:px-8'} bg-[#030303] text-white font-sans flex flex-col justify-start items-center relative`} dir="rtl">
+      <StudioBootSplash dark />
       <FeaturePaywallModal
         isOpen={showCreativelyPaywall}
         onClose={() => setShowCreativelyPaywall(false)}

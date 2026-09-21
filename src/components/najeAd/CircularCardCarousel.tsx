@@ -21,6 +21,18 @@ function blocksDrag(target: EventTarget | null) {
   return Boolean(target.closest('input, textarea, select, [data-no-drag]'));
 }
 
+export function LtrCount({ current, total }: { current: number; total: number }) {
+  return (
+    <span
+      className="font-mono text-[11px] font-black tabular-nums text-white/55"
+      dir="ltr"
+      style={{ unicodeBidi: 'bidi-override' }}
+    >
+      {current} / {total}
+    </span>
+  );
+}
+
 export function CircularCardCarousel<T>({
   items,
   getKey,
@@ -29,7 +41,7 @@ export function CircularCardCarousel<T>({
   renderCard,
   centerIndex,
   onCenterIndexChange,
-  frameClassName = 'h-[380px] sm:h-[440px]',
+  frameClassName = 'h-[320px] sm:h-[360px]',
   onUserSwipe,
   showHand = false,
   handLabel = 'اسحب',
@@ -40,6 +52,20 @@ export function CircularCardCarousel<T>({
   const flippedRef = useRef(false);
   const movedRef = useRef(false);
   const dragControls = useDragControls();
+  const frameRef = useRef<HTMLDivElement>(null);
+  const [frameW, setFrameW] = useState(320);
+
+  useEffect(() => {
+    const el = frameRef.current;
+    if (!el) return;
+    const apply = () => setFrameW(el.clientWidth || 320);
+    apply();
+    const ro = new ResizeObserver(apply);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  const peekX = Math.max(64, Math.min(118, Math.round(frameW * 0.31)));
 
   const wrapIndex = useCallback(
     (i: number) => {
@@ -113,7 +139,8 @@ export function CircularCardCarousel<T>({
   return (
     <div className="w-full">
       <div
-        className={`relative ${frameClassName} w-full flex items-center justify-center select-none overflow-hidden`}
+        ref={frameRef}
+        className={`relative ${frameClassName} w-full flex items-center justify-center select-none overflow-visible`}
         dir="ltr"
       >
         {peekOffsets.map((offset) => {
@@ -151,12 +178,12 @@ export function CircularCardCarousel<T>({
                 onCenterIndexChange(itemIndex);
               }}
               animate={{
-                x: isCenter ? 0 : offset * 34,
+                x: isCenter ? 0 : offset * peekX,
                 y: isCenter ? 0 : 10,
-                scale: isCenter ? 1 : 0.9,
-                opacity: isCenter ? 1 : 0.42,
+                scale: isCenter ? 1 : 0.78,
+                opacity: isCenter ? 1 : 0.72,
                 zIndex: isCenter ? 30 : 8,
-                rotate: isCenter ? 0 : offset * 4,
+                rotate: isCenter ? 0 : offset * 8,
               }}
               transition={{ type: 'spring', stiffness: 440, damping: 36, mass: 0.6 }}
               className={`absolute ${isCenter ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'} rounded-2xl ${
@@ -164,13 +191,13 @@ export function CircularCardCarousel<T>({
                   ? 'ring-2 ring-[#d4a574] shadow-[0_18px_40px_-16px_rgba(212,165,116,0.45)]'
                   : isCenter
                   ? 'shadow-[0_20px_40px_-18px_rgba(0,0,0,0.75)]'
-                  : ''
+                  : 'shadow-[0_12px_28px_-18px_rgba(0,0,0,0.7)]'
               }`}
               style={{
-                pointerEvents: isCenter ? 'auto' : 'none',
+                pointerEvents: 'auto',
                 touchAction: isCenter ? 'none' : 'auto',
                 WebkitUserSelect: 'none',
-                filter: isCenter ? 'none' : 'brightness(0.55)',
+                filter: isCenter ? 'none' : 'brightness(0.7)',
               }}
             >
               {renderCard(item, isCenter)}
@@ -182,9 +209,7 @@ export function CircularCardCarousel<T>({
       {total > 1 && (
         <div className="mt-1 flex flex-col items-center justify-center gap-0.5">
           {showHand ? <SwipeHintHand label={handLabel} /> : null}
-          <span className="font-mono text-[11px] font-black text-white/55">
-            {centerIndex + 1} / {total}
-          </span>
+          <LtrCount current={centerIndex + 1} total={total} />
         </div>
       )}
     </div>

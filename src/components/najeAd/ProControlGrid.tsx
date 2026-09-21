@@ -12,7 +12,6 @@ import {
   LIGHTING_LOOKS,
   MARKETING_GOALS,
   MUSIC_ENERGY,
-  NAJE_VIDEO_PRO_LABEL,
   OMNI_DURATIONS,
   OMNI_RESOLUTIONS,
   OmniDuration,
@@ -20,7 +19,6 @@ import {
   PACE_OPTIONS,
   PRODUCT_PLACEMENTS,
   VOICE_CASTS,
-  estimateOmniPoints,
 } from '../../lib/omniAd';
 import { DIALECT_OPTIONS, LANGUAGE_OPTIONS } from '../../lib/adDnaEngine';
 
@@ -164,12 +162,6 @@ export function ProControlGrid(props: {
   pointsRate: number;
   resolutionMultiplier?: Partial<Record<OmniResolution, number>>;
 }) {
-  const points = estimateOmniPoints({
-    durationSec: props.duration,
-    resolution: props.resolution,
-    pointsRatePerSecond: props.pointsRate,
-    resolutionMultiplier: props.resolutionMultiplier,
-  });
   const dialects = DIALECT_OPTIONS[props.language] || [];
   const [extras, setExtras] = useState<Record<string, ExtraChip[]>>({});
   const [addBox, setAddBox] = useState<{ key: string; title: string; apply: (id: string) => void } | null>(null);
@@ -202,15 +194,7 @@ export function ProControlGrid(props: {
 
   return (
     <div className="grid grid-cols-1 gap-2.5 sm:gap-3 lg:grid-cols-2" dir="rtl">
-      <Box title="المدة" hint="التوليد 10 ثوانٍ ثم تمديد المشهد بزيادات 10 ثوانٍ">
-        {OMNI_DURATIONS.map((d) => (
-          <Chip key={d} active={props.duration === d} onClick={() => props.onDuration(d)}>
-            {d} ث
-          </Chip>
-        ))}
-      </Box>
-
-      <Box title="الجودة" hint="360p للتجربة السريعة — 1080p و4K للتسليم">
+      <Box title="الجودة">
         {OMNI_RESOLUTIONS.map((r) => (
           <Chip key={r.id} active={props.resolution === r.id} onClick={() => props.onResolution(r.id)}>
             {r.name}
@@ -259,44 +243,6 @@ export function ProControlGrid(props: {
           </button>
         </div>
       </section>
-
-      <Box
-        title="توجيه النموذج"
-        hint="ملاحظات داخل المدة فقط — التوليد يبقى 10 ثوانٍ ثم تمديد. مدة 10 + كل 5ث = صندوقان (1→5 و 5→10) في نفس التوليد."
-        className="lg:col-span-2"
-      >
-        {BEAT_INTERVALS.map((iv) => (
-          <Chip
-            key={iv}
-            active={props.beatInterval === iv}
-            onClick={() => props.onBeatInterval(props.beatInterval === iv ? null : iv)}
-          >
-            {BEAT_LABEL[iv]}
-          </Chip>
-        ))}
-      </Box>
-
-      {props.beatInterval && props.beatSlots.length > 0 && (
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:col-span-2">
-          {props.beatSlots.map((slot, idx) => (
-            <label key={`${slot.from}-${slot.to}-${idx}`} className="rounded-2xl border border-white/10 bg-white/[0.04] p-3 text-right">
-              <span className="mb-1.5 block text-[11px] font-black text-[var(--naje-accent-2)]">
-                من {slot.from} → {slot.to}
-              </span>
-              <textarea
-                rows={2}
-                value={slot.text}
-                onChange={(e) => {
-                  const next = props.beatSlots.map((s, i) => (i === idx ? { ...s, text: e.target.value.slice(0, 400) } : s));
-                  props.onBeatSlots(next);
-                }}
-                placeholder="ماذا يحدث في هذه الثواني؟"
-                className="w-full resize-none rounded-xl border border-white/10 bg-black/40 p-2.5 text-[12px] text-white placeholder:text-white/30 focus:border-[var(--naje-accent)] focus:outline-none"
-              />
-            </label>
-          ))}
-        </div>
-      )}
 
       <Box title="هوك الثلاث ثوانٍ الأولى" onAdd={() => openAdd('hook', 'هوك الثلاث ثوانٍ الأولى', props.onHookStyle)}>
         {HOOK_STYLES.map((h) => (
@@ -424,21 +370,47 @@ export function ProControlGrid(props: {
         ) : null}
       </div>
 
-      <div className="rounded-2xl border border-[var(--naje-accent)]/30 bg-[var(--naje-accent)]/10 p-3 sm:p-4 lg:col-span-2">
-        <div className="flex flex-wrap items-end justify-between gap-2 text-right">
-          <div>
-            <p className="text-[10px] font-bold text-[var(--naje-accent-2)]">التكلفة التقديرية</p>
-            <p className="text-2xl font-black text-white">
-              {points} <span className="text-sm font-medium text-white/50">نقطة</span>
-            </p>
-          </div>
-          <p className="max-w-sm text-[10px] leading-relaxed text-white/45">
-            {props.duration}ث · {props.resolution} · {NAJE_VIDEO_PRO_LABEL}
-            {props.duration > 10 ? ` · ${Math.ceil((props.duration - 10) / 10)} تمديد مشهد` : ''}
-            {props.beatInterval ? ` · توجيه كل ${props.beatInterval}ث` : ''}
-          </p>
+      <Box title="المدة">
+        {OMNI_DURATIONS.map((d) => (
+          <Chip key={d} active={props.duration === d} onClick={() => props.onDuration(d)}>
+            {d} ث
+          </Chip>
+        ))}
+      </Box>
+
+      <Box title="توجيه النموذج" className="lg:col-span-2">
+        {BEAT_INTERVALS.map((iv) => (
+          <Chip
+            key={iv}
+            active={props.beatInterval === iv}
+            onClick={() => props.onBeatInterval(props.beatInterval === iv ? null : iv)}
+          >
+            {BEAT_LABEL[iv]}
+          </Chip>
+        ))}
+      </Box>
+
+      {props.beatInterval && props.beatSlots.length > 0 && (
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:col-span-2">
+          {props.beatSlots.map((slot, idx) => (
+            <label key={`${slot.from}-${slot.to}-${idx}`} className="rounded-2xl border border-white/10 bg-white/[0.04] p-3 text-right">
+              <span className="mb-1.5 block text-[11px] font-black text-[var(--naje-accent-2)]">
+                من {slot.from} → {slot.to}
+              </span>
+              <textarea
+                rows={2}
+                value={slot.text}
+                onChange={(e) => {
+                  const next = props.beatSlots.map((s, i) => (i === idx ? { ...s, text: e.target.value.slice(0, 400) } : s));
+                  props.onBeatSlots(next);
+                }}
+                placeholder="ماذا يحدث في هذه الثواني؟"
+                className="w-full resize-none rounded-xl border border-white/10 bg-black/40 p-2.5 text-[12px] text-white placeholder:text-white/30 focus:border-[var(--naje-accent)] focus:outline-none"
+              />
+            </label>
+          ))}
         </div>
-      </div>
+      )}
 
       {addBox && (
         <div className="fixed inset-0 z-[80] flex items-end justify-center bg-black/70 p-0 sm:items-center sm:p-4" dir="rtl">

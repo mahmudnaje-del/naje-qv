@@ -90,8 +90,12 @@ export function CastingRoom({
           <h2 className="text-sm font-black text-white sm:text-base">الشخصية</h2>
           <p className="text-[10px] text-white/45 sm:text-[11px]">أرفق وجهك أو اسحب مكتبة ناجي</p>
         </div>
-        <span className="shrink-0 rounded-lg border border-white/10 px-2 py-1 font-mono text-[11px] font-bold text-[var(--naje-accent-2)]">
-          {centerIndex + 1}/{items.length}
+        <span
+          className="shrink-0 rounded-lg border border-white/10 px-2 py-1 font-mono text-[11px] font-bold text-[var(--naje-accent-2)]"
+          dir="ltr"
+          style={{ unicodeBidi: 'bidi-override' }}
+        >
+          {centerIndex + 1} / {items.length}
         </span>
       </div>
 
@@ -142,7 +146,7 @@ export function CastingRoom({
         </div>
       </div>
 
-      <div className="relative overflow-visible rounded-2xl border border-white/8 bg-[#0c0e14] px-5 py-3 sm:rounded-3xl sm:px-8 sm:py-4">
+      <div className="relative overflow-visible rounded-2xl border border-white/8 bg-[#0c0e14] px-1 py-3 sm:rounded-3xl sm:px-2 sm:py-4">
         <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(e) => pickFile(e.target.files?.[0])} />
         <CircularCardCarousel<Card>
           items={items}
@@ -156,12 +160,13 @@ export function CastingRoom({
           onUserSwipe={onUserSwipe}
           showHand={showHint && centerIndex === 0}
           handLabel="اسحب لمكتبة ناجي"
-          frameClassName="h-[340px] sm:h-[410px]"
+          frameClassName="h-[318px] sm:h-[358px]"
           renderCard={(c, isCenter) => {
+            const shell = `flex h-[286px] w-[40vw] max-w-[10.75rem] flex-col overflow-hidden rounded-2xl border p-1.5 sm:h-[318px] sm:max-w-[12.5rem]`;
             if (c.type === 'upload') {
               return (
-                <div className={`w-[56vw] max-w-[14.5rem] rounded-2xl border p-2.5 ${isCenter ? 'border-[var(--naje-accent)] bg-[#1a140f]' : 'border-white/10 bg-[#12141c]'}`}>
-                  <div className="mb-2 flex items-center justify-center gap-2 rounded-xl bg-black/25 py-1">
+                <div className={`${shell} ${isCenter ? 'border-[var(--naje-accent)] bg-[#1a140f]' : 'border-white/10 bg-[#12141c]'}`}>
+                  <div className="mb-1.5 flex shrink-0 items-center justify-center gap-2 rounded-xl bg-black/25 py-1">
                     <span className="h-1 w-6 rounded-full bg-[var(--naje-accent)]/80" />
                     <span className="text-[10px] font-black text-[var(--naje-accent-2)]">إرفاق · اسحب</span>
                     <span className="h-1 w-6 rounded-full bg-[var(--naje-accent)]/80" />
@@ -173,7 +178,7 @@ export function CastingRoom({
                       e.stopPropagation();
                       fileRef.current?.click();
                     }}
-                    className="relative flex aspect-[3/4] w-full flex-col items-center justify-center overflow-hidden rounded-2xl border border-dashed border-[var(--naje-accent)]/50 bg-black/30"
+                    className="relative flex min-h-0 flex-1 flex-col items-center justify-center overflow-hidden rounded-2xl border border-dashed border-[var(--naje-accent)]/50 bg-black/30"
                   >
                     {customPreview ? (
                       <img src={customPreview} alt="مرفق" className="h-full w-full object-cover object-top" />
@@ -190,8 +195,8 @@ export function CastingRoom({
             const av = c.avatar;
             const selected = av.id === selectedAvatarId;
             return (
-              <div className={`w-[56vw] max-w-[14.5rem] rounded-2xl border p-2 ${isCenter ? 'bg-[#121622]' : 'bg-[#11141c]'} ${selected ? 'border-[var(--naje-accent)]' : 'border-white/10'}`}>
-                <div className="relative aspect-[3/4] overflow-hidden rounded-xl">
+              <div className={`${shell} ${isCenter ? 'bg-[#121622]' : 'bg-[#11141c]'} ${selected ? 'border-[var(--naje-accent)]' : 'border-white/10'}`}>
+                <div className="relative min-h-0 flex-1 overflow-hidden rounded-xl">
                   <AvatarPhoto id={av.id} name={av.name} gradient={av.placeholderGradient} className="h-full w-full" />
                   {selected && (
                     <span className="absolute top-2 right-2 inline-flex items-center gap-1 rounded-full bg-[var(--naje-accent)] px-2 py-0.5 text-[9px] font-black text-[var(--naje-on-accent)]">
@@ -199,24 +204,22 @@ export function CastingRoom({
                     </span>
                   )}
                 </div>
-                {isCenter && (
-                  <div className="mt-2 text-right">
-                    <p className="text-sm font-black text-white">{av.name}</p>
-                    <p className="text-[11px] text-[#7dd3c7]">{av.profession}</p>
-                    <p className="text-[10px] text-white/40">{getRegionLabelAr(av.visualRegion.split('—')[0].trim())}</p>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onSelectAvatar(av.id);
-                      }}
-                      className="mt-2 w-full rounded-xl bg-[var(--naje-accent)] py-1.5 text-[11px] font-black text-[var(--naje-on-accent)]"
-                    >
-                      اختيار
-                    </button>
-                  </div>
-                )}
-                {!isCenter && <p className="mt-1 truncate text-[11px] font-bold text-white">{av.name}</p>}
+                <div className="mt-1.5 shrink-0 text-right">
+                  <p className="truncate text-[13px] font-black leading-tight text-white">{av.name}</p>
+                  <p className={`truncate text-[10px] leading-tight ${isCenter ? 'text-[#7dd3c7]' : 'text-transparent'}`}>
+                    {av.profession}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onSelectAvatar(av.id);
+                    }}
+                    className="mt-1.5 w-full shrink-0 rounded-xl bg-[var(--naje-accent)] py-2 text-[12px] font-black leading-none text-[var(--naje-on-accent)]"
+                  >
+                    اختيار
+                  </button>
+                </div>
               </div>
             );
           }}

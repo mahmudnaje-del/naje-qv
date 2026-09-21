@@ -27,8 +27,12 @@ export function StyleGallery({
             الحالي: <span className="font-bold text-[var(--naje-accent-2)]">{current?.name || 'اختر أسلوباً إعلانياً'}</span>
           </p>
         </div>
-        <span className="shrink-0 rounded-lg border border-white/10 px-2 py-1 font-mono text-[11px] font-bold text-[var(--naje-accent-2)]">
-          {filtered.length ? `${centerIndex + 1}/${filtered.length}` : '0'}
+        <span
+          className="shrink-0 rounded-lg border border-white/10 px-2 py-1 font-mono text-[11px] font-bold text-[var(--naje-accent-2)]"
+          dir="ltr"
+          style={{ unicodeBidi: 'bidi-override' }}
+        >
+          {filtered.length ? `${centerIndex + 1} / ${filtered.length}` : '0'}
         </span>
       </div>
       <div className="relative">
@@ -41,7 +45,7 @@ export function StyleGallery({
         />
       </div>
 
-      <div className="relative overflow-visible rounded-2xl border border-white/8 bg-[#0c0e14] px-5 py-3 sm:rounded-3xl sm:px-8 sm:py-4">
+      <div className="relative overflow-visible rounded-2xl border border-white/8 bg-[#0c0e14] px-1 py-3 sm:rounded-3xl sm:px-2 sm:py-4">
         <CircularCardCarousel<AdStyle>
           items={filtered}
           getKey={(t) => t.id}
@@ -49,15 +53,15 @@ export function StyleGallery({
           onSelect={(t) => onSelectStyle(t.id)}
           centerIndex={centerIndex}
           onCenterIndexChange={setCenterIndex}
-          frameClassName="h-[250px] sm:h-[330px]"
-          renderCard={(t, isCenter) => (
+          frameClassName="h-[292px] sm:h-[332px]"
+          renderCard={(t) => (
             <div
-              className={`w-[62vw] max-w-[16rem] overflow-hidden rounded-2xl border ${
+              className={`flex h-[260px] w-[40vw] max-w-[10.75rem] flex-col overflow-hidden rounded-2xl border sm:h-[292px] sm:max-w-[12.5rem] ${
                 t.id === selectedStyleId ? 'border-[var(--naje-accent)]' : 'border-white/10'
               }`}
             >
               <div
-                className="relative aspect-[3/2] overflow-hidden"
+                className="relative min-h-0 flex-1 overflow-hidden"
                 style={{ background: `linear-gradient(145deg, ${t.gradient[0]}, ${t.gradient[1]})` }}
               >
                 <img
@@ -71,23 +75,18 @@ export function StyleGallery({
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
                 <span className="absolute right-2 bottom-2 text-sm font-black text-white drop-shadow">{t.name}</span>
               </div>
-              {isCenter && (
-                <div className="bg-[#12141c] p-2.5">
-                  <p className="line-clamp-2 text-right text-[11px] leading-relaxed text-white/55" dir="rtl">
-                    {t.desc.replace(/[.\u06D4]+$/g, '')}
-                  </p>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onSelectStyle(t.id);
-                    }}
-                    className="mt-2 w-full rounded-xl bg-[var(--naje-accent)] py-1.5 text-[11px] font-black text-[var(--naje-on-accent)]"
-                  >
-                    اعتماد الأسلوب
-                  </button>
-                </div>
-              )}
+              <div className="shrink-0 bg-[#12141c] p-2">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onSelectStyle(t.id);
+                  }}
+                  className="w-full rounded-xl bg-[var(--naje-accent)] py-2 text-[12px] font-black leading-none text-[var(--naje-on-accent)]"
+                >
+                  اعتماد الأسلوب
+                </button>
+              </div>
             </div>
           )}
         />

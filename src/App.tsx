@@ -28,6 +28,8 @@ const NajeAgent = lazyWithRetry(() => import('./pages/NajeAgent'));
 const NajeAd = lazyWithRetry(() => import('./pages/NajeAd'));
 const NajeDeveloper = lazyWithRetry(() => import('./pages/NajeDeveloper'));
 const NajeSource = lazyWithRetry(() => import('./pages/NajeSource'));
+const NajePrompt = lazyWithRetry(() => import('./pages/NajePrompt'));
+const NajeIdent = lazyWithRetry(() => import('./pages/NajeIdent'));
 const Store = lazyWithRetry(() => import('./pages/Store'));
 const AuthAction = lazyWithRetry(() => import('./pages/AuthAction'));
 const NotFound = lazyWithRetry(() => import('./pages/NotFound'));
@@ -45,8 +47,9 @@ export default function App() {
 
   if (loadingAuth) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-naje-canvas">
-        <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+      <div className="min-h-screen flex flex-col items-center justify-center gap-3 bg-naje-canvas">
+        <NajeThinking size={56} />
+        <span className="text-xs font-black text-indigo-600 dark:text-indigo-300">ناجي يفكّر…</span>
       </div>
     );
   }
@@ -82,6 +85,9 @@ export default function App() {
               <Route path="creative-studio" element={<CreativelyAI />} />
               <Route path="creative-ai" element={<CreativelyAI />} />
               <Route path="naje-ad" element={<NajeAd />} />
+              <Route path="naje-prompt" element={<NajePrompt />} />
+              <Route path="naje-ident" element={<NajeIdent />} />
+              <Route path="naje-intro" element={<Navigate to="/naje-ident" replace />} />
               <Route path="naje-developer" element={<NajeDeveloper />} />
               <Route path="naje-source" element={<NajeSource />} />
               <Route path="store" element={<Store />} />

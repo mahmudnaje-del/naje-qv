@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
-import { AlertCircle, Clapperboard, Download, Film, RefreshCw, Sparkles, Wand2 } from 'lucide-react';
+import { AlertCircle, Clapperboard, Download, Film, Sparkles, Wand2 } from 'lucide-react';
 import { collection, doc, limit, onSnapshot, orderBy, query, where } from 'firebase/firestore';
 import { useAppStore } from '../store';
 import { auth, db } from '../firebase';
@@ -27,6 +27,8 @@ import { LocationScout } from '../components/najeAd/LocationScout';
 import { StyleGallery } from '../components/najeAd/StyleGallery';
 import { CastBoard } from '../components/najeAd/CastBoard';
 import { ProControlGrid } from '../components/najeAd/ProControlGrid';
+import NajeThinking from '../components/NajeThinking';
+import StudioBootSplash from '../components/StudioBootSplash';
 
 function stripDataUrl(dataUrl: string | null | undefined): string | undefined {
   if (!dataUrl) return undefined;
@@ -251,18 +253,19 @@ export default function NajeAd() {
     : activeJob?.stepLabel || (isSubmitting ? 'جاري التحضير…' : '');
 
   return (
-    <div className="naje-ad-studio h-full overflow-y-auto bg-[#0b0c10] px-2.5 py-3 text-[#f4efe6] sm:px-6 sm:py-5" dir="rtl">
+    <div className="naje-ad-studio relative h-full overflow-y-auto bg-[#0b0c10] px-2.5 pb-8 pt-2 text-[#f4efe6] sm:px-6 sm:py-5" dir="rtl">
+      <StudioBootSplash dark />
       <FeaturePaywallModal isOpen={showPaywall} onClose={() => setShowPaywall(false)} feature="najeAd" />
       <div className="mx-auto max-w-6xl space-y-3 sm:space-y-5">
-        <header className="overflow-hidden rounded-2xl border border-white/8 bg-[radial-gradient(1200px_circle_at_100%_-20%,rgba(212,165,116,0.22),transparent_45%),linear-gradient(180deg,#16120e,#0b0c10)] p-3 shadow-2xl sm:rounded-[28px] sm:p-5">
+        <header className="sticky top-0 z-20 rounded-2xl border border-white/8 bg-[radial-gradient(1200px_circle_at_100%_-20%,rgba(212,165,116,0.22),transparent_45%),linear-gradient(180deg,#16120e,#0b0c10)] p-3 shadow-2xl sm:rounded-[28px] sm:p-5">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <div className="mb-1.5 inline-flex items-center gap-2 rounded-full border border-[var(--naje-accent)]/30 bg-[var(--naje-accent)]/10 px-2.5 py-0.5 text-[10px] font-black tracking-[0.14em] text-[var(--naje-accent-2)]">
                 <Clapperboard className="h-3.5 w-3.5" /> NAJE AD · {NAJE_VIDEO_PRO_LABEL}
               </div>
-              <h1 className="text-xl font-black tracking-tight text-white sm:text-2xl">استوديو الإعلان المتحرك</h1>
+              <h1 className="pt-0.5 text-xl font-black leading-snug tracking-tight text-white sm:text-2xl">استوديو الإعلان المتحرك</h1>
               <p className="mt-1 hidden max-w-xl text-xs leading-relaxed text-white/50 sm:block">
-                {NAJE_VIDEO_PRO_LABEL} — توليد، تمديد المشهد حتى 40 ثانية، وتحرير باللغة الطبيعية.
+                {NAJE_VIDEO_PRO_LABEL} — إنتاج إعلان متحرك من المشهد والممثل والأسلوب.
               </p>
             </div>
             <div className="rounded-2xl border border-white/10 bg-black/30 px-3 py-1.5 text-right sm:px-4 sm:py-2">
@@ -417,7 +420,7 @@ export default function NajeAd() {
             disabled={isSubmitting || najeAd?.enabled === false}
             className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-l from-[var(--naje-accent)] via-[var(--naje-accent-2)] to-[color-mix(in_srgb,var(--naje-s)_70%,white)] py-3.5 text-sm font-black text-[var(--naje-on-accent)] shadow-[0_12px_40px_-12px_var(--naje-glow)] disabled:opacity-50"
           >
-            {isSubmitting ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+            {isSubmitting ? <NajeThinking size={22} /> : <Sparkles className="h-4 w-4" />}
             {isSubmitting ? stepLabel || 'جاري الإنتاج…' : `إنتاج الإعلان — ${points} نقطة`}
           </button>
         </form>
@@ -433,6 +436,12 @@ export default function NajeAd() {
             {isSubmitting && (
               <div className="h-1.5 overflow-hidden rounded-full bg-white/10">
                 <motion.div className="h-full bg-gradient-to-l from-[var(--naje-accent)] to-[#7dd3c7]" animate={{ width: `${Math.max(8, progress)}%` }} />
+              </div>
+            )}
+            {isSubmitting && !videoUrl && (
+              <div className="flex flex-col items-center gap-2 py-8">
+                <NajeThinking size={52} />
+                <span className="text-xs font-bold text-[#e8b86d]">{stepLabel || 'ناجي يبني الإعلان…'}</span>
               </div>
             )}
             {videoUrl && (

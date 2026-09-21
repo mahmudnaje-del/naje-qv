@@ -101,8 +101,12 @@ export function CastBoard({
             اسحب البطاقات. الإضافة دائماً موجودة — شخصية أو مكان يظهر عند الثانية التي تختارها.
           </p>
         </div>
-        <span className="shrink-0 rounded-lg border border-white/10 px-2 py-1 font-mono text-[11px] font-bold text-[var(--naje-accent-2)]">
-          {centerIndex + 1}/{items.length}
+        <span
+          className="shrink-0 rounded-lg border border-white/10 px-2 py-1 font-mono text-[11px] font-bold text-[var(--naje-accent-2)]"
+          dir="ltr"
+          style={{ unicodeBidi: 'bidi-override' }}
+        >
+          {centerIndex + 1} / {items.length}
         </span>
       </div>
 
@@ -122,7 +126,7 @@ export function CastBoard({
         }}
       />
 
-      <div className="relative overflow-visible rounded-2xl border border-white/8 bg-[#0c0e14] px-5 py-3 sm:rounded-3xl sm:px-8 sm:py-4">
+      <div className="relative overflow-visible rounded-2xl border border-white/8 bg-[#0c0e14] px-1 py-3 sm:rounded-3xl sm:px-2 sm:py-4">
         <CircularCardCarousel<DeckItem>
           items={items}
           getKey={(c) => c.id}
@@ -133,12 +137,12 @@ export function CastBoard({
           onUserSwipe={() => setHint(false)}
           showHand={hint}
           handLabel="اسحب لتقليب المشهد"
-          frameClassName="h-[340px] sm:h-[400px]"
+          frameClassName="h-[318px] sm:h-[370px]"
           renderCard={(item, isCenter) => {
             if (item.type === 'add') {
               return (
                 <div
-                  className="w-[56vw] max-w-[14.5rem] overflow-hidden rounded-2xl border border-dashed border-[var(--naje-accent)]/55 bg-gradient-to-b from-[#2a1c12] to-[#120e0c] p-2.5 shadow-[0_20px_50px_-24px_rgba(212,165,116,0.55)]"
+                  className="w-[40vw] max-w-[10.75rem] overflow-hidden rounded-2xl border border-dashed border-[var(--naje-accent)]/55 bg-gradient-to-b from-[#2a1c12] to-[#120e0c] p-2.5 shadow-[0_20px_50px_-24px_rgba(212,165,116,0.55)] sm:max-w-[12.5rem]"
                 >
                   <div className="mb-2 flex items-center justify-center gap-2 rounded-xl bg-black/25 py-1.5">
                     <span className="h-1 w-7 rounded-full bg-[var(--naje-accent)]/80" />
@@ -201,7 +205,7 @@ export function CastBoard({
 
             return (
               <div
-                className="w-[56vw] max-w-[14.5rem] overflow-hidden rounded-2xl border bg-[#12141c] p-2"
+                    className="w-[40vw] max-w-[10.75rem] overflow-hidden rounded-2xl border bg-[#12141c] p-2 sm:max-w-[12.5rem]"
                 style={{ borderColor: isCenter ? accent : 'rgba(255,255,255,0.1)' }}
               >
                 <div className="mb-1.5 flex items-center justify-between gap-2">

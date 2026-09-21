@@ -3,6 +3,7 @@ import { get, set } from 'idb-keyval';
 import { auth } from '../../firebase';
 import { InteractiveLoadingPlaceholder } from "./InteractiveLoadingPlaceholder";
 import NajeSpinner from '../NajeSpinner';
+import NajeThinking from '../NajeThinking';
 import { 
   Send, 
   Image as ImageIcon, 
@@ -987,7 +988,12 @@ export function CreativeAiProChat({ activationCode = 'naje_authenticated', setAc
     }));
   };
 
-  if (!isStorageLoaded) return <div className="naje-creative-studio min-h-screen bg-[#030303] flex items-center justify-center text-white">Loading...</div>;
+  if (!isStorageLoaded) return (
+    <div className="naje-creative-studio min-h-screen bg-[#030303] flex flex-col items-center justify-center gap-3 text-white">
+      <NajeThinking size={56} />
+      <span className="text-xs font-black text-purple-300">ناجي يفكّر…</span>
+    </div>
+  );
 
   return (
     <div className="naje-creative-studio flex h-full bg-[#030303] font-sans text-white overflow-hidden relative">
