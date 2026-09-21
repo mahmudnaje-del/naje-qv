@@ -13,6 +13,7 @@ export type UserData = {
   emailVerified?: boolean;
   highestPurchasedTier?: number;
   unlockedThemes?: string[];
+  themeUnlocks?: string[];
   selectedThemeColor?: string;
 };
 

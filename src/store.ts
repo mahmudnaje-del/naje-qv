@@ -63,13 +63,19 @@ export const useAppStore = create<AppState>((set, get) => ({
   updateBalance: (balance) => set((state) => ({ user: state.user ? { ...state.user, balance } : null })),
   markThemeUnlocked: (id, newBalance) => set((state) => {
     if (!state.user) return {};
-    const prev = Array.isArray(state.user.unlockedThemes) ? state.user.unlockedThemes : [];
+    const prevA = Array.isArray(state.user.unlockedThemes) ? state.user.unlockedThemes : [];
+    const prevB = Array.isArray(state.user.themeUnlocks) ? state.user.themeUnlocks : [];
+    const unlockedThemes = prevA.includes(id) ? prevA : [...prevA, id];
+    const themeUnlocks = prevB.includes(id) ? prevB : [...prevB, id];
+    localStorage.setItem('naje_theme_color', id);
+    applyThemeToDocument(id, state.themeMode);
     return {
       themeColor: id,
       user: {
         ...state.user,
         selectedThemeColor: id,
-        unlockedThemes: prev.includes(id) ? prev : [...prev, id],
+        unlockedThemes,
+        themeUnlocks,
         balance: typeof newBalance === 'number' ? newBalance : state.user.balance,
       },
     };

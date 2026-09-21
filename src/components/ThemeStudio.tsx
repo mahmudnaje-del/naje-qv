@@ -76,6 +76,9 @@ export default function ThemeStudio() {
       setPendingId(null);
       return;
     }
+    const previousColor = themeColor;
+    setThemeColor(pendingId);
+    setPendingId(null);
     setBusy(true);
     try {
       if (!user?.uid) throw new Error('يلزم تسجيل الدخول');
@@ -83,8 +86,8 @@ export default function ThemeStudio() {
       markThemeUnlocked(pendingId, result.newBalance);
       await persistSelection(pendingId);
       toast.success(`تم فتح ثيم ${theme.nameAr} — الداكن والفاتح جاهزان`);
-      setPendingId(null);
     } catch (err: any) {
+      setThemeColor(previousColor);
       toast.error(err?.message || 'تعذر فتح الثيم');
     } finally {
       setBusy(false);

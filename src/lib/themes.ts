@@ -43,14 +43,18 @@ export function getTheme(id: string | null | undefined): ThemeDef {
 }
 
 export function isThemeUnlocked(
-  user: { isAdmin?: boolean; unlockedThemes?: string[] } | null | undefined,
+  user: { isAdmin?: boolean; unlockedThemes?: string[]; themeUnlocks?: string[] } | null | undefined,
   id: string | null | undefined,
 ): boolean {
   const theme = getTheme(id);
   if (theme.free) return true;
   if (!id || !isThemeColorId(id)) return false;
   if (user?.isAdmin) return true;
-  return Array.isArray(user?.unlockedThemes) && user!.unlockedThemes!.includes(id);
+  const owned = [
+    ...(Array.isArray(user?.unlockedThemes) ? user!.unlockedThemes! : []),
+    ...(Array.isArray(user?.themeUnlocks) ? user!.themeUnlocks! : []),
+  ];
+  return owned.includes(id);
 }
 
 export function applyThemeToDocument(color: ThemeColorId, mode: 'light' | 'dark') {
