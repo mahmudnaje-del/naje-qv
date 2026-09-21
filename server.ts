@@ -2714,7 +2714,7 @@ setInterval(() => {
 const NAJE_THEME_IDS = ['azure', 'emerald', 'amber', 'coral', 'violet', 'teal', 'rose', 'slate'] as const;
 const NAJE_THEME_UNLOCK_COST = 2;
 
-async function handleUnlockTheme(req: any, res: any) {
+export async function handleUnlockTheme(req: any, res: any) {
   try {
     const authUser = await requireAuth(req, res);
     if (!authUser) return;
@@ -2893,7 +2893,7 @@ export async function startServer(existingApp?: express.Express) {
   app.head(['/', '/api/health', '/health', '/healthz'], (req, res) => {
     res.status(200).end();
   });
-  app.post('/api/themes/unlock', handleUnlockTheme);
+  app.post(['/api/themes/unlock', '/api/theme/unlock'], handleUnlockTheme);
 
   // Early root probe responder: ensures Cloud Run startup probes at '/' immediately return 200 with index.html
   app.get('/', (req, res, next) => {
@@ -12097,9 +12097,14 @@ ${sourceBlock}`;
   executeSeeds();
 }
 
-// Automatically start the server on execution
-startServer().catch((err) => {
-  console.error('[Server] Fatal startup error:', err);
-  process.exit(1);
-});
+// Automatically start only when this file is the process entrypoint.
+// server.js imports the bundle — skip auto-bind so routes attach to the fast-boot app.
+const entryArg = String(process.argv[1] || '');
+const importedByFastBoot = process.env.NAJE_FAST_BOOT === '1' || /(?:^|\/)server\.js$/.test(entryArg);
+if (!importedByFastBoot) {
+  startServer().catch((err) => {
+    console.error('[Server] Fatal startup error:', err);
+    process.exit(1);
+  });
+}
 

@@ -20,6 +20,34 @@ service cloud.firestore {
         && (!('userId' in request.resource.data) || request.resource.data.userId == resource.data.userId);
     }
 
+    function allowedThemeIds() {
+      return ['azure', 'emerald', 'amber', 'coral', 'violet', 'teal', 'rose', 'slate'];
+    }
+    function currentUnlockedThemes() {
+      return resource.data.get('unlockedThemes', []);
+    }
+    function isThemeUnlockWrite() {
+      let next = request.resource.data.unlockedThemes;
+      let prev = currentUnlockedThemes();
+      let changed = request.resource.data.diff(resource.data).affectedKeys();
+      return next is list
+        && prev is list
+        && next.hasOnly(allowedThemeIds())
+        && next.hasAll(prev)
+        && changed.hasOnly(['unlockedThemes', 'selectedThemeColor', 'balance', 'isNegativeBalance'])
+        && (
+          resource.data.isAdmin == true
+            ? request.resource.data.balance == resource.data.balance
+            : (
+              next.size() == prev.size() + 1
+              && resource.data.balance is number
+              && resource.data.balance >= 2
+              && request.resource.data.balance <= resource.data.balance - 1.999
+              && request.resource.data.balance >= resource.data.balance - 2.001
+            )
+        );
+    }
+
     // Users: a user may read/update their own doc (preventing alteration of balance, admin, and account restriction fields).
     // Admins can read/manage user profiles and all balance adjustments.
     match /users/{uid} {
@@ -38,6 +66,7 @@ service cloud.firestore {
                         (!('isAdmin' in request.resource.data) || request.resource.data.isAdmin == resource.data.isAdmin || canMintAdmins())
                         && (!('canAddAdmins' in request.resource.data) || request.resource.data.canAddAdmins == resource.data.canAddAdmins || canMintAdmins())
                       )) ||
+                      (request.auth.uid == uid && isThemeUnlockWrite()) ||
                       (request.auth.uid == uid
                        && (!('balance' in request.resource.data) || request.resource.data.balance == resource.data.balance)
                        && (!('isNegativeBalance' in request.resource.data) || request.resource.data.isNegativeBalance == resource.data.isNegativeBalance)

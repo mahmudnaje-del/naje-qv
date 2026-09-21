@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Check, Lock, Moon, Sun, Palette, Coins } from 'lucide-react';
 import { useAppStore } from '../store';
-import { auth, db } from '../firebase';
+import { db } from '../firebase';
 import { doc, updateDoc } from 'firebase/firestore';
 import { toast } from '../toastStore';
 import NajeSpinner from './NajeSpinner';
@@ -12,6 +12,7 @@ import {
   type ThemeColorId,
   type ThemeDef,
 } from '../lib/themes';
+import { unlockThemeForUser } from '../lib/unlockTheme';
 
 function ThemePie({
   primary,
@@ -38,7 +39,7 @@ function ThemePie({
 }
 
 export default function ThemeStudio() {
-  const { user, themeMode, setThemeMode, themeColor, setThemeColor, updateBalance } = useAppStore();
+  const { user, themeMode, setThemeMode, themeColor, setThemeColor, markThemeUnlocked } = useAppStore();
   const [pendingId, setPendingId] = useState<ThemeColorId | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -77,30 +78,10 @@ export default function ThemeStudio() {
     }
     setBusy(true);
     try {
-      const token = await auth.currentUser?.getIdToken();
-      if (!token) throw new Error('يلزم تسجيل الدخول');
-      const res = await fetch('/api/themes/unlock', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ themeId: pendingId }),
-      });
-      const raw = await res.text();
-      let data: any = {};
-      try { data = raw ? JSON.parse(raw) : {}; } catch { data = {}; }
-      if (!res.ok) {
-        const msg = data.error
-          || (res.status === 404 ? 'مسار فتح الثيم غير موجود على الخادم. حدّث الصفحة بعد النشر.' : '')
-          || (res.status === 401 ? 'انتهت الجلسة. أعد تسجيل الدخول.' : '')
-          || `تعذر فتح الثيم (${res.status})`;
-        throw new Error(msg);
-      }
-      if (typeof data.newBalance === 'number') {
-        updateBalance(data.newBalance);
-      }
-      await selectTheme(pendingId);
+      if (!user?.uid) throw new Error('يلزم تسجيل الدخول');
+      const result = await unlockThemeForUser(user, pendingId);
+      markThemeUnlocked(pendingId, result.newBalance);
+      await persistSelection(pendingId);
       toast.success(`تم فتح ثيم ${theme.nameAr} — الداكن والفاتح جاهزان`);
       setPendingId(null);
     } catch (err: any) {

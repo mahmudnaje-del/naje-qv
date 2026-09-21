@@ -36,6 +36,7 @@ interface AppState {
   setUser: (user: UserData | null) => void;
   initializeAuth: () => void;
   updateBalance: (newBalance: number) => void;
+  markThemeUnlocked: (id: ThemeColorId, newBalance?: number) => void;
   activeProjectId: string | null;
   setActiveProjectId: (id: string | null) => void;
   newChatModalOpen: boolean;
@@ -60,6 +61,19 @@ export const useAppStore = create<AppState>((set, get) => ({
   setSidebarOpen: (sidebarOpen) => set({ sidebarOpen }),
   setUser: (user) => set({ user }),
   updateBalance: (balance) => set((state) => ({ user: state.user ? { ...state.user, balance } : null })),
+  markThemeUnlocked: (id, newBalance) => set((state) => {
+    if (!state.user) return {};
+    const prev = Array.isArray(state.user.unlockedThemes) ? state.user.unlockedThemes : [];
+    return {
+      themeColor: id,
+      user: {
+        ...state.user,
+        selectedThemeColor: id,
+        unlockedThemes: prev.includes(id) ? prev : [...prev, id],
+        balance: typeof newBalance === 'number' ? newBalance : state.user.balance,
+      },
+    };
+  }),
   activeProjectId: null,
   setActiveProjectId: (activeProjectId) => set((state) => {
     if (state.user && activeProjectId) {

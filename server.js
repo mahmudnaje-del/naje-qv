@@ -51,12 +51,25 @@ server.headersTimeout = 601000;
 server.listen(port, '0.0.0.0', async () => {
   console.log(`[Fast Boot] Port ${port} is ACTIVE and LISTENING for Cloud Run TCP socket probe.`);
   try {
+    process.env.NAJE_FAST_BOOT = '1';
     const app = express();
+    app.use(express.json({ limit: '15mb' }));
     appHandler = app;
-    const { startServer } = await import('./dist/server.cjs');
-    if (typeof startServer === 'function') {
-      await startServer(app);
+    const mod = await import('./dist/server.cjs');
+    const exported = (mod && typeof mod.startServer === 'function')
+      ? mod
+      : (mod && mod.default && typeof mod.default.startServer === 'function' ? mod.default : mod);
+    const start = exported && exported.startServer;
+    const unlock = exported && exported.handleUnlockTheme;
+    if (typeof unlock === 'function') {
+      app.post('/api/themes/unlock', unlock);
+      app.post('/api/theme/unlock', unlock);
+    }
+    if (typeof start === 'function') {
+      await start(app);
       console.log(`[Fast Boot] Full application router initialized and ready on port ${port}.`);
+    } else {
+      console.error('[Fast Boot] startServer export missing. Keys:', Object.keys(mod || {}), Object.keys(mod?.default || {}));
     }
   } catch (err) {
     console.error('[Fast Boot] Error initializing full application router:', err);
