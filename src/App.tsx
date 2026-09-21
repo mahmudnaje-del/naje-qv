@@ -89,6 +89,7 @@ export default function App() {
               <Route path="naje-prompt" element={<NajePrompt />} />
               <Route path="naje-ident" element={<NajeIdent />} />
               <Route path="naje-intro" element={<Navigate to="/naje-ident" replace />} />
+              <Route path="naje-motion" element={<Navigate to="/naje-ident" replace />} />
               <Route path="naje-cv" element={<NajeCv />} />
               <Route path="cv-by-naje" element={<Navigate to="/naje-cv" replace />} />
               <Route path="naje-developer" element={<NajeDeveloper />} />

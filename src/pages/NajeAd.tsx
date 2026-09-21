@@ -91,6 +91,19 @@ export default function NajeAd() {
   const updateDna = (partial: Partial<AdDnaState>) => setDna((p) => ({ ...p, ...partial }));
 
   useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem('naje-prompt-handoff');
+      if (!raw) return;
+      const j = JSON.parse(raw);
+      if (typeof j?.prompt === 'string' && j.prompt.trim() && (j.bestFor === 'ad' || j.bestFor === 'video' || !j.bestFor)) {
+        setPrompt((prev) => prev || j.prompt);
+      }
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  useEffect(() => {
     if (!activeJobId) return;
     const unsub = onSnapshot(doc(db, 'generation_jobs', activeJobId), (snap) => {
       if (!snap.exists()) return;

@@ -1,382 +1,307 @@
 import React from 'react';
+import { CvData } from '../../lib/cvStudio';
 import {
-  ACCREDIT_LABELS,
-  CvData,
-  DEGREE_LABELS,
-  LANG_LEVELS,
-  bulletsOf,
-  rangeLabel,
-} from '../../lib/cvStudio';
+  BodySections,
+  ContactLine,
+  CvPhoto,
+  GulfMetaRow,
+  Ltr,
+  Paper,
+  copyOf,
+  hasLangs,
+  hasSkills,
+  personalRows,
+  skillItems,
+} from './CvPaperStyles';
 
-function Section({ title, children, gold = false }: { title: string; children: React.ReactNode; gold?: boolean }) {
-  if (!children) return null;
+function NameLine({ cv, className }: { cv: CvData; className?: string }) {
   return (
-    <section className="mt-3">
-      <h3
-        className={`mb-1.5 border-b pb-0.5 text-[9.5px] font-black tracking-[0.14em] ${
-          gold ? 'border-[#c4a35a]/50 text-[#8a6a28]' : 'border-slate-300 text-slate-700'
-        }`}
-      >
-        {title}
-      </h3>
-      {children}
-    </section>
+    <h1 className={className}>
+      {cv.fullName || (cv.lang === 'ar' ? 'اسمك الثلاثي' : 'Your full name')}
+    </h1>
   );
 }
 
-function useCopy(cv: CvData) {
-  const ar = cv.lang === 'ar';
-  return {
-    ar,
-    t: {
-      summary: ar ? 'الملخص المهني' : 'Professional Summary',
-      experience: ar ? 'الخبرات العملية' : 'Work Experience',
-      education: ar ? 'التعليم' : 'Education',
-      skills: ar ? 'المهارات' : 'Skills',
-      courses: ar ? 'الدورات التدريبية' : 'Training',
-      certs: ar ? 'الشهادات المهنية' : 'Certifications',
-      langs: ar ? 'اللغات' : 'Languages',
-      projects: ar ? 'المشاريع' : 'Projects',
-      personal: ar ? 'بيانات شخصية' : 'Personal',
-      volunteer: ar ? 'التطوع' : 'Volunteer',
-      military: ar ? 'الخدمة الوطنية' : 'National Service',
-      refs: ar ? 'المراجع' : 'References',
-    },
-  };
+function Headline({ cv, className }: { cv: CvData; className?: string }) {
+  if (!cv.headline) return null;
+  return <p className={className}>{cv.headline}</p>;
 }
 
-function ContactLine({ cv }: { cv: CvData }) {
-  const bits = [cv.city && cv.country ? `${cv.city}، ${cv.country}` : cv.city || cv.country, cv.phone, cv.email, cv.linkedin, cv.portfolio].filter(
-    Boolean
-  );
-  return <p className="text-[8.5px] leading-relaxed text-slate-600">{bits.join('  ·  ')}</p>;
-}
-
-function ExperienceBlock({ cv }: { cv: CvData }) {
-  const { ar } = useCopy(cv);
-  return (
-    <>
-      {cv.experiences
-        .filter((e) => e.title || e.company)
-        .map((e) => (
-          <div key={e.id} className="mb-2">
-            <div className="flex items-baseline justify-between gap-2">
-              <p className="text-[10.5px] font-black text-slate-900">
-                {e.title}
-                {e.company ? <span className="font-semibold text-slate-600"> — {e.company}</span> : null}
-              </p>
-              <span className="shrink-0 text-[8px] text-slate-500">{rangeLabel(e.start, e.end, e.current, cv.lang)}</span>
-            </div>
-            {e.city && <p className="text-[8px] text-slate-500">{e.city}</p>}
-            <ul className="mt-0.5 list-disc pr-3.5 text-[9px] leading-snug text-slate-700">
-              {bulletsOf(e.bullets).map((b, i) => (
-                <li key={i}>{b}</li>
-              ))}
-            </ul>
-          </div>
-        ))}
-      {cv.experiences.every((e) => !e.title && !e.company) && (
-        <p className="text-[9px] text-slate-400">{ar ? 'أضف خبرة أو مشروعاً تطبيقياً.' : 'Add a role or applied project.'}</p>
-      )}
-    </>
-  );
-}
-
-function EducationBlock({ cv }: { cv: CvData }) {
-  return (
-    <>
-      {cv.education
-        .filter((e) => e.school || e.field)
-        .map((e) => (
-          <div key={e.id} className="mb-1.5">
-            <p className="text-[10px] font-black text-slate-900">
-              {DEGREE_LABELS[e.degreeLevel][cv.lang]} {e.field && `· ${e.field}`}
-            </p>
-            <p className="text-[9px] text-slate-600">
-              {e.school}
-              {e.year ? ` · ${e.year}` : ''}
-              {e.gpa ? ` · ${cv.lang === 'ar' ? 'المعدل' : 'GPA'} ${e.gpa}/${e.gpaScale}` : ''}
-              {e.honors ? ` · ${e.honors}` : ''}
-            </p>
-          </div>
-        ))}
-    </>
-  );
-}
-
-function CoursesBlock({ cv }: { cv: CvData }) {
-  return (
-    <>
-      {cv.courses
-        .filter((c) => c.name)
-        .map((c) => (
-          <div key={c.id} className="mb-1.5">
-            <p className="text-[10px] font-black text-slate-900">{c.name}</p>
-            <p className="text-[8.5px] text-slate-600">
-              {[c.issuer, c.year, c.hours && `${c.hours} ${cv.lang === 'ar' ? 'ساعة' : 'hrs'}`, c.accredited && ACCREDIT_LABELS[c.accredited][cv.lang]]
-                .filter(Boolean)
-                .join(' · ')}
-            </p>
-            {c.gained && <p className="text-[8.5px] text-slate-700">{c.gained}</p>}
-          </div>
-        ))}
-    </>
-  );
-}
-
-function CertsBlock({ cv }: { cv: CvData }) {
-  return (
-    <>
-      {cv.certificates
-        .filter((c) => c.name)
-        .map((c) => (
-          <p key={c.id} className="mb-1 text-[9px] text-slate-800">
-            <span className="font-black">{c.name}</span>
-            {c.issuer ? ` — ${c.issuer}` : ''}
-            {c.year ? ` · ${c.year}` : ''}
-            {c.idNumber ? ` · ID ${c.idNumber}` : ''}
-            {c.expires ? ` · ${cv.lang === 'ar' ? 'تنتهي' : 'exp.'} ${c.expires}` : ''}
-          </p>
-        ))}
-    </>
-  );
-}
-
-function PersonalBits({ cv }: { cv: CvData }) {
-  const { t } = useCopy(cv);
-  const rows = [
-    cv.nationality && [cv.lang === 'ar' ? 'الجنسية' : 'Nationality', cv.nationality],
-    cv.visa && [cv.lang === 'ar' ? 'الإقامة' : 'Visa', cv.visa],
-    cv.notice && [cv.lang === 'ar' ? 'الإشعار' : 'Notice', cv.notice],
-    cv.dob && [cv.lang === 'ar' ? 'الميلاد' : 'DOB', cv.dob],
-    cv.age && [cv.lang === 'ar' ? 'العمر' : 'Age', cv.age],
-    cv.gender && [cv.lang === 'ar' ? 'الجنس' : 'Gender', cv.gender === 'male' ? (cv.lang === 'ar' ? 'ذكر' : 'Male') : cv.lang === 'ar' ? 'أنثى' : 'Female'],
-    cv.marital && [cv.lang === 'ar' ? 'الحالة' : 'Status', cv.marital === 'married' ? (cv.lang === 'ar' ? 'متزوج' : 'Married') : cv.lang === 'ar' ? 'أعزب' : 'Single'],
-    cv.license && [cv.lang === 'ar' ? 'الرخصة' : 'Licence', cv.license],
-    cv.availability && [cv.lang === 'ar' ? 'التوفر' : 'Availability', cv.availability],
-  ].filter(Boolean) as [string, string][];
-  if (!rows.length) return null;
-  return (
-    <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-[8.5px] text-slate-700">
-      {rows.map(([k, v]) => (
-        <p key={k}>
-          <span className="font-bold text-slate-500">{k}: </span>
-          {v}
-        </p>
-      ))}
-    </div>
-  );
-}
-
-function SkillsLine({ cv }: { cv: CvData }) {
-  const items = cv.skills
-    .split(/[,،\n]/)
-    .map((s) => s.trim())
-    .filter(Boolean);
-  if (!items.length) return null;
-  return <p className="text-[9px] leading-relaxed text-slate-800">{items.join('  ·  ')}</p>;
-}
-
-function LangsLine({ cv }: { cv: CvData }) {
-  const items = cv.languages
-    .filter((l) => l.name)
-    .map((l) => `${l.name} (${LANG_LEVELS.find((x) => x.id === l.level)?.[cv.lang] || l.level})`);
-  if (!items.length) return null;
-  return <p className="text-[9px] text-slate-800">{items.join('  ·  ')}</p>;
-}
-
-function Paper({
+/** Photo locked to the physical right of the sheet; inner copy follows cv.lang. */
+function PhotoRightHeader({
   cv,
+  photo,
   children,
   className,
-  sheetId = 'naje-cv-sheet',
 }: {
   cv: CvData;
+  photo: React.ReactNode;
   children: React.ReactNode;
   className?: string;
-  sheetId?: string;
 }) {
   return (
-    <article
-      id={sheetId}
-      dir={cv.lang === 'ar' ? 'rtl' : 'ltr'}
-      className={`relative overflow-hidden bg-white text-slate-900 shadow-[0_24px_60px_-28px_rgba(0,0,0,0.55)] ${className || ''}`}
-      style={{ width: 794, minHeight: 1123, padding: '42px 48px 48px', fontFamily: '"Cairo", "Segoe UI", Tahoma, sans-serif' }}
-    >
-      {children}
-    </article>
-  );
-}
-
-function HeaderClassic({ cv, gold = false }: { cv: CvData; gold?: boolean }) {
-  const photoOn = cv.showPhoto && cv.photo;
-  return (
-    <header className={`flex items-start gap-4 ${gold ? 'border-b-2 border-[#c4a35a] pb-3' : 'border-b border-slate-200 pb-3'}`}>
-      {photoOn && <img src={cv.photo!} alt="" className="h-[92px] w-[74px] shrink-0 rounded-md object-cover object-top ring-1 ring-black/10" />}
-      <div className="min-w-0 flex-1">
-        <h1 className={`text-[22px] font-black leading-tight ${gold ? 'text-[#1a140c]' : 'text-slate-900'}`}>
-          {cv.fullName || (cv.lang === 'ar' ? 'اسمك الثلاثي' : 'Your full name')}
-        </h1>
-        <p className={`mt-0.5 text-[12px] font-bold ${gold ? 'text-[#8a6a28]' : 'text-slate-600'}`}>
-          {cv.headline || (cv.lang === 'ar' ? 'المسمّى الذي تريد أن يراك فيه الـHR' : 'Target title')}
-        </p>
-        <div className="mt-1.5">
-          <ContactLine cv={cv} />
-        </div>
+    <header className={`flex items-start gap-4 ${className || ''}`} style={{ direction: 'ltr' }}>
+      <div className="min-w-0 flex-1" style={{ direction: cv.lang === 'ar' ? 'rtl' : 'ltr' }}>
+        {children}
       </div>
+      {photo}
     </header>
   );
 }
 
-function BodyCommon({ cv, gold = false }: { cv: CvData; gold?: boolean }) {
-  const { t } = useCopy(cv);
-  const eduFirst = cv.template === 'academic';
-  const exp = (
-    <Section title={t.experience} gold={gold}>
-      <ExperienceBlock cv={cv} />
-    </Section>
-  );
-  const edu = cv.education.some((e) => e.school || e.field) ? (
-    <Section title={t.education} gold={gold}>
-      <EducationBlock cv={cv} />
-    </Section>
-  ) : null;
+/** ATS / Naje Core — single column, black on white, no chrome, no photo frame. */
+function NajeSheet({ cv, sheetId }: { cv: CvData; sheetId?: string }) {
   return (
-    <>
-      {cv.summary.trim() && (
-        <Section title={t.summary} gold={gold}>
-          <p className="text-[10px] leading-relaxed text-slate-800">{cv.summary}</p>
-        </Section>
-      )}
-      {cv.showPersonal && (
-        <Section title={t.personal} gold={gold}>
-          <PersonalBits cv={cv} />
-        </Section>
-      )}
-      {eduFirst ? edu : exp}
-      {eduFirst ? exp : edu}
-      {cv.skills.trim() && (
-        <Section title={t.skills} gold={gold}>
-          <SkillsLine cv={cv} />
-        </Section>
-      )}
-      {cv.courses.some((c) => c.name) && (
-        <Section title={t.courses} gold={gold}>
-          <CoursesBlock cv={cv} />
-        </Section>
-      )}
-      {cv.certificates.some((c) => c.name) && (
-        <Section title={t.certs} gold={gold}>
-          <CertsBlock cv={cv} />
-        </Section>
-      )}
-      {cv.languages.some((l) => l.name) && (
-        <Section title={t.langs} gold={gold}>
-          <LangsLine cv={cv} />
-        </Section>
-      )}
-      {cv.projects.some((p) => p.name) && (
-        <Section title={t.projects} gold={gold}>
-          {cv.projects
-            .filter((p) => p.name)
-            .map((p) => (
-              <p key={p.id} className="mb-1 text-[9px] text-slate-800">
-                <span className="font-black">{p.name}</span>
-                {p.role ? ` — ${p.role}` : ''}
-                {p.year ? ` · ${p.year}` : ''}
-                {p.detail ? ` · ${p.detail}` : ''}
-              </p>
-            ))}
-        </Section>
-      )}
-      {cv.volunteer.trim() && (
-        <Section title={t.volunteer} gold={gold}>
-          <p className="text-[9px] text-slate-800">{cv.volunteer}</p>
-        </Section>
-      )}
-      {cv.military.trim() && (
-        <Section title={t.military} gold={gold}>
-          <p className="text-[9px] text-slate-800">{cv.military}</p>
-        </Section>
-      )}
-      {cv.references.trim() && (
-        <Section title={t.refs} gold={gold}>
-          <p className="text-[9px] text-slate-800">{cv.references}</p>
-        </Section>
-      )}
-    </>
+    <Paper cv={cv} sheetId={sheetId} padding="44px 52px 48px">
+      <header className="border-b-[2px] border-black pb-2.5">
+        <NameLine cv={cv} className="text-[20px] font-black leading-tight tracking-tight text-black" />
+        <Headline cv={cv} className="mt-0.5 text-[11px] font-semibold text-slate-800" />
+        <div className="mt-1.5">
+          <ContactLine cv={cv} className="text-[8.5px] leading-snug text-slate-700" />
+        </div>
+      </header>
+      <BodySections cv={cv} tone="naje" />
+    </Paper>
   );
 }
 
-function ModernSheet({ cv, sheetId }: { cv: CvData; sheetId?: string }) {
-  const { t } = useCopy(cv);
+/** Gulf — photo on the physical right, gold hairline, nationality/visa/notice. */
+function GulfSheet({ cv, sheetId }: { cv: CvData; sheetId?: string }) {
   return (
-    <Paper cv={cv} className="!p-0" sheetId={sheetId}>
+    <Paper cv={cv} sheetId={sheetId} padding="38px 44px 44px">
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-[3px] bg-[#c4a35a]" />
+      <PhotoRightHeader cv={cv} photo={<CvPhoto cv={cv} shape="circle" size={92} />} className="border-b border-[#c4a35a] pb-3">
+        <NameLine cv={cv} className="text-[22px] font-black leading-tight text-[#1a140c]" />
+        <Headline cv={cv} className="mt-0.5 text-[12px] font-bold text-[#8a6a28]" />
+        <div className="mt-1.5">
+          <ContactLine cv={cv} className="text-[8.5px] leading-snug text-slate-600" />
+        </div>
+        <GulfMetaRow cv={cv} />
+      </PhotoRightHeader>
+      <BodySections cv={cv} tone="gulf" />
+    </Paper>
+  );
+}
+
+/** Jadarat — government form, standard Arabic section names, no decoration. */
+function JadaratSheet({ cv, sheetId }: { cv: CvData; sheetId?: string }) {
+  const { t, ar } = copyOf(cv);
+  const ltrKeys = new Set(['Email', 'البريد', 'Mobile', 'الجوال', 'LinkedIn', 'DOB', 'الميلاد']);
+  const rows = (
+    [
+      [ar ? 'الاسم' : 'Name', cv.fullName],
+      [ar ? 'المسمّى' : 'Title', cv.headline],
+      [ar ? 'الجوال' : 'Mobile', cv.phone],
+      [ar ? 'البريد' : 'Email', cv.email],
+      [ar ? 'المدينة' : 'City', [cv.city, cv.country].filter(Boolean).join(ar ? '، ' : ', ')],
+      cv.linkedin && [ar ? 'LinkedIn' : 'LinkedIn', cv.linkedin],
+      ...(cv.showPersonal ? personalRows(cv) : []),
+    ] as ([string, string] | false | '')[]
+  ).filter((r): r is [string, string] => Boolean(r && r[1]));
+
+  return (
+    <Paper cv={cv} sheetId={sheetId} padding="40px 46px 46px">
+      <p className="mb-2 text-center text-[10px] font-bold tracking-[0.18em] text-slate-500">{t.cvTitle}</p>
+      <NameLine cv={cv} className="text-center text-[18px] font-black leading-tight text-slate-900" />
+      <Headline cv={cv} className="mt-0.5 text-center text-[11px] font-semibold text-slate-700" />
+
+      <section className="mt-4">
+        <h3 className="mb-1.5 bg-[#e8eef4] px-2 py-[5px] text-[10.5px] font-bold text-[#1a2a3a]">{t.personal}</h3>
+        <div className="grid grid-cols-2 gap-x-4">
+          {rows.map(([k, v]) => (
+            <div key={k} className="flex items-baseline gap-2 border-b border-slate-200 py-[5px] text-[9px]">
+              <span className="shrink-0 font-bold text-slate-500">{k}</span>
+              <span className="min-w-0 text-slate-800" style={{ overflowWrap: 'anywhere' }}>
+                {ltrKeys.has(k) ? <Ltr>{v}</Ltr> : v}
+              </span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <BodySections cv={cv} tone="jadarat" hide={['personal']} />
+    </Paper>
+  );
+}
+
+/** Executive gold — air, thin gold rules, large name, optional circle photo. */
+function GoldSheet({ cv, sheetId }: { cv: CvData; sheetId?: string }) {
+  return (
+    <Paper cv={cv} sheetId={sheetId} padding="56px 58px 52px">
+      <PhotoRightHeader cv={cv} photo={<CvPhoto cv={cv} shape="circle" size={80} />}>
+        <NameLine cv={cv} className="text-[28px] font-black leading-[1.15] tracking-tight text-[#1a140c]" />
+        <div className="mt-2.5 flex items-center gap-2">
+          <span className="h-px w-10 bg-[#c4a35a]" />
+          <span className="h-px flex-1 bg-[#c4a35a]/35" />
+        </div>
+        <Headline cv={cv} className="mt-2 text-[12px] font-bold tracking-[0.08em] text-[#8a6a28]" />
+        <div className="mt-2">
+          <ContactLine cv={cv} className="text-[8.5px] leading-relaxed text-slate-500" />
+        </div>
+      </PhotoRightHeader>
+      <BodySections cv={cv} tone="gold" />
+    </Paper>
+  );
+}
+
+/** Modern sidebar — beautiful for humans; contact duplicated in the main column. */
+function ModernSheet({ cv, sheetId }: { cv: CvData; sheetId?: string }) {
+  const { t } = copyOf(cv);
+  const skills = skillItems(cv);
+  const langs = cv.languages.filter((l) => l.name.trim());
+  const sidePersonal = personalRows(cv).slice(0, 6);
+
+  return (
+    <Paper cv={cv} sheetId={sheetId} padding="0">
       <div className="flex min-h-[1123px]">
-        <aside className="w-[220px] shrink-0 bg-[#0f1c2e] px-5 py-8 text-[#f3ead8]">
-          {cv.showPhoto && cv.photo && <img src={cv.photo} alt="" className="mb-4 h-28 w-full rounded-xl object-cover object-top" />}
-          <h1 className="text-[18px] font-black leading-tight">{cv.fullName || '—'}</h1>
-          <p className="mt-1 text-[10px] font-bold text-[#c4a35a]">{cv.headline}</p>
-          <div className="mt-4 space-y-1 text-[8px] leading-relaxed text-white/70">
-            {cv.phone && <p>{cv.phone}</p>}
-            {cv.email && <p className="break-all">{cv.email}</p>}
-            {(cv.city || cv.country) && <p>{[cv.city, cv.country].filter(Boolean).join('، ')}</p>}
-            {cv.linkedin && <p className="break-all">{cv.linkedin}</p>}
-          </div>
-          {cv.showPersonal && (
-            <div className="mt-5">
-              <p className="mb-1 text-[8px] font-black tracking-widest text-[#c4a35a]">{t.personal}</p>
-              <div className="space-y-0.5 text-[8px] text-white/75">
-                {cv.nationality && <p>{cv.nationality}</p>}
-                {cv.visa && <p>{cv.visa}</p>}
-                {cv.notice && <p>{cv.notice}</p>}
-              </div>
-            </div>
-          )}
-          {cv.skills.trim() && (
-            <div className="mt-5">
-              <p className="mb-1 text-[8px] font-black tracking-widest text-[#c4a35a]">{t.skills}</p>
-              <div className="flex flex-col gap-0.5 text-[8px] text-white/80">
-                {cv.skills
-                  .split(/[,،\n]/)
-                  .map((s) => s.trim())
-                  .filter(Boolean)
-                  .map((s) => (
-                    <span key={s}>• {s}</span>
-                  ))}
-              </div>
-            </div>
-          )}
-          {cv.languages.some((l) => l.name) && (
-            <div className="mt-5">
-              <p className="mb-1 text-[8px] font-black tracking-widest text-[#c4a35a]">{t.langs}</p>
-              <p className="text-[8px] leading-relaxed text-white/80">
-                {cv.languages
-                  .filter((l) => l.name)
-                  .map((l) => l.name)
-                  .join('  ·  ')}
+        <aside
+          className="w-[228px] shrink-0 self-stretch px-5 py-8"
+          style={{ backgroundColor: '#0c1929', color: '#f3ead8' }}
+        >
+          {cv.showPhoto && cv.photo ? (
+            <img
+              src={cv.photo}
+              alt=""
+              style={{
+                width: '100%',
+                height: 188,
+                objectFit: 'cover',
+                objectPosition: 'center 18%',
+                borderRadius: 0,
+                border: '1px solid #1b2838',
+                display: 'block',
+                marginBottom: 16,
+                backgroundColor: '#1b2838',
+              }}
+            />
+          ) : null}
+          <h1 className="text-[17px] font-black leading-tight text-[#f3ead8]">{cv.fullName || '—'}</h1>
+          {cv.headline ? <p className="mt-1 text-[10px] font-bold text-[#c4a35a]">{cv.headline}</p> : null}
+
+          <div className="mt-5 space-y-1 text-[8px] leading-relaxed text-white/70" style={{ overflowWrap: 'anywhere' }}>
+            {cv.phone ? (
+              <p>
+                <Ltr>{cv.phone}</Ltr>
               </p>
+            ) : null}
+            {cv.email ? (
+              <p>
+                <Ltr>{cv.email}</Ltr>
+              </p>
+            ) : null}
+            {(cv.city || cv.country) && <p>{[cv.city, cv.country].filter(Boolean).join(cv.lang === 'ar' ? '، ' : ', ')}</p>}
+            {cv.linkedin ? (
+              <p>
+                <Ltr>{cv.linkedin}</Ltr>
+              </p>
+            ) : null}
+            {cv.portfolio ? (
+              <p>
+                <Ltr>{cv.portfolio}</Ltr>
+              </p>
+            ) : null}
+          </div>
+
+          {cv.showPersonal && sidePersonal.length > 0 ? (
+            <div className="mt-5">
+              <p className="mb-1.5 text-[8px] font-black tracking-[0.16em] text-[#c4a35a]">{t.personal}</p>
+              <div className="space-y-1 text-[8px] text-white/75">
+                {sidePersonal.map(([k, v]) => (
+                  <p key={k}>
+                    <span className="text-white/45">{k} · </span>
+                    {v}
+                  </p>
+                ))}
+              </div>
             </div>
-          )}
+          ) : null}
+
+          {hasSkills(cv) ? (
+            <div className="mt-5">
+              <p className="mb-1.5 text-[8px] font-black tracking-[0.16em] text-[#c4a35a]">{t.skills}</p>
+              <div className="flex flex-col gap-1 text-[8px] leading-snug text-white/80">
+                {skills.map((s) => (
+                  <span key={s}>{s}</span>
+                ))}
+              </div>
+            </div>
+          ) : null}
+
+          {hasLangs(cv) ? (
+            <div className="mt-5">
+              <p className="mb-1.5 text-[8px] font-black tracking-[0.16em] text-[#c4a35a]">{t.langs}</p>
+              <p className="text-[8px] leading-relaxed text-white/80">{langs.map((l) => l.name).join('  ·  ')}</p>
+            </div>
+          ) : null}
         </aside>
+
         <div className="min-w-0 flex-1 px-7 py-8">
-          <BodyCommon cv={cv} gold />
+          <ContactLine cv={cv} className="mb-3 text-[8px] leading-snug text-slate-500" />
+          <BodySections cv={cv} tone="modern" hide={['skills', 'langs', 'personal']} />
         </div>
       </div>
+    </Paper>
+  );
+}
+
+/** Academic — education, GPA, publications first; scholarly. */
+function AcademicSheet({ cv, sheetId }: { cv: CvData; sheetId?: string }) {
+  const { t, ar } = copyOf(cv);
+  const extras = cv.showPersonal ? personalRows(cv) : [];
+  return (
+    <Paper cv={cv} sheetId={sheetId} padding="48px 56px 50px">
+      <header className="mb-1 border-b border-slate-800 pb-3 text-center">
+        <p className="mb-1.5 text-[8px] font-bold tracking-[0.22em] text-slate-500">{t.cvTitle}</p>
+        <NameLine cv={cv} className="text-[22px] font-black leading-tight text-slate-900" />
+        <Headline cv={cv} className="mt-1 text-[11px] font-medium text-slate-600" />
+        <div className="mx-auto mt-2 max-w-[520px]">
+          <ContactLine cv={cv} className="text-[8.5px] leading-snug text-slate-600" />
+        </div>
+        {cv.showPhoto && cv.photo ? (
+          <div className="mt-3 flex justify-center">
+            <CvPhoto cv={cv} shape="plain" size={64} height={80} />
+          </div>
+        ) : null}
+      </header>
+      <BodySections cv={cv} tone="academic" hide={['personal']} />
+      {extras.length ? (
+        <section className="mt-4">
+          <h3
+            className={`mb-1.5 border-b border-slate-800 pb-[3px] text-[10px] font-bold tracking-[0.12em] text-slate-900 ${
+              ar ? '' : 'uppercase'
+            }`}
+          >
+            {t.personal}
+          </h3>
+          <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-[8.5px] text-slate-700">
+            {extras.map(([k, v]) => (
+              <p key={k}>
+                <span className="font-bold text-slate-500">{k}: </span>
+                {v}
+              </p>
+            ))}
+          </div>
+        </section>
+      ) : null}
     </Paper>
   );
 }
 
 export function CvPreview({ cv, sheetId }: { cv: CvData; sheetId?: string }) {
-  if (cv.template === 'modern') return <ModernSheet cv={cv} sheetId={sheetId} />;
-  const gold = cv.template === 'gold' || cv.template === 'gulf';
-  return (
-    <Paper cv={cv} className={cv.template === 'gold' ? 'bg-[#fbf7ef]' : ''} sheetId={sheetId}>
-      {cv.template === 'jadarat' && <p className="mb-2 text-[8px] font-bold tracking-[0.2em] text-slate-400">CV · جدارات · نص حقيقي</p>}
-      <HeaderClassic cv={cv} gold={gold} />
-      <BodyCommon cv={cv} gold={gold} />
-    </Paper>
-  );
+  switch (cv.template) {
+    case 'gulf':
+      return <GulfSheet cv={cv} sheetId={sheetId} />;
+    case 'jadarat':
+      return <JadaratSheet cv={cv} sheetId={sheetId} />;
+    case 'gold':
+      return <GoldSheet cv={cv} sheetId={sheetId} />;
+    case 'modern':
+      return <ModernSheet cv={cv} sheetId={sheetId} />;
+    case 'academic':
+      return <AcademicSheet cv={cv} sheetId={sheetId} />;
+    default:
+      return <NajeSheet cv={cv} sheetId={sheetId} />;
+  }
 }
 
 export default CvPreview;

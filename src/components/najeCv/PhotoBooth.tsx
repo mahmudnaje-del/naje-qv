@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Check, ImagePlus, Sparkles, Trash2 } from 'lucide-react';
 
 function loadImage(src: string): Promise<HTMLImageElement> {
@@ -10,8 +10,12 @@ function loadImage(src: string): Promise<HTMLImageElement> {
   });
 }
 
-/** Studio headshot: contrast, warm grade, cream backdrop if corners are uniform. */
-export async function enhanceHeadshot(dataUrl: string): Promise<string> {
+function clamp(n: number, min: number, max: number) {
+  return Math.max(min, Math.min(max, n));
+}
+
+/** 4:5 professional crop around a focal point (0–1 in source space). */
+export async function cropToHeadshot(dataUrl: string, focusX = 0.5, focusY = 0.32): Promise<string> {
   const img = await loadImage(dataUrl);
   const w = 720;
   const h = 900;
@@ -21,20 +25,39 @@ export async function enhanceHeadshot(dataUrl: string): Promise<string> {
   const ctx = canvas.getContext('2d');
   if (!ctx) return dataUrl;
 
-  const srcRatio = img.width / img.height;
   const dstRatio = w / h;
-  let sx = 0;
-  let sy = 0;
-  let sw = img.width;
-  let sh = img.height;
-  if (srcRatio > dstRatio) {
-    sw = img.height * dstRatio;
-    sx = (img.width - sw) / 2;
+  let sw: number;
+  let sh: number;
+  if (img.width / img.height > dstRatio) {
+    sh = img.height;
+    sw = sh * dstRatio;
   } else {
-    sh = img.width / dstRatio;
-    sy = (img.height - sh) / 6;
+    sw = img.width;
+    sh = sw / dstRatio;
   }
+  const sx = clamp(img.width * focusX - sw / 2, 0, Math.max(0, img.width - sw));
+  const sy = clamp(img.height * focusY - sh / 2, 0, Math.max(0, img.height - sh));
   ctx.drawImage(img, sx, sy, sw, sh, 0, 0, w, h);
+  return canvas.toDataURL('image/jpeg', 0.92);
+}
+
+/**
+ * Local studio grade: contrast + warm lift. Same pixels, no beauty API, no identity swap.
+ * Composition is preserved (no recrop).
+ */
+export async function enhanceHeadshot(dataUrl: string): Promise<string> {
+  const img = await loadImage(dataUrl);
+  const maxSide = 900;
+  const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
+  const w = Math.max(1, Math.round(img.width * scale));
+  const h = Math.max(1, Math.round(img.height * scale));
+  const canvas = document.createElement('canvas');
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return dataUrl;
+
+  ctx.drawImage(img, 0, 0, w, h);
   const image = ctx.getImageData(0, 0, w, h);
   const d = image.data;
 
@@ -87,6 +110,21 @@ export async function enhanceHeadshot(dataUrl: string): Promise<string> {
   return canvas.toDataURL('image/jpeg', 0.92);
 }
 
+function dimWarning(w: number, h: number): string | null {
+  const ratio = w / Math.max(1, h);
+  const min = Math.min(w, h);
+  if (min < 280 && ratio > 0.82 && ratio < 1.22) {
+    return 'أبعاد مربعة وصغيرة — غالباً سيلفي أو صورة جواز. استخدم رأس وأكتاف أوضح.';
+  }
+  if (ratio > 1.75) {
+    return 'الصورة عريضة جداً — قد تكون لقطة أفقية أو جماعية. انقر على الوجه لقصّها رأسياً.';
+  }
+  if (min < 220) {
+    return 'الدقة منخفضة للطباعة. ارفع صورة أوضح (رأس وأكتاف).';
+  }
+  return null;
+}
+
 export function PhotoBooth({
   photo,
   enhanced,
@@ -96,57 +134,165 @@ export function PhotoBooth({
   enhanced: boolean;
   onChange: (photo: string | null, enhanced: boolean) => void;
 }) {
-  const ref = useRef<HTMLInputElement>(null);
-  const [busy, setBusy] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const sourceRef = useRef<string | null>(photo);
+  const lastOutRef = useRef<string | null>(photo);
+  const [source, setSource] = useState<string | null>(photo);
+  const [busy, setBusy] = useState<'crop' | 'enhance' | null>(null);
+  const [focus, setFocus] = useState({ x: 0.5, y: 0.32 });
+  const [warn, setWarn] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!photo) {
+      sourceRef.current = null;
+      lastOutRef.current = null;
+      setSource(null);
+      setFocus({ x: 0.5, y: 0.32 });
+      return;
+    }
+    if (photo !== lastOutRef.current) {
+      sourceRef.current = photo;
+      lastOutRef.current = photo;
+      setSource(photo);
+    }
+  }, [photo]);
+
+  useEffect(() => {
+    if (!source) {
+      setWarn(null);
+      return;
+    }
+    let cancelled = false;
+    loadImage(source)
+      .then((img) => {
+        if (!cancelled) setWarn(dimWarning(img.width, img.height));
+      })
+      .catch(() => {
+        if (!cancelled) setWarn(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [source]);
+
+  const applyCrop = async (src: string, fx: number, fy: number, isEnhanced: boolean) => {
+    const next = await cropToHeadshot(src, fx, fy);
+    lastOutRef.current = next;
+    onChange(next, isEnhanced);
+  };
 
   const pick = (file?: File) => {
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = () => onChange(String(reader.result || ''), false);
+    reader.onload = async () => {
+      const dataUrl = String(reader.result || '');
+      sourceRef.current = dataUrl;
+      setSource(dataUrl);
+      const fx = 0.5;
+      const fy = 0.32;
+      setFocus({ x: fx, y: fy });
+      setBusy('crop');
+      try {
+        await applyCrop(dataUrl, fx, fy, false);
+      } finally {
+        setBusy(null);
+      }
+    };
     reader.readAsDataURL(file);
   };
 
-  const enhance = async () => {
-    if (!photo) return;
-    setBusy(true);
+  const onThumbClick = async (e: React.MouseEvent<HTMLButtonElement>) => {
+    if (!photo) {
+      inputRef.current?.click();
+      return;
+    }
+    const src = sourceRef.current || photo;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const fx = clamp((e.clientX - rect.left) / Math.max(1, rect.width), 0, 1);
+    const fy = clamp((e.clientY - rect.top) / Math.max(1, rect.height), 0, 1);
+    setFocus({ x: fx, y: fy });
+    setBusy('crop');
     try {
-      const next = await enhanceHeadshot(photo);
-      onChange(next, true);
+      await applyCrop(src, fx, fy, enhanced);
     } finally {
-      setBusy(false);
+      setBusy(null);
     }
   };
 
+  const enhance = async () => {
+    const src = sourceRef.current || photo;
+    if (!src) return;
+    setBusy('enhance');
+    try {
+      const graded = await enhanceHeadshot(src);
+      sourceRef.current = graded;
+      setSource(graded);
+      const next = await cropToHeadshot(graded, focus.x, focus.y);
+      lastOutRef.current = next;
+      onChange(next, true);
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const preview = source || photo;
+
   return (
-    <div className="flex items-center gap-3">
-      <button
-        type="button"
-        onClick={() => ref.current?.click()}
-        className="relative h-24 w-20 shrink-0 overflow-hidden rounded-2xl border border-[#c4a35a]/40 bg-black/30"
-      >
+    <div className="flex items-start gap-3">
+      <div className="shrink-0 space-y-1">
+        <button
+          type="button"
+          onClick={onThumbClick}
+          className={`relative h-24 w-20 shrink-0 overflow-hidden rounded-2xl border border-[#c4a35a]/40 bg-black/30 ${
+            photo ? 'cursor-crosshair' : ''
+          }`}
+        >
+          {preview ? (
+            <>
+              <img
+                src={preview}
+                alt="صورة السيرة"
+                className="h-full w-full object-cover"
+                style={{ objectPosition: `${focus.x * 100}% ${focus.y * 100}%` }}
+              />
+              <span
+                className="pointer-events-none absolute h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-[#c4a35a] bg-white/25"
+                style={{ left: `${focus.x * 100}%`, top: `${focus.y * 100}%` }}
+              />
+            </>
+          ) : (
+            <span className="flex h-full w-full flex-col items-center justify-center gap-1 text-[#c4a35a]">
+              <ImagePlus className="h-6 w-6" />
+              <span className="text-[9px] font-black">أرفق</span>
+            </span>
+          )}
+        </button>
         {photo ? (
-          <img src={photo} alt="صورة السيرة" className="h-full w-full object-cover object-top" />
-        ) : (
-          <span className="flex h-full w-full flex-col items-center justify-center gap-1 text-[#c4a35a]">
-            <ImagePlus className="h-6 w-6" />
-            <span className="text-[9px] font-black">أرفق</span>
-          </span>
-        )}
-      </button>
+          <button
+            type="button"
+            onClick={() => inputRef.current?.click()}
+            className="block w-full text-center text-[9px] font-bold text-white/40 hover:text-[#e8c36a]"
+          >
+            تغيير
+          </button>
+        ) : null}
+      </div>
       <div className="min-w-0 flex-1 space-y-1.5">
         <p className="text-[11px] font-black text-[#f3ead8]">صورة مهنية</p>
         <p className="text-[10px] leading-relaxed text-white/45">
-          رأس وأكتاف، خلفية سادة، لباس رسمي. السيلفي والصورة المنزلية تُرمى أسرع من السيرة نفسها.
+          الصورة اختيارية. في أسواق ATS يُفضَّل إخفاؤها. رأس وأكتاف، خلفية سادة، لباس رسمي.
+          {photo ? ' انقر على الوجه لتحريك القص.' : ''}
         </p>
+        {warn ? <p className="text-[10px] leading-relaxed text-amber-300/90">{warn}</p> : null}
         <div className="flex flex-wrap gap-1.5">
           <button
             type="button"
-            disabled={!photo || busy}
+            disabled={!photo || !!busy}
             onClick={enhance}
             className="inline-flex items-center gap-1 rounded-lg bg-[#c4a35a] px-2.5 py-1 text-[10px] font-black text-[#1a140c] disabled:opacity-40"
           >
             <Sparkles className="h-3 w-3" />
-            {busy ? 'يُحسّن…' : enhanced ? 'حُسّنت' : 'تحسين الاستوديو'}
+            {busy === 'enhance' ? 'يُحسّن…' : enhanced ? 'حُسّنت' : 'تحسين الاستوديو'}
           </button>
           {enhanced && (
             <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-emerald-400">
@@ -154,13 +300,24 @@ export function PhotoBooth({
             </span>
           )}
           {photo && (
-            <button type="button" onClick={() => onChange(null, false)} className="inline-flex items-center gap-1 text-[10px] text-white/40">
+            <button
+              type="button"
+              onClick={() => {
+                sourceRef.current = null;
+                lastOutRef.current = null;
+                setSource(null);
+                setWarn(null);
+                onChange(null, false);
+              }}
+              className="inline-flex items-center gap-1 text-[10px] text-white/40"
+            >
               <Trash2 className="h-3 w-3" /> حذف
             </button>
           )}
         </div>
+        <p className="text-[9px] text-white/30">تحسين محلي: تباين وإضاءة فقط — بلا تغيير ملامح.</p>
       </div>
-      <input ref={ref} type="file" accept="image/*" className="hidden" onChange={(e) => pick(e.target.files?.[0])} />
+      <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={(e) => pick(e.target.files?.[0])} />
     </div>
   );
 }

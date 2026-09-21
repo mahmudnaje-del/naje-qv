@@ -622,7 +622,7 @@ export default function Dashboard() {
           >
             <div className="flex items-center gap-2.5">
               <Clapperboard className="w-4 h-4 text-amber-500" />
-              <span>انترو ونهاية</span>
+              <span>استوديو الحركة</span>
             </div>
           </Link>
 
@@ -638,7 +638,7 @@ export default function Dashboard() {
           >
             <div className="flex items-center gap-2.5">
               <FileText className="w-4 h-4 text-amber-600" />
-              <span>CV By Naje</span>
+              <span>سيرتك بواسطة ناجي</span>
             </div>
           </Link>
 
@@ -1339,8 +1339,8 @@ export default function Dashboard() {
                       <Clapperboard className="w-5 h-5" />
                     </div>
                     <div className="flex flex-col text-right sm:text-center">
-                      <span className="text-xs font-bold text-gray-900 dark:text-white">انترو ونهاية</span>
-                      <span className="text-[10px] text-gray-800 dark:text-gray-400 mt-0.5">هوية متحركة 5 أو 10 ثوانٍ لصنّاع المحتوى والشركات</span>
+                      <span className="text-xs font-bold text-gray-900 dark:text-white">استوديو الحركة</span>
+                      <span className="text-[10px] text-gray-800 dark:text-gray-400 mt-0.5">انترو وأوترو 5 أو 10 ثوانٍ لصنّاع المحتوى والشركات</span>
                     </div>
                   </div>
                   <ChevronLeft className="w-4 h-4 text-gray-900 dark:text-gray-300 sm:hidden flex-shrink-0" />
@@ -1356,8 +1356,8 @@ export default function Dashboard() {
                       <FileText className="w-5 h-5" />
                     </div>
                     <div className="flex flex-col text-right sm:text-center">
-                      <span className="text-xs font-bold text-gray-900 dark:text-white">CV By Naje</span>
-                      <span className="text-[10px] text-gray-800 dark:text-gray-400 mt-0.5">سيرتك الذاتية — قوالب، مدرب HR، PDF و Word</span>
+                      <span className="text-xs font-bold text-gray-900 dark:text-white">سيرتك بواسطة ناجي</span>
+                      <span className="text-[10px] text-gray-800 dark:text-gray-400 mt-0.5">هوية مهنية، مدرب مسح HR، تصدير PDF وWord</span>
                     </div>
                   </div>
                   <ChevronLeft className="w-4 h-4 text-gray-900 dark:text-gray-300 sm:hidden flex-shrink-0" />

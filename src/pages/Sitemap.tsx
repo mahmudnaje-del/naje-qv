@@ -20,6 +20,9 @@ export default function Sitemap() {
     { path: '/creative-studio', name: 'استوديو التصميم الإبداعي' },
     { path: '/naje-agent-core', name: 'وكيل ناجي' },
     { path: '/naje-ad', name: 'محرك الفيديو الإعلاني' },
+    { path: '/naje-prompt', name: 'ناجي برومبت' },
+    { path: '/naje-ident', name: 'استوديو الحركة — انترو ونهاية' },
+    { path: '/naje-cv', name: 'سيرتك الذاتية بواسطة ناجي' },
   ];
 
   const renderGroup = (title: string, routes: { path: string; name: string }[]) => (
