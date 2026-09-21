@@ -56,7 +56,7 @@ export const PACKAGE_CONTENT: Record<string, PackageContent> = {
     name: { ar: 'الشرارة', en: 'The Spark' },
     tagline: { ar: 'أول خطوة نحو إبداعك الحقيقي', en: 'Your first step into real AI creativity' },
     iconType: 'sparkles',
-    accent: 'from-gray-400/20 to-gray-200/10',
+    accent: 'slate',
     features: {
       ar: [
         '50 نقطة تضاف فوراً لرصيدك',
@@ -79,7 +79,7 @@ export const PACKAGE_CONTENT: Record<string, PackageContent> = {
     tagline: { ar: 'رصيد أكبر، وأدوات أذكى تشتغل لحسابك', en: 'More points, smarter autonomous agents' },
     iconType: 'zap',
     badge: { ar: 'الأكثر طلباً', en: 'Most Popular' },
-    accent: 'from-amber-500/25 to-purple-600/15',
+    accent: 'amber',
     features: {
       ar: [
         'كل مزايا باقة الشرارة',
@@ -102,7 +102,7 @@ export const PACKAGE_CONTENT: Record<string, PackageContent> = {
     tagline: { ar: 'كل أدوات ناجي بين إيديك، بلا أي حدود', en: 'All Naje tools at your command, without limits' },
     iconType: 'crown',
     badge: { ar: 'القوة الكاملة', en: 'Ultimate Power' },
-    accent: 'from-purple-600/30 to-amber-500/20',
+    accent: 'legend',
     features: {
       ar: [
         'كل مزايا باقة المُبتكر',
@@ -347,15 +347,15 @@ export default function Store() {
         </Link>
 
         {/* Bilingual Selector (Arabic & English) */}
-        <div className="flex items-center gap-2 bg-naje-elevated border border-gray-800 rounded-xl p-1 shadow-sm">
-          <Globe className="w-3.5 h-3.5 text-amber-400 ml-1.5 mr-1" />
+        <div className="flex items-center gap-2 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-1 shadow-sm">
+          <Globe className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 ml-1.5 mr-1" />
           <button
             type="button"
             onClick={() => setLang('ar')}
             className={`px-3 py-1 rounded-lg text-xs font-bold transition ${
               lang === 'ar'
                 ? 'bg-amber-400 text-black shadow-sm'
-                : 'text-gray-400 hover:text-white'
+                : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
             }`}
           >
             العربية
@@ -366,7 +366,7 @@ export default function Store() {
             className={`px-3 py-1 rounded-lg text-xs font-bold transition ${
               lang === 'en'
                 ? 'bg-amber-400 text-black shadow-sm'
-                : 'text-gray-400 hover:text-white'
+                : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
             }`}
           >
             English
@@ -398,7 +398,7 @@ export default function Store() {
         </p>
 
         {user && (
-          <div className="mt-4 inline-flex items-center gap-2 bg-naje-card border border-purple-200 dark:border-gray-900 rounded-xl px-4 py-2">
+          <div className="mt-4 inline-flex items-center gap-2 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-2">
             <span className="text-xs text-gray-600 dark:text-gray-400">
               {lang === 'ar' ? 'رصيدك الحالي:' : 'Current Balance:'}
             </span>
@@ -455,12 +455,10 @@ export default function Store() {
               onClick={() => setSelectedId(pkg.id)}
               className={`relative ${
                 lang === 'ar' ? 'text-right' : 'text-left'
-              } p-6 rounded-2xl border transition-all duration-200 cursor-pointer flex flex-col bg-gradient-to-b ${
-                content.accent
-              } ${
+              } p-6 rounded-2xl border transition-all duration-200 cursor-pointer flex flex-col bg-white dark:bg-zinc-900 ${
                 isSelected
-                  ? 'border-amber-400 shadow-xl shadow-amber-500/10 ring-1 ring-amber-400/50 bg-naje-canvas'
-                  : 'border-gray-800 bg-naje-elevated hover:border-gray-700'
+                  ? 'border-amber-500 shadow-lg shadow-amber-500/10 ring-1 ring-amber-400/40'
+                  : 'border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700'
               }`}
             >
               {content.badge && (
@@ -470,7 +468,7 @@ export default function Store() {
                   } text-[10px] font-extrabold px-3 py-1 rounded-full border shadow-sm ${
                     isSelected
                       ? 'bg-amber-400 text-black border-amber-300'
-                      : 'bg-purple-950/80 text-purple-300 border-purple-500/30'
+                      : 'bg-zinc-900 text-white border-zinc-800 dark:bg-zinc-800'
                   }`}
                 >
                   {content.badge[lang]}
@@ -478,29 +476,29 @@ export default function Store() {
               )}
 
               <div className="flex items-center gap-3 mb-4 mt-1">
-                <div className="w-10 h-10 rounded-xl bg-black/30 flex items-center justify-center text-amber-400">
+                <div className="w-10 h-10 rounded-xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-amber-600 dark:text-amber-400">
                   {renderIcon(content.iconType)}
                 </div>
                 <div>
-                  <h3 className="text-base font-extrabold text-white">{content.name[lang]}</h3>
-                  <p className="text-[11px] text-gray-400">{content.tagline[lang]}</p>
+                  <h3 className="text-base font-extrabold text-zinc-900 dark:text-white">{content.name[lang]}</h3>
+                  <p className="text-[11px] text-zinc-600 dark:text-zinc-400">{content.tagline[lang]}</p>
                 </div>
               </div>
 
               <div className="flex items-baseline gap-2 mb-1">
-                <span className="text-3xl font-extrabold text-white font-mono">{pkg.points}</span>
-                <span className="text-xs font-semibold text-amber-400">
+                <span className="text-3xl font-extrabold text-zinc-900 dark:text-white font-mono">{pkg.points}</span>
+                <span className="text-xs font-semibold text-amber-700 dark:text-amber-400">
                   {lang === 'ar' ? 'نقطة إبداع' : 'Creative Points'}
                 </span>
               </div>
-              <div className="text-lg font-extrabold font-mono text-amber-300 mb-5">
+              <div className="text-lg font-extrabold font-mono text-amber-700 dark:text-amber-300 mb-5">
                 ${pkg.usd.toFixed(2)} USD
               </div>
 
               <ul className="space-y-2.5 flex-1">
                 {content.features[lang].map((feature, i) => (
-                  <li key={i} className="flex items-start gap-2 text-xs text-gray-300">
-                    <Check className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0 mt-0.5" />
+                  <li key={i} className="flex items-start gap-2 text-xs text-zinc-700 dark:text-zinc-300">
+                    <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 flex-shrink-0 mt-0.5" />
                     <span>{feature}</span>
                   </li>
                 ))}
@@ -510,7 +508,7 @@ export default function Store() {
                 className={`mt-5 text-center text-xs font-bold py-2 rounded-xl transition ${
                   isSelected
                     ? 'bg-amber-400 text-black'
-                    : 'bg-gray-900 text-gray-300 border border-gray-800'
+                    : 'bg-zinc-900 text-white dark:bg-zinc-800'
                 }`}
               >
                 {isSelected
@@ -527,24 +525,24 @@ export default function Store() {
       </div>
 
       {/* Checkout panel */}
-      <div className="bg-naje-canvas border border-amber-500/30 rounded-2xl p-6 sm:p-8 shadow-xl relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-72 h-72 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-0 w-72 h-72 bg-purple-600/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 sm:p-8 shadow-sm relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-72 h-72 bg-amber-500/5 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-0 w-72 h-72 bg-zinc-400/5 rounded-full blur-3xl pointer-events-none" />
 
         <div className="relative z-10">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-5 border-b border-gray-800">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-5 border-b border-zinc-200 dark:border-zinc-800">
             <div>
-              <p className="text-xs text-gray-400 mb-1">
+              <p className="text-xs text-zinc-600 dark:text-zinc-400 mb-1">
                 {lang === 'ar' ? 'إتمام الشراء للباقة المحددة' : 'Checkout for Selected Package'}
               </p>
-              <p className="text-lg font-bold text-white flex items-center gap-2 flex-wrap">
+              <p className="text-lg font-bold text-zinc-900 dark:text-white flex items-center gap-2 flex-wrap">
                 <span>{selectedContent?.name[lang]}</span>
-                <span className="text-gray-500">•</span>
-                <span className="text-amber-300 font-mono font-black">
+                <span className="text-zinc-400">•</span>
+                <span className="text-amber-700 dark:text-amber-300 font-mono font-black">
                   {selectedPackage?.points} {lang === 'ar' ? 'نقطة' : 'pts'}
                 </span>
-                <span className="text-gray-500">•</span>
-                <span className="text-amber-400 font-mono font-extrabold text-xl">
+                <span className="text-zinc-400">•</span>
+                <span className="text-amber-700 dark:text-amber-400 font-mono font-extrabold text-xl">
                   ${selectedPackage?.usd.toFixed(2)} USD
                 </span>
               </p>

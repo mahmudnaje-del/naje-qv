@@ -2711,6 +2711,132 @@ setInterval(() => {
   }
 }, 10 * 60 * 1000);
 
+const NAJE_THEME_IDS = ['azure', 'emerald', 'amber', 'coral', 'violet', 'teal', 'rose', 'slate'] as const;
+const NAJE_THEME_UNLOCK_COST = 2;
+
+async function handleUnlockTheme(req: any, res: any) {
+  try {
+    const authUser = await requireAuth(req, res);
+    if (!authUser) return;
+    const themeId = String(req.body?.themeId || '').trim();
+    if (!NAJE_THEME_IDS.includes(themeId as any)) {
+      return res.status(400).json({ error: 'ثيم غير صالح' });
+    }
+    if (themeId === 'violet') {
+      return res.json({ ok: true, already: true, cost: 0, themeId });
+    }
+
+    const userRef = dbAdmin.collection('users').doc(authUser.uid);
+
+    try {
+      const outcome = await dbAdmin.runTransaction(async (tx: any) => {
+        const snap = await tx.get(userRef);
+        if (!snap.exists) throw new Error('NOUSER');
+        const d = snap.data() as any;
+        const current = asNumericBalance(d?.balance);
+        if (current === null) throw new Error('NOBAL');
+        const unlocked: string[] = Array.isArray(d.unlockedThemes) ? d.unlockedThemes : [];
+        if (d.isAdmin === true || unlocked.includes(themeId)) {
+          return { ok: true, already: true, newBalance: current, cost: 0, themeId };
+        }
+        if (current < NAJE_THEME_UNLOCK_COST) {
+          const err: any = new Error('INSUFFICIENT');
+          err.newBalance = current;
+          throw err;
+        }
+        const next = parseFloat((current - NAJE_THEME_UNLOCK_COST).toFixed(4));
+        tx.update(userRef, {
+          balance: next,
+          isNegativeBalance: next < 0,
+          unlockedThemes: FieldValue.arrayUnion(themeId),
+          selectedThemeColor: themeId,
+        });
+        inMemoryBalances.set(authUser.uid, next);
+        return { ok: true, already: false, newBalance: next, cost: NAJE_THEME_UNLOCK_COST, themeId };
+      });
+      return res.json(outcome);
+    } catch (txErr: any) {
+      if (txErr?.message === 'INSUFFICIENT') {
+        return res.status(402).json({
+          error: `رصيد غير كافٍ. فتح الثيم يحتاج ${NAJE_THEME_UNLOCK_COST} نقطة.`,
+          newBalance: txErr.newBalance,
+        });
+      }
+      if (txErr?.message === 'NOUSER' || txErr?.message === 'NOBAL') {
+        return res.status(400).json({ error: 'تعذر قراءة الرصيد' });
+      }
+      console.warn('[themes/unlock] transaction fallback:', txErr?.message || txErr);
+    }
+
+    const userDoc = await getDocRest('users', authUser.uid, authUser.token);
+    const current = userDoc ? asNumericBalance(userDoc.balance) : null;
+    if (current === null) {
+      return res.status(400).json({ error: 'تعذر قراءة الرصيد' });
+    }
+    const unlocked: string[] = Array.isArray(userDoc?.unlockedThemes) ? userDoc.unlockedThemes : [];
+    if (userDoc?.isAdmin === true || unlocked.includes(themeId)) {
+      return res.json({ ok: true, already: true, newBalance: current, cost: 0, themeId });
+    }
+    if (current < NAJE_THEME_UNLOCK_COST) {
+      return res.status(402).json({
+        error: `رصيد غير كافٍ. فتح الثيم يحتاج ${NAJE_THEME_UNLOCK_COST} نقطة.`,
+        newBalance: current,
+      });
+    }
+
+    const charged = await mutateBalanceAtomic(authUser.uid, -NAJE_THEME_UNLOCK_COST, {
+      requireSufficient: true,
+      token: authUser.token,
+    });
+    if (!charged.ok) {
+      const status = charged.reason === 'INSUFFICIENT' ? 402 : 500;
+      return res.status(status).json({
+        error: charged.reason === 'INSUFFICIENT'
+          ? `رصيد غير كافٍ. فتح الثيم يحتاج ${NAJE_THEME_UNLOCK_COST} نقطة.`
+          : 'تعذر خصم النقاط',
+        newBalance: charged.newBalance,
+      });
+    }
+
+    try {
+      await userRef.update({
+        unlockedThemes: FieldValue.arrayUnion(themeId),
+        selectedThemeColor: themeId,
+      });
+      return res.json({
+        ok: true,
+        already: false,
+        newBalance: charged.newBalance,
+        cost: NAJE_THEME_UNLOCK_COST,
+        themeId,
+      });
+    } catch (writeErr: any) {
+      console.warn('[themes/unlock] admin update failed, trying set merge:', writeErr?.message || writeErr);
+      try {
+        const nextUnlocked = Array.from(new Set([...unlocked, themeId]));
+        await userRef.set(
+          { unlockedThemes: nextUnlocked, selectedThemeColor: themeId },
+          { merge: true },
+        );
+        return res.json({
+          ok: true,
+          already: false,
+          newBalance: charged.newBalance,
+          cost: NAJE_THEME_UNLOCK_COST,
+          themeId,
+        });
+      } catch (writeErr2: any) {
+        await mutateBalanceAtomic(authUser.uid, NAJE_THEME_UNLOCK_COST, { token: authUser.token }).catch(() => null);
+        console.error('[themes/unlock] write failed, refunded:', writeErr2?.message || writeErr2);
+        return res.status(500).json({ error: 'تعذر حفظ الثيم، تم إرجاع النقاط' });
+      }
+    }
+  } catch (e: any) {
+    console.error('[themes/unlock]', e);
+    return res.status(500).json({ error: e?.message || 'حدث خطأ أثناء فتح الثيم' });
+  }
+}
+
 export async function startServer(existingApp?: express.Express) {
   const app = existingApp || express();
   const alreadyListening = Boolean(existingApp);
@@ -2767,6 +2893,7 @@ export async function startServer(existingApp?: express.Express) {
   app.head(['/', '/api/health', '/health', '/healthz'], (req, res) => {
     res.status(200).end();
   });
+  app.post('/api/themes/unlock', handleUnlockTheme);
 
   // Early root probe responder: ensures Cloud Run startup probes at '/' immediately return 200 with index.html
   app.get('/', (req, res, next) => {
@@ -4058,132 +4185,6 @@ app.post('/api/redeem-code', async (req, res) => {
     }
   } catch(e) {
     res.status(400).json({ error: e.message || "حدث خطأ" });
-  }
-});
-
-const NAJE_THEME_IDS = ['azure', 'emerald', 'amber', 'coral', 'violet', 'teal', 'rose', 'slate'] as const;
-const NAJE_THEME_UNLOCK_COST = 2;
-
-app.post('/api/themes/unlock', async (req, res) => {
-  try {
-    const authUser = await requireAuth(req, res);
-    if (!authUser) return;
-    const themeId = String(req.body?.themeId || '').trim();
-    if (!NAJE_THEME_IDS.includes(themeId as any)) {
-      return res.status(400).json({ error: 'ثيم غير صالح' });
-    }
-    if (themeId === 'violet') {
-      return res.json({ ok: true, already: true, cost: 0, themeId });
-    }
-
-    const userRef = dbAdmin.collection('users').doc(authUser.uid);
-
-    try {
-      const outcome = await dbAdmin.runTransaction(async (tx: any) => {
-        const snap = await tx.get(userRef);
-        if (!snap.exists) throw new Error('NOUSER');
-        const d = snap.data() as any;
-        const current = asNumericBalance(d?.balance);
-        if (current === null) throw new Error('NOBAL');
-        const unlocked: string[] = Array.isArray(d.unlockedThemes) ? d.unlockedThemes : [];
-        if (d.isAdmin === true || unlocked.includes(themeId)) {
-          return { ok: true, already: true, newBalance: current, cost: 0, themeId };
-        }
-        if (current < NAJE_THEME_UNLOCK_COST) {
-          const err: any = new Error('INSUFFICIENT');
-          err.newBalance = current;
-          throw err;
-        }
-        const next = parseFloat((current - NAJE_THEME_UNLOCK_COST).toFixed(4));
-        tx.update(userRef, {
-          balance: next,
-          isNegativeBalance: next < 0,
-          unlockedThemes: FieldValue.arrayUnion(themeId),
-          selectedThemeColor: themeId,
-        });
-        inMemoryBalances.set(authUser.uid, next);
-        return { ok: true, already: false, newBalance: next, cost: NAJE_THEME_UNLOCK_COST, themeId };
-      });
-      return res.json(outcome);
-    } catch (txErr: any) {
-      if (txErr?.message === 'INSUFFICIENT') {
-        return res.status(402).json({
-          error: `رصيد غير كافٍ. فتح الثيم يحتاج ${NAJE_THEME_UNLOCK_COST} نقطة.`,
-          newBalance: txErr.newBalance,
-        });
-      }
-      if (txErr?.message === 'NOUSER' || txErr?.message === 'NOBAL') {
-        return res.status(400).json({ error: 'تعذر قراءة الرصيد' });
-      }
-      console.warn('[themes/unlock] transaction fallback:', txErr?.message || txErr);
-    }
-
-    const userDoc = await getDocRest('users', authUser.uid, authUser.token);
-    const current = userDoc ? asNumericBalance(userDoc.balance) : null;
-    if (current === null) {
-      return res.status(400).json({ error: 'تعذر قراءة الرصيد' });
-    }
-    const unlocked: string[] = Array.isArray(userDoc?.unlockedThemes) ? userDoc.unlockedThemes : [];
-    if (userDoc?.isAdmin === true || unlocked.includes(themeId)) {
-      return res.json({ ok: true, already: true, newBalance: current, cost: 0, themeId });
-    }
-    if (current < NAJE_THEME_UNLOCK_COST) {
-      return res.status(402).json({
-        error: `رصيد غير كافٍ. فتح الثيم يحتاج ${NAJE_THEME_UNLOCK_COST} نقطة.`,
-        newBalance: current,
-      });
-    }
-
-    const charged = await mutateBalanceAtomic(authUser.uid, -NAJE_THEME_UNLOCK_COST, {
-      requireSufficient: true,
-      token: authUser.token,
-    });
-    if (!charged.ok) {
-      const status = charged.reason === 'INSUFFICIENT' ? 402 : 500;
-      return res.status(status).json({
-        error: charged.reason === 'INSUFFICIENT'
-          ? `رصيد غير كافٍ. فتح الثيم يحتاج ${NAJE_THEME_UNLOCK_COST} نقطة.`
-          : 'تعذر خصم النقاط',
-        newBalance: charged.newBalance,
-      });
-    }
-
-    try {
-      await userRef.update({
-        unlockedThemes: FieldValue.arrayUnion(themeId),
-        selectedThemeColor: themeId,
-      });
-      return res.json({
-        ok: true,
-        already: false,
-        newBalance: charged.newBalance,
-        cost: NAJE_THEME_UNLOCK_COST,
-        themeId,
-      });
-    } catch (writeErr: any) {
-      console.warn('[themes/unlock] admin update failed, trying set merge:', writeErr?.message || writeErr);
-      try {
-        const nextUnlocked = Array.from(new Set([...unlocked, themeId]));
-        await userRef.set(
-          { unlockedThemes: nextUnlocked, selectedThemeColor: themeId },
-          { merge: true },
-        );
-        return res.json({
-          ok: true,
-          already: false,
-          newBalance: charged.newBalance,
-          cost: NAJE_THEME_UNLOCK_COST,
-          themeId,
-        });
-      } catch (writeErr2: any) {
-        await mutateBalanceAtomic(authUser.uid, NAJE_THEME_UNLOCK_COST, { token: authUser.token }).catch(() => null);
-        console.error('[themes/unlock] write failed, refunded:', writeErr2?.message || writeErr2);
-        return res.status(500).json({ error: 'تعذر حفظ الثيم، تم إرجاع النقاط' });
-      }
-    }
-  } catch (e: any) {
-    console.error('[themes/unlock]', e);
-    return res.status(500).json({ error: e?.message || 'حدث خطأ أثناء فتح الثيم' });
   }
 });
 

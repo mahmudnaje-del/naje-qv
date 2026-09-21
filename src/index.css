@@ -24,27 +24,27 @@
   --naje-p: #7c5cfa;
   --naje-s: #e394ea;
   --naje-on-accent: #ffffff;
-  --naje-canvas: #f4f3f6;
+  --naje-canvas: #f5f5f6;
   --naje-elevated: #ffffff;
   --naje-card: #ffffff;
-  --naje-ink: #17151d;
-  --naje-muted: #5a5663;
-  --naje-line: color-mix(in srgb, var(--naje-p) 14%, #e4e2e8);
+  --naje-ink: #18181b;
+  --naje-muted: #52525b;
+  --naje-line: #e4e4e7;
   --naje-accent: var(--naje-p);
-  --naje-accent-2: var(--naje-s);
-  --naje-accent-soft: color-mix(in srgb, var(--naje-p) 9%, transparent);
-  --naje-glow: color-mix(in srgb, var(--naje-p) 16%, transparent);
+  --naje-accent-2: var(--naje-p);
+  --naje-accent-soft: color-mix(in srgb, var(--naje-p) 8%, transparent);
+  --naje-glow: color-mix(in srgb, var(--naje-p) 12%, transparent);
 }
 
 .dark {
-  --naje-canvas: #090a0d;
-  --naje-elevated: #12141a;
-  --naje-card: #101218;
-  --naje-ink: #f4efe6;
-  --naje-muted: #9a958c;
-  --naje-line: color-mix(in srgb, var(--naje-s) 16%, transparent);
+  --naje-canvas: #09090b;
+  --naje-elevated: #18181b;
+  --naje-card: #18181b;
+  --naje-ink: #fafafa;
+  --naje-muted: #a1a1aa;
+  --naje-line: #27272a;
   --naje-accent-soft: color-mix(in srgb, var(--naje-p) 14%, transparent);
-  --naje-glow: color-mix(in srgb, var(--naje-p) 22%, transparent);
+  --naje-glow: color-mix(in srgb, var(--naje-p) 16%, transparent);
 }
 
 html[data-naje-color="azure"] { --naje-p: #3b8ed8; --naje-s: #8ec9f2; --naje-on-accent: #ffffff; }
@@ -56,95 +56,53 @@ html[data-naje-color="teal"] { --naje-p: #2ba4c6; --naje-s: #7fe0d6; --naje-on-a
 html[data-naje-color="rose"] { --naje-p: #c4456a; --naje-s: #f4a78c; --naje-on-accent: #ffffff; }
 html[data-naje-color="slate"] { --naje-p: #6b7280; --naje-s: #b0b6be; --naje-on-accent: #ffffff; }
 
-/* Remap brand utilities (indigo / purple / violet / fuchsia) to the selected family */
+/* Remap ONLY solid accent buttons — never wash 50–400 surfaces */
 html {
-  --color-indigo-50: color-mix(in srgb, var(--naje-s) 14%, white);
-  --color-indigo-100: color-mix(in srgb, var(--naje-s) 24%, white);
-  --color-indigo-200: color-mix(in srgb, var(--naje-s) 42%, white);
-  --color-indigo-300: color-mix(in srgb, var(--naje-s) 64%, white);
-  --color-indigo-400: color-mix(in srgb, var(--naje-s) 78%, var(--naje-p));
   --color-indigo-500: var(--naje-p);
-  --color-indigo-600: color-mix(in srgb, var(--naje-p) 84%, black);
-  --color-indigo-700: color-mix(in srgb, var(--naje-p) 70%, black);
-  --color-indigo-800: color-mix(in srgb, var(--naje-p) 52%, black);
-  --color-indigo-900: color-mix(in srgb, var(--naje-p) 34%, black);
-  --color-indigo-950: color-mix(in srgb, var(--naje-p) 18%, black);
-
-  --color-purple-50: color-mix(in srgb, var(--naje-s) 16%, white);
-  --color-purple-100: color-mix(in srgb, var(--naje-s) 28%, white);
-  --color-purple-200: color-mix(in srgb, var(--naje-s) 46%, white);
-  --color-purple-300: color-mix(in srgb, var(--naje-s) 68%, white);
-  --color-purple-400: var(--naje-s);
-  --color-purple-500: color-mix(in srgb, var(--naje-p) 55%, var(--naje-s));
+  --color-indigo-600: color-mix(in srgb, var(--naje-p) 88%, black);
+  --color-indigo-700: color-mix(in srgb, var(--naje-p) 72%, black);
+  --color-purple-500: var(--naje-p);
   --color-purple-600: var(--naje-p);
   --color-purple-700: color-mix(in srgb, var(--naje-p) 72%, black);
-  --color-purple-800: color-mix(in srgb, var(--naje-p) 54%, black);
-  --color-purple-900: color-mix(in srgb, var(--naje-p) 36%, black);
-  --color-purple-950: color-mix(in srgb, var(--naje-p) 20%, black);
-
-  --color-violet-50: color-mix(in srgb, var(--naje-s) 15%, white);
-  --color-violet-100: color-mix(in srgb, var(--naje-s) 26%, white);
-  --color-violet-200: color-mix(in srgb, var(--naje-s) 44%, white);
-  --color-violet-300: color-mix(in srgb, var(--naje-s) 66%, white);
-  --color-violet-400: color-mix(in srgb, var(--naje-s) 70%, var(--naje-p));
   --color-violet-500: var(--naje-p);
-  --color-violet-600: color-mix(in srgb, var(--naje-p) 82%, black);
-  --color-violet-700: color-mix(in srgb, var(--naje-p) 68%, black);
-  --color-violet-800: color-mix(in srgb, var(--naje-p) 50%, black);
-  --color-violet-900: color-mix(in srgb, var(--naje-p) 32%, black);
-  --color-violet-950: color-mix(in srgb, var(--naje-p) 18%, black);
-
-  --color-fuchsia-50: color-mix(in srgb, var(--naje-s) 18%, white);
-  --color-fuchsia-100: color-mix(in srgb, var(--naje-s) 32%, white);
-  --color-fuchsia-200: color-mix(in srgb, var(--naje-s) 50%, white);
-  --color-fuchsia-300: color-mix(in srgb, var(--naje-s) 74%, white);
-  --color-fuchsia-400: var(--naje-s);
-  --color-fuchsia-500: color-mix(in srgb, var(--naje-s) 70%, var(--naje-p));
-  --color-fuchsia-600: color-mix(in srgb, var(--naje-p) 60%, var(--naje-s));
-  --color-fuchsia-700: color-mix(in srgb, var(--naje-p) 70%, black);
-  --color-fuchsia-800: color-mix(in srgb, var(--naje-p) 52%, black);
-  --color-fuchsia-900: color-mix(in srgb, var(--naje-p) 34%, black);
-  --color-fuchsia-950: color-mix(in srgb, var(--naje-p) 18%, black);
+  --color-violet-600: var(--naje-p);
+  --color-violet-700: color-mix(in srgb, var(--naje-p) 72%, black);
+  --color-fuchsia-600: var(--naje-p);
+  --color-fuchsia-700: color-mix(in srgb, var(--naje-p) 72%, black);
 }
 
 html, body, #root {
   background-color: var(--naje-canvas);
   color: var(--naje-ink);
-  transition: background-color 280ms ease, color 280ms ease;
 }
 
 .purple-glass-card {
   background-color: var(--naje-card);
   border: 1.5px solid var(--naje-line);
-  box-shadow: 0 10px 25px -4px var(--naje-glow);
 }
 
 .dark .purple-glass-card {
-  background: linear-gradient(135deg, color-mix(in srgb, var(--naje-p) 18%, rgba(12, 10, 20, 0.88)), color-mix(in srgb, var(--naje-p) 8%, rgba(10, 10, 16, 0.92)));
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1.5px solid color-mix(in srgb, var(--naje-s) 28%, transparent);
-  box-shadow: 0 12px 32px -4px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.05);
+  background: var(--naje-card);
+  border: 1.5px solid var(--naje-line);
+  box-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.45);
 }
 
 .purple-glass-stats {
   background-color: var(--naje-card);
   border: 1.5px solid var(--naje-line);
-  box-shadow: 0 6px 18px -2px var(--naje-accent-soft);
 }
 
 .dark .purple-glass-stats {
-  background: linear-gradient(135deg, color-mix(in srgb, var(--naje-p) 16%, rgba(18, 14, 28, 0.8)), rgba(12, 10, 18, 0.85));
-  backdrop-filter: blur(16px);
-  border: 1.5px solid color-mix(in srgb, var(--naje-s) 22%, transparent);
+  background: var(--naje-card);
+  border: 1.5px solid var(--naje-line);
 }
 
 @utility naje-glass-card {
-  @apply bg-gradient-to-br from-purple-50/90 via-purple-100/60 to-indigo-100/50 dark:from-gray-800/60 dark:via-purple-900/30 dark:to-indigo-950/40 backdrop-blur-xl border border-purple-300/50 dark:border-white/15 shadow-[0_6px_24px_rgba(124,58,237,0.15)] dark:shadow-[0_6px_24px_rgba(139,92,246,0.18)] rounded-2xl;
+  @apply bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm rounded-2xl;
 }
 
 @utility naje-glass-card-lg {
-  @apply bg-gradient-to-br from-purple-50/90 via-purple-100/60 to-indigo-100/50 dark:from-gray-800/60 dark:via-purple-900/30 dark:to-indigo-950/40 backdrop-blur-xl border border-purple-300/50 dark:border-white/15 shadow-[0_6px_24px_rgba(124,58,237,0.15)] dark:shadow-[0_6px_24px_rgba(139,92,246,0.18)] rounded-3xl;
+  @apply bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm rounded-3xl;
 }
 
 /* Focus Mode: Hide the selected button */
@@ -152,29 +110,27 @@ div#root:nth-of-type(1) > div:nth-of-type(1) > main:nth-of-type(1) > div:nth-of-
   display: none !important;
 }
 .naje-notifications-panel {
-  background-color: color-mix(in srgb, var(--naje-s) 35%, white) !important;
+  background-color: #ffffff !important;
   backdrop-filter: blur(24px) !important;
   -webkit-backdrop-filter: blur(24px) !important;
-  border: 1.5px solid color-mix(in srgb, var(--naje-p) 35%, transparent) !important;
-  box-shadow: 0 20px 40px -5px var(--naje-glow);
+  border: 1.5px solid #e4e4e7 !important;
+  box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.12);
 }
 
 .naje-notifications-panel .border-b,
 .naje-notifications-panel .divide-y > * {
-  border-color: color-mix(in srgb, var(--naje-p) 22%, transparent) !important;
+  border-color: #e4e4e7 !important;
 }
 
 .dark .naje-notifications-panel {
-  background-color: color-mix(in srgb, var(--naje-p) 28%, #140c1c) !important;
-  backdrop-filter: blur(24px) !important;
-  -webkit-backdrop-filter: blur(24px) !important;
-  border: 1.5px solid color-mix(in srgb, var(--naje-s) 32%, transparent) !important;
+  background-color: #18181b !important;
+  border: 1.5px solid #27272a !important;
   box-shadow: 0 20px 40px -5px rgba(0, 0, 0, 0.5);
 }
 
 .dark .naje-notifications-panel .border-b,
 .dark .naje-notifications-panel .divide-y > * {
-  border-color: color-mix(in srgb, var(--naje-s) 28%, transparent) !important;
+  border-color: #27272a !important;
 }
 
 /* Light-mode readability for dark-first studio screens (Creatively, Naje Ad) */
