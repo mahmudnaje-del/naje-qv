@@ -160,7 +160,7 @@ export function CastingRoom({
           renderCard={(c, isCenter) => {
             if (c.type === 'upload') {
               return (
-                <div className={`w-[48vw] max-w-[13rem] rounded-2xl border p-2.5 ${isCenter ? 'border-[var(--naje-accent)] bg-[#1a140f]' : 'border-white/10 bg-[#12141c]'}`}>
+                <div className={`w-[56vw] max-w-[14.5rem] rounded-2xl border p-2.5 ${isCenter ? 'border-[var(--naje-accent)] bg-[#1a140f]' : 'border-white/10 bg-[#12141c]'}`}>
                   <div className="mb-2 flex items-center justify-center gap-2 rounded-xl bg-black/25 py-1">
                     <span className="h-1 w-6 rounded-full bg-[var(--naje-accent)]/80" />
                     <span className="text-[10px] font-black text-[var(--naje-accent-2)]">إرفاق · اسحب</span>
@@ -190,7 +190,7 @@ export function CastingRoom({
             const av = c.avatar;
             const selected = av.id === selectedAvatarId;
             return (
-              <div className={`w-[48vw] max-w-[13rem] rounded-2xl border p-2 ${isCenter ? 'bg-[#121622]' : 'bg-[#11141c]'} ${selected ? 'border-[var(--naje-accent)]' : 'border-white/10'}`}>
+              <div className={`w-[56vw] max-w-[14.5rem] rounded-2xl border p-2 ${isCenter ? 'bg-[#121622]' : 'bg-[#11141c]'} ${selected ? 'border-[var(--naje-accent)]' : 'border-white/10'}`}>
                 <div className="relative aspect-[3/4] overflow-hidden rounded-xl">
                   <AvatarPhoto id={av.id} name={av.name} gradient={av.placeholderGradient} className="h-full w-full" />
                   {selected && (

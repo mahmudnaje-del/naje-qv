@@ -251,10 +251,10 @@ export default function NajeAd() {
     : activeJob?.stepLabel || (isSubmitting ? 'جاري التحضير…' : '');
 
   return (
-    <div className="naje-chroma h-full overflow-y-auto bg-naje-canvas px-2.5 py-3 text-naje-ink sm:px-6 sm:py-5" dir="rtl">
+    <div className="naje-ad-studio h-full overflow-y-auto bg-[#0b0c10] px-2.5 py-3 text-[#f4efe6] sm:px-6 sm:py-5" dir="rtl">
       <FeaturePaywallModal isOpen={showPaywall} onClose={() => setShowPaywall(false)} feature="najeAd" />
       <div className="mx-auto max-w-6xl space-y-3 sm:space-y-5">
-        <header className="overflow-hidden rounded-2xl border border-white/8 bg-[radial-gradient(1200px_circle_at_100%_-20%,color-mix(in_srgb,var(--naje-accent)_22%,transparent),transparent_45%),linear-gradient(180deg,var(--naje-elevated),var(--naje-canvas))] p-3 shadow-2xl sm:rounded-[28px] sm:p-5">
+        <header className="overflow-hidden rounded-2xl border border-white/8 bg-[radial-gradient(1200px_circle_at_100%_-20%,rgba(212,165,116,0.22),transparent_45%),linear-gradient(180deg,#16120e,#0b0c10)] p-3 shadow-2xl sm:rounded-[28px] sm:p-5">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <div className="mb-1.5 inline-flex items-center gap-2 rounded-full border border-[var(--naje-accent)]/30 bg-[var(--naje-accent)]/10 px-2.5 py-0.5 text-[10px] font-black tracking-[0.14em] text-[var(--naje-accent-2)]">

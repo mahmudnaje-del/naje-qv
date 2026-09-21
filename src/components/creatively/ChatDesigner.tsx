@@ -722,11 +722,11 @@ export function ChatDesigner({
     return Math.round((rem / limit) * 100);
   }, [codeStatus]);
 
-  if (!isStorageLoaded) return <div className="naje-chroma min-h-screen bg-naje-canvas flex items-center justify-center text-naje-ink">جاري التحميل...</div>;
+  if (!isStorageLoaded) return <div className="naje-creative-studio min-h-screen bg-[#030303] flex items-center justify-center text-white">جاري التحميل...</div>;
 
   return (
     <div 
-      className="naje-chroma w-full flex-1 bg-naje-canvas/90 md:bg-naje-elevated/80 border-t md:border border-white/5 md:border-white/10 md:backdrop-blur-2xl rounded-t-[2.5rem] md:rounded-3xl overflow-hidden shadow-[0_-10px_40px_rgba(0,0,0,0.5)] md:shadow-2xl flex flex-col md:flex-row md:h-[750px] md:max-h-[85vh] transition-all duration-300" 
+      className="naje-creative-studio w-full flex-1 bg-[#030303]/90 md:bg-[#0c0c12]/80 border-t md:border border-white/5 md:border-white/10 md:backdrop-blur-2xl rounded-t-[2.5rem] md:rounded-3xl overflow-hidden shadow-[0_-10px_40px_rgba(0,0,0,0.5)] md:shadow-2xl flex flex-col md:flex-row md:h-[750px] md:max-h-[85vh] transition-all duration-300" 
       dir={lang === 'ar' ? 'rtl' : 'ltr'}
       id="chat-designer-root"
     >

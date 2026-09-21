@@ -1536,7 +1536,7 @@ const handleProUnlockSubmit = async () => {};
 
   if (currentScreen === 'gallery') {
     return (
-      <div className="naje-chroma flex-1 min-h-0 overflow-y-auto bg-naje-canvas text-naje-ink font-sans overflow-x-hidden flex flex-col pb-28 sm:pb-12" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
+      <div className="naje-creative-studio flex-1 min-h-0 overflow-y-auto bg-[#030303] text-white font-sans overflow-x-hidden flex flex-col pb-28 sm:pb-12" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
         <div className="fixed inset-0 pointer-events-none z-0">
           <div className="absolute top-[-10%] ltr:left-[-10%] rtl:right-[-10%] w-[40rem] h-[40rem] bg-purple-900/20 rounded-full blur-[120px] mix-blend-screen" />
           <div className="absolute bottom-[-10%] ltr:right-[-10%] rtl:left-[-10%] w-[50rem] h-[50rem] bg-indigo-900/10 rounded-full blur-[150px] mix-blend-screen" />
@@ -2010,7 +2010,7 @@ if (currentScreen === 'welcome') {
 
 
   return (
-    <div className={`naje-chroma w-full ${mode === 'chat' ? 'h-full flex-1 overflow-hidden py-0 md:py-12 px-0 md:px-8' : 'min-h-full flex-1 overflow-y-auto overflow-x-hidden pt-6 pb-32 sm:pb-24 md:py-16 px-4 md:px-8'} bg-naje-canvas text-naje-ink font-sans flex flex-col justify-start items-center relative`} dir="rtl">
+    <div className={`naje-creative-studio w-full ${mode === 'chat' ? 'h-full flex-1 overflow-hidden py-0 md:py-12 px-0 md:px-8' : 'min-h-full flex-1 overflow-y-auto overflow-x-hidden pt-6 pb-32 sm:pb-24 md:py-16 px-4 md:px-8'} bg-[#030303] text-white font-sans flex flex-col justify-start items-center relative`} dir="rtl">
       <FeaturePaywallModal
         isOpen={showCreativelyPaywall}
         onClose={() => setShowCreativelyPaywall(false)}

@@ -138,7 +138,7 @@ export function CastBoard({
             if (item.type === 'add') {
               return (
                 <div
-                  className="w-[48vw] max-w-[13.5rem] overflow-hidden rounded-2xl border border-dashed border-[var(--naje-accent)]/55 bg-gradient-to-b from-[#2a1c12] to-[#120e0c] p-2.5 shadow-[0_20px_50px_-24px_rgba(0,0,0,0.55)]"
+                  className="w-[56vw] max-w-[14.5rem] overflow-hidden rounded-2xl border border-dashed border-[var(--naje-accent)]/55 bg-gradient-to-b from-[#2a1c12] to-[#120e0c] p-2.5 shadow-[0_20px_50px_-24px_rgba(212,165,116,0.55)]"
                 >
                   <div className="mb-2 flex items-center justify-center gap-2 rounded-xl bg-black/25 py-1.5">
                     <span className="h-1 w-7 rounded-full bg-[var(--naje-accent)]/80" />
@@ -201,7 +201,7 @@ export function CastBoard({
 
             return (
               <div
-                className="w-[48vw] max-w-[13.5rem] overflow-hidden rounded-2xl border bg-[#12141c] p-2"
+                className="w-[56vw] max-w-[14.5rem] overflow-hidden rounded-2xl border bg-[#12141c] p-2"
                 style={{ borderColor: isCenter ? accent : 'rgba(255,255,255,0.1)' }}
               >
                 <div className="mb-1.5 flex items-center justify-between gap-2">

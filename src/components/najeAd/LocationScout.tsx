@@ -121,7 +121,7 @@ export function LocationScout({
           renderCard={(c, isCenter) => {
             if (c.type === 'upload') {
               return (
-                <div className={`w-[54vw] max-w-[14.5rem] rounded-2xl border p-2.5 ${isCenter ? 'border-[var(--naje-accent)] bg-[#10201c]' : 'border-white/10 bg-[#12141c]'}`}>
+                <div className={`w-[62vw] max-w-[16rem] rounded-2xl border p-2.5 ${isCenter ? 'border-[var(--naje-accent)] bg-[#10201c]' : 'border-white/10 bg-[#12141c]'}`}>
                   <div className="mb-2 flex items-center justify-center gap-2 rounded-xl bg-black/25 py-1">
                     <span className="h-1 w-6 rounded-full bg-[var(--naje-accent)]/80" />
                     <span className="text-[10px] font-black text-[var(--naje-accent)]">إرفاق · اسحب</span>
@@ -151,7 +151,7 @@ export function LocationScout({
             const loc = c.location;
             const selected = loc.id === selectedLocationId;
             return (
-              <div className={`w-[54vw] max-w-[14.5rem] rounded-2xl border p-2 ${isCenter ? 'bg-[#121622]' : 'bg-[#11141c]'} ${selected ? 'border-[var(--naje-accent)]' : 'border-white/10'}`}>
+              <div className={`w-[62vw] max-w-[16rem] rounded-2xl border p-2 ${isCenter ? 'bg-[#121622]' : 'bg-[#11141c]'} ${selected ? 'border-[var(--naje-accent)]' : 'border-white/10'}`}>
                 <div className="relative aspect-video overflow-hidden rounded-xl">
                   <LocationPhoto id={loc.id} name={loc.name} gradient={loc.placeholderGradient} className="h-full w-full" />
                   {selected && (

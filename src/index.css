@@ -207,4 +207,46 @@ html:not(.dark) .naje-chroma :is(.bg-white\/\[0\.04\], .bg-white\/5, .bg-white\/
   box-shadow: 0 10px 28px -16px rgba(20, 16, 28, 0.18);
 }
 
+/* Naje Ad is locked to dark copper — independent of app theme */
+.naje-ad-studio {
+  color-scheme: dark;
+  --naje-p: #d4a574;
+  --naje-s: #e8b86d;
+  --naje-on-accent: #1a140c;
+  --naje-accent: #d4a574;
+  --naje-accent-2: #e8b86d;
+  --naje-canvas: #0b0c10;
+  --naje-elevated: #12141a;
+  --naje-card: #101218;
+  --naje-ink: #f4efe6;
+  --naje-muted: #9a958c;
+  --naje-line: rgba(232, 184, 109, 0.18);
+  --naje-accent-soft: rgba(212, 165, 116, 0.14);
+  --naje-glow: rgba(212, 165, 116, 0.24);
+  --color-white: #ffffff;
+  background-color: #0b0c10;
+  color: #f4efe6;
+}
+
+/* Creatively keeps its original dark studio — independent of app theme */
+.naje-creative-studio {
+  color-scheme: dark;
+  --naje-p: #8b5cf6;
+  --naje-s: #e879f9;
+  --naje-on-accent: #ffffff;
+  --naje-accent: #8b5cf6;
+  --naje-accent-2: #d8b4fe;
+  --naje-canvas: #030303;
+  --naje-elevated: #0c0c12;
+  --naje-card: #101018;
+  --naje-ink: #f4f4f5;
+  --naje-muted: #a1a1aa;
+  --naje-line: rgba(168, 85, 247, 0.22);
+  --naje-accent-soft: rgba(139, 92, 246, 0.14);
+  --naje-glow: rgba(139, 92, 246, 0.22);
+  --color-white: #ffffff;
+  background-color: #030303;
+  color: #f4f4f5;
+}
+
 @keyframes najeShimmer { 0% { transform: translateX(0); } 100% { transform: translateX(400%); } }

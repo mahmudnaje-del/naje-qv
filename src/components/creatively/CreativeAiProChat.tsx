@@ -987,10 +987,10 @@ export function CreativeAiProChat({ activationCode = 'naje_authenticated', setAc
     }));
   };
 
-  if (!isStorageLoaded) return <div className="naje-chroma min-h-screen bg-naje-canvas flex items-center justify-center text-naje-ink">Loading...</div>;
+  if (!isStorageLoaded) return <div className="naje-creative-studio min-h-screen bg-[#030303] flex items-center justify-center text-white">Loading...</div>;
 
   return (
-    <div className="naje-chroma flex h-full bg-naje-canvas font-sans text-naje-ink overflow-hidden relative">
+    <div className="naje-creative-studio flex h-full bg-[#030303] font-sans text-white overflow-hidden relative">
       {/* High-end Cosmic Animated Background */}
       <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
          {/* Deep radial core */}

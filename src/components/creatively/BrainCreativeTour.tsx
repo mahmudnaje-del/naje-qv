@@ -138,7 +138,7 @@ export default function BrainCreativeTour({ lang, onBack }: BrainCreativeTourPro
   };
 
   return (
-    <div className="naje-chroma min-h-screen bg-naje-canvas text-naje-ink font-sans py-8 md:py-12 px-4 md:px-8 relative overflow-x-hidden overflow-y-auto" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
+    <div className="naje-creative-studio min-h-screen bg-[#030303] text-white font-sans py-8 md:py-12 px-4 md:px-8 relative overflow-x-hidden overflow-y-auto" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
       {/* Absolute visual ambient lights */}
       <div className="fixed top-[-10%] left-[-10%] w-[35rem] h-[35rem] bg-fuchsia-600 rounded-full mix-blend-multiply filter blur-[120px] opacity-20 pointer-events-none animate-pulse"></div>
       <div className="fixed bottom-[-10%] right-[-10%] w-[35rem] h-[35rem] bg-indigo-600 rounded-full mix-blend-multiply filter blur-[120px] opacity-20 pointer-events-none animate-pulse" style={{ animationDelay: '1.5s' }}></div>
