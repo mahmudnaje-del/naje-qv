@@ -737,17 +737,17 @@ export default function NajeAgent() {
             <Bot className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
 
-          <div className="min-w-0">
-            <div className="flex items-center gap-2">
+          <div className="min-w-0 max-w-[140px] xs:max-w-[200px] sm:max-w-none">
+            <div className="flex items-center gap-1.5 min-w-0">
               <h1 className="text-xs sm:text-sm font-extrabold text-gray-900 dark:text-white truncate">
-                وكيل ناجي · نظام الوكلاء المتعددين
+                Naje Agent
               </h1>
-              <span className="hidden sm:inline-flex text-[9px] font-bold px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
-                Agent Pro
+              <span className="hidden sm:inline-flex text-[9px] font-bold px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 shrink-0">
+                وكلاء
               </span>
             </div>
-            <p className="text-[10px] sm:text-[11px] text-gray-500 dark:text-gray-400 truncate">
-              بناء الهوية البصرية وصياغة الإعلانات والمشاريع المتكاملة من مصادرك
+            <p className="text-[10px] text-gray-500 dark:text-gray-400 truncate hidden md:block">
+              بناء الهوية البصرية وصياغة الإعلانات والمشاريع
             </p>
           </div>
         </div>

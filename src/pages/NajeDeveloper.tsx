@@ -17,6 +17,7 @@ import { toast } from '../toastStore';
 import NajeSpinner from '../components/NajeSpinner';
 import NajeThinking from '../components/NajeThinking';
 import NajeCodePane from '../components/NajeCodePane';
+import StudioHeader from '../components/StudioHeader';
 import FeaturePaywallModal from '../components/FeaturePaywallModal';
 import { hasFeatureAccess } from '../lib/featureAccess';
 import { readNajeSse } from '../lib/sseRead';
@@ -460,71 +461,45 @@ export default function NajeDeveloper() {
     <div className="flex-1 flex flex-col h-full min-h-0 bg-naje-canvas overflow-hidden" dir="rtl">
       <FeaturePaywallModal isOpen={showPaywall} onClose={() => setShowPaywall(false)} feature="najeDeveloper" />
 
-      {/* ========================================================= */}
-      {/* Complete High-Craft Unified Header                         */}
-      {/* ========================================================= */}
-      <header className="h-14 px-3 sm:px-4 border-b border-gray-200/80 dark:border-gray-800/80 bg-white/80 dark:bg-gray-950/80 backdrop-blur-md flex items-center justify-between shrink-0 z-20">
-        
-        {/* Right side: Sidebar toggle, Icon, Title */}
-        <div className="flex items-center gap-2.5 min-w-0">
-          <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="p-1.5 sm:p-2 rounded-xl text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition cursor-pointer"
-            title={sidebarOpen ? "طي القائمة" : "فتح القائمة"}
-          >
-            <PanelRight className="w-5 h-5" />
-          </button>
-
-          <div className="w-8 h-8 rounded-xl bg-sky-500/10 text-sky-600 dark:text-sky-400 flex items-center justify-center shrink-0 border border-sky-500/20">
-            <Code2 className="w-4 h-4" />
-          </div>
-
-          <div className="min-w-0">
-            <div className="flex items-center gap-1.5">
-              <h1 className="text-xs sm:text-sm font-extrabold text-gray-900 dark:text-white truncate">
-                {chatSessionTitle || 'ناجي المطور'}
-              </h1>
-              <span className="hidden sm:inline-flex text-[9px] bg-sky-500/10 text-sky-600 dark:text-sky-400 font-extrabold px-1.5 py-0.5 rounded border border-sky-500/20 font-sans">
-                باقة المُبتكر · $10
-              </span>
-            </div>
-            <p className="text-[10px] text-gray-500 truncate hidden md:block">
-              {tree.length > 0 ? `الأرشيف: ${fileName} (${tree.length} ملف)` : 'فحص وتعديل أرشيف الموقع والبرمجيات'}
-            </p>
-          </div>
-        </div>
-
-        {/* Left side: Tab Switcher (icons only on the far left) */}
-        <div className="flex items-center gap-2">
-
-          {/* Segmented Tabs: Icons only, positioned on far left */}
+      <StudioHeader
+        title={chatSessionTitle || 'Naje Developer'}
+        badge="مساحة الكود"
+        subtitle={tree.length > 0 ? `الأرشيف: ${fileName} (${tree.length} ملف)` : 'فحص وتعديل وتطوير أرشيف الموقع والبرمجيات'}
+        icon={Code2}
+        iconColorClass="text-sky-600 dark:text-sky-400"
+        iconBgClass="bg-sky-500/10 border-sky-500/20"
+        badgeClass="bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20"
+        theme="canvas"
+        actions={
           <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-900 p-1 rounded-xl border border-gray-200/80 dark:border-gray-800">
             <button
               onClick={() => setTab('code')}
-              className={`h-8 w-8 rounded-lg flex items-center justify-center transition cursor-pointer relative ${
+              className={`h-8 px-2.5 rounded-lg flex items-center gap-1.5 text-xs font-bold transition cursor-pointer ${
                 tab === 'code' 
                   ? 'bg-white dark:bg-gray-800 text-sky-600 dark:text-sky-400 shadow-xs' 
                   : 'text-gray-500 hover:text-gray-800 dark:hover:text-white'
               }`}
               title="الكود والملفات"
             >
-              <Code2 className="w-4 h-4" />
+              <Code2 className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">الكود</span>
             </button>
 
             <button
               onClick={() => setTab('chat')}
-              className={`h-8 w-8 rounded-lg flex items-center justify-center transition cursor-pointer relative ${
+              className={`h-8 px-2.5 rounded-lg flex items-center gap-1.5 text-xs font-bold transition cursor-pointer ${
                 tab === 'chat' 
                   ? 'bg-white dark:bg-gray-800 text-sky-600 dark:text-sky-400 shadow-xs' 
                   : 'text-gray-500 hover:text-gray-800 dark:hover:text-white'
               }`}
               title="الدردشة والمناقشة"
             >
-              <MessageSquare className="w-4 h-4" />
+              <MessageSquare className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">الدردشة</span>
             </button>
           </div>
-        </div>
-      </header>
+        }
+      />
 
       {/* ========================================================= */}
       {/* Body: Tab 1 (Code & Files) vs Tab 2 (Chat)                */}

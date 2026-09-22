@@ -12,8 +12,9 @@ import najeExportZip from '../assets/icons/naje-export-zip.svg';
 import najeDocument from '../assets/icons/naje-document.svg';
 import { 
   Plus, Folder, ArrowLeft, Download, FileText, 
-  Sparkles, Image as ImageIcon, Film, Star, ExternalLink, Calendar, Compass, X, AlertCircle, Trash2, Pencil
-, ChevronDown, Layout, Mic2, MessageSquare, Code2, BookOpen, Bot } from 'lucide-react';
+  Sparkles, Image as ImageIcon, Film, Star, ExternalLink, Calendar, Compass, X, AlertCircle, Trash2, Pencil,
+  ChevronDown, Layout, Mic2, MessageSquare, MessageSquareText, Code2, BookOpen, Bot, Clapperboard, Palette, ArrowUpRight
+} from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
@@ -137,7 +138,7 @@ export default function Projects() {
   const [exportingPDFId, setExportingPDFId] = useState<string | null>(null);
   const [directCreatingType, setDirectCreatingType] = useState<string | null>(null);
 
-  const handleDirectCreateChat = async (type: 'text' | 'voice' | 'image' | 'video' | 'ui' | 'najeDeveloper' | 'najeSource' | 'agent') => {
+  const handleDirectCreateChat = async (type: 'text' | 'voice' | 'image' | 'video' | 'ui' | 'najeDeveloper' | 'najeSource' | 'agent' | 'najePrompt') => {
     if (!user) {
       toast.error('يرجى تسجيل الدخول أولاً للبدء');
       return;
@@ -160,6 +161,7 @@ export default function Projects() {
              : type === 'najeDeveloper' ? 'مساحة ناجي المطور'
              : type === 'najeSource' ? 'مساحة ناجي من مصادرك'
              : type === 'agent' ? 'مساحة وكيل ناجي'
+             : type === 'najePrompt' ? 'مساحة ناجي برومبت'
              : 'مساحة إبداعية جديدة',
         createdAt: Date.now()
       };
@@ -176,6 +178,8 @@ export default function Projects() {
         navigate(`/naje-source?chatId=${chatId}${activeProjectId ? `&projectId=${activeProjectId}` : ''}`);
       } else if (type === 'agent') {
         navigate(`/naje-agent-core?chatId=${chatId}${activeProjectId ? `&projectId=${activeProjectId}` : ''}`);
+      } else if (type === 'najePrompt') {
+        navigate(`/naje-prompt?chatId=${chatId}${activeProjectId ? `&projectId=${activeProjectId}` : ''}`);
       } else {
         navigate(`/chat/${chatId}`);
       }
@@ -575,6 +579,114 @@ export default function Projects() {
                 </div>
                 <span className="text-xs font-extrabold text-slate-900 dark:text-white">وكيل ناجي</span>
               </button>
+
+              <button
+                onClick={() => handleDirectCreateChat('najePrompt')}
+                disabled={directCreatingType !== null}
+                className="p-3.5 bg-white dark:bg-[#11141c] hover:bg-violet-50/50 dark:hover:bg-[#1b1528] border border-violet-500/30 dark:border-violet-500/20 rounded-2xl flex flex-col items-center text-center gap-2 transition cursor-pointer group shadow-sm hover:shadow-md hover:border-violet-400 active:scale-95 disabled:opacity-60"
+                title="فتح مساحة ناجي برومبت مباشرة"
+              >
+                <div className="w-9 h-9 rounded-xl bg-violet-500/10 text-violet-500 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  {directCreatingType === 'najePrompt' ? <NajeSpinner className="w-4 h-4" /> : <MessageSquareText className="w-4 h-4" />}
+                </div>
+                <span className="text-xs font-extrabold text-slate-900 dark:text-white">ناجي برومبت</span>
+              </button>
+            </div>
+
+            {/* Specialized Naje Studios Suite */}
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-purple-500" />
+                  <h2 className="text-sm font-extrabold text-slate-900 dark:text-white">أجنحة استوديو ناجي المتخصصة</h2>
+                </div>
+                <span className="text-[11px] font-bold text-slate-700 dark:text-slate-400">بيئات عمل مصممة بأعلى معايير الإخراج</span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                <Link
+                  to="/naje-ad"
+                  className="group p-4 bg-white/70 dark:bg-slate-900/60 hover:bg-sky-50/50 dark:hover:bg-sky-950/20 border border-slate-200/80 dark:border-slate-800 hover:border-sky-500/40 rounded-2xl transition duration-200 shadow-sm flex flex-col justify-between"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="w-10 h-10 rounded-xl bg-sky-500/10 text-sky-600 dark:text-sky-400 flex items-center justify-center group-hover:scale-105 transition-transform">
+                      <Clapperboard className="w-5 h-5" />
+                    </div>
+                    <ArrowUpRight className="w-4 h-4 text-slate-600 dark:text-slate-400 group-hover:text-sky-500 transition-colors" />
+                  </div>
+                  <div className="mt-3">
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-xs font-black text-slate-900 dark:text-white">محرك إعلانات الفيديو (NAJI Ad)</h3>
+                      <span className="text-[9px] font-bold bg-sky-500/10 text-sky-700 dark:text-sky-400 px-1.5 py-0.5 rounded-full">Omni 1.1</span>
+                    </div>
+                    <p className="text-[11px] text-slate-700 dark:text-slate-400 mt-1 leading-relaxed">
+                      إنتاج سينمائي إعلاني مع شخصيات، مواقع، وخط زمني لتوجيه الثواني واستمرارية بصرية فائقة.
+                    </p>
+                  </div>
+                </Link>
+
+                <Link
+                  to="/naje-ident"
+                  className="group p-4 bg-white/70 dark:bg-slate-900/60 hover:bg-amber-50/50 dark:hover:bg-amber-950/20 border border-slate-200/80 dark:border-slate-800 hover:border-amber-500/40 rounded-2xl transition duration-200 shadow-sm flex flex-col justify-between"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center group-hover:scale-105 transition-transform">
+                      <Film className="w-5 h-5" />
+                    </div>
+                    <ArrowUpRight className="w-4 h-4 text-slate-600 dark:text-slate-400 group-hover:text-amber-500 transition-colors" />
+                  </div>
+                  <div className="mt-3">
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-xs font-black text-slate-900 dark:text-white">استوديو الحركة (Naje Ident)</h3>
+                      <span className="text-[9px] font-bold bg-amber-500/10 text-amber-700 dark:text-amber-400 px-1.5 py-0.5 rounded-full">انترو وأوترو</span>
+                    </div>
+                    <p className="text-[11px] text-slate-700 dark:text-slate-400 mt-1 leading-relaxed">
+                      انترو، أوترو، وتحريك الشعار للبث، والبودكاست والمنصات بقوالب فاخرة وضوابط أمان الهوية.
+                    </p>
+                  </div>
+                </Link>
+
+                <Link
+                  to="/naje-cv"
+                  className="group p-4 bg-white/70 dark:bg-slate-900/60 hover:bg-indigo-50/50 dark:hover:bg-indigo-950/20 border border-slate-200/80 dark:border-slate-800 hover:border-indigo-500/40 rounded-2xl transition duration-200 shadow-sm flex flex-col justify-between"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center group-hover:scale-105 transition-transform">
+                      <FileText className="w-5 h-5" />
+                    </div>
+                    <ArrowUpRight className="w-4 h-4 text-slate-600 dark:text-slate-400 group-hover:text-indigo-500 transition-colors" />
+                  </div>
+                  <div className="mt-3">
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-xs font-black text-slate-900 dark:text-white">سيرتك بواسطة ناجي (Naje CV)</h3>
+                      <span className="text-[9px] font-bold bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 px-1.5 py-0.5 rounded-full">ATS & خليج</span>
+                    </div>
+                    <p className="text-[11px] text-slate-700 dark:text-slate-400 mt-1 leading-relaxed">
+                      سيرة مهنية مقنعة بمعايير الخليج، جدارات، والقوالب الأكاديمية والتنفيذية مع تصدير PDF و Word.
+                    </p>
+                  </div>
+                </Link>
+
+                <Link
+                  to="/creative-studio"
+                  className="group p-4 bg-white/70 dark:bg-slate-900/60 hover:bg-purple-50/50 dark:hover:bg-purple-950/20 border border-slate-200/80 dark:border-slate-800 hover:border-purple-500/40 rounded-2xl transition duration-200 shadow-sm flex flex-col justify-between"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center group-hover:scale-105 transition-transform">
+                      <Palette className="w-5 h-5" />
+                    </div>
+                    <ArrowUpRight className="w-4 h-4 text-slate-600 dark:text-slate-400 group-hover:text-purple-500 transition-colors" />
+                  </div>
+                  <div className="mt-3">
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-xs font-black text-slate-900 dark:text-white">استوديو الهوية البصرية (Creatively AI)</h3>
+                      <span className="text-[9px] font-bold bg-purple-500/10 text-purple-700 dark:text-purple-400 px-1.5 py-0.5 rounded-full">Brand Studio</span>
+                    </div>
+                    <p className="text-[11px] text-slate-700 dark:text-slate-400 mt-1 leading-relaxed">
+                      بناء استراتيجية العلامة، الشعارات، حزم الهوية الموحدة، ومولد اللوحة اللونية والأصول البصرية المتكاملة.
+                    </p>
+                  </div>
+                </Link>
+              </div>
             </div>
 
             {/* Quick stats panel */}
@@ -944,6 +1056,8 @@ export default function Projects() {
                       ? `/naje-source?chatId=${c.id}`
                       : c.type === 'agent'
                       ? `/naje-agent-core?chatId=${c.id}`
+                      : c.type === 'najePrompt'
+                      ? `/naje-prompt?chatId=${c.id}`
                       : `/chat/${c.id}`;
                     return (
                         <div
@@ -959,6 +1073,7 @@ export default function Projects() {
                                c.type === 'najeDeveloper' ? <Code2 className="w-4 h-4 text-sky-500" /> :
                                c.type === 'najeSource' ? <BookOpen className="w-4 h-4 text-emerald-500" /> :
                                c.type === 'agent' ? <Bot className="w-4 h-4 text-purple-600 dark:text-purple-400" /> :
+                               c.type === 'najePrompt' ? <MessageSquareText className="w-4 h-4 text-violet-500" /> :
                                <FileText className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />}
                             </div>
                             <div>
@@ -972,6 +1087,7 @@ export default function Projects() {
                                  c.type === 'najeDeveloper' ? 'فحص وتطوير أرشيف الكود والبرمجيات' :
                                  c.type === 'najeSource' ? 'استخلاص الإجابات من المصادر والمستندات' :
                                  c.type === 'agent' ? 'نظام وكلاء متعددين: هوية بصرية وإعلانات ومشاريع' :
+                                 c.type === 'najePrompt' ? 'دردشة صياغة التوجيه الذكي ومحرك الأفكار' :
                                  'دردشة'}
                               </span>
                             </div>

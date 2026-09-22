@@ -1,5 +1,6 @@
 import { VIDEO_STYLE_TEMPLATES } from "../data/videoStyleTemplates";
 import NajeSelect from '../components/NajeSelect';
+import StudioHeader from '../components/StudioHeader';
 import NajeModelTierSelector from '../components/NajeModelTierSelector';
 import NajeLogo from '../components/NajeLogo';
 import ReactMarkdown from 'react-markdown';
@@ -1906,107 +1907,121 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
         )}
       </AnimatePresence>
 
-      {/* Redesigned Slim Responsive Single-Row Header */}
-      <header className="px-3 sm:px-4 h-12 sm:h-14 min-h-[48px] sm:min-h-[56px] naje-glass-card-lg rounded-none border-t-0 border-r-0 border-l-0 flex items-center justify-between sticky top-0 z-10 w-full">
-        <div className="flex items-center gap-2.5 min-w-0">
-          
-          {/* Sidebar toggle button (replaces back button as requested) */}
-          <button 
-            onClick={() => useAppStore.getState().setSidebarOpen(!useAppStore.getState().sidebarOpen)}
-            className="p-1.5 text-gray-800 dark:text-purple-100 dark:hover:text-white hover:text-gray-900 transition rounded-xl hover:bg-white dark:hover:bg-gray-900/60 flex items-center justify-center cursor-pointer active:scale-95"
-            title="توسيع/طي القائمة"
-          >
-            <PanelRight className="w-4 h-4" />
-          </button>
+      {/* Redesigned StudioHeader for Chat */}
+      <StudioHeader
+        title={chat.title}
+        subtitle={
+          chat.type === 'voice'
+            ? 'استوديو التسجيلات الصوتية (Naje Voice)'
+            : chat.type === 'ui'
+              ? 'مُنشئ واجهات النواة الناتجة'
+              : chat.type === 'text'
+                ? 'دردشة عادية وتحليل نصوص'
+                : `توليد ${chat.type === 'image' ? 'صور (نقاط)' : 'فيديو سينمائي (نقاط)'}`
+        }
+        badge={
+          chat.type === 'ui'
+            ? 'UI'
+            : chat.type === 'voice'
+              ? 'صوت'
+              : chat.type === 'image'
+                ? 'صور'
+                : chat.type === 'video'
+                  ? 'فيديو'
+                  : 'دردشة'
+        }
+        icon={
+          chat.type === 'ui'
+            ? Layout
+            : chat.type === 'voice'
+              ? Mic2
+              : chat.type === 'image'
+                ? ImageIcon
+                : chat.type === 'video'
+                  ? Film
+                  : MessageSquare
+        }
+        iconColorClass="text-indigo-600 dark:text-indigo-400"
+        iconBgClass="bg-indigo-500/10 border-indigo-500/20"
+        badgeClass="bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20"
+        actions={
+          chat.type === 'ui' ? (
+            <div className="flex items-center gap-2">
+              <div className="bg-slate-200/70 dark:bg-slate-900/90 p-1 rounded-xl flex items-center gap-1 border border-slate-300/80 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setActiveUiTab('chat')}
+                  className={cn(
+                    "relative px-3 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer active:scale-95",
+                    activeUiTab === 'chat' ? "text-indigo-600 dark:text-indigo-400 font-extrabold" : "text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200"
+                  )}
+                >
+                  {activeUiTab === 'chat' && (
+                    <motion.div layoutId="activeTabHighlight" className="absolute inset-0 bg-white dark:bg-slate-800 rounded-lg shadow-sm" transition={{ type: "spring", bounce: 0.15, duration: 0.3 }} />
+                  )}
+                  <span className="relative z-10 flex items-center gap-1.5">
+                    <MessageSquare className="w-3.5 h-3.5" />
+                    <span className="hidden min-[420px]:inline">المحادثة</span>
+                  </span>
+                </button>
 
-          <div className="w-8 h-8 rounded-lg bg-white dark:bg-gray-900 flex items-center justify-center text-indigo-600 dark:text-indigo-400 flex-shrink-0">
-            {chat.type === 'ui' ? <Layout size={16} className="text-emerald-600 dark:text-emerald-400" /> : chat.type === 'voice' ? <Mic2 size={16} className="text-emerald-500" /> : chat.type === 'image' ? <ImageIcon size={16}/> : chat.type === 'video' ? <Film size={16}/> : <span className="text-xs font-bold text-gray-500">دردشة</span>}
-          </div>
-          
-          <div className="min-w-0">
-            <h2 className="font-extrabold text-gray-900 dark:text-white text-xs truncate leading-tight">{chat.title}</h2>
-            <p className="text-[10px] text-gray-800 dark:text-gray-400 truncate">
-              {chat.type === 'voice' ? 'استوديو التسجيلات الصوتية (Naje Voice)' : chat.type === 'ui' ? 'مُنشئ واجهات النواة الناتجة' : chat.type === 'text' ? 'دردشة عادية وتحليل نصوص' : `توليد ${chat.type === 'image' ? 'صور (نقاط)' : 'فيديو سينمائي (نقاط)'}`}
-            </p>
-          </div>
-        </div>
+                <button
+                  type="button"
+                  onClick={() => setActiveUiTab('preview')}
+                  className={cn(
+                    "relative px-3 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer active:scale-95",
+                    activeUiTab === 'preview' ? "text-indigo-600 dark:text-indigo-400 font-extrabold" : "text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200"
+                  )}
+                >
+                  {activeUiTab === 'preview' && (
+                    <motion.div layoutId="activeTabHighlight" className="absolute inset-0 bg-white dark:bg-slate-800 rounded-lg shadow-sm" transition={{ type: "spring", bounce: 0.15, duration: 0.3 }} />
+                  )}
+                  <span className="relative z-10 flex items-center gap-1.5">
+                    <Eye className="w-3.5 h-3.5" />
+                    <span className="hidden min-[420px]:inline">المعاينة</span>
+                    {loading && <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />}
+                  </span>
+                </button>
 
-        {chat.type === 'ui' ? (
-          <div className="flex items-center gap-2">
-            <div className="bg-slate-200/70 dark:bg-slate-900/90 p-1 rounded-xl flex items-center gap-1 border border-slate-300/80 dark:border-slate-800">
-            <button
-              type="button"
-              onClick={() => setActiveUiTab('chat')}
-              className={cn(
-                "relative px-3 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer active:scale-95",
-                activeUiTab === 'chat' ? "text-indigo-600 dark:text-indigo-400 font-extrabold" : "text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200"
-              )}
-            >
-              {activeUiTab === 'chat' && (
-                <motion.div layoutId="activeTabHighlight" className="absolute inset-0 bg-white dark:bg-slate-800 rounded-lg shadow-sm" transition={{ type: "spring", bounce: 0.15, duration: 0.3 }} />
-              )}
-              <span className="relative z-10 flex items-center gap-1.5">
-                <MessageSquare className="w-3.5 h-3.5" />
-                <span className="hidden min-[420px]:inline">المحادثة</span>
-              </span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setActiveUiTab('preview')}
-              className={cn(
-                "relative px-3 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer active:scale-95",
-                activeUiTab === 'preview' ? "text-indigo-600 dark:text-indigo-400 font-extrabold" : "text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200"
-              )}
-            >
-              {activeUiTab === 'preview' && (
-                <motion.div layoutId="activeTabHighlight" className="absolute inset-0 bg-white dark:bg-slate-800 rounded-lg shadow-sm" transition={{ type: "spring", bounce: 0.15, duration: 0.3 }} />
-              )}
-              <span className="relative z-10 flex items-center gap-1.5">
-                <Eye className="w-3.5 h-3.5" />
-                <span className="hidden min-[420px]:inline">المعاينة</span>
-                {loading && <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />}
-              </span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setActiveUiTab('code')}
-              className={cn(
-                "relative px-3 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer active:scale-95",
-                activeUiTab === 'code' ? "text-indigo-600 dark:text-indigo-400 font-extrabold" : "text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200"
-              )}
-            >
-              {activeUiTab === 'code' && (
-                <motion.div layoutId="activeTabHighlight" className="absolute inset-0 bg-white dark:bg-slate-800 rounded-lg shadow-sm" transition={{ type: "spring", bounce: 0.15, duration: 0.3 }} />
-              )}
-              <span className="relative z-10 flex items-center gap-1.5">
-                <Code2 className="w-3.5 h-3.5" />
-                <span className="hidden min-[420px]:inline">الكود</span>
-                {latestUiCodeLines > 0 && (
-                  <span className="text-[10px] text-gray-400 font-mono">({latestUiCodeLines})</span>
+                <button
+                  type="button"
+                  onClick={() => setActiveUiTab('code')}
+                  className={cn(
+                    "relative px-3 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer active:scale-95",
+                    activeUiTab === 'code' ? "text-indigo-600 dark:text-indigo-400 font-extrabold" : "text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200"
+                  )}
+                >
+                  {activeUiTab === 'code' && (
+                    <motion.div layoutId="activeTabHighlight" className="absolute inset-0 bg-white dark:bg-slate-800 rounded-lg shadow-sm" transition={{ type: "spring", bounce: 0.15, duration: 0.3 }} />
+                  )}
+                  <span className="relative z-10 flex items-center gap-1.5">
+                    <Code2 className="w-3.5 h-3.5" />
+                    <span className="hidden min-[420px]:inline">الكود</span>
+                    {latestUiCodeLines > 0 && (
+                      <span className="text-[10px] text-gray-400 font-mono">({latestUiCodeLines})</span>
+                    )}
+                  </span>
+                </button>
+              </div>
+            </div>
+          ) : (
+            messages.length > 0 && (
+              <button
+                onClick={handleExportChatToPDF}
+                disabled={exportingChatPDF}
+                className="hidden sm:flex items-center gap-1.5 bg-indigo-600/10 hover:bg-indigo-600/20 text-indigo-600 dark:text-indigo-400 hover:text-gray-900 dark:hover:text-white border border-indigo-400/30 dark:border-indigo-500/20 px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer disabled:opacity-50 flex-shrink-0"
+              >
+                {exportingChatPDF ? (
+                  <NajeSpinner className="w-3.5 h-3.5" />
+                ) : (
+                  <FileText className="w-3.5 h-3.5" />
                 )}
-              </span>
-            </button>
-          </div>
-        </div>
-        ) : (
-          messages.length > 0 && (
-            <button
-              onClick={handleExportChatToPDF}
-              disabled={exportingChatPDF}
-              className="hidden sm:flex items-center gap-1.5 bg-indigo-600/10 hover:bg-indigo-600/20 text-indigo-600 dark:text-indigo-400 hover:text-gray-900 dark:hover:text-white border border-indigo-400 dark:border-indigo-500/10 px-3 py-1.5 rounded-lg text-[10px] font-bold transition cursor-pointer disabled:opacity-50 flex-shrink-0"
-            >
-              {exportingChatPDF ? (
-                <NajeSpinner className="w-3 h-3" />
-              ) : (
-                <FileText className="w-3 h-3" />
-              )}
-              <span>تصدير PDF</span>
-            </button>
+                <span>تصدير PDF</span>
+              </button>
+            )
           )
-        )}
-      </header>
+        }
+      />
 
       {/* Messages / Panel Container */}
       <div className="flex-1 min-h-0 overflow-hidden flex flex-col p-0 w-full relative">
