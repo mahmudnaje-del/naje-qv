@@ -65,11 +65,28 @@ function SafeGuides({ aspect }: { aspect: MotionAspect }) {
     <div className="pointer-events-none absolute inset-0">
       <div className="absolute inset-[8%] rounded-sm border border-dashed border-[#8ec8ff]/55" />
       {aspect === '1:1' && (
-        <div className="absolute left-1/2 top-1/2 aspect-square w-full -translate-x-1/2 -translate-y-1/2 border border-dashed border-[#e7eef8]/45" />
+        <div className="absolute left-1/2 top-1/2 aspect-square w-[70%] -translate-x-1/2 -translate-y-1/2 border border-dashed border-[#e7eef8]/70" />
       )}
       {aspect === '4:5' && (
-        <div className="absolute left-1/2 top-1/2 h-[70%] w-full -translate-x-1/2 -translate-y-1/2 border border-dashed border-[#e7eef8]/45" />
+        <div className="absolute left-1/2 top-1/2 aspect-[4/5] h-[84%] -translate-x-1/2 -translate-y-1/2 border border-dashed border-[#e7eef8]/70" />
       )}
+    </div>
+  );
+}
+
+/** 1:1 and 4:5 are delivered inside a 9:16 file. The stage shows that real frame. */
+function FrameStage({ aspect, children }: { aspect: MotionAspect; children: React.ReactNode }) {
+  const wide = aspect === '16:9';
+  return (
+    <div className={wide ? 'w-full' : 'mx-auto w-full max-w-[270px]'}>
+      <div className="motion-bezel rounded-[22px] p-[7px]">
+        <div
+          className="relative overflow-hidden rounded-[16px] bg-black"
+          style={{ aspectRatio: wide ? '16 / 9' : '9 / 16' }}
+        >
+          {children}
+        </div>
+      </div>
     </div>
   );
 }
@@ -136,6 +153,10 @@ export function Monitor({
   duration,
   brandName,
   hasLogo,
+  logo,
+  primary,
+  bgColor,
+  tagline,
   versions,
   focusUrl,
   compareUrl,
@@ -158,6 +179,10 @@ export function Monitor({
   duration: MotionDuration;
   brandName: string;
   hasLogo: boolean;
+  logo: string | null;
+  primary: string;
+  bgColor: string;
+  tagline: string;
   versions: MotionVersion[];
   focusUrl: string | null;
   compareUrl: string | null;
@@ -172,25 +197,18 @@ export function Monitor({
   const slots = visibleSlots(kind);
   const hasAny = slots.some((s) => results[s]?.videoUrl) || versions.length > 0;
   const [chrome, setChrome] = useState<'off' | 'youtube' | 'tiktok' | 'instagram'>('off');
-  const [safeArea, setSafeArea] = useState(false);
+  const [safeOverride, setSafeOverride] = useState<boolean | null>(null);
+  const safeArea = safeOverride ?? (aspect === '1:1' || aspect === '4:5');
   const primaryUrl =
     focusUrl || results[activeSlot]?.videoUrl || versions[0]?.url || slots.map((s) => results[s]?.videoUrl).find(Boolean) || '';
   const compareWith = compareOn && compareUrl && primaryUrl && compareUrl !== primaryUrl ? compareUrl : '';
   const slotFor = (url: string): IdentSlot => versions.find((v) => v.url === url)?.slot || activeSlot;
 
-  if (!busy && !hasAny) return null;
-
   const wrapVideo = (video: React.ReactNode) => {
-    const inner = (
-      <div className="relative bg-black">
-        {video}
-        {safeArea && <SafeGuides aspect={aspect} />}
-      </div>
-    );
-    if (chrome === 'off') return inner;
-    if (chrome === 'instagram') return <InstagramChrome>{inner}</InstagramChrome>;
-    if (chrome === 'tiktok') return <TikTokChrome>{inner}</TikTokChrome>;
-    return <YouTubeChrome>{inner}</YouTubeChrome>;
+    if (chrome === 'off') return video;
+    if (chrome === 'instagram') return <InstagramChrome>{video}</InstagramChrome>;
+    if (chrome === 'tiktok') return <TikTokChrome>{video}</TikTokChrome>;
+    return <YouTubeChrome>{video}</YouTubeChrome>;
   };
 
   const renderClip = (url: string, mark: string) => {
@@ -211,7 +229,12 @@ export function Monitor({
             <Download className="h-3.5 w-3.5" /> {t('motion.monitor.download')}
           </button>
         </div>
-        {wrapVideo(<video src={url} controls playsInline className="max-h-[70vh] w-full bg-black" />)}
+        {wrapVideo(
+          <FrameStage aspect={aspect}>
+            <video src={url} controls playsInline className="absolute inset-0 h-full w-full bg-black object-contain" />
+            {safeArea && <SafeGuides aspect={aspect} />}
+          </FrameStage>
+        )}
       </div>
     );
   };
@@ -244,21 +267,48 @@ export function Monitor({
       )}
 
       {busy && !primaryUrl && (
-        <div className="flex flex-col items-center gap-2 py-8">
-          <NajeThinking size={56} />
-          <span className="text-xs font-bold text-[#ffb020]">{stepLabel || t('motion.monitor.rendering')}</span>
-          <span className="text-[10px] text-[#93a0b5]">{t(`motion.step.${stepIndex(progress)}`)}</span>
-          {generatingSlot && <span className="text-[10px] text-[#93a0b5]">{t(`motion.piece.${generatingSlot}`)}</span>}
-          <ol className="mt-2 w-full max-w-xs space-y-1 text-start">
-            {DIRECTOR_STEPS.map((s, i) => (
-              <li key={s.at} className={`text-[10px] ${progress >= s.at ? 'font-bold text-[#ffb020]' : 'text-[#93a0b5]/50'}`}>
-                {progress >= s.at ? '✓ ' : '· '}
-                {t(`motion.step.${i}`)}
-              </li>
-            ))}
-          </ol>
-          <p className="mt-1 max-w-xs text-center text-[9px] text-[#93a0b5]">{t('motion.monitor.stepsNote')}</p>
-        </div>
+        <FrameStage aspect={aspect}>
+          <div
+            className="absolute inset-0"
+            style={{ background: `radial-gradient(120% 80% at 50% 28%, ${primary}55, ${bgColor} 64%)` }}
+          />
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 px-4 text-center">
+            <NajeThinking size={48} />
+            <span className="text-xs font-bold text-[#ffb020]">{stepLabel || t('motion.monitor.rendering')}</span>
+            {generatingSlot ? <span className="text-[10px] text-[#e7eef8]/75">{t(`motion.piece.${generatingSlot}`)}</span> : null}
+            <span className="text-[10px] text-[#e7eef8]/80">{t(`motion.step.${stepIndex(progress)}`)}</span>
+          </div>
+          {safeArea && <SafeGuides aspect={aspect} />}
+        </FrameStage>
+      )}
+
+      {busy && !primaryUrl && (
+        <ol className="mx-auto mt-3 w-full max-w-xs space-y-1 text-start">
+          {DIRECTOR_STEPS.map((s, i) => (
+            <li key={s.at} className={`text-[10px] ${progress >= s.at ? 'font-bold text-[#ffb020]' : 'text-[#93a0b5]/50'}`}>
+              {progress >= s.at ? '✓ ' : '· '}
+              {t(`motion.step.${i}`)}
+            </li>
+          ))}
+        </ol>
+      )}
+
+      {!primaryUrl && !busy && (
+        <FrameStage aspect={aspect}>
+          <div
+            className="absolute inset-0"
+            style={{ background: `radial-gradient(120% 90% at 50% 22%, ${primary}73, ${bgColor} 68%)` }}
+          />
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 px-5 text-center">
+            {logo ? <img src={logo} alt="" className="max-h-16 max-w-[48%] object-contain drop-shadow-lg" /> : null}
+            <p className="text-base font-black leading-tight text-white drop-shadow">
+              {brandName.trim() || t('motion.understood.unnamed')}
+            </p>
+            {tagline.trim() ? <p className="text-[11px] leading-snug text-white/75">{tagline}</p> : null}
+            <p className="mt-1 max-w-[15rem] text-[10px] leading-relaxed text-white/70">{t('motion.stage.empty')}</p>
+          </div>
+          {safeArea && <SafeGuides aspect={aspect} />}
+        </FrameStage>
       )}
 
       {versions.length > 0 && (
@@ -304,7 +354,7 @@ export function Monitor({
             <Chip active={chrome === 'instagram'} onClick={() => setChrome((c) => (c === 'instagram' ? 'off' : 'instagram'))}>
               Instagram
             </Chip>
-            <Chip active={safeArea} onClick={() => setSafeArea((v) => !v)}>
+            <Chip active={safeArea} onClick={() => setSafeOverride(!safeArea)}>
               {t('motion.monitor.safe')}
             </Chip>
           </div>

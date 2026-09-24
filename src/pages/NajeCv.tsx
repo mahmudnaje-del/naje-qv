@@ -32,6 +32,7 @@ import { CareerBreakHint, CourseEditor, EducationEditor, ExperienceEditor } from
 import { CvStudioRail } from '../components/najeCv/CvStudioRail';
 import { CvSkillsStudio } from '../components/najeCv/CvSkillsStudio';
 import { CvScanOverlay } from '../components/najeCv/CvScanOverlay';
+import { CvPaperStage } from '../components/najeCv/CvPaperStage';
 import { Box, Field, ghostGoldBtn, goldBtn, inputCls } from '../components/najeCv/cvUi';
 import { exportCvDocx, exportCvPdf, fileBase } from '../lib/cvExport';
 import { askNaje } from '../lib/askNaje';
@@ -560,7 +561,7 @@ export default function NajeCv() {
                 </div>
               </div>
             </div>
-            <div className="mt-3 flex gap-1 overflow-x-auto pb-0.5">
+            <div className={`mt-3 flex gap-1 overflow-x-auto pb-0.5 ${tab === 'preview' ? 'hidden' : ''}`}>
               {ticks.map((tick) => (
                 <button
                   key={tick.id}
@@ -1292,25 +1293,11 @@ export default function NajeCv() {
               )}
 
               {(tab === 'preview' || tab === 'build') && (
-                <div className="cv-desk overflow-hidden rounded-2xl p-2 sm:p-3">
-                  <div className="cv-paper-well rounded-xl p-1.5 sm:p-2">
-                  <CvScanOverlay cv={cv} active={scanMode} onToggle={() => setScanMode((s) => !s)}>
-                    <div className="mx-auto overflow-x-auto overflow-y-hidden" style={{ maxWidth: 794 }}>
-                      <div
-                        style={{
-                          width: 794,
-                          transform: tab === 'preview' ? 'scale(1)' : 'scale(0.46)',
-                          transformOrigin: 'top center',
-                          marginBottom: tab === 'preview' ? 0 : -(1123 * 0.54),
-                          marginInline: 'auto',
-                        }}
-                      >
-                        <CvPreview cv={cv} sheetId="naje-cv-preview" />
-                      </div>
-                    </div>
-                  </CvScanOverlay>
-                  </div>
-                </div>
+                <CvScanOverlay cv={cv} active={scanMode} onToggle={() => setScanMode((s) => !s)}>
+                  <CvPaperStage>
+                    <CvPreview cv={cv} sheetId="naje-cv-preview" />
+                  </CvPaperStage>
+                </CvScanOverlay>
               )}
             </div>
           </div>

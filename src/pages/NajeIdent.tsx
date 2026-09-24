@@ -268,7 +268,7 @@ export default function NajeIdent() {
   return (
     <div
       className={`naje-motion-studio relative h-full overflow-y-auto bg-[#07090f] px-3 pt-4 text-[#e7eef8] sm:px-6 ${
-        showHero ? 'pb-8' : 'pb-28 lg:pb-8'
+        showHero ? 'pb-8' : 'pb-36 lg:pb-8'
       }`}
       dir={isRtl ? 'rtl' : 'ltr'}
     >
@@ -372,7 +372,34 @@ export default function NajeIdent() {
             )}
 
             <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
-              <div className="space-y-4">
+              <div className="order-1 space-y-4 lg:sticky lg:top-3 lg:order-2">
+                <Monitor
+                  busy={busy}
+                  stepLabel={stepLabel}
+                  progress={job?.progress || 0}
+                  generatingSlot={generatingSlot}
+                  results={results}
+                  activeSlot={slot}
+                  kind={draft.kind}
+                  aspect={draft.aspect}
+                  platform={draft.platform}
+                  duration={draft.duration}
+                  brandName={draft.brandName}
+                  hasLogo={Boolean(draft.logo)}
+                  logo={draft.logo}
+                  primary={draft.primary}
+                  bgColor={draft.bgColor}
+                  tagline={draft.tagline}
+                  versions={versions}
+                  focusUrl={focusUrl}
+                  compareUrl={compareUrl}
+                  compareOn={compareOn}
+                  onFocus={setFocusUrl}
+                  onComparePick={setCompareUrl}
+                  onToggleCompare={() => setCompareOn((v) => !v)}
+                  onRegenerate={() => void generate()}
+                  onVariation={runVariation}
+                />
                 <FormatBar
                   duration={draft.duration}
                   aspect={draft.aspect}
@@ -381,6 +408,47 @@ export default function NajeIdent() {
                   onAspect={(aspect) => patch({ aspect })}
                   onResolution={(resolution) => patch({ resolution })}
                 />
+                <div className="hidden space-y-2 lg:block">
+                  <p className="text-center text-[11px] text-[#93a0b5]">
+                    <span className="font-black text-[#ffb020]">
+                      {formatNumber(points)} {t('common.pointsShort')}
+                    </span>
+                    <span className="mt-0.5 block text-[10px] text-[#93a0b5]">{t('motion.page.engineNote', clock)}</span>
+                  </p>
+                  <button
+                    type="button"
+                    disabled={busy || najeAd?.enabled === false}
+                    onClick={() => void generate()}
+                    className="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-2xl bg-[#8ec8ff] py-3.5 text-sm font-black text-[#071018] shadow-[0_12px_40px_-12px_rgba(142,200,255,0.55)] disabled:opacity-50"
+                  >
+                    {busy ? <NajeThinking size={22} /> : <Sparkles className="h-4 w-4" />}
+                    {busy ? generateLabel() : `${generateLabel()} · ${formatNumber(points)} ${t('common.pointsShort')}`}
+                  </button>
+                </div>
+                {hasResults && !busy && (
+                  <div className="rounded-2xl border border-[#8ec8ff]/30 bg-[#8ec8ff]/10 p-4">
+                    <p className="text-sm font-black text-[#e7eef8]">{t('motion.page.readyTitle')}</p>
+                    <p className="mt-1 text-[11px] leading-relaxed text-[#93a0b5]">{t('motion.page.readyBody')}</p>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={resetProject}
+                        className="min-h-[44px] rounded-xl border border-[#8ec8ff]/20 px-3 text-[11px] font-black text-[#e7eef8]"
+                      >
+                        {t('motion.page.newProject')}
+                      </button>
+                    </div>
+                  </div>
+                )}
+                <div className="hidden lg:block">
+                  <MotionPlanView beats={beats} duration={draft.duration} slot={slot} motion={motionLabel} logo={logoLabel} cta={ctaLabel} />
+                </div>
+                <div className="hidden lg:block">
+                  <PromptPreview draft={draft} slot={slot} beats={beats} motion={motionLabel} logo={logoLabel} cta={ctaLabel} />
+                </div>
+              </div>
+
+              <div className="order-2 space-y-4 lg:order-1">
                 <ContextStrip draft={draft} slot={slot} onChange={patch} />
                 <BrandKit draft={draft} onChange={patch} />
                 <StyleTemplates styleId={draft.styleId} onSelect={(id) => setDraft((prev) => applyTemplate(prev, id))} />
@@ -405,68 +473,12 @@ export default function NajeIdent() {
                     className={fieldClass}
                   />
                 </StudioCard>
-              </div>
-
-              <div className="space-y-4 lg:sticky lg:top-3">
-                <MotionPlanView beats={beats} duration={draft.duration} slot={slot} motion={motionLabel} logo={logoLabel} cta={ctaLabel} />
-                <PromptPreview draft={draft} slot={slot} beats={beats} motion={motionLabel} logo={logoLabel} cta={ctaLabel} />
-
-                <div className="hidden space-y-2 lg:block">
-                  <p className="text-center text-[11px] text-[#93a0b5]">
-                    <span className="font-black text-[#ffb020]">
-                      {formatNumber(points)} {t('common.pointsShort')}
-                    </span>
-                    <span className="mt-0.5 block text-[10px] text-[#93a0b5]">{t('motion.page.engineNote', clock)}</span>
-                  </p>
-                  <button
-                    type="button"
-                    disabled={busy || najeAd?.enabled === false}
-                    onClick={() => void generate()}
-                    className="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-2xl bg-[#8ec8ff] py-3.5 text-sm font-black text-[#071018] shadow-[0_12px_40px_-12px_rgba(142,200,255,0.55)] disabled:opacity-50"
-                  >
-                    {busy ? <NajeThinking size={22} /> : <Sparkles className="h-4 w-4" />}
-                    {busy ? generateLabel() : `${generateLabel()} · ${formatNumber(points)} ${t('common.pointsShort')}`}
-                  </button>
+                <div className="lg:hidden">
+                  <MotionPlanView beats={beats} duration={draft.duration} slot={slot} motion={motionLabel} logo={logoLabel} cta={ctaLabel} />
                 </div>
-
-                <Monitor
-                  busy={busy}
-                  stepLabel={stepLabel}
-                  progress={job?.progress || 0}
-                  generatingSlot={generatingSlot}
-                  results={results}
-                  activeSlot={slot}
-                  kind={draft.kind}
-                  aspect={draft.aspect}
-                  platform={draft.platform}
-                  duration={draft.duration}
-                  brandName={draft.brandName}
-                  hasLogo={Boolean(draft.logo)}
-                  versions={versions}
-                  focusUrl={focusUrl}
-                  compareUrl={compareUrl}
-                  compareOn={compareOn}
-                  onFocus={setFocusUrl}
-                  onComparePick={setCompareUrl}
-                  onToggleCompare={() => setCompareOn((v) => !v)}
-                  onRegenerate={() => void generate()}
-                  onVariation={runVariation}
-                />
-                {hasResults && !busy && (
-                  <div className="rounded-2xl border border-[#8ec8ff]/30 bg-[#8ec8ff]/10 p-4">
-                    <p className="text-sm font-black text-[#e7eef8]">{t('motion.page.readyTitle')}</p>
-                    <p className="mt-1 text-[11px] leading-relaxed text-[#93a0b5]">{t('motion.page.readyBody')}</p>
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      <button
-                        type="button"
-                        onClick={resetProject}
-                        className="min-h-[44px] rounded-xl border border-[#8ec8ff]/20 px-3 text-[11px] font-black text-[#e7eef8]"
-                      >
-                        {t('motion.page.newProject')}
-                      </button>
-                    </div>
-                  </div>
-                )}
+                <div className="lg:hidden">
+                  <PromptPreview draft={draft} slot={slot} beats={beats} motion={motionLabel} logo={logoLabel} cta={ctaLabel} />
+                </div>
               </div>
             </div>
           </>
