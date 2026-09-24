@@ -9,8 +9,11 @@ import { toast } from '../toastStore';
 import NajeSpinner from '../components/NajeSpinner';
 import najeEmptyFavorites from '../assets/icons/naje-empty-favorites.svg';
 import najeDocument from '../assets/icons/naje-document.svg';
+import { useI18n } from '../i18n';
+import { exportSingleImagePDF } from '../utils/pdfExport';
 
 const LocalFavMediaRenderer = ({ fav }: { fav: any }) => {
+  const { t } = useI18n();
   const [src, setSrc] = useState<string | null>(null);
 
   useEffect(() => {
@@ -30,14 +33,14 @@ const LocalFavMediaRenderer = ({ fav }: { fav: any }) => {
     return () => { active = false; };
   }, [fav.message.mediaUrl]);
 
-  if (!src) return <div className="w-full h-full flex items-center justify-center text-xs text-gray-800 dark:text-gray-400 ">جاري التحميل...</div>;
+  if (!src) return <div className="w-full h-full flex items-center justify-center text-xs text-gray-800 dark:text-gray-400 ">{t('common.loading')}</div>;
 
   return <img src={src} alt="Favorite" className="w-full h-full object-cover" />;
 };
-import { exportSingleImagePDF } from '../utils/pdfExport';
 
 export default function Favorites() {
   const { user } = useAppStore();
+  const { t, formatDate, isRtl } = useI18n();
   const [favorites, setFavorites] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [exportingId, setExportingId] = useState<string | null>(null);
@@ -83,14 +86,14 @@ export default function Favorites() {
       }
       await exportSingleImagePDF(
         realUrl,
-        fav.message.content || 'تصميم محفوظ بالمفضلة',
-        fav.chat?.title || 'نموذج توليد ناجي',
+        fav.message.content || 'Saved favorite',
+        fav.chat?.title || 'NAJE',
         fav.message.createdAt,
-        fav.chat?.title || 'عام'
+        fav.chat?.title || 'General'
       );
     } catch (err) {
       console.error(err);
-      toast.error('حدث خطأ أثناء تصدير التصميم كـ PDF');
+      toast.error('Error exporting PDF');
     } finally {
       setExportingId(null);
     }
@@ -99,17 +102,17 @@ export default function Favorites() {
   if (loading) return <div className="p-8 flex justify-center"><NajeSpinner className="w-8 h-8" /></div>;
 
   return (
-    <div className="p-8 max-w-6xl mx-auto">
+    <div className="p-8 max-w-6xl mx-auto" dir={isRtl ? 'rtl' : 'ltr'}>
       <div className="flex items-center gap-3 mb-8">
         <Star className="w-8 h-8 text-yellow-600 dark:text-yellow-400" />
-        <h1 className="text-3xl font-bold">المفضلة</h1>
+        <h1 className="text-3xl font-bold">{t('favorites.pageTitle')}</h1>
       </div>
 
       {favorites.length === 0 ? (
         <div className="text-center py-16 bg-[#f2f0f5] dark:bg-gray-900/30 rounded-2xl border border-purple-200 dark:border-gray-800/50 flex flex-col items-center justify-center p-6">
-          <img src={najeEmptyFavorites} alt="لا توجد عناصر مفضلة" className="w-48 h-36 mx-auto mb-3 object-contain" />
-          <h3 className="text-xl font-bold mb-2 text-gray-900 dark:text-white">لا توجد عناصر مفضلة</h3>
-          <p className="text-gray-800 dark:text-gray-400 text-sm">احفظ الصور والفيديوهات والنصوص التي تعجبك لسهولة الوصول إليها لاحقاً.</p>
+          <img src={najeEmptyFavorites} alt={t('favorites.noFavoritesTitle')} className="w-48 h-36 mx-auto mb-3 object-contain" />
+          <h3 className="text-xl font-bold mb-2 text-gray-900 dark:text-white">{t('favorites.noFavoritesTitle')}</h3>
+          <p className="text-gray-800 dark:text-gray-400 text-sm">{t('favorites.noFavoritesDesc')}</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -120,13 +123,13 @@ export default function Favorites() {
                   <LocalFavMediaRenderer fav={fav} />
                   <div className="absolute top-2 right-2 bg-white dark:bg-black/50 backdrop-blur rounded-lg px-2 py-1 flex items-center gap-1 text-xs font-medium">
                     {fav.chat?.type === 'video' ? <Film className="w-3 h-3 text-purple-600 dark:text-purple-400" /> : <ImageIcon className="w-3 h-3 text-indigo-600 dark:text-indigo-400" />}
-                    {fav.chat?.type === 'video' ? 'فيديو' : 'صورة'}
+                    {fav.chat?.type === 'video' ? t('nav.videos') : t('nav.images')}
                   </div>
                 </div>
               ) : (
                 <div className="p-6 bg-white dark:bg-gray-950 flex-1 flex flex-col">
                   <div className="flex items-center gap-2 text-xs font-medium text-gray-800 dark:text-gray-400 mb-3">
-                    <FileText className="w-3 h-3" /> نص
+                    <FileText className="w-3 h-3" /> {t('common.details')}
                   </div>
                   <p className="text-gray-900 dark:text-gray-300 text-sm line-clamp-6">{fav.message.content}</p>
                 </div>
@@ -135,7 +138,7 @@ export default function Favorites() {
               <div className="p-4 border-t border-purple-100 dark:border-gray-800 flex items-center justify-between mt-auto">
                 <div className="flex items-center gap-3">
                   <Link to={`/chat/${fav.message.chatId}`} className="text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300">
-                    عرض في الدردشة &rarr;
+                    {t('common.view')} &rarr;
                   </Link>
                   {fav.message.mediaUrl && fav.chat?.type !== 'video' && (
                     <button 
@@ -148,14 +151,14 @@ export default function Favorites() {
                       ) : (
                         <>
                           <img src={najeDocument} alt="" className="w-3.5 h-3.5 object-contain" />
-                          <span>تصدير PDF</span>
+                          <span>PDF</span>
                         </>
                       )}
                     </button>
                   )}
                 </div>
                 <div className="text-xs text-gray-800 dark:text-gray-400 ">
-                  {new Date(fav.createdAt).toLocaleDateString('ar-EG')}
+                  {formatDate(fav.createdAt)}
                 </div>
               </div>
             </div>

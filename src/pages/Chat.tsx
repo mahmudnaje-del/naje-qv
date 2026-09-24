@@ -19,6 +19,7 @@ import {
 import NajeSpinner from '../components/NajeSpinner';
 import { VOICES, NAJE_VOICES } from '../lib/voiceCatalog';
 import { useAppStore } from '../store';
+import { useI18n } from '../i18n';
 import { exportSingleImagePDF, exportChatPDF } from '../utils/pdfExport';
 import { formatProfessionalError } from '../utils/errorFormatter';
 import { cn } from '../lib/utils';
@@ -1483,6 +1484,7 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
 
   const { chatId } = useParams();
   const navigate = useNavigate();
+  const { isRtl, t } = useI18n();
   const { user, updateBalance, systemStatus, maintenanceDismissed, setMaintenanceDismissed } = useAppStore();
   const [chat, setChat] = useState<ChatSession | null>(null);
   const [project, setProject] = useState<any>(null);
@@ -1875,9 +1877,9 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
 
   if (!chat) {
     return (
-      <div className="flex flex-col items-center justify-center h-full min-h-[60vh] w-full p-8 text-center">
+      <div className="flex flex-col items-center justify-center h-full min-h-[60vh] w-full p-8 text-center" dir={isRtl ? 'rtl' : 'ltr'}>
         <NajeThinking size={48} className="mb-4" />
-        <p className="text-gray-500 dark:text-gray-400 text-sm animate-pulse">جاري إعداد المساحة...</p>
+        <p className="text-gray-500 dark:text-gray-400 text-sm animate-pulse">{t('chat.preparingSpace')}</p>
       </div>
     );
   }
@@ -1885,6 +1887,7 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
   return (
     <div 
       className="flex flex-col h-[100dvh] bg-naje-canvas relative overflow-hidden"
+      dir={isRtl ? 'rtl' : 'ltr'}
       onDragEnter={handleDragEnter}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
@@ -1961,7 +1964,7 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
                   )}
                   <span className="relative z-10 flex items-center gap-1.5">
                     <MessageSquare className="w-3.5 h-3.5" />
-                    <span className="hidden min-[420px]:inline">المحادثة</span>
+                    <span className="hidden min-[420px]:inline">{t('studio.chatTab')}</span>
                   </span>
                 </button>
 
@@ -1978,7 +1981,7 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
                   )}
                   <span className="relative z-10 flex items-center gap-1.5">
                     <Eye className="w-3.5 h-3.5" />
-                    <span className="hidden min-[420px]:inline">المعاينة</span>
+                    <span className="hidden min-[420px]:inline">{t('studio.previewTab')}</span>
                     {loading && <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />}
                   </span>
                 </button>
@@ -1996,7 +1999,7 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
                   )}
                   <span className="relative z-10 flex items-center gap-1.5">
                     <Code2 className="w-3.5 h-3.5" />
-                    <span className="hidden min-[420px]:inline">الكود</span>
+                    <span className="hidden min-[420px]:inline">{t('studio.codeTab')}</span>
                     {latestUiCodeLines > 0 && (
                       <span className="text-[10px] text-gray-400 font-mono">({latestUiCodeLines})</span>
                     )}
@@ -2016,7 +2019,7 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
                 ) : (
                   <FileText className="w-3.5 h-3.5" />
                 )}
-                <span>تصدير PDF</span>
+                <span>{t('studio.exportPdf')}</span>
               </button>
             )
           )

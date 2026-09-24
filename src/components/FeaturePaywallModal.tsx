@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Lock, X, ArrowLeft } from 'lucide-react';
+import { Lock, X, ArrowLeft, ArrowRight } from 'lucide-react';
 import { GatedFeature, FEATURE_MIN_TIER, TIER_UNLOCK_PACKAGE } from '../lib/featureAccess';
 import { PACKAGE_CONTENT, StorePackage } from '../pages/Store';
+import { useI18n } from '../i18n';
 
 interface Props {
   isOpen: boolean;
@@ -14,8 +15,8 @@ const FEATURE_LABELS: Record<GatedFeature, string> = {
   creativelyAI: 'Creatively AI',
   najeAgent: 'Naje AI Agent',
   najeAd: 'Naje Ad',
-  najeSource: 'ناجي من مصادرك',
-  najeDeveloper: 'ناجي المطور',
+  najeSource: 'Naje Source',
+  najeDeveloper: 'Naje Developer',
 };
 
 const FALLBACK_PRICES: Record<string, number> = {
@@ -25,6 +26,7 @@ const FALLBACK_PRICES: Record<string, number> = {
 };
 
 export default function FeaturePaywallModal({ isOpen, onClose, feature }: Props) {
+  const { t, isRtl, locale } = useI18n();
   const [packages, setPackages] = useState<StorePackage[]>([]);
 
   useEffect(() => {
@@ -54,13 +56,20 @@ export default function FeaturePaywallModal({ isOpen, onClose, feature }: Props)
   const pkgFromConfig = packages.find(p => p.id === requiredPackageId);
   const displayPrice = pkgFromConfig?.usd ?? FALLBACK_PRICES[requiredPackageId] ?? 0;
 
+  const pkgName = (content?.name as any)?.[locale] || (content?.name as any)?.ar || (content?.name as any)?.en || 'Premium';
+  const pkgFeatures = (content?.features as any)?.[locale] || (content?.features as any)?.ar || (content?.features as any)?.en || [];
+  const ActionArrow = isRtl ? ArrowLeft : ArrowRight;
+
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-      <div className="relative w-full max-w-sm bg-[#0b0c10] border border-amber-500/30 rounded-2xl p-6 sm:p-7 shadow-2xl text-right">
+      <div 
+        className="relative w-full max-w-sm bg-[#0b0c10] border border-amber-500/30 rounded-2xl p-6 sm:p-7 shadow-2xl text-start"
+        dir={isRtl ? 'rtl' : 'ltr'}
+      >
         <button
           onClick={onClose}
-          className="absolute top-4 left-4 text-gray-500 hover:text-white transition cursor-pointer"
-          aria-label="إغلاق"
+          className="absolute top-4 end-4 text-gray-500 hover:text-white transition cursor-pointer"
+          aria-label={t('common.close')}
         >
           <X className="w-5 h-5" />
         </button>
@@ -70,23 +79,22 @@ export default function FeaturePaywallModal({ isOpen, onClose, feature }: Props)
         </div>
 
         <h2 className="text-lg font-extrabold text-white mb-1.5">
-          {FEATURE_LABELS[feature]} تحتاج ترقية
+          {t('paywall.title', { feature: FEATURE_LABELS[feature] || feature })}
         </h2>
         <p className="text-xs text-gray-400 mb-5 leading-relaxed">
-          هاي الأداة متاحة بعد الاشتراك بباقة {content?.name?.ar || 'المطلوبة'}. اشترك مرة وحدة
-          واستخدمها براحتك.
+          {t('paywall.desc', { package: pkgName })}
         </p>
 
         {content && (
           <div className="bg-[#12141a] border border-gray-800 rounded-xl p-4 mb-5">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-bold text-white">{content.name.ar}</span>
+              <span className="text-sm font-bold text-white">{pkgName}</span>
               <span className="text-amber-300 font-mono font-extrabold text-sm">
                 ${displayPrice}
               </span>
             </div>
             <ul className="space-y-1.5">
-              {(content.features?.ar || []).slice(0, 3).map((f: string, i: number) => (
+              {pkgFeatures.slice(0, 3).map((f: string, i: number) => (
                 <li key={i} className="text-[11px] text-gray-400 flex items-start gap-1.5">
                   <span className="text-emerald-400">✓</span>
                   <span>{f}</span>
@@ -101,8 +109,8 @@ export default function FeaturePaywallModal({ isOpen, onClose, feature }: Props)
           onClick={onClose}
           className="w-full bg-gradient-to-l from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-black text-xs font-extrabold py-3 rounded-xl transition shadow-md shadow-amber-500/20 flex justify-center items-center gap-1.5 cursor-pointer"
         >
-          <span>افتح هذه الميزة الآن</span>
-          <ArrowLeft className="w-3.5 h-3.5" />
+          <span>{t('paywall.upgradeBtn')}</span>
+          <ActionArrow className="w-3.5 h-3.5" />
         </Link>
       </div>
     </div>

@@ -1,28 +1,33 @@
 import React from 'react';
-import { Map, Link as LinkIcon } from 'lucide-react';
+import { Map, Link as LinkIcon, ArrowLeft, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useI18n } from '../i18n';
+import LanguageSelector from '../components/LanguageSelector';
 
 export default function Sitemap() {
+  const { t, isRtl } = useI18n();
+  const BackArrow = isRtl ? ArrowRight : ArrowLeft;
+
   const publicRoutes = [
-    { path: '/auth', name: 'تسجيل الدخول' },
-    { path: '/Terms-of-Service', name: 'شروط الخدمة' },
-    { path: '/Privacy-Policy', name: 'سياسة الخصوصية' },
-    { path: '/delete-account-request', name: 'طلب حذف الحساب' },
-    { path: '/Sitemap', name: 'خريطة الموقع' },
+    { path: '/auth', name: t('auth.login') },
+    { path: '/Terms-of-Service', name: t('legal.termsTitle') },
+    { path: '/Privacy-Policy', name: t('legal.privacyTitle') },
+    { path: '/delete-account-request', name: isRtl ? 'طلب حذف الحساب' : 'Delete Account Request' },
+    { path: '/Sitemap', name: t('legal.sitemapTitle') },
   ];
 
   const productRoutes = [
-    { path: '/', name: 'الرئيسية (لوحة القيادة)' },
-    { path: '/projects', name: 'مساحات العمل والمشاريع' },
-    { path: '/settings', name: 'الإعدادات / الملف الشخصي' },
-    { path: '/favorites', name: 'المفضلة' },
-    { path: '/store', name: 'المتجر وشراء الرصيد' },
-    { path: '/creative-studio', name: 'استوديو التصميم الإبداعي' },
-    { path: '/naje-agent-core', name: 'وكيل ناجي' },
-    { path: '/naje-ad', name: 'محرك الفيديو الإعلاني' },
-    { path: '/naje-prompt', name: 'ناجي برومبت' },
-    { path: '/naje-ident', name: 'استوديو الحركة — انترو ونهاية' },
-    { path: '/naje-cv', name: 'سيرتك الذاتية بواسطة ناجي' },
+    { path: '/', name: t('sidebar.dashboard') },
+    { path: '/projects', name: t('sidebar.projects') },
+    { path: '/settings', name: t('sidebar.settings') },
+    { path: '/favorites', name: t('sidebar.favorites') },
+    { path: '/store', name: t('sidebar.store') },
+    { path: '/creative-studio', name: t('sidebar.creativeStudio') },
+    { path: '/naje-agent-core', name: t('sidebar.najeAgent') },
+    { path: '/naje-ad', name: t('sidebar.najeAd') },
+    { path: '/naje-prompt', name: t('sidebar.najePrompt') },
+    { path: '/naje-ident', name: t('najeIdent.title') },
+    { path: '/naje-cv', name: t('sidebar.najeCv') },
   ];
 
   const renderGroup = (title: string, routes: { path: string; name: string }[]) => (
@@ -33,9 +38,9 @@ export default function Sitemap() {
           <Link
             key={route.path}
             to={route.path}
-            className="flex items-center gap-3 p-4 bg-gray-50 dark:bg-gray-950 border border-gray-500 dark:hover:border-gray-900 hover:border-emerald-500/50 rounded-xl transition group"
+            className="flex items-center gap-3 p-4 bg-gray-50 dark:bg-gray-950 border border-gray-200 dark:border-gray-800 hover:border-emerald-500/50 rounded-xl transition group"
           >
-            <LinkIcon className="w-5 h-5 text-gray-800 dark:text-gray-400 group-hover:text-emerald-600 dark:text-emerald-400 transition" />
+            <LinkIcon className="w-5 h-5 text-gray-500 dark:text-gray-400 group-hover:text-emerald-500 transition shrink-0" />
             <span className="text-gray-900 dark:text-gray-300 font-medium group-hover:text-gray-900 dark:text-white transition">{route.name}</span>
           </Link>
         ))}
@@ -44,20 +49,37 @@ export default function Sitemap() {
   );
 
   return (
-    <div className="flex-1 overflow-y-auto p-6 sm:p-12 max-w-4xl mx-auto w-full font-sans scrollbar-thin min-h-screen">
-      <div className="bg-white dark:bg-[#0e1014] border border-gray-500 dark:border-gray-900 rounded-3xl p-8 shadow-2xl">
-        <div className="flex items-center gap-4 mb-8 border-b border-gray-500 dark:border-gray-900 pb-6">
-          <div className="w-16 h-16 bg-emerald-500/10 rounded-2xl flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+    <div 
+      className="flex-1 overflow-y-auto p-6 sm:p-12 max-w-4xl mx-auto w-full font-sans scrollbar-thin min-h-screen text-start"
+      dir={isRtl ? 'rtl' : 'ltr'}
+    >
+      <div className="flex justify-end mb-4">
+        <LanguageSelector />
+      </div>
+
+      <div className="bg-white dark:bg-[#0e1014] border border-gray-200 dark:border-gray-900 rounded-3xl p-8 shadow-2xl">
+        <div className="flex items-center gap-4 mb-8 border-b border-gray-200 dark:border-gray-900 pb-6">
+          <div className="w-16 h-16 bg-emerald-500/10 rounded-2xl flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0">
             <Map className="w-8 h-8" />
           </div>
           <div>
-            <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white">خريطة الموقع (Sitemap)</h1>
-            <p className="text-gray-800 dark:text-gray-400 mt-2">دليلك للوصول إلى كافة أقسام استوديو ناجي</p>
+            <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white">{t('legal.sitemapTitle')}</h1>
+            <p className="text-gray-600 dark:text-gray-400 mt-2">{isRtl ? 'دليلك للوصول إلى كافة أقسام استوديو ناجي' : 'Quick navigation to all sections of NAJE Studio'}</p>
           </div>
         </div>
 
-        {renderGroup('صفحات عامة', publicRoutes)}
-        {renderGroup('أقسام المنصة', productRoutes)}
+        {renderGroup(isRtl ? 'صفحات عامة' : 'Public Pages', publicRoutes)}
+        {renderGroup(isRtl ? 'أقسام المنصة' : 'Platform Studios', productRoutes)}
+
+        <div className="mt-12 flex justify-center border-t border-gray-200 dark:border-gray-900 pt-6">
+          <Link
+            to="/"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl transition shadow-md shadow-emerald-600/20"
+          >
+            <BackArrow className="w-4 h-4" />
+            <span>{t('legal.backHome')}</span>
+          </Link>
+        </div>
       </div>
     </div>
   );

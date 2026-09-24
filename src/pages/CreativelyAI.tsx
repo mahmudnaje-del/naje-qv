@@ -19,6 +19,7 @@ import { formatProfessionalError } from "../utils/errorFormatter";
 import NajeErrorCard from "../components/NajeErrorCard";
 import FeaturePaywallModal from "../components/FeaturePaywallModal";
 import { hasFeatureAccess } from "../lib/featureAccess";
+import { useI18n } from "../i18n";
 
 type Mode = "logo" | "identity" | "video_ad" | "brand_kit" | "chat";
 type Screen = "welcome" | "app" | "limit_reached" | "gallery" | "admin" | "brain_creative" | "creative_ai_pro";
@@ -223,9 +224,10 @@ const renderErrorText = (err: any) => typeof err === 'string' ? err : err?.messa
 
 export default function CreativelyAI() {
   const { user, updateBalance } = useAppStore();
+  const { locale, isRtl, t } = useI18n();
   const balance = Number(user?.balance || 0);
 
-  const lang: 'ar' | 'en' = 'ar';
+  const lang: 'ar' | 'en' = locale === 'ar' ? 'ar' : 'en';
   const handleLangChange = (_newLang: 'ar' | 'en') => {};
 
 
@@ -2028,7 +2030,7 @@ if (currentScreen === 'welcome') {
 
 
   return (
-    <div className={`naje-creative-studio w-full ${mode === 'chat' ? 'h-full flex-1 overflow-hidden py-0 md:py-12 px-0 md:px-8' : 'min-h-full flex-1 overflow-y-auto overflow-x-hidden pt-6 pb-32 sm:pb-24 md:py-16 px-4 md:px-8'} bg-[#030303] text-white font-sans flex flex-col justify-start items-center relative`} dir="rtl">
+    <div className={`naje-creative-studio w-full ${mode === 'chat' ? 'h-full flex-1 overflow-hidden py-0 md:py-12 px-0 md:px-8' : 'min-h-full flex-1 overflow-y-auto overflow-x-hidden pt-6 pb-32 sm:pb-24 md:py-16 px-4 md:px-8'} bg-[#030303] text-white font-sans flex flex-col justify-start items-center relative`} dir={isRtl ? 'rtl' : 'ltr'}>
       <StudioBootSplash dark />
       <FeaturePaywallModal
         isOpen={showCreativelyPaywall}

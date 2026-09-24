@@ -10,6 +10,7 @@ import najePersonaWriter from '../assets/icons/naje-persona-writer.svg';
 import najePersonaProgrammer from '../assets/icons/naje-persona-programmer.svg';
 import najePersonaSoundEngineer from '../assets/icons/naje-persona-sound-engineer.svg';
 import najePersonaCommander from '../assets/icons/naje-persona-commander.svg';
+import { useI18n } from '../i18n';
 
 interface NajeReasoningIndicatorProps {
   chatType?: 'ui' | 'text' | 'image' | 'video';
@@ -24,6 +25,14 @@ const PERSONA_CONFIG: Record<string, { icon: string; name: string; title: string
   image: { icon: najePersonaPhotographer, name: 'المصوّر', title: 'الإخراج البصري والتوليد بدقة سينمائية' },
   video: { icon: najePersonaProducer, name: 'المنتج', title: 'الإخراج والتسلسل الزمني للمشاهد' },
   voice: { icon: najePersonaSoundEngineer, name: 'مهندس الصوت', title: 'معالجة الصوتيات وتوزيع الحوار' }
+};
+
+const PERSONA_CONFIG_EN: Record<string, { icon: string; name: string; title: string }> = {
+  ui: { icon: najePersonaProgrammer, name: 'Developer', title: 'Code Engineering & Interactive UI' },
+  text: { icon: najePersonaWriter, name: 'Writer & Critic', title: 'Content Synthesis & Reasoning' },
+  image: { icon: najePersonaPhotographer, name: 'Photographer', title: 'Visual Direction & Cinematic Generation' },
+  video: { icon: najePersonaProducer, name: 'Producer', title: 'Cinematography & Scene Sequencing' },
+  voice: { icon: najePersonaSoundEngineer, name: 'Sound Engineer', title: 'Audio Processing & Dialogue Mixing' }
 };
 
 const REASONING_STEPS: Record<string, string[]> = {
@@ -55,6 +64,38 @@ const REASONING_STEPS: Record<string, string[]> = {
     'أحدّد حركة الكاميرا والإيقاع والإضاءة…',
     'أجهّز المحرّك وأضمن ثبات الأسلوب…',
     'أصقل الإطارات والجودة النهائية…'
+  ]
+};
+
+const REASONING_STEPS_EN: Record<string, string[]> = {
+  ui: [
+    'Understanding requirements and identifying UI structure…',
+    'Selecting harmonic color palettes and theme alignment…',
+    'Architecting responsive layout and visual components…',
+    'Crafting content and interactive interface elements…',
+    'Applying professional animations and transitions…',
+    'Auditing responsiveness and performance across viewports…'
+  ],
+  text: [
+    'Analyzing your prompt and defining objectives…',
+    'Gathering relevant domain knowledge and context…',
+    'Structuring thoughts into a coherent logical flow…',
+    'Composing articulate, high-quality responses…',
+    'Reviewing clarity and formatting before rendering…'
+  ],
+  image: [
+    'Deconstructing your creative visual description…',
+    'Synthesizing fine cinematic visual guidance…',
+    'Harmonizing colors, lighting, and composition…',
+    'Refining requested dimensions and resolution…',
+    'Polishing fine details to perfection…'
+  ],
+  video: [
+    'Analyzing scenes and building a cinematic vision…',
+    'Composing moment-by-moment chronological script…',
+    'Directing camera motions, pacing, and lighting…',
+    'Rendering frames with stylistic consistency…',
+    'Finalizing video encoding and preview quality…'
   ]
 };
 

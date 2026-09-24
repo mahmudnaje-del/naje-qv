@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Check, Lock, Moon, Sun, Palette, Coins } from 'lucide-react';
 import { useAppStore } from '../store';
+import { useI18n } from '../i18n';
 import { db } from '../firebase';
 import { doc, updateDoc } from 'firebase/firestore';
 import { toast } from '../toastStore';
@@ -40,6 +41,7 @@ function ThemePie({
 
 export default function ThemeStudio() {
   const { user, themeMode, setThemeMode, themeColor, setThemeColor, markThemeUnlocked } = useAppStore();
+  const { t, isRtl } = useI18n();
   const [pendingId, setPendingId] = useState<ThemeColorId | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -72,7 +74,7 @@ export default function ThemeStudio() {
     if (!theme) return;
     const balance = Number(user?.balance || 0);
     if (!user?.isAdmin && balance < THEME_UNLOCK_COST) {
-      toast.error(`رصيدك غير كافٍ. فتح الثيم يحتاج ${THEME_UNLOCK_COST} نقطة.`);
+      toast.error(t('themeStudio.deductNotice', { cost: THEME_UNLOCK_COST }));
       setPendingId(null);
       return;
     }
@@ -81,14 +83,14 @@ export default function ThemeStudio() {
     setPendingId(null);
     setBusy(true);
     try {
-      if (!user?.uid) throw new Error('يلزم تسجيل الدخول');
+      if (!user?.uid) throw new Error(t('auth.signInPrompt'));
       const result = await unlockThemeForUser(user, pendingId);
       markThemeUnlocked(pendingId, result.newBalance);
       await persistSelection(pendingId);
-      toast.success(`تم فتح ثيم ${theme.nameAr} — الداكن والفاتح جاهزان`);
+      toast.success(t('themeStudio.unlockThemeTitle', { theme: pendingTheme?.nameAr || '' }));
     } catch (err: any) {
       setThemeColor(previousColor);
-      toast.error(err?.message || 'تعذر فتح الثيم');
+      toast.error(err?.message || t('common.error'));
     } finally {
       setBusy(false);
     }
@@ -97,8 +99,8 @@ export default function ThemeStudio() {
   const pendingTheme = THEMES.find((t) => t.id === pendingId);
 
   return (
-    <div>
-      <p className="text-xs text-gray-800 dark:text-gray-400 mb-2">المظهر</p>
+    <div dir={isRtl ? 'rtl' : 'ltr'} className="text-start">
+      <p className="text-xs text-gray-800 dark:text-gray-400 mb-2">{t('themeStudio.appearance')}</p>
       <div className="flex items-center gap-2 mb-4">
         <button
           type="button"
@@ -110,7 +112,7 @@ export default function ThemeStudio() {
           }`}
         >
           <Moon className="w-4 h-4" />
-          <span>داكن</span>
+          <span>{t('themeStudio.dark')}</span>
         </button>
         <button
           type="button"
@@ -122,21 +124,21 @@ export default function ThemeStudio() {
           }`}
         >
           <Sun className="w-4 h-4" />
-          <span>فاتح</span>
+          <span>{t('themeStudio.light')}</span>
         </button>
       </div>
 
       <div className="flex items-center justify-between gap-2 mb-2">
         <p className="text-xs text-gray-800 dark:text-gray-400 flex items-center gap-1.5">
           <Palette className="w-3.5 h-3.5" />
-          <span>ثيمات الألوان</span>
+          <span>{t('themeStudio.colorThemes')}</span>
         </p>
         <span className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 rounded-full px-2 py-0.5">
-          {THEME_UNLOCK_COST} نقطة تفتح الداكن والفاتح
+          {t('themeStudio.unlockNote', { cost: THEME_UNLOCK_COST })}
         </span>
       </div>
       <p className="text-[10px] text-gray-600 dark:text-gray-500 mb-3 leading-relaxed">
-        كل لون يلوّن الواجهة كلها — الأزرار، البطاقات، كريتيفلي، ناجي أد، والقوائم. البنفسجي مجاني.
+        {t('themeStudio.themeDescription')}
       </p>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -148,7 +150,7 @@ export default function ThemeStudio() {
               key={theme.id}
               type="button"
               onClick={() => handlePick(theme)}
-              className={`relative rounded-2xl border p-2.5 text-right transition cursor-pointer ${
+              className={`relative rounded-2xl border p-2.5 text-start transition cursor-pointer ${
                 selected
                   ? 'border-indigo-500 bg-indigo-500/10 shadow-[0_0_0_1px_rgba(99,102,241,0.35)]'
                   : 'border-gray-200 dark:border-gray-800 bg-white/70 dark:bg-gray-950/50 hover:border-indigo-400/50'
@@ -167,7 +169,7 @@ export default function ThemeStudio() {
                 )}
               </div>
               <div className="mt-0.5 text-[9px] font-bold text-gray-500 dark:text-gray-400">
-                {theme.free ? 'مجاني' : unlocked ? 'مفتوح' : `${THEME_UNLOCK_COST} نقطة`}
+                {theme.free ? t('themeStudio.free') : unlocked ? t('themeStudio.unlocked') : `${THEME_UNLOCK_COST} ${t('common.pointsShort') || 'نقطة'}`}
               </div>
             </button>
           );
@@ -180,36 +182,43 @@ export default function ThemeStudio() {
             type="button"
             className="absolute inset-0 bg-black/50 backdrop-blur-sm"
             onClick={() => !busy && setPendingId(null)}
-            aria-label="إغلاق"
+            aria-label={t('common.close')}
           />
-          <div className="relative w-full max-w-sm rounded-2xl border border-purple-200 dark:border-gray-800 bg-white dark:bg-[#12141a] p-5 shadow-2xl text-right">
+          <div 
+            className="relative w-full max-w-sm rounded-2xl border border-purple-200 dark:border-gray-800 bg-white dark:bg-[#12141a] p-5 shadow-2xl text-start"
+            dir={isRtl ? 'rtl' : 'ltr'}
+          >
             <div className="flex items-center gap-3 mb-3">
               <ThemePie primary={pendingTheme.primary} secondary={pendingTheme.secondary} canvas="#111" size={44} />
               <div>
-                <h3 className="text-sm font-extrabold text-gray-900 dark:text-white">فتح ثيم {pendingTheme.nameAr}</h3>
-                <p className="text-[11px] text-gray-600 dark:text-gray-400 mt-0.5">يفتح الخيار الداكن والفاتح معاً</p>
+                <h3 className="text-sm font-extrabold text-gray-900 dark:text-white">
+                  {t('themeStudio.unlockThemeTitle', { theme: pendingTheme.nameAr })}
+                </h3>
+                <p className="text-[11px] text-gray-600 dark:text-gray-400 mt-0.5">
+                  {t('themeStudio.unlockThemeDesc')}
+                </p>
               </div>
             </div>
             <p className="text-xs text-gray-700 dark:text-gray-300 leading-relaxed mb-4">
-              سيتم خصم <span className="font-black text-indigo-600 dark:text-indigo-400">{THEME_UNLOCK_COST} نقطة</span> من رصيدك، ويُلوَّن كل التطبيق بهذا اللون.
+              {t('themeStudio.deductNotice', { cost: THEME_UNLOCK_COST })}
             </p>
             <div className="flex items-center gap-2">
               <button
                 type="button"
                 disabled={busy}
                 onClick={() => setPendingId(null)}
-                className="flex-1 py-2.5 rounded-xl text-xs font-bold bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-300"
+                className="flex-1 py-2.5 rounded-xl text-xs font-bold bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-300 cursor-pointer"
               >
-                إلغاء
+                {t('common.cancel')}
               </button>
               <button
                 type="button"
                 disabled={busy}
                 onClick={confirmUnlock}
-                className="flex-1 py-2.5 rounded-xl text-xs font-bold bg-indigo-600 text-white flex items-center justify-center gap-1.5"
+                className="flex-1 py-2.5 rounded-xl text-xs font-bold bg-indigo-600 text-white flex items-center justify-center gap-1.5 cursor-pointer shadow-md shadow-indigo-600/25"
               >
                 {busy ? <NajeSpinner className="w-4 h-4" /> : <Coins className="w-3.5 h-3.5" />}
-                <span>فتح بـ {THEME_UNLOCK_COST} نقطة</span>
+                <span>{t('themeStudio.unlockBtn', { cost: THEME_UNLOCK_COST })}</span>
               </button>
             </div>
           </div>

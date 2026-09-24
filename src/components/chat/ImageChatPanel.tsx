@@ -4,6 +4,7 @@ import { Image as ImageIcon, AlertCircle, X } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import NajeSelect from '../NajeSelect';
 import { usePricingConfig } from '../../hooks/usePricingConfig';
+import { useI18n } from '../../i18n';
 
 export function buildImageChatPayload(state: any) {
   return {
@@ -44,6 +45,7 @@ export function ImageSettingsPanel({
   getCalculatedCost,
   files
 }: any) {
+  const { t, isRtl } = useI18n();
   const pricing = usePricingConfig();
   if (chat?.type !== 'image' || !showImageSettings) return null;
 
@@ -52,24 +54,26 @@ export function ImageSettingsPanel({
       initial={{ opacity: 0, height: 0 }}
       animate={{ opacity: 1, height: 'auto' }}
       exit={{ opacity: 0, height: 0 }}
-      className="bg-gray-50 dark:bg-gray-950/45 border-b border-gray-200 dark:border-gray-900/80 p-4 flex flex-col gap-4 text-sm "
+      dir={isRtl ? 'rtl' : 'ltr'}
+      className="bg-gray-50 dark:bg-gray-950/45 border-b border-gray-200 dark:border-gray-900/80 p-4 flex flex-col gap-4 text-sm text-start"
     >
       <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-900/60 pb-2">
         <div className="flex items-center gap-1.5 font-bold text-gray-900 dark:text-white">
           <ImageIcon className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-          <span>إعدادات توليد الصورة الفنية</span>
+          <span>{isRtl ? 'إعدادات توليد الصورة الفنية' : 'Image Generation Settings'}</span>
         </div>
         <button 
           type="button" 
           onClick={() => setShowImageSettings(false)}
-          className="p-1 rounded-lg text-gray-800 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-white dark:hover:bg-gray-900 transition"
+          className="p-1 rounded-lg text-gray-800 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-white dark:hover:bg-gray-900 transition cursor-pointer"
+          aria-label={t('common.close')}
         >
           <X className="w-4 h-4" />
         </button>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="flex flex-col gap-1.5">
-          <span className="text-xs text-gray-800 dark:text-gray-400 font-medium">النموذج الفني</span>
+          <span className="text-xs text-gray-800 dark:text-gray-400 font-medium">{isRtl ? 'النموذج الفني' : 'Image Model'}</span>
           <NajeSelect
             value={imageModel}
             onChange={(val) => {
@@ -77,29 +81,29 @@ export function ImageSettingsPanel({
               if (val === 'lite') setImageQuality('standard');
             }}
             options={[
-              { value: 'lite', label: `Naje Imagen Lite (${pricing.image?.liteBase ?? 0.5} نقطة - خفيف وسريع)` },
-              { value: 'spectra', label: `Naje Imagen (${(pricing.image?.base ?? 1) === 1 ? 'نقطة واحدة' : `${pricing.image.base} نقاط`} - افتراضي)` },
-              { value: 'nova', label: `Naje Imagen Pro (${pricing.image?.proBase ?? 1.5} نقطة - احترافي)` }
+              { value: 'lite', label: `Naje Imagen Lite (${pricing.image?.liteBase ?? 0.5} ${t('common.pointsShort') || 'pts'})` },
+              { value: 'spectra', label: `Naje Imagen (${pricing.image?.base ?? 1} ${t('common.pointsShort') || 'pts'})` },
+              { value: 'nova', label: `Naje Imagen Pro (${pricing.image?.proBase ?? 1.5} ${t('common.pointsShort') || 'pts'})` }
             ]}
           />
         </div>
         <div className="flex flex-col gap-1.5">
-          <span className="text-xs text-gray-800 dark:text-gray-400 font-medium">جودة ودقة الصورة</span>
+          <span className="text-xs text-gray-800 dark:text-gray-400 font-medium">{isRtl ? 'جودة ودقة الصورة' : 'Image Quality'}</span>
           <NajeSelect
             value={imageQuality}
             onChange={(val) => setImageQuality(val as 'standard' | 'hd')}
             options={
               imageModel === 'lite'
-                ? [{ value: 'standard', label: 'Standard 1K (دقة قياسية - x1.0)' }]
+                ? [{ value: 'standard', label: 'Standard 1K (x1.0)' }]
                 : [
-                    { value: 'standard', label: 'Standard 1K (دقة قياسية - x1.0)' },
-                    { value: 'hd', label: 'HD 2K (دقة عالية - x1.5)' }
+                    { value: 'standard', label: 'Standard 1K (x1.0)' },
+                    { value: 'hd', label: 'HD 2K (x1.5)' }
                   ]
             }
           />
         </div>
         <div className="flex flex-col gap-1.5">
-          <span className="text-xs text-gray-800 dark:text-gray-400 font-medium">أبعاد الصورة / المنصة والقالب</span>
+          <span className="text-xs text-gray-800 dark:text-gray-400 font-medium">{isRtl ? 'أبعاد الصورة / المنصة والقالب' : 'Dimensions / Preset'}</span>
           <NajeSelect
             value={imagePreset}
             onChange={(val) => {
@@ -109,38 +113,38 @@ export function ImageSettingsPanel({
               }
             }}
             options={[
-              { value: 'custom', label: 'مخصص (حسب الأبعاد اليدوية)' },
-              { value: 'fb_cover', label: 'فيسبوك: غلاف صفحة (16:9 - منطقة آمنة للغلاف)' },
-              { value: 'fb_post', label: 'فيسبوك: صورة منشور (1:1)' },
-              { value: 'ig_square', label: 'إنستغرام: منشور مربع (1:1)' },
-              { value: 'ig_portrait', label: 'إنستغرام: منشور طولي (4:5)' },
-              { value: 'ig_story', label: 'إنستغرام: قصة / ريلز (9:16 - آمن للأزرار)' },
-              { value: 'tw_post', label: 'تويتر: صورة منشور (16:9)' },
-              { value: 'tw_header', label: 'تويتر: غلاف حساب (3:1 - تجنب صورة البروفايل)' },
-              { value: 'yt_thumb', label: 'يوتيوب: صورة مصغرة (16:9 - تجنب شارة الوقت)' },
-              { value: 'yt_cover', label: 'يوتيوب: غلاف قناة (16:9 - شريط العرض الآمن)' },
-              { value: 'li_cover', label: 'لينكد إن: غلاف حساب شخصي (4:1)' },
-              { value: 'li_post', label: 'لينكد إن: صورة منشور (1:1)' },
-              { value: 'sc_story', label: 'سناب شات: قصة (9:16)' },
-              { value: 'tt_video', label: 'تيك توك: خلفية فيديو (9:16 - آمن للأزرار)' }
+              { value: 'custom', label: isRtl ? 'مخصص (حسب الأبعاد اليدوية)' : 'Custom Aspect Ratio' },
+              { value: 'fb_cover', label: 'Facebook Cover (16:9)' },
+              { value: 'fb_post', label: 'Facebook Post (1:1)' },
+              { value: 'ig_square', label: 'Instagram Square (1:1)' },
+              { value: 'ig_portrait', label: 'Instagram Portrait (4:5)' },
+              { value: 'ig_story', label: 'Instagram Story / Reel (9:16)' },
+              { value: 'tw_post', label: 'X / Twitter Post (16:9)' },
+              { value: 'tw_header', label: 'X / Twitter Header (3:1)' },
+              { value: 'yt_thumb', label: 'YouTube Thumbnail (16:9)' },
+              { value: 'yt_cover', label: 'YouTube Channel Art (16:9)' },
+              { value: 'li_cover', label: 'LinkedIn Cover (4:1)' },
+              { value: 'li_post', label: 'LinkedIn Post (1:1)' },
+              { value: 'sc_story', label: 'Snapchat Story (9:16)' },
+              { value: 'tt_video', label: 'TikTok Video Background (9:16)' }
             ]}
           />
         </div>
         {imagePreset === 'custom' && (
           <div className="flex flex-col gap-1.5">
-            <span className="text-xs text-gray-800 dark:text-gray-400 font-medium">نسبة العرض للارتفاع</span>
+            <span className="text-xs text-gray-800 dark:text-gray-400 font-medium">{isRtl ? 'نسبة العرض للارتفاع' : 'Aspect Ratio'}</span>
             <NajeSelect
                 value={aspectRatio}
                 onChange={(val) => setAspectRatio(val)}
                 options={[
-                  { value: '1:1', label: '1:1 (مربع)' },
-                  { value: '16:9', label: '16:9 (عرضي)' },
-                  { value: '9:16', label: '9:16 (طولي)' },
-                  { value: '4:3', label: '4:3 (عرضي)' },
-                  { value: '3:4', label: '3:4 (طولي)' },
-                  { value: '21:9', label: '21:9 (سينمائي)' },
-                  { value: '4:5', label: '4:5 (طولي إنستغرام)' },
-                  { value: '5:4', label: '5:4 (عرضي مقارب)' }
+                  { value: '1:1', label: '1:1' },
+                  { value: '16:9', label: '16:9' },
+                  { value: '9:16', label: '9:16' },
+                  { value: '4:3', label: '4:3' },
+                  { value: '3:4', label: '3:4' },
+                  { value: '21:9', label: '21:9' },
+                  { value: '4:5', label: '4:5' },
+                  { value: '5:4', label: '5:4' }
                 ]}
               />
           </div>
@@ -150,9 +154,9 @@ export function ImageSettingsPanel({
         <div className="flex items-center gap-1.5 text-xs text-indigo-700 dark:text-indigo-300 font-medium">
           <AlertCircle className="w-4 h-4 text-indigo-600 dark:text-indigo-400 flex-shrink-0" />
           <span>
-            التكلفة الإنشائية الفورية: <strong className="text-indigo-600 dark:text-indigo-400 font-bold font-mono text-sm">
+            {isRtl ? 'التكلفة الإنشائية الفورية:' : 'Instant Cost:'} <strong className="text-indigo-600 dark:text-indigo-400 font-bold font-mono text-sm">
               {getCalculatedCost()}
-            </strong> نقطة {files.length > 0 && <span className="text-[11px] text-gray-500 dark:text-gray-400 font-normal">(يتضمن +{(files.length * (pricing.image?.imageAddon ?? 0.1)).toFixed(1)} لدمج {files.length} صورة)</span>}
+            </strong> {t('common.pointsShort') || 'pts'} {files.length > 0 && <span className="text-[11px] text-gray-500 dark:text-gray-400 font-normal">(+{files.length} {isRtl ? 'صور مدمجة' : 'source images'})</span>}
           </span>
         </div>
         <button 
@@ -160,7 +164,7 @@ export function ImageSettingsPanel({
           onClick={() => setShowImageSettings(false)}
           className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer"
         >
-          تأكيد وإغلاق
+          {isRtl ? 'تأكيد وإغلاق' : 'Confirm & Close'}
         </button>
       </div>
     </motion.div>

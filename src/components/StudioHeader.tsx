@@ -1,6 +1,7 @@
 import React from 'react';
-import { PanelRight, LucideIcon } from 'lucide-react';
+import { PanelRight, PanelLeft, LucideIcon } from 'lucide-react';
 import { useAppStore } from '../store';
+import { useI18n } from '../i18n';
 import NotificationDropdown from './NotificationDropdown';
 import BalanceTopDropdown from './BalanceTopDropdown';
 import { cn } from '../lib/utils';
@@ -35,6 +36,7 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
   className,
 }) => {
   const { sidebarOpen, setSidebarOpen } = useAppStore();
+  const { isRtl, t } = useI18n();
 
   const themeStyles = {
     canvas: 'bg-white/85 dark:bg-zinc-950/85 border-zinc-200/80 dark:border-zinc-800/80 text-zinc-900 dark:text-white',
@@ -45,6 +47,7 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
   };
 
   const isDarkMode = theme !== 'canvas';
+  const ToggleIcon = isRtl ? PanelRight : PanelLeft;
 
   return (
     <header
@@ -53,9 +56,9 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
         themeStyles[theme] || themeStyles.canvas,
         className
       )}
-      dir="rtl"
+      dir={isRtl ? 'rtl' : 'ltr'}
     >
-      {/* Right: Toggle + Studio Icon + Title & Badge */}
+      {/* Start: Toggle + Studio Icon + Title & Badge */}
       <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
         <button
           type="button"
@@ -66,10 +69,10 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
               ? 'text-zinc-300 hover:text-white hover:bg-white/10'
               : 'text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800'
           )}
-          title="توسيع/طي القائمة"
-          aria-label="توسيع أو طي القائمة الجانبية"
+          title={sidebarOpen ? t('studio.collapseSidebar') : t('studio.expandSidebar')}
+          aria-label={t('studio.toggleSidebar')}
         >
-          <PanelRight className="w-5 h-5" />
+          <ToggleIcon className="w-5 h-5" />
         </button>
 
         <div

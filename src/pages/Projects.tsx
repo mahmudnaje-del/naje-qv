@@ -22,6 +22,7 @@ import { exportProjectPDF } from '../utils/pdfExport';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from '../toastStore';
 import { getDoc as getLocalDoc } from '../lib/idb';
+import { useI18n } from '../i18n';
 
 function ProjectMediaThumb({ m }: { m: any }) {
   const [src, setSrc] = useState<string | null>(null);
@@ -109,6 +110,7 @@ function ProjectMediaThumb({ m }: { m: any }) {
 
 export default function Projects() {
   const { user, setUserGalleriesOpen, activeProjectId, setActiveProjectId, setNewChatModalOpen } = useAppStore();
+  const { t, isRtl } = useI18n();
   const navigate = useNavigate();
   const [enteringStudio, setEnteringStudio] = useState(false);
   
@@ -453,13 +455,13 @@ export default function Projects() {
                 <div>
                   <div className="inline-flex items-center gap-2 bg-indigo-500/10 border border-indigo-500/20 px-3 py-1 rounded-full text-[11px] font-semibold text-indigo-300">
                     <Sparkles className="w-3 h-3 animate-pulse" />
-                    <span>استوديو ناجي المتكامل للذكاء الاصطناعي</span>
+                    <span>{t('nav.brandTitle')}</span>
                   </div>
                   <h1 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight mt-3 leading-normal">
-                    أهلاً بك، {user?.displayName || 'مبدع ناجي'}
+                    {t('common.welcomeUser', { name: user?.displayName || 'Creator' })}
                   </h1>
                   <p className="text-indigo-200/90 text-xs mt-2 leading-relaxed">
-                    مرحباً بك في الاستوديو الإبداعي. أنشئ مشروعاً جديداً لتنظيم ملفاتك ودردشاتك، أو اختر مساحة عمل من الأسفل.
+                    {t('projects.pageSubtitle')}
                   </p>
                 </div>
 
@@ -468,7 +470,7 @@ export default function Projects() {
                   className="self-start bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2.5 rounded-xl font-bold transition shadow-lg shadow-indigo-500/20 flex items-center gap-2 cursor-pointer text-xs border border-transparent hover:scale-[1.02]"
                 >
                   <Plus className="w-4 h-4" />
-                  <span>إنشاء مشروع</span>
+                  <span>{t('projects.newProjectBtn')}</span>
                 </button>
               </div>
             </div>
@@ -692,15 +694,15 @@ export default function Projects() {
             {/* Quick stats panel */}
             <div className="grid grid-cols-3 gap-4">
               <div className="naje-glass-card p-4 flex flex-col justify-between">
-                <span className="text-[10px] text-indigo-950/70 dark:text-purple-300 font-bold">مساحات العمل</span>
+                <span className="text-[10px] text-indigo-950/70 dark:text-purple-300 font-bold">{t('settings.statWorkspaces')}</span>
                 <span className="text-xl font-extrabold text-indigo-950 dark:text-white mt-2">{projects.length}</span>
               </div>
               <div className="naje-glass-card p-4 flex flex-col justify-between">
-                <span className="text-[10px] text-indigo-950/70 dark:text-purple-300 font-bold">جلسات التصميم</span>
+                <span className="text-[10px] text-indigo-950/70 dark:text-purple-300 font-bold">{t('chat.newChatModalTitle')}</span>
                 <span className="text-xl font-extrabold text-indigo-950 dark:text-white mt-2">{chats.length}</span>
               </div>
               <div className="naje-glass-card p-4 flex flex-col justify-between">
-                <span className="text-[10px] text-indigo-950/70 dark:text-purple-300 font-bold">ملفات الوسائط</span>
+                <span className="text-[10px] text-indigo-950/70 dark:text-purple-300 font-bold">{t('nav.library')}</span>
                 <span className="text-xl font-extrabold text-indigo-950 dark:text-white mt-2">{allMediaMessages.length}</span>
               </div>
             </div>
@@ -710,16 +712,16 @@ export default function Projects() {
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-sm font-bold text-gray-800 dark:text-gray-400 flex items-center gap-2">
                   <Folder className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-                  <span>مساحات العمل المتاحة ({projects.length})</span>
+                  <span>{t('projects.pageTitle')} ({projects.length})</span>
                 </h2>
               </div>
 
               {projects.length === 0 ? (
                 <div className="text-center py-16 px-6 naje-glass-card-lg shadow-xl relative overflow-hidden group flex flex-col items-center justify-center">
-                  <img src={najeEmptyProject} alt="لا توجد مساحات عمل" className="w-52 h-40 mx-auto mb-4 object-contain" />
-                  <h3 className="text-lg font-extrabold text-gray-900 dark:text-white mb-2 relative z-10">استعد لتأسيس مساحة عملك الأولى</h3>
+                  <img src={najeEmptyProject} alt={t('projects.noProjectsTitle')} className="w-52 h-40 mx-auto mb-4 object-contain" />
+                  <h3 className="text-lg font-extrabold text-gray-900 dark:text-white mb-2 relative z-10">{t('projects.noProjectsTitle')}</h3>
                   <p className="text-xs text-gray-800 dark:text-gray-400 max-w-sm mx-auto leading-relaxed mb-6 relative z-10">
-                    مساحات العمل تساعدك في تنظيم دردشاتك، ملفاتك، ومخرجاتك الإبداعية. دعنا نطلق بيئة الإنتاج الخاصة بك بلمسة ناجي الذكية.
+                    {t('projects.noProjectsDesc')}
                   </p>
 
                   <button
@@ -727,7 +729,7 @@ export default function Projects() {
                     className="relative z-10 px-6 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-extrabold rounded-xl transition shadow-lg shadow-indigo-500/15 cursor-pointer inline-flex items-center gap-1.5 active:scale-95"
                   >
                     <Plus className="w-4 h-4" />
-                    <span>إنشاء أول مساحة عمل</span>
+                    <span>{t('projects.startFirstBtn')}</span>
                   </button>
                 </div>
               ) : (
@@ -1237,13 +1239,13 @@ export default function Projects() {
             </div>
 
             <div className="flex justify-end gap-2.5 pt-3 border-t border-gray-500 dark:border-gray-900 mt-1">
-              <button type="button" onClick={() => setShowNewProjectModal(false)} className="px-4 py-2 text-xs text-gray-800 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition font-bold">إلغاء</button>
+              <button type="button" onClick={() => setShowNewProjectModal(false)} className="px-4 py-2 text-xs text-gray-800 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition font-bold">{t('common.cancel')}</button>
               <button 
                 type="submit" 
                 disabled={isCreatingProject}
                 className="bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2 rounded-xl text-xs font-bold transition shadow-md flex items-center gap-1.5 cursor-pointer"
               >
-                {isCreatingProject ? <NajeSpinner className="w-3.5 h-3.5" /> : 'إنشاء وتأسيس'}
+                {isCreatingProject ? <NajeSpinner className="w-3.5 h-3.5" /> : t('projects.createBtn')}
               </button>
             </div>
           </motion.form>
@@ -1259,16 +1261,16 @@ export default function Projects() {
           <motion.div 
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="relative naje-glass-card p-6 w-full max-w-sm shadow-2xl flex flex-col gap-5 text-right"
+            className={`relative naje-glass-card p-6 w-full max-w-sm shadow-2xl flex flex-col gap-5 ${isRtl ? 'text-right' : 'text-left'}`}
           >
             <div className="flex items-start gap-4">
               <div className="w-10 h-10 bg-red-500/10 rounded-full flex items-center justify-center text-red-600 dark:text-red-400 flex-shrink-0">
                 <Trash2 className="w-5 h-5" />
               </div>
               <div className="pt-1">
-                <h3 className="text-sm font-extrabold text-gray-900 dark:text-white">حذف مساحة العمل</h3>
+                <h3 className="text-sm font-extrabold text-gray-900 dark:text-white">{t('projects.deleteConfirmTitle')}</h3>
                 <p className="text-[11px] text-gray-800 dark:text-gray-400 mt-2 leading-relaxed">
-                  هل أنت متأكد من حذف هذا المشروع نهائياً؟ جميع دردشاتك وملفاته ستُحذف ولا يمكن التراجع عن هذا الإجراء.
+                  {t('projects.deleteConfirmDesc')}
                 </p>
               </div>
             </div>
@@ -1278,7 +1280,7 @@ export default function Projects() {
                 onClick={() => setProjectToDelete(null)} 
                 className="px-4 py-2 text-xs text-gray-800 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition font-bold cursor-pointer"
               >
-                إلغاء
+                {t('common.cancel')}
               </button>
               <button 
                 onClick={() => {
@@ -1287,7 +1289,7 @@ export default function Projects() {
                 }}
                 className="bg-red-600 hover:bg-red-500 text-white px-5 py-2 rounded-xl text-xs font-bold transition shadow-md cursor-pointer hover:scale-[1.01]"
               >
-                نعم، احذف نهائياً
+                {t('common.delete')}
               </button>
             </div>
           </motion.div>

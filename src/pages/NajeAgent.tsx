@@ -13,9 +13,10 @@ import {
   ExternalLink, Eye, Check, X, Sparkle, Volume2, Mic, Code2, 
   FolderTree, FileCode, MonitorPlay, Copy, Archive, CheckCheck,
   MessageSquare, HelpCircle, ArrowUpRight, Cpu, Wrench, Star,
-  PanelRight, Upload, Paperclip, Link2, Plus, Trash2, BookOpen,
+  PanelRight, PanelLeft, Upload, Paperclip, Link2, Plus, Trash2, BookOpen,
   FolderOpen, FileSpreadsheet, Share2, Tag, Megaphone, CheckSquare
 } from 'lucide-react';
+import { useI18n } from '../i18n';
 import NajeSpinner from '../components/NajeSpinner';
 import BalanceTopDropdown from '../components/BalanceTopDropdown';
 import { applyVersionCap, toggleFavoriteVersion, MAX_VERSIONS_PER_ASSET } from '../lib/versionHistory';
@@ -95,6 +96,7 @@ const getAgentMeta = (toolName: string) => {
 
 export default function NajeAgent() {
   const { user, sidebarOpen, setSidebarOpen } = useAppStore();
+  const { isRtl, t } = useI18n();
   const [searchParams, setSearchParams] = useSearchParams();
   const chatId = searchParams.get('chatId');
 
@@ -680,9 +682,10 @@ export default function NajeAgent() {
   const ActiveAgentIcon = currentRunningTools.length > 0 
     ? getAgentMeta(currentRunningTools[0].name).icon 
     : Bot;
+  const ToggleIcon = isRtl ? PanelRight : PanelLeft;
 
   return (
-    <div className="flex-1 flex flex-col h-full min-h-0 bg-naje-canvas text-naje-ink overflow-hidden font-sans" dir="rtl">
+    <div className="flex-1 flex flex-col h-full min-h-0 bg-naje-canvas text-naje-ink overflow-hidden font-sans" dir={isRtl ? 'rtl' : 'ltr'}>
       <FeaturePaywallModal
         isOpen={showAgentPaywall}
         onClose={() => setShowAgentPaywall(false)}
@@ -722,15 +725,15 @@ export default function NajeAgent() {
       {/* 1. Header: Sidebar Toggle, Title, 3 Tabs, Balance Dropdown */}
       {/* ========================================================= */}
       <div className="h-14 sm:h-16 px-3 sm:px-5 border-b border-gray-200/80 dark:border-gray-800/80 bg-white/80 dark:bg-[#0f1218]/90 backdrop-blur-md flex items-center justify-between shrink-0 z-10">
-        {/* Right side: Sidebar toggle and Brand title */}
+        {/* Start side: Sidebar toggle and Brand title */}
         <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
             className="p-1.5 sm:p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl text-gray-700 dark:text-gray-300 transition cursor-pointer"
-            title={sidebarOpen ? "إخفاء القائمة الجانبية" : "إظهار القائمة الجانبية"}
-            aria-label="تبديل القائمة الجانبية"
+            title={sidebarOpen ? t('studio.collapseSidebar') : t('studio.expandSidebar')}
+            aria-label={t('studio.toggleSidebar')}
           >
-            <PanelRight className="w-4 h-4 sm:w-5 sm:h-5" />
+            <ToggleIcon className="w-4 h-4 sm:w-5 sm:h-5" />
           </button>
 
           <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-tr from-purple-600 via-indigo-600 to-pink-600 flex items-center justify-center text-white shadow-sm flex-shrink-0">
@@ -752,11 +755,11 @@ export default function NajeAgent() {
           </div>
         </div>
 
-        {/* Left side: The 3 Requested Tab Buttons + Balance Dropdown */}
+        {/* Opposite side: The 3 Tab Buttons + Balance Dropdown */}
         <div className="flex items-center gap-2">
-          {/* Segmented 3-Tab Control: الدردشة / النتائج / المصادر */}
+          {/* Segmented 3-Tab Control: Chat / Results / Sources */}
           <div className="bg-gray-100 dark:bg-gray-900/80 p-1 rounded-xl flex items-center gap-1 border border-gray-200/80 dark:border-gray-800">
-            {/* 1. الدردشة */}
+            {/* 1. Chat */}
             <button
               onClick={() => setTab('chat')}
               className={`h-8 w-8 sm:h-9 sm:w-9 rounded-lg flex items-center justify-center transition cursor-pointer active:scale-95 relative ${
@@ -764,13 +767,13 @@ export default function NajeAgent() {
                   ? 'bg-white dark:bg-gray-800 text-purple-600 dark:text-purple-400 shadow-sm' 
                   : 'text-gray-500 hover:text-gray-800 dark:hover:text-white'
               }`}
-              title="الدردشة"
-              aria-label="الدردشة"
+              title={t('studio.chatTab')}
+              aria-label={t('studio.chatTab')}
             >
               <MessageSquare className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
             </button>
 
-            {/* 2. النتائج */}
+            {/* 2. Results */}
             <button
               onClick={() => setTab('results')}
               className={`h-8 w-8 sm:h-9 sm:w-9 rounded-lg flex items-center justify-center transition cursor-pointer active:scale-95 relative ${
@@ -778,8 +781,8 @@ export default function NajeAgent() {
                   ? 'bg-white dark:bg-gray-800 text-purple-600 dark:text-purple-400 shadow-sm' 
                   : 'text-gray-500 hover:text-gray-800 dark:hover:text-white'
               }`}
-              title="النتائج"
-              aria-label="النتائج"
+              title={t('studio.resultsTab')}
+              aria-label={t('studio.resultsTab')}
             >
               <Sparkles className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
               {allArtifacts.length > 0 && (
@@ -789,7 +792,7 @@ export default function NajeAgent() {
               )}
             </button>
 
-            {/* 3. المصادر */}
+            {/* 3. Sources */}
             <button
               onClick={() => setTab('sources')}
               className={`h-8 w-8 sm:h-9 sm:w-9 rounded-lg flex items-center justify-center transition cursor-pointer active:scale-95 relative ${
@@ -797,8 +800,8 @@ export default function NajeAgent() {
                   ? 'bg-white dark:bg-gray-800 text-purple-600 dark:text-purple-400 shadow-sm' 
                   : 'text-gray-500 hover:text-gray-800 dark:hover:text-white'
               }`}
-              title="المصادر"
-              aria-label="المصادر"
+              title={t('studio.sourcesTab')}
+              aria-label={t('studio.sourcesTab')}
             >
               <BookOpen className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
               {sources.length > 0 && (

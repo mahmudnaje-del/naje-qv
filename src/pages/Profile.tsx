@@ -16,7 +16,7 @@ import { RedeemCode } from '../types';
 import { 
   CreditCard, History, BarChart2, Image as ImageIcon, Film, 
   FileText, Folder, LogOut, Shield, Sparkles, Code, Mail, ExternalLink, Info, User,
-  Bell, Database, Download, Trash2, KeyRound, Lock, ShieldCheck
+  Bell, Database, Download, Trash2, KeyRound, Lock, ShieldCheck, Globe
 } from 'lucide-react';
 import NajeSpinner from '../components/NajeSpinner';
 import ThemeStudio from '../components/ThemeStudio';
@@ -26,9 +26,12 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 
 
 import { registerForPushNotifications, disablePushNotifications } from '../lib/pushNotifications';
+import LanguageSelector from '../components/LanguageSelector';
+import { useI18n } from '../i18n';
 
 export default function Profile() {
   const { user, updateBalance } = useAppStore();
+  const { t, isRtl, locale } = useI18n();
   const [activeTab, setActiveTab] = useState<'settings' | 'about'>('settings');
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
@@ -417,8 +420,8 @@ export default function Profile() {
       {/* Page Title & Navigation Tabs */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-gray-500 dark:border-gray-900 pb-5 mb-8 gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">الإعدادات والملف الشخصي</h1>
-          <p className="text-xs text-gray-800 dark:text-gray-400 mt-1">تحكم في حسابك، اشحن رصيد الإبداع، وتعرف على شروط استخدام منصة ناجي.</p>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">{t('settings.pageTitle')}</h1>
+          <p className="text-xs text-gray-800 dark:text-gray-400 mt-1">{t('settings.pageSubtitle')}</p>
         </div>
 
         {/* Tab Buttons */}
@@ -428,14 +431,14 @@ export default function Profile() {
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition cursor-pointer ${activeTab === 'settings' ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-800 dark:text-gray-400 hover:text-gray-900 dark:text-white'}`}
           >
             <User className="w-3.5 h-3.5" />
-            <span>الملف الشخصي والشحن</span>
+            <span>{t('settings.tabSettings')}</span>
           </button>
           <button 
             onClick={() => setActiveTab('about')}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition cursor-pointer ${activeTab === 'about' ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-800 dark:text-gray-400 hover:text-gray-900 dark:text-white'}`}
           >
             <Info className="w-3.5 h-3.5" />
-            <span>حول منصة ناجي</span>
+            <span>{t('settings.tabAbout')}</span>
           </button>
         </div>
       </div>
@@ -582,6 +585,20 @@ export default function Profile() {
               )}
             </div>
 
+          </div>
+
+          {/* Language & Regional Settings Card */}
+          <div className="bg-naje-card border border-purple-200 dark:border-gray-900 rounded-2xl p-6 sm:p-8 shadow-lg">
+            <div className="flex items-center gap-4 mb-6">
+              <div className="w-12 h-12 bg-indigo-50 dark:bg-indigo-500/10 rounded-xl flex items-center justify-center text-indigo-600 dark:text-indigo-400 ring-1 ring-indigo-500/25">
+                <Globe className="w-6 h-6" />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-0.5">{t('settings.languageTitle')}</h2>
+                <p className="text-xs text-gray-800 dark:text-gray-400">{t('settings.languageDesc')}</p>
+              </div>
+            </div>
+            <LanguageSelector variant="card" />
           </div>
 
           <div className="bg-naje-card border border-purple-200 dark:border-gray-900 rounded-2xl p-6 sm:p-8 shadow-lg">
@@ -754,8 +771,8 @@ export default function Profile() {
                 <Bell className="w-6 h-6" />
               </div>
               <div>
-                <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-0.5">تفضيلات وإعدادات المنصة</h2>
-                <p className="text-xs text-gray-800 dark:text-gray-400 ">تخصيص تنبيهاتك والتحكم في إمكانية نقل وتصدير بياناتك</p>
+                <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-0.5">{t('settings.preferencesTitle')}</h2>
+                <p className="text-xs text-gray-800 dark:text-gray-400 ">{t('settings.preferencesDesc')}</p>
               </div>
             </div>
 
@@ -767,7 +784,7 @@ export default function Profile() {
                 <div className="p-4 rounded-xl bg-white dark:bg-gray-950/40 border border-purple-100 dark:border-[#121620] flex flex-col justify-between">
                   <div>
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs font-bold text-gray-900 dark:text-white">الإشعارات الفورية</span>
+                      <span className="text-xs font-bold text-gray-900 dark:text-white">{t('settings.realtimeNotifications')}</span>
                       <button 
                         onClick={() => handleToggleNotify(!notifyRealtime)}
                         className={`w-9 h-5 rounded-full transition-colors relative cursor-pointer ${notifyRealtime ? 'bg-indigo-600' : 'bg-gray-300 dark:bg-gray-800'}`}
@@ -776,7 +793,7 @@ export default function Profile() {
                       </button>
                     </div>
                     <p className="text-[10px] text-gray-800 dark:text-gray-400 leading-relaxed">
-                      احصل على إشعارات حية فور اكتمال توليد الفيديوهات أو المستندات الطويلة.
+                      {t('settings.realtimeNotificationsDesc')}
                     </p>
                   </div>
                 </div>
@@ -785,7 +802,7 @@ export default function Profile() {
                 <div className="p-4 rounded-xl bg-white dark:bg-gray-950/40 border border-purple-100 dark:border-[#121620] flex flex-col justify-between">
                   <div>
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs font-bold text-gray-900 dark:text-white">الملخص اليومي للبريد</span>
+                      <span className="text-xs font-bold text-gray-900 dark:text-white">{t('settings.emailDigest')}</span>
                       <button 
                         onClick={() => handleToggleEmail(!emailDigest)}
                         className={`w-9 h-5 rounded-full transition-colors relative cursor-pointer ${emailDigest ? 'bg-indigo-600' : 'bg-gray-300 dark:bg-gray-800'}`}
@@ -794,7 +811,7 @@ export default function Profile() {
                       </button>
                     </div>
                     <p className="text-[10px] text-gray-800 dark:text-gray-400 leading-relaxed">
-                      احصل على ملخص شامل عبر البريد الإلكتروني بنشاطاتك ونقاطك المستهلكة.
+                      {t('settings.emailDigestDesc')}
                     </p>
                   </div>
                 </div>
@@ -803,7 +820,7 @@ export default function Profile() {
                 <div className="p-4 rounded-xl bg-white dark:bg-gray-950/40 border border-purple-100 dark:border-[#121620] flex flex-col justify-between">
                   <div>
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs font-bold text-gray-900 dark:text-white">النسخ الاحتياطي التلقائي</span>
+                      <span className="text-xs font-bold text-gray-900 dark:text-white">{t('settings.autoBackup')}</span>
                       <button 
                         onClick={() => handleToggleBackup(!autoBackup)}
                         className={`w-9 h-5 rounded-full transition-colors relative cursor-pointer ${autoBackup ? 'bg-indigo-600' : 'bg-gray-300 dark:bg-gray-800'}`}
@@ -812,7 +829,7 @@ export default function Profile() {
                       </button>
                     </div>
                     <p className="text-[10px] text-gray-800 dark:text-gray-400 leading-relaxed">
-                      حفظ تلقائي لجميع مسوداتك ومشاريعك سحابياً لضمان عدم ضياع أي تقدم.
+                      {t('settings.autoBackupDesc')}
                     </p>
                   </div>
                 </div>
@@ -825,10 +842,10 @@ export default function Profile() {
                   <div>
                     <h3 className="text-xs font-extrabold text-gray-900 dark:text-white mb-1 flex items-center gap-1.5">
                       <Database className="w-3.5 h-3.5 text-indigo-500" />
-                      <span>تصدير البيانات ونقلها (Data Portability)</span>
+                      <span>{t('settings.dataPortabilityTitle')}</span>
                     </h3>
                     <p className="text-[10px] text-gray-800 dark:text-gray-400 leading-relaxed">
-                      قم بتنزيل نسخة كاملة من جميع محادثاتك ورسائلك ومخرجاتك الفنية بصيغة JSON قابلة للنقل للاحتفاظ بها كنسخة احتياطية غير متصلة بالإنترنت.
+                      {t('settings.dataPortabilityDesc')}
                     </p>
                   </div>
                   <button
@@ -841,7 +858,7 @@ export default function Profile() {
                     ) : (
                       <>
                         <Download className="w-4 h-4" />
-                        <span>تصدير كافة المحادثات والبيانات (JSON)</span>
+                        <span>{t('settings.exportJsonBtn')}</span>
                       </>
                     )}
                   </button>
@@ -858,8 +875,8 @@ export default function Profile() {
                 <BarChart2 className="w-6 h-6" />
               </div>
               <div>
-                <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-0.5">لوحة إحصائيات النشاط</h2>
-                <p className="text-xs text-gray-800 dark:text-gray-400 ">مجموع الملفات والإنتاج عبر استوديو ناجي</p>
+                <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-0.5">{t('settings.statsTitle')}</h2>
+                <p className="text-xs text-gray-800 dark:text-gray-400 ">{t('settings.statsDesc')}</p>
               </div>
             </div>
             
@@ -867,7 +884,7 @@ export default function Profile() {
               <div className="bg-white dark:bg-gray-950/40 border border-purple-100 dark:hover:border-gray-900 rounded-xl p-4 hover:border-purple-200 dark:hover:border-gray-800 transition-colors">
                 <div className="flex items-center gap-2 text-gray-800 dark:text-gray-400 mb-2">
                   <Folder className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-                  <span className="text-xs font-semibold">مساحات العمل</span>
+                  <span className="text-xs font-semibold">{t('settings.statWorkspaces')}</span>
                 </div>
                 <div className="text-2xl font-bold text-gray-900 dark:text-white">{stats.projects}</div>
               </div>
@@ -875,7 +892,7 @@ export default function Profile() {
               <div className="bg-white dark:bg-gray-950/40 border border-purple-100 dark:hover:border-gray-900 rounded-xl p-4 hover:border-purple-200 dark:hover:border-gray-800 transition-colors">
                 <div className="flex items-center gap-2 text-gray-800 dark:text-gray-400 mb-2">
                   <ImageIcon className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-                  <span className="text-xs font-semibold">الصور المصممة</span>
+                  <span className="text-xs font-semibold">{t('settings.statImages')}</span>
                 </div>
                 <div className="text-2xl font-bold text-gray-900 dark:text-white">{stats.images}</div>
               </div>
@@ -883,7 +900,7 @@ export default function Profile() {
               <div className="bg-white dark:bg-gray-950/40 border border-purple-100 dark:hover:border-gray-900 rounded-xl p-4 hover:border-purple-200 dark:hover:border-gray-800 transition-colors">
                 <div className="flex items-center gap-2 text-gray-800 dark:text-gray-400 mb-2">
                   <Film className="w-4 h-4 text-pink-600 dark:text-pink-400" />
-                  <span className="text-xs font-semibold">الفيديوهات</span>
+                  <span className="text-xs font-semibold">{t('settings.statVideos')}</span>
                 </div>
                 <div className="text-2xl font-bold text-gray-900 dark:text-white">{stats.videos}</div>
               </div>
@@ -891,7 +908,7 @@ export default function Profile() {
               <div className="bg-white dark:bg-gray-950/40 border border-purple-100 dark:hover:border-gray-900 rounded-xl p-4 hover:border-purple-200 dark:hover:border-gray-800 transition-colors">
                 <div className="flex items-center gap-2 text-gray-800 dark:text-gray-400 mb-2">
                   <FileText className="w-4 h-4 text-blue-400" />
-                  <span className="text-xs font-semibold">المستندات</span>
+                  <span className="text-xs font-semibold">{t('settings.statDocs')}</span>
                 </div>
                 <div className="text-2xl font-bold text-gray-900 dark:text-white">{stats.docs}</div>
               </div>
@@ -1025,7 +1042,7 @@ export default function Profile() {
           className="flex items-center justify-center gap-2 bg-red-600/10 hover:bg-red-600/20 text-red-600 dark:text-red-400 font-bold py-3 px-6 rounded-xl transition border border-red-500/10 hover:border-red-500/20 shadow-md text-xs cursor-pointer"
         >
           <Shield className="w-4 h-4 animate-pulse" />
-          <span>حذف حسابي نهائياً</span>
+          <span>{t('settings.deleteAccountTitle')}</span>
         </button>
 
         <button 
@@ -1033,13 +1050,13 @@ export default function Profile() {
           className="flex items-center justify-center gap-2 bg-gray-600/10 hover:bg-gray-600/20 text-gray-800 dark:text-gray-300 font-bold py-3 px-6 rounded-xl transition border border-gray-500/10 hover:border-gray-500/20 shadow-md text-xs cursor-pointer"
         >
           <LogOut className="w-4 h-4" />
-          <span>تسجيل الخروج الآمن من النظام</span>
+          <span>{t('settings.logoutBtn')}</span>
         </button>
       </div>
 
       {/* Account Deletion Confirmation Modal */}
       {showDeleteModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn animate-duration-200" style={{ direction: 'rtl' }}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn animate-duration-200" dir={isRtl ? 'rtl' : 'ltr'}>
           <div className="bg-[#f2f0f5] dark:bg-[#0e1014] border border-purple-200 dark:border-gray-900 rounded-2xl max-w-md w-full p-6 sm:p-8 shadow-2xl relative overflow-hidden animate-scaleIn animate-duration-200">
             <div className="absolute top-0 right-0 w-[150px] h-[150px] bg-red-600/5 rounded-full blur-2xl pointer-events-none" />
             

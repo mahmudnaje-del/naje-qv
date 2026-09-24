@@ -4,10 +4,12 @@ import { Sparkles, Image as ImageIcon, Film, FileText, ArrowLeft, ArrowRight, Ch
 import { db } from '../firebase';
 import { doc, updateDoc } from 'firebase/firestore';
 import { useAppStore } from '../store';
+import { useI18n } from '../i18n';
 import { toast } from '../toastStore';
 
 export default function OnboardingWizard() {
   const { user, setUser } = useAppStore();
+  const { t, isRtl } = useI18n();
   const [currentStep, setCurrentStep] = useState(0);
   const [direction, setDirection] = useState(1); // 1 = forward, -1 = backward
   const [loading, setLoading] = useState(false);
@@ -33,7 +35,7 @@ export default function OnboardingWizard() {
         localStorage.setItem('naje_onboarding_done_' + user.uid, 'true');
       } catch (_) {}
 
-      toast.success('تم إنهاء جولة التعريف بنجاح! رحلة موفقة مع ناجي الذكي');
+      toast.success(t('onboarding.completedToast') || 'تم إنهاء جولة التعريف بنجاح!');
     } catch (err) {
       console.error('Error completing onboarding:', err);
       toast.error('تعذّر حفظ الجولة سحابياً، يرجى المحاولة مرة أخرى.');
@@ -60,23 +62,25 @@ export default function OnboardingWizard() {
 
   const steps = [
     {
-      title: 'مرحباً بك في استوديو ناجي الذكي',
-      subtitle: 'أقوى منصة متكاملة للإنتاج الفني والتحليل الإبداعي المدعوم بالذكاء الاصطناعي الفائق.',
+      title: t('onboarding.step1Title'),
+      subtitle: t('onboarding.welcomeSubtitle'),
       icon: <Sparkles className="w-8 h-8 sm:w-10 sm:h-10 text-indigo-500" />,
       accentColor: 'indigo',
       content: (
-        <div className="space-y-3 text-right">
+        <div className="space-y-3 text-start">
           <p className="text-xs sm:text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
-            تم تصميم استوديو ناجي ليكون رفيقك الإبداعي المطلق، حيث يمكنك إنتاج المحتوى النصي المعقد، ابتكار وتعديل الصور بدقة بكسلية متناهية، وصناعة فيديوهات سينمائية من خلال واجهة محادثة ذكية وبديهية للغاية.
+            {t('onboarding.step1Desc')}
           </p>
           <div className="p-3 sm:p-4 bg-indigo-500/10 dark:bg-indigo-500/15 border border-indigo-500/20 rounded-2xl flex items-start gap-3">
             <div className="p-2 bg-indigo-500/20 rounded-xl mt-0.5 shrink-0">
               <Zap className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
             </div>
             <div>
-              <h4 className="text-xs font-extrabold text-gray-900 dark:text-white">قوة المعالجة والسرعة</h4>
+              <h4 className="text-xs font-extrabold text-gray-900 dark:text-white">
+                {t('onboarding.step1CardTitle')}
+              </h4>
               <p className="text-[11px] text-gray-600 dark:text-gray-300 mt-1 leading-relaxed">
-                نقوم باستخدام أحدث فئات نماذج التوليد السحابية لضمان تسليم أعمالك وتصميماتك في ثوانٍ معدودة وبجودة مطابقة لأرقى الاستوديوهات الفنية العالمية.
+                {t('onboarding.step1CardDesc')}
               </p>
             </div>
           </div>
@@ -84,72 +88,66 @@ export default function OnboardingWizard() {
       )
     },
     {
-      title: 'محركات الإبداع الشاملة',
-      subtitle: 'استكشف بيئات العمل المتخصصة التي تلبي كافة طموحاتك.',
+      title: t('onboarding.step2Title'),
+      subtitle: t('onboarding.step2Desc'),
       icon: <Layers className="w-8 h-8 sm:w-10 sm:h-10 text-pink-500" />,
       accentColor: 'pink',
       content: (
-        <div className="grid grid-cols-1 gap-2.5 text-right">
+        <div className="grid grid-cols-1 gap-2.5 text-start">
           <div className="p-2.5 sm:p-3 border border-gray-200 dark:border-gray-800 bg-gray-50/80 dark:bg-gray-900/50 rounded-xl flex items-start gap-2.5">
             <div className="p-2 bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 rounded-lg mt-0.5 shrink-0"><FileText className="w-4 h-4" /></div>
             <div>
-              <h4 className="text-xs font-bold text-gray-900 dark:text-white">تحليل النصوص والمستندات</h4>
-              <p className="text-[11px] text-gray-600 dark:text-gray-300 mt-0.5 leading-tight">تلخيص المستندات المعقدة وتوليد محتوى احترافي وصياغة تقارير منسقة بكفاءة غير مسبوقة.</p>
+              <h4 className="text-xs font-bold text-gray-900 dark:text-white">
+                {t('onboarding.step2Item1Title')}
+              </h4>
+              <p className="text-[11px] text-gray-600 dark:text-gray-300 mt-0.5 leading-tight">
+                {t('onboarding.step2Item1Desc')}
+              </p>
             </div>
           </div>
           <div className="p-2.5 sm:p-3 border border-gray-200 dark:border-gray-800 bg-gray-50/80 dark:bg-gray-900/50 rounded-xl flex items-start gap-2.5">
             <div className="p-2 bg-purple-500/15 text-purple-600 dark:text-purple-400 rounded-lg mt-0.5 shrink-0"><ImageIcon className="w-4 h-4" /></div>
             <div>
-              <h4 className="text-xs font-bold text-gray-900 dark:text-white">توليد الصور وتعديل التفاصيل</h4>
-              <p className="text-[11px] text-gray-600 dark:text-gray-300 mt-0.5 leading-tight">صياغة أعمال فنية، وتعديل مناطق محددة من الصور من خلال توجيه مؤشر الفأرة على التفاصيل.</p>
+              <h4 className="text-xs font-bold text-gray-900 dark:text-white">
+                {t('onboarding.step2Item2Title')}
+              </h4>
+              <p className="text-[11px] text-gray-600 dark:text-gray-300 mt-0.5 leading-tight">
+                {t('onboarding.step2Item2Desc')}
+              </p>
             </div>
           </div>
           <div className="p-2.5 sm:p-3 border border-gray-200 dark:border-gray-800 bg-gray-50/80 dark:bg-gray-900/50 rounded-xl flex items-start gap-2.5">
             <div className="p-2 bg-pink-500/15 text-pink-600 dark:text-pink-400 rounded-lg mt-0.5 shrink-0"><Film className="w-4 h-4" /></div>
             <div>
-              <h4 className="text-xs font-bold text-gray-900 dark:text-white">التوليد السينمائي للفيديو</h4>
-              <p className="text-[11px] text-gray-600 dark:text-gray-300 mt-0.5 leading-tight">صناعة مقاطع فيديو حية من النصوص أو الصور مع تحكم مطلق في مدد التوليد والنماذج.</p>
+              <h4 className="text-xs font-bold text-gray-900 dark:text-white">
+                {t('onboarding.step2Item3Title')}
+              </h4>
+              <p className="text-[11px] text-gray-600 dark:text-gray-300 mt-0.5 leading-tight">
+                {t('onboarding.step2Item3Desc')}
+              </p>
             </div>
           </div>
         </div>
       )
     },
     {
-      title: 'النقاط والاستهلاك العادل',
-      subtitle: 'كيف تضمن ناجي لك تجربة اقتصادية آمنة دون فاقد مالي.',
+      title: t('onboarding.step3Title'),
+      subtitle: t('onboarding.step3Desc'),
       icon: <ShieldCheck className="w-8 h-8 sm:w-10 sm:h-10 text-emerald-500" />,
       accentColor: 'emerald',
       content: (
-        <div className="space-y-3 text-right">
+        <div className="space-y-3 text-start">
           <p className="text-xs sm:text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
-            يعمل استوديو ناجي بنظام النقاط المرن. فكل عملية توليد أو تعديل تستهلك وزناً محدداً من النقاط بما يغطي تكاليف المعالجة السحابية لطلبك الفعلي بالضبط.
+            {t('onboarding.step3Desc')}
           </p>
           <div className="p-3 sm:p-4 bg-emerald-500/10 dark:bg-emerald-500/15 border border-emerald-500/20 rounded-2xl space-y-1.5">
-            <h4 className="text-xs font-extrabold text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5 justify-end">
-              <span>بروتوكول حماية العمليات</span>
+            <h4 className="text-xs font-extrabold text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span>{t('onboarding.step3CardTitle')}</span>
             </h4>
             <p className="text-[11px] text-gray-600 dark:text-gray-300 leading-relaxed">
-              قمنا بتطبيق بروتوكول توازن الحماية الفائقة للعمليات السحابية، حيث يتم حجز الرصيد وتحديثه فوراً وبأعلى معايير الأمان لمنع الخصم المزدوج لأي طلب إبداعي قمت بإطلاقه.
+              {t('onboarding.step3CardDesc')}
             </p>
-          </div>
-        </div>
-      )
-    },
-    {
-      title: 'أنت جاهز تماماً للانطلاق!',
-      subtitle: 'ابدأ بصنع فكرتك الكبرى الأولى الآن واشهد قوة الذكاء الاصطناعي الحقيقي.',
-      icon: <Rocket className="w-8 h-8 sm:w-10 sm:h-10 text-amber-500" />,
-      accentColor: 'amber',
-      content: (
-        <div className="space-y-4 text-center py-2">
-          <p className="text-xs sm:text-sm text-gray-700 dark:text-gray-300 leading-relaxed max-w-md mx-auto">
-            مبهر! لقد أتممت جولة التعرف السريعة على ميزات استوديو ناجي. اضغط على الزر أدناه لبدء رحلتك وتوليد مشروعك الأول.
-          </p>
-          <div className="flex flex-wrap justify-center gap-1.5 sm:gap-2">
-            <span className="px-2.5 py-1 bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 rounded-full text-[10px] font-extrabold border border-indigo-500/20">لوحة تحكم موحدة</span>
-            <span className="px-2.5 py-1 bg-purple-500/15 text-purple-700 dark:text-purple-300 rounded-full text-[10px] font-extrabold border border-purple-500/20">دعم فني فائق</span>
-            <span className="px-2.5 py-1 bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 rounded-full text-[10px] font-extrabold border border-emerald-500/20">توليد بلا قيود</span>
           </div>
         </div>
       )
@@ -157,11 +155,13 @@ export default function OnboardingWizard() {
   ];
 
   const step = steps[currentStep];
+  const NextArrow = isRtl ? ArrowLeft : ArrowRight;
+  const PrevArrow = isRtl ? ArrowRight : ArrowLeft;
 
   // Motion variants for smooth slide animation
   const slideVariants = {
     enter: (dir: number) => ({
-      x: dir > 0 ? 50 : -50,
+      x: dir > 0 ? (isRtl ? -50 : 50) : (isRtl ? 50 : -50),
       opacity: 0,
       scale: 0.96
     }),
@@ -176,7 +176,7 @@ export default function OnboardingWizard() {
       }
     },
     exit: (dir: number) => ({
-      x: dir < 0 ? 50 : -50,
+      x: dir < 0 ? (isRtl ? -50 : 50) : (isRtl ? 50 : -50),
       opacity: 0,
       scale: 0.96,
       transition: {
@@ -187,7 +187,10 @@ export default function OnboardingWizard() {
   };
 
   return (
-    <div className="fixed inset-0 z-[99999] bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 overflow-y-auto dir-rtl font-sans">
+    <div 
+      className="fixed inset-0 z-[99999] bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 overflow-y-auto font-sans"
+      dir={isRtl ? 'rtl' : 'ltr'}
+    >
       <motion.div
         initial={{ opacity: 0, scale: 0.92, y: 15 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -234,7 +237,7 @@ export default function OnboardingWizard() {
                 {step.subtitle}
               </p>
 
-              <div className="w-full text-right">
+              <div className="w-full text-start">
                 {step.content}
               </div>
             </motion.div>
@@ -250,7 +253,7 @@ export default function OnboardingWizard() {
               disabled={loading}
               className="px-5 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs sm:text-sm font-black rounded-xl transition shadow-lg shadow-indigo-500/25 cursor-pointer flex items-center gap-2 active:scale-95 disabled:opacity-50"
             >
-              <span>{loading ? 'جاري الحفظ...' : 'ابدأ الإبداع الآن'}</span>
+              <span>{loading ? t('termsModal.acceptingBtn') : t('onboarding.finishBtn')}</span>
               {loading ? (
                 <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               ) : (
@@ -262,8 +265,8 @@ export default function OnboardingWizard() {
               onClick={handleNext}
               className="px-5 sm:px-6 py-2.5 sm:py-3 bg-indigo-600 hover:bg-indigo-500 text-white text-xs sm:text-sm font-black rounded-xl transition shadow-lg shadow-indigo-500/20 cursor-pointer flex items-center gap-2 active:scale-95"
             >
-              <span>الخطوة التالية</span>
-              <ArrowLeft className="w-4 h-4" />
+              <span>{t('onboarding.nextBtn')}</span>
+              <NextArrow className="w-4 h-4" />
             </button>
           )}
 
@@ -290,15 +293,15 @@ export default function OnboardingWizard() {
               onClick={handlePrev}
               className="px-3.5 sm:px-4 py-2 sm:py-2.5 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-xl transition text-xs font-extrabold cursor-pointer flex items-center gap-1.5 active:scale-95"
             >
-              <span>السابق</span>
-              <ArrowRight className="w-4 h-4" />
+              <PrevArrow className="w-4 h-4" />
+              <span>{t('onboarding.prevBtn')}</span>
             </button>
           ) : (
             <button
               onClick={handleComplete}
               className="px-3 py-2 text-xs font-bold text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 transition cursor-pointer"
             >
-              تخطي الجولة
+              {t('common.cancel')}
             </button>
           )}
         </div>

@@ -37,10 +37,12 @@ import { PromptPreview } from '../components/najeMotion/PromptPreview';
 import { StyleTemplates } from '../components/najeMotion/StyleTemplates';
 import { Chip, FieldLabel, StudioCard } from '../components/najeMotion/StudioUi';
 import { usePricingConfig } from '../hooks/usePricingConfig';
+import { useI18n } from '../i18n';
 import { toast } from '../toastStore';
 
 export default function NajeIdent() {
   const { user, updateBalance } = useAppStore();
+  const { t, isRtl, formatNumber } = useI18n();
   const { najeAd } = usePricingConfig();
   const pointsRate = typeof najeAd?.pointsRatePerSecond === 'number' ? najeAd.pointsRatePerSecond : 2.5;
   const resMul = najeAd?.resolutionMultiplier;
@@ -98,18 +100,18 @@ export default function NajeIdent() {
       const data = snap.data();
       setJob(data);
       if (['completed', 'failed'].includes(data.status)) setBusy(false);
-      if (data.status === 'failed') setError(data.error || 'فشل الإنتاج');
+      if (data.status === 'failed') setError(data.error || t('common.operationFailed'));
       const url = data.videoUrl || data.mediaUrl;
       const doneSlot = generatingSlotRef.current;
       if (data.status === 'completed' && url && doneSlot) {
         setResults((prev) => ({ ...prev, [doneSlot]: { jobId, videoUrl: url } }));
         if (kindRef.current === 'both' && doneSlot === 'intro') {
-          toast.success('الانترو جاهز. انتقل إلى الأوترو عندما تريد.');
+          toast.success(t('najeIdent.introReadyNext'));
         }
       }
     });
     return () => unsub();
-  }, [jobId]);
+  }, [jobId, t]);
 
   const selectKind = (kind: MotionKind, preset?: HeroPresetId) => {
     if (preset) {
@@ -131,7 +133,7 @@ export default function NajeIdent() {
     const d = nextDraft || draft;
     const currentSlot = resolveSlot(d.kind, d.activePiece);
     if (!d.brandName.trim()) {
-      toast.error('اكتب اسم العلامة');
+      toast.error(t('najeIdent.visionLabel') ? t('najeIdent.subtitle') : 'Brand name required');
       return;
     }
     if (!hasFeatureAccess(user, 'najeAd')) {
@@ -139,7 +141,7 @@ export default function NajeIdent() {
       return;
     }
     if (najeAd?.enabled === false) {
-      toast.error('خدمة الإنتاج متوقفة مؤقتاً');
+      toast.error(t('common.serviceUnavailable'));
       return;
     }
     setError(null);
@@ -150,7 +152,7 @@ export default function NajeIdent() {
     if (!token) {
       setBusy(false);
       setGeneratingSlot(null);
-      toast.error('يرجى تسجيل الدخول');
+      toast.error(t('auth.signInPrompt'));
       return;
     }
     const prompt = composeMotionPrompt(d, currentSlot);
@@ -176,7 +178,7 @@ export default function NajeIdent() {
         if (data?.error && data.error !== 'feature_locked') setError(data.error);
         return;
       }
-      if (!res.ok) throw new Error(data.error || 'فشل الطلب');
+      if (!res.ok) throw new Error(data.error || t('common.error'));
       if (typeof data.newBalance === 'number') updateBalance(data.newBalance);
       if (data.jobId) {
         setJobId(data.jobId);
@@ -188,7 +190,7 @@ export default function NajeIdent() {
     } catch (e: any) {
       setBusy(false);
       setGeneratingSlot(null);
-      setError(e.message || 'حدث خطأ');
+      setError(e.message || t('common.error'));
     }
   };
 
@@ -200,20 +202,20 @@ export default function NajeIdent() {
 
   const stepLabel =
     job?.status === 'queued'
-      ? `في الانتظار (المركز ${job?.queuePosition || '…'})`
-      : job?.stepLabel || (busy ? 'جاري صناعة الهوية…' : '');
+      ? t('najeIdent.queueStatus', { position: String(job?.queuePosition || '…') })
+      : job?.stepLabel || (busy ? t('najeIdent.producingIdent') : '');
 
   const generateLabel = () => {
-    if (busy) return stepLabel || 'جاري صناعة الهوية…';
+    if (busy) return stepLabel || t('najeIdent.producingIdent');
     const piece =
-      slot === 'outro' ? 'الأوترو' : slot === 'logo' ? 'تحريك الشعار' : 'الانترو';
+      slot === 'outro' ? t('najeIdent.outroPiece') : slot === 'logo' ? t('najeIdent.logoPiece') : t('najeIdent.introPiece');
     if (draft.kind === 'both' && slot === 'intro' && !results.intro?.videoUrl) {
-      return `إنتاج الانترو أولاً — ${draft.duration}ث`;
+      return t('najeIdent.produceFirst', { duration: String(draft.duration) });
     }
     if (draft.kind === 'both' && slot === 'outro' && results.intro?.videoUrl && !results.outro?.videoUrl) {
-      return `إنتاج الأوترو — ${draft.duration}ث`;
+      return t('najeIdent.produceOutroDuration', { duration: String(draft.duration) });
     }
-    return `إنتاج ${piece} — ${draft.duration}ث`;
+    return t('najeIdent.producePieceDuration', { piece, duration: String(draft.duration) });
   };
 
   const hasResults = Object.values(results).some((r) => r?.videoUrl);
@@ -226,7 +228,7 @@ export default function NajeIdent() {
       className={`naje-ad-studio relative h-full overflow-y-auto bg-[#0b0c10] px-3 pt-4 text-[#f4efe6] sm:px-6 ${
         showHero ? 'pb-8' : 'pb-28 lg:pb-8'
       }`}
-      dir="rtl"
+      dir={isRtl ? 'rtl' : 'ltr'}
     >
       <StudioBootSplash dark />
       <FeaturePaywallModal isOpen={paywall} onClose={() => setPaywall(false)} feature="najeAd" />
@@ -235,10 +237,10 @@ export default function NajeIdent() {
         {showHero ? (
           <>
             <div className="flex justify-end">
-              <div className="rounded-2xl border border-white/10 bg-black/30 px-3 py-1.5 text-right sm:px-4 sm:py-2">
-                <div className="text-[10px] text-white/40">رصيدك</div>
+              <div className="rounded-2xl border border-white/10 bg-black/30 px-3 py-1.5 text-end sm:px-4 sm:py-2">
+                <div className="text-[10px] text-white/40">{t('najeIdent.yourBalance')}</div>
                 <div className="font-mono text-base font-black text-[#e8b86d] sm:text-lg">
-                  {(user?.balance ?? 0).toLocaleString()} نقطة
+                  {formatNumber(user?.balance ?? 0)} {t('common.pointsShort') || 'نقطة'}
                 </div>
               </div>
             </div>
@@ -255,24 +257,24 @@ export default function NajeIdent() {
                       onClick={() => setStudioEntered(false)}
                       className="mb-2 inline-flex min-h-[44px] items-center text-[11px] font-black text-white/45 hover:text-[#e8b86d]"
                     >
-                      رجوع للبداية
+                      {t('najeIdent.backToStart')}
                     </button>
                   )}
                   <div className="mb-1.5 inline-flex items-center gap-2 rounded-full border border-[#d4a574]/30 bg-[#d4a574]/10 px-2.5 py-0.5 text-[10px] font-black tracking-[0.14em] text-[#e8b86d]">
                     <Clapperboard className="h-3.5 w-3.5" /> NAJE MOTION
                   </div>
                   <h1 className="text-xl font-black leading-snug tracking-tight text-white sm:text-2xl">
-                    اصنع مقدمتك وخاتمتك بأسلوبك
+                    {t('najeIdent.title')}
                   </h1>
                   <p className="mt-1 max-w-xl text-xs leading-relaxed text-white/50">
-                    حوّل شعارك وهويتك إلى مقدمة أو خاتمة فيديو احترافية خلال دقائق.
+                    {t('najeIdent.subtitle')}
                   </p>
-                  <p className="mt-1.5 text-[11px] font-bold text-[#e8b86d]">اصنع حضورك قبل أن يبدأ المحتوى.</p>
+                  <p className="mt-1.5 text-[11px] font-bold text-[#e8b86d]">{t('najeIdent.tagline')}</p>
                 </div>
-                <div className="rounded-2xl border border-white/10 bg-black/30 px-3 py-1.5 text-right sm:px-4 sm:py-2">
-                  <div className="text-[10px] text-white/40">رصيدك</div>
+                <div className="rounded-2xl border border-white/10 bg-black/30 px-3 py-1.5 text-end sm:px-4 sm:py-2">
+                  <div className="text-[10px] text-white/40">{t('najeIdent.yourBalance')}</div>
                   <div className="font-mono text-base font-black text-[#e8b86d] sm:text-lg">
-                    {(user?.balance ?? 0).toLocaleString()} نقطة
+                    {formatNumber(user?.balance ?? 0)} {t('common.pointsShort') || 'نقطة'}
                   </div>
                 </div>
               </div>
@@ -282,7 +284,7 @@ export default function NajeIdent() {
               {draft.kind === 'both' && (
                 <div className="mt-3 rounded-2xl border border-white/8 bg-black/25 p-3">
                   <p className="mb-2 text-[10px] leading-relaxed text-white/45">
-                    الاثنان بالتتابع: نُخرج الانترو أولاً، ثم الأوترو كعملية ثانية. تبقى النتيجتان.
+                    {t('najeIdent.bothPieceDesc')}
                   </p>
                   <div className="grid grid-cols-2 gap-2">
                     <Chip
@@ -290,18 +292,18 @@ export default function NajeIdent() {
                       onClick={() => patch({ activePiece: 'intro' })}
                       className="w-full justify-center py-2.5"
                     >
-                      إخراج الانترو{results.intro?.videoUrl ? ' — جاهز' : ''}
+                      {t('najeIdent.produceIntro')}{results.intro?.videoUrl ? ` — ${t('najeIdent.ready')}` : ''}
                     </Chip>
                     <Chip
                       active={draft.activePiece === 'outro'}
                       onClick={() => patch({ activePiece: 'outro' })}
                       className="w-full justify-center py-2.5"
                     >
-                      إخراج الأوترو{results.outro?.videoUrl ? ' — جاهز' : ''}
+                      {t('najeIdent.produceOutro')}{results.outro?.videoUrl ? ` — ${t('najeIdent.ready')}` : ''}
                     </Chip>
                   </div>
                   {results.intro?.videoUrl && !results.outro?.videoUrl && draft.activePiece === 'intro' && (
-                    <p className="mt-2 text-[10px] font-bold text-[#e8b86d]">الانترو جاهز. انتقل إلى الأوترو للعملية الثانية.</p>
+                    <p className="mt-2 text-[10px] font-bold text-[#e8b86d]">{t('najeIdent.introReadyNext')}</p>
                   )}
                 </div>
               )}
@@ -313,7 +315,7 @@ export default function NajeIdent() {
                   <AlertCircle className="h-4 w-4" /> {error}
                 </span>
                 <button type="button" onClick={() => setError(null)} className="min-h-[44px] font-bold">
-                  إغلاق
+                  {t('common.close')}
                 </button>
               </div>
             )}
@@ -331,14 +333,14 @@ export default function NajeIdent() {
                 <BrandKit draft={draft} onChange={patch} />
                 <StyleTemplates styleId={draft.styleId} onSelect={(id) => setDraft((prev) => applyTemplate(prev, id))} />
                 <DirectionPanel draft={draft} slot={slot} onChange={patch} />
-                <StudioCard title="صف رؤيتك" hint="اختياري. يُلحق بتوجيه المخرج كما هو.">
-                  <FieldLabel>الرؤية</FieldLabel>
+                <StudioCard title={t('najeIdent.visionTitle')} hint={t('najeIdent.visionHint')}>
+                  <FieldLabel>{t('najeIdent.visionLabel')}</FieldLabel>
                   <textarea
                     rows={4}
                     value={draft.vision}
                     maxLength={1200}
                     onChange={(e) => patch({ vision: e.target.value })}
-                    placeholder="مثال: كشف بطيء من الظلام، الشعار يتمدد بضوء نحاسي ثم يثبت في الوسط…"
+                    placeholder={t('najeIdent.visionPlaceholder')}
                     className="w-full resize-none rounded-2xl border border-white/10 bg-black/40 p-3 text-sm text-white placeholder:text-white/30 focus:border-[#d4a574] focus:outline-none"
                   />
                 </StudioCard>
@@ -355,7 +357,7 @@ export default function NajeIdent() {
                   className="hidden min-h-[44px] w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-l from-[#d4a574] via-[#e8b86d] to-[color-mix(in_srgb,#e8b86d_70%,white)] py-3.5 text-sm font-black text-[#1a140c] shadow-[0_12px_40px_-12px_rgba(212,165,116,0.45)] disabled:opacity-50 lg:flex"
                 >
                   {busy ? <NajeThinking size={22} /> : <Sparkles className="h-4 w-4" />}
-                  {busy ? generateLabel() : `${generateLabel()} · ${points} نقطة`}
+                  {busy ? generateLabel() : `${generateLabel()} · ${formatNumber(points)} ${t('common.pointsShort') || 'نقطة'}`}
                 </button>
 
                 <Monitor
@@ -389,7 +391,7 @@ export default function NajeIdent() {
             className="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-l from-[#d4a574] via-[#e8b86d] to-[color-mix(in_srgb,#e8b86d_70%,white)] py-3.5 text-sm font-black text-[#1a140c] disabled:opacity-50"
           >
             {busy ? <NajeThinking size={22} /> : <Sparkles className="h-4 w-4" />}
-            {busy ? generateLabel() : `${generateLabel()} · ${points} نقطة`}
+            {busy ? generateLabel() : `${generateLabel()} · ${formatNumber(points)} ${t('common.pointsShort') || 'نقطة'}`}
           </button>
         </div>
       )}

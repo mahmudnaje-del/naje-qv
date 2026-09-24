@@ -10,6 +10,11 @@
           if (dark) document.documentElement.classList.add('dark');
           else document.documentElement.classList.remove('dark');
           document.documentElement.setAttribute('data-naje-color', color);
+
+          var lang = localStorage.getItem('naje_language') || localStorage.getItem('naje_locale') || 'ar';
+          var dir = lang === 'ar' ? 'rtl' : 'ltr';
+          document.documentElement.setAttribute('lang', lang);
+          document.documentElement.setAttribute('dir', dir);
         } catch (e) {}
       })();
     </script>

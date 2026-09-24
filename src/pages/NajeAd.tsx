@@ -29,6 +29,7 @@ import { CastBoard } from '../components/najeAd/CastBoard';
 import { ProControlGrid } from '../components/najeAd/ProControlGrid';
 import NajeThinking from '../components/NajeThinking';
 import StudioBootSplash from '../components/StudioBootSplash';
+import { useI18n } from '../i18n';
 
 function stripDataUrl(dataUrl: string | null | undefined): string | undefined {
   if (!dataUrl) return undefined;
@@ -48,6 +49,7 @@ function upsertKind(cards: SceneBoardCard[], kind: SceneBoardCard['kind'], patch
 
 export default function NajeAd() {
   const { user, updateBalance } = useAppStore();
+  const { isRtl, t } = useI18n();
   const { najeAd } = usePricingConfig();
   const pointsRate = typeof najeAd?.pointsRatePerSecond === 'number' ? najeAd.pointsRatePerSecond : 2.5;
   const resMul = najeAd?.resolutionMultiplier;
@@ -270,7 +272,7 @@ export default function NajeAd() {
     : activeJob?.stepLabel || (isSubmitting ? 'جاري التحضير…' : '');
 
   return (
-    <div className="naje-ad-studio relative h-full overflow-y-auto bg-[#0b0c10] px-2.5 pb-8 pt-2 text-[#f4efe6] sm:px-6 sm:py-5" dir="rtl">
+    <div className="naje-ad-studio relative h-full overflow-y-auto bg-[#0b0c10] px-2.5 pb-8 pt-2 text-[#f4efe6] sm:px-6 sm:py-5" dir={isRtl ? 'rtl' : 'ltr'}>
       <StudioBootSplash dark />
       <FeaturePaywallModal isOpen={showPaywall} onClose={() => setShowPaywall(false)} feature="najeAd" />
       <div className="mx-auto max-w-6xl space-y-3 sm:space-y-5">
@@ -280,13 +282,13 @@ export default function NajeAd() {
               <div className="mb-1.5 inline-flex items-center gap-2 rounded-full border border-[var(--naje-accent)]/30 bg-[var(--naje-accent)]/10 px-2.5 py-0.5 text-[10px] font-black tracking-[0.14em] text-[var(--naje-accent-2)]">
                 <Clapperboard className="h-3.5 w-3.5" /> NAJE AD · {NAJE_VIDEO_PRO_LABEL}
               </div>
-              <h1 className="pt-0.5 text-xl font-black leading-snug tracking-tight text-white sm:text-2xl">استوديو الإعلان المتحرك</h1>
+              <h1 className="pt-0.5 text-xl font-black leading-snug tracking-tight text-white sm:text-2xl">{t('studio.adStudio')}</h1>
               <p className="mt-1 hidden max-w-xl text-xs leading-relaxed text-white/50 sm:block">
                 {NAJE_VIDEO_PRO_LABEL} — إنتاج إعلان متحرك من المشهد والممثل والأسلوب.
               </p>
             </div>
             <div className="rounded-2xl border border-white/10 bg-black/30 px-3 py-1.5 text-right sm:px-4 sm:py-2">
-              <div className="text-[10px] text-white/40">رصيدك</div>
+              <div className="text-[10px] text-white/40">{t('studio.balance')}</div>
               <div className="font-mono text-base font-black text-[var(--naje-accent-2)] sm:text-lg">{(user?.balance ?? 0).toLocaleString()} نقطة</div>
             </div>
           </div>

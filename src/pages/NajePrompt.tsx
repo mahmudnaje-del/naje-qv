@@ -15,6 +15,7 @@ import EmptyPromptState from '../components/najePrompt/EmptyPromptState';
 import ConstraintsPinBar from '../components/najePrompt/ConstraintsPinBar';
 import RefinementTrail from '../components/najePrompt/RefinementTrail';
 import ResultCard from '../components/najePrompt/ResultCard';
+import { useI18n } from '../i18n';
 import {
   MODE_ASK_LIMIT,
   MODE_OPTIONS,
@@ -64,6 +65,7 @@ function isOpenClarification(item: ChatItem): item is ClarifyItem {
 
 export default function NajePrompt() {
   const navigate = useNavigate();
+  const { isRtl, t } = useI18n();
   const [draft, setDraft] = useState('');
   const [messages, setMessages] = useState<ChatItem[]>([]);
   const [busy, setBusy] = useState(false);
@@ -536,7 +538,7 @@ export default function NajePrompt() {
   );
 
   return (
-    <div className="relative flex h-full min-h-0 flex-col overflow-hidden bg-naje-canvas" dir="rtl">
+    <div className="relative flex h-full min-h-0 flex-col overflow-hidden bg-naje-canvas" dir={isRtl ? 'rtl' : 'ltr'}>
       <StudioBootSplash />
 
       <header className="shrink-0 px-3 pt-4 sm:px-6">
@@ -545,7 +547,7 @@ export default function NajePrompt() {
             <div>
               <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-indigo-500/30 bg-indigo-500/10 px-2.5 py-0.5 text-[10px] font-black text-indigo-600 dark:text-indigo-300">
                 <MessageSquareText className="h-3.5 w-3.5" />
-                ناجي برومبت
+                {t('studio.promptStudio')}
               </div>
               <h1 className="text-xl font-black leading-snug text-naje-ink">احكي فكرتك — ناجي يفهمها</h1>
             </div>
@@ -556,7 +558,7 @@ export default function NajePrompt() {
                 className="inline-flex min-h-11 items-center gap-1 rounded-full border border-zinc-200 px-2.5 py-1 text-[11px] font-black text-naje-muted dark:border-zinc-700"
               >
                 <Plus className="h-3 w-3" />
-                جديد
+                {t('studio.newSession')}
               </button>
             )}
           </div>

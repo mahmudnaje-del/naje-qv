@@ -1,18 +1,30 @@
 import React from 'react';
-import { Lock } from 'lucide-react';
+import { Lock, ArrowLeft, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useI18n } from '../i18n';
+import LanguageSelector from '../components/LanguageSelector';
 
 export default function PrivacyPolicy() {
+  const { t, isRtl } = useI18n();
+  const BackArrow = isRtl ? ArrowRight : ArrowLeft;
+
   return (
-    <div className="flex-1 overflow-y-auto p-6 sm:p-12 max-w-4xl mx-auto w-full font-sans scrollbar-thin">
-      <div className="bg-white dark:bg-[#0e1014] border border-gray-500 dark:border-gray-900 rounded-3xl p-8 shadow-2xl">
-        <div className="flex items-center gap-4 mb-8 border-b border-gray-500 dark:border-gray-900 pb-6">
-          <div className="w-16 h-16 bg-pink-500/10 rounded-2xl flex items-center justify-center text-pink-600 dark:text-pink-400">
+    <div 
+      className="flex-1 overflow-y-auto p-6 sm:p-12 max-w-4xl mx-auto w-full font-sans scrollbar-thin text-start"
+      dir={isRtl ? 'rtl' : 'ltr'}
+    >
+      <div className="flex justify-end mb-4">
+        <LanguageSelector />
+      </div>
+
+      <div className="bg-white dark:bg-[#0e1014] border border-gray-200 dark:border-gray-900 rounded-3xl p-8 shadow-2xl">
+        <div className="flex items-center gap-4 mb-8 border-b border-gray-200 dark:border-gray-900 pb-6">
+          <div className="w-16 h-16 bg-pink-500/10 rounded-2xl flex items-center justify-center text-pink-600 dark:text-pink-400 shrink-0">
             <Lock className="w-8 h-8" />
           </div>
           <div>
-            <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white">سياسة الخصوصية</h1>
-            <p className="text-gray-800 dark:text-gray-400 mt-2">تاريخ آخر تحديث: 15 يوليو 2026</p>
+            <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white">{t('legal.privacyTitle')}</h1>
+            <p className="text-gray-600 dark:text-gray-400 mt-2">{t('legal.lastUpdated')}: 2026-07-15</p>
           </div>
         </div>
 
@@ -46,10 +58,22 @@ export default function PrivacyPolicy() {
           </section>
 
           <section>
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">5. حقوقك</h2>
-            <p>
-              لديك الحق في طلب الوصول إلى بياناتك، وتعديلها، أو طلب حذف حسابك نهائياً من أنظمتنا عبر قسم إعدادات الحساب أو بالتواصل معنا.
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">5. حقوقك وحذف البيانات</h2>
+            <p className="mb-3">
+              لديك الحق الكامل في طلب الوصول إلى بياناتك الشخصية، أو تعديلها، أو طلب حذف حسابك وكافة البيانات المرتبطة به نهائياً من خوادمنا وقواعد بياناتنا.
             </p>
+            <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div>
+                <h3 className="text-sm font-bold text-red-600 dark:text-red-400">رابط طلب حذف الحساب والبيانات:</h3>
+                <p className="text-xs text-gray-700 dark:text-gray-300 mt-0.5">يمكنك تقديم طلب فوري لحذف الحساب وتدمير بياناتك نهائياً عبر الرابط المخصص:</p>
+              </div>
+              <Link 
+                to="/delete-account-request"
+                className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white text-xs font-bold rounded-xl transition flex-shrink-0"
+              >
+                صفحة طلب حذف الحساب
+              </Link>
+            </div>
           </section>
 
           <section className="p-5 bg-pink-500/5 dark:bg-pink-500/10 border border-pink-500/20 rounded-2xl">
@@ -70,7 +94,13 @@ export default function PrivacyPolicy() {
         </div>
         
         <div className="mt-12 flex justify-center">
-          <Link to="/" className="px-6 py-3 bg-pink-600 hover:bg-pink-500 text-white font-bold rounded-xl transition">العودة للصفحة الرئيسية</Link>
+          <Link 
+            to="/" 
+            className="inline-flex items-center gap-2 px-6 py-3 bg-pink-600 hover:bg-pink-500 text-white font-bold rounded-xl transition shadow-md shadow-pink-600/20"
+          >
+            <BackArrow className="w-4 h-4" />
+            <span>{t('legal.backHome')}</span>
+          </Link>
         </div>
       </div>
     </div>

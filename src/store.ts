@@ -12,6 +12,12 @@ import {
   isThemeUnlocked,
   type ThemeColorId,
 } from './lib/themes';
+import {
+  type SupportedLocale,
+  applyLocaleToDocument,
+  detectInitialLocale,
+  SUPPORTED_LOCALES,
+} from './i18n';
 
 let userUnsubscribe: (() => void) | null = null;
 
@@ -45,6 +51,8 @@ interface AppState {
   setThemeMode: (mode: 'light' | 'dark') => void;
   themeColor: ThemeColorId;
   setThemeColor: (color: ThemeColorId) => void;
+  language: SupportedLocale;
+  setLanguage: (lang: SupportedLocale) => void;
   maintenanceDismissed: boolean;
   setMaintenanceDismissed: (dismissed: boolean) => void;
 }
@@ -105,6 +113,22 @@ export const useAppStore = create<AppState>((set, get) => ({
     applyThemeToDocument(themeColor, get().themeMode);
     set({ themeColor });
   },
+  language: (() => {
+    const initial = detectInitialLocale();
+    applyLocaleToDocument(initial);
+    return initial;
+  })(),
+  setLanguage: (language: SupportedLocale) => {
+    try {
+      localStorage.setItem('naje_language', language);
+    } catch {}
+    applyLocaleToDocument(language);
+    const currentUser = get().user;
+    if (currentUser?.uid) {
+      setDoc(doc(db, 'users', currentUser.uid), { preferredLanguage: language }, { merge: true }).catch(() => null);
+    }
+    set({ language });
+  },
   maintenanceDismissed: false,
   setMaintenanceDismissed: (maintenanceDismissed) => set({ maintenanceDismissed }),
   initializeAuth: () => {
@@ -156,6 +180,11 @@ export const useAppStore = create<AppState>((set, get) => ({
               localStorage.setItem('naje_theme_color', resolvedColor);
             }
             applyThemeToDocument(resolvedColor, get().themeMode);
+
+            const savedLanguage = userData.preferredLanguage;
+            if (savedLanguage && SUPPORTED_LOCALES.includes(savedLanguage) && savedLanguage !== get().language) {
+              get().setLanguage(savedLanguage);
+            }
 
             set({ 
               user: { 

@@ -33,6 +33,7 @@ import { CvScanOverlay } from '../components/najeCv/CvScanOverlay';
 import { Box, Field, ghostGoldBtn, goldBtn, inputCls } from '../components/najeCv/cvUi';
 import { exportCvDocx, exportCvPdf, fileBase } from '../lib/cvExport';
 import { askNaje } from '../lib/askNaje';
+import { useI18n } from '../i18n';
 import {
   ACCENT_PRESETS,
   appendSkill,
@@ -83,6 +84,7 @@ function initialGate(cv: CvData): Gate {
 }
 
 export default function NajeCv() {
+  const { isRtl, t } = useI18n();
   const [cv, setCv] = useState<CvData>(() => {
     try {
       const raw = localStorage.getItem(CV_STORAGE_KEY);
@@ -370,7 +372,7 @@ export default function NajeCv() {
   };
 
   return (
-    <div className="naje-cv-studio relative h-full overflow-x-hidden overflow-y-auto bg-[#0b1220] px-2.5 pb-10 pt-2 text-[#f3ead8] sm:px-6" dir="rtl">
+    <div className="naje-cv-studio relative h-full overflow-x-hidden overflow-y-auto bg-[#0b1220] px-2.5 pb-10 pt-2 text-[#f3ead8] sm:px-6" dir={isRtl ? 'rtl' : 'ltr'}>
       <StudioBootSplash dark />
 
       {gate !== 'studio' && (
@@ -494,9 +496,9 @@ export default function NajeCv() {
           <div className="grid grid-cols-2 gap-1 rounded-2xl border border-white/10 bg-black/30 p-1 sm:hidden">
             {(
               [
-                ['build', 'بناء'],
-                ['preview', 'معاينة'],
-                ['coach', 'المدرب'],
+                ['build', t('studio.buildTab')],
+                ['preview', t('studio.previewTab')],
+                ['coach', t('studio.coachTab')],
               ] as const
             ).map(([id, label]) => (
               <button
@@ -514,9 +516,9 @@ export default function NajeCv() {
           <div className="hidden gap-1 rounded-2xl border border-white/10 bg-black/30 p-1 sm:flex">
             {(
               [
-                ['build', 'بناء'],
-                ['preview', 'معاينة'],
-                ['coach', 'المدرب'],
+                ['build', t('studio.buildTab')],
+                ['preview', t('studio.previewTab')],
+                ['coach', t('studio.coachTab')],
               ] as const
             ).map(([id, label]) => (
               <button

@@ -21,6 +21,7 @@ import StudioHeader from '../components/StudioHeader';
 import FeaturePaywallModal from '../components/FeaturePaywallModal';
 import { hasFeatureAccess } from '../lib/featureAccess';
 import { readNajeSse } from '../lib/sseRead';
+import { useI18n } from '../i18n';
 
 type Tab = 'code' | 'chat';
 type TreeFile = { path: string; language: string; bytes: number; truncated?: boolean };
@@ -37,6 +38,7 @@ const LS_WS = 'naje-developer-workspace';
 
 export default function NajeDeveloper() {
   const { user, sidebarOpen, setSidebarOpen, updateBalance, setNewChatModalOpen } = useAppStore();
+  const { isRtl, t } = useI18n();
   const [searchParams, setSearchParams] = useSearchParams();
   const chatId = searchParams.get('chatId');
 
@@ -458,12 +460,12 @@ export default function NajeDeveloper() {
   };
 
   return (
-    <div className="flex-1 flex flex-col h-full min-h-0 bg-naje-canvas overflow-hidden" dir="rtl">
+    <div className="flex-1 flex flex-col h-full min-h-0 bg-naje-canvas overflow-hidden" dir={isRtl ? 'rtl' : 'ltr'}>
       <FeaturePaywallModal isOpen={showPaywall} onClose={() => setShowPaywall(false)} feature="najeDeveloper" />
 
       <StudioHeader
         title={chatSessionTitle || 'Naje Developer'}
-        badge="مساحة الكود"
+        badge={t('studio.codeSpace')}
         subtitle={tree.length > 0 ? `الأرشيف: ${fileName} (${tree.length} ملف)` : 'فحص وتعديل وتطوير أرشيف الموقع والبرمجيات'}
         icon={Code2}
         iconColorClass="text-sky-600 dark:text-sky-400"
@@ -479,10 +481,10 @@ export default function NajeDeveloper() {
                   ? 'bg-white dark:bg-gray-800 text-sky-600 dark:text-sky-400 shadow-xs' 
                   : 'text-gray-500 hover:text-gray-800 dark:hover:text-white'
               }`}
-              title="الكود والملفات"
+              title={t('studio.codeTab')}
             >
               <Code2 className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">الكود</span>
+              <span className="hidden sm:inline">{t('studio.codeTab')}</span>
             </button>
 
             <button
@@ -492,10 +494,10 @@ export default function NajeDeveloper() {
                   ? 'bg-white dark:bg-gray-800 text-sky-600 dark:text-sky-400 shadow-xs' 
                   : 'text-gray-500 hover:text-gray-800 dark:hover:text-white'
               }`}
-              title="الدردشة والمناقشة"
+              title={t('studio.chatTab')}
             >
               <MessageSquare className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">الدردشة</span>
+              <span className="hidden sm:inline">{t('studio.chatTab')}</span>
             </button>
           </div>
         }

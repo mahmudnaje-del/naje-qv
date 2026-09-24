@@ -41,6 +41,8 @@ import { toast } from '../toastStore';
 import NotificationDropdown from '../components/NotificationDropdown';
 import EmailVerificationBanner from '../components/EmailVerificationBanner';
 import BalanceTopDropdown from '../components/BalanceTopDropdown';
+import LanguageSelector from '../components/LanguageSelector';
+import { useI18n } from '../i18n';
 
 function useResolvedMediaSrc(mediaUrl: string | undefined, defaultMime = 'image/jpeg') {
   const [src, setSrc] = useState<string | null>(null);
@@ -241,6 +243,7 @@ export default function Dashboard() {
   } = useAppStore();
   const navigate = useNavigate();
   const location = useLocation();
+  const { t, isRtl, locale } = useI18n();
 
   const [projects, setProjects] = useState<any[]>([]);
   const [chats, setChats] = useState<any[]>([]);
@@ -423,12 +426,12 @@ export default function Dashboard() {
       <div className="flex items-center justify-between p-4 pb-2 border-b border-slate-200/80 dark:border-slate-900/60">
         <Link to="/" onClick={() => { setActiveProjectId(null); setUserGalleriesOpen('none'); }} className="flex items-center gap-2 group px-1">
           <NajeLogo size="sm" className="group-hover:scale-105 transition-all" />
-          <span className="font-extrabold text-xs text-slate-900 dark:text-white group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">استوديو ناجي</span>
+          <span className="font-extrabold text-xs text-slate-900 dark:text-white group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">{t('nav.brandTitle')}</span>
         </Link>
         <button
           onClick={() => setSidebarOpen(false)}
           className="p-1.5 rounded-xl text-gray-800 dark:text-purple-100 dark:hover:text-white hover:text-gray-900 hover:bg-white dark:hover:bg-gray-900 transition flex items-center justify-center cursor-pointer active:scale-95"
-          title="طي القائمة الجانبية"
+          title={t('nav.collapseSidebar')}
         >
           <PanelRight className="w-4 h-4" />
         </button>
@@ -451,14 +454,14 @@ export default function Dashboard() {
                 </div>
                 <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-green-500 border-2 border-white dark:border-[#11141c]"></span>
               </div>
-              <div className="flex flex-col min-w-0 text-right leading-tight">
+              <div className="flex flex-col min-w-0 text-start leading-tight">
                 <span className="text-xs font-extrabold text-slate-900 dark:text-white group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors truncate leading-tight">
-                  {user?.displayName || 'مبدع ناجي'}
+                  {user?.displayName || (locale === 'ar' ? 'مبدع ناجي' : 'NAJE Creator')}
                 </span>
                 <span className="text-[9px] text-slate-500 dark:text-slate-400 truncate flex items-center gap-1 mt-0.5 leading-tight">
                   <span>{user?.email}</span>
                   <span>•</span>
-                  <span className="text-purple-600 dark:text-purple-400 font-extrabold font-sans bg-purple-50 dark:bg-purple-950/60 px-1.5 py-0.5 rounded border border-purple-100 dark:border-purple-900/40 leading-none">{Number((user?.balance || 0).toFixed(2))} ن</span>
+                  <span className="text-purple-600 dark:text-purple-400 font-extrabold font-sans bg-purple-50 dark:bg-purple-950/60 px-1.5 py-0.5 rounded border border-purple-100 dark:border-purple-900/40 leading-none">{Number((user?.balance || 0).toFixed(2))} {t('common.pointsShort')}</span>
                 </span>
               </div>
             </div>
@@ -473,7 +476,7 @@ export default function Dashboard() {
             className="w-full h-11 md:h-10 px-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-xl text-xs font-extrabold shadow-md shadow-purple-500/10 hover:shadow-purple-500/20 transition-all flex items-center justify-center gap-2 cursor-pointer border border-transparent active:scale-[0.98]"
           >
             <Plus className="w-4 h-4 text-white" />
-            <span>مساحة دردشة جديدة</span>
+            <span>{t('nav.newChatSpace')}</span>
           </button>
         </div>
 
@@ -491,7 +494,7 @@ export default function Dashboard() {
           >
             <div className="flex items-center gap-2.5">
               <Folder className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-              <span>استديو ناجي</span>
+              <span>{t('nav.home')}</span>
             </div>
             {projects.length > 0 && (
               <span className="text-[10px] bg-[#f2f0f5] dark:bg-slate-900 text-purple-600 dark:text-purple-400 font-sans font-bold px-2 py-0.5 rounded-full border border-purple-200 dark:border-purple-500/20">
@@ -532,7 +535,7 @@ export default function Dashboard() {
           >
             <div className="flex items-center gap-2.5">
               <Code2 className="w-4 h-4 text-sky-500" />
-              <span>ناجي المطور</span>
+              <span>{t('nav.najeDeveloper')}</span>
             </div>
             <span className="text-[9px] bg-sky-500/10 text-sky-600 dark:text-sky-400 font-extrabold px-1.5 py-0.5 rounded border border-sky-500/20">
               $10
@@ -555,7 +558,7 @@ export default function Dashboard() {
           >
             <div className="flex items-center gap-2.5">
               <BookOpen className="w-4 h-4 text-emerald-500" />
-              <span>ناجي من مصادرك</span>
+              <span>{t('nav.najeSource')}</span>
             </div>
             <span className="text-[9px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-extrabold px-1.5 py-0.5 rounded border border-emerald-500/20">
               $5
@@ -574,7 +577,7 @@ export default function Dashboard() {
           >
             <div className="flex items-center gap-2.5">
               <Sparkles className="w-4 h-4 text-amber-500" />
-              <span>استوديو التصميم الإبداعي</span>
+              <span>{t('nav.creativeStudio')}</span>
             </div>
           </Link>
 
@@ -590,7 +593,7 @@ export default function Dashboard() {
           >
             <div className="flex items-center gap-2.5">
               <Film className="w-4 h-4 text-indigo-500" />
-              <span>محرك الفيديو (NAJI Ad)</span>
+              <span>{t('nav.najeAd')}</span>
             </div>
           </Link>
 
@@ -606,7 +609,7 @@ export default function Dashboard() {
           >
             <div className="flex items-center gap-2.5">
               <MessageSquare className="w-4 h-4 text-violet-500" />
-              <span>ناجي برومبت</span>
+              <span>{t('nav.najePrompt')}</span>
             </div>
           </Link>
 
@@ -622,7 +625,7 @@ export default function Dashboard() {
           >
             <div className="flex items-center gap-2.5">
               <Clapperboard className="w-4 h-4 text-amber-500" />
-              <span>استوديو الحركة</span>
+              <span>{t('nav.najeMotion')}</span>
             </div>
           </Link>
 
@@ -638,31 +641,31 @@ export default function Dashboard() {
           >
             <div className="flex items-center gap-2.5">
               <FileText className="w-4 h-4 text-amber-600" />
-              <span>سيرتك بواسطة ناجي</span>
+              <span>{t('nav.najeCv')}</span>
             </div>
           </Link>
 
           <button 
             onClick={() => handleCreateNewChat('voice')}
             className={cn(
-              "w-full h-11 md:h-9 flex items-center justify-between px-3 rounded-xl text-xs font-bold transition-all border border-transparent cursor-pointer text-right",
+              "w-full h-11 md:h-9 flex items-center justify-between px-3 rounded-xl text-xs font-bold transition-all border border-transparent cursor-pointer text-start",
               "text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-900/60"
             )}
           >
             <div className="flex items-center gap-2.5">
               <Mic2 className="w-4 h-4 text-emerald-500 shrink-0" />
-              <span>الدردشة الصوتية</span>
+              <span>{t('nav.voiceChat')}</span>
             </div>
           </button>
         </div>
 
         {/* Group 4: Library */}
         <div className="space-y-1">
-          <h3 className="text-[10px] font-extrabold text-slate-850 dark:text-purple-300 uppercase px-3 tracking-wider text-right border-b border-slate-100 dark:border-slate-900/40 pb-1 mb-1">المكتبة</h3>
+          <h3 className="text-[10px] font-extrabold text-slate-850 dark:text-purple-300 uppercase px-3 tracking-wider text-start border-b border-slate-100 dark:border-slate-900/40 pb-1 mb-1">{t('nav.library')}</h3>
           <button 
             onClick={() => { setSidebarOpen(false); setUserGalleriesOpen('images'); }}
             className={cn(
-              "w-full h-11 md:h-9 flex items-center justify-between px-3 rounded-xl text-xs font-bold transition-all border border-transparent text-right cursor-pointer",
+              "w-full h-11 md:h-9 flex items-center justify-between px-3 rounded-xl text-xs font-bold transition-all border border-transparent text-start cursor-pointer",
               userGalleriesOpen === 'images'
                 ? "bg-white dark:bg-purple-950/45 text-purple-950 dark:text-purple-200 border border-purple-300 dark:border-purple-500/40 shadow-md shadow-purple-500/10 font-extrabold" 
                 : "text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-900/60"
@@ -670,7 +673,7 @@ export default function Dashboard() {
           >
             <div className="flex items-center gap-2.5">
               <ImageIcon className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
-              <span>الصور</span>
+              <span>{t('nav.images')}</span>
             </div>
             {imagesList.length > 0 && (
               <span className="text-[10px] bg-[#f2f0f5] dark:bg-slate-900 text-slate-700 dark:text-slate-300 px-2 py-0.5 rounded-full font-sans border border-slate-200 dark:border-slate-800">{imagesList.length}</span>
@@ -680,7 +683,7 @@ export default function Dashboard() {
           <button 
             onClick={() => { setSidebarOpen(false); setUserGalleriesOpen('videos'); }}
             className={cn(
-              "w-full h-11 md:h-9 flex items-center justify-between px-3 rounded-xl text-xs font-bold transition-all border border-transparent text-right cursor-pointer",
+              "w-full h-11 md:h-9 flex items-center justify-between px-3 rounded-xl text-xs font-bold transition-all border border-transparent text-start cursor-pointer",
               userGalleriesOpen === 'videos'
                 ? "bg-white dark:bg-purple-950/45 text-purple-955 dark:text-purple-200 border border-purple-300 dark:border-purple-500/40 shadow-md shadow-purple-500/10 font-extrabold" 
                 : "text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-900/60"
@@ -688,7 +691,7 @@ export default function Dashboard() {
           >
             <div className="flex items-center gap-2.5">
               <Film className="w-3.5 h-3.5 text-pink-600 dark:text-pink-400" />
-              <span>الفيديوهات</span>
+              <span>{t('nav.videos')}</span>
             </div>
             {videosList.length > 0 && (
               <span className="text-[10px] bg-[#f2f0f5] dark:bg-slate-900 text-slate-700 dark:text-slate-300 px-2 py-0.5 rounded-full font-sans border border-slate-200 dark:border-slate-800">{videosList.length}</span>
@@ -710,14 +713,14 @@ export default function Dashboard() {
           >
             <div className="flex items-center gap-2.5">
               <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
-              <span>المفضلة</span>
+              <span>{t('nav.favorites')}</span>
             </div>
           </Link>
         </div>
 
         {/* Group 6: Recent Chats */}
         <div className="space-y-1">
-          <h3 className="text-[10px] font-extrabold text-slate-850 dark:text-purple-300 uppercase px-3 tracking-wider text-right border-b border-slate-100 dark:border-slate-900/40 pb-1 mb-1">الدردشات الأخيرة</h3>
+          <h3 className="text-[10px] font-extrabold text-slate-850 dark:text-purple-300 uppercase px-3 tracking-wider text-start border-b border-slate-100 dark:border-slate-900/40 pb-1 mb-1">{t('nav.recentChats')}</h3>
           
           {activeProjectId && (
             <div className="mx-1 my-1.5 p-2 bg-purple-500/5 dark:bg-purple-500/10 border border-purple-200 dark:border-purple-500/20 rounded-xl flex items-center justify-between gap-2 shadow-sm">
@@ -848,10 +851,10 @@ export default function Dashboard() {
         >
           <div className="flex items-center gap-2.5">
             <Coins className="w-4 h-4 text-amber-500" />
-            <span>شراء الرصيد</span>
+            <span>{t('nav.store')}</span>
           </div>
           <span className="text-[9px] bg-amber-500/15 text-amber-600 dark:text-amber-400 font-bold px-1.5 py-0.5 rounded border border-amber-500/25">
-            المتجر
+            {t('nav.storeBadge')}
           </span>
         </Link>
         {user?.isAdmin && (
@@ -861,11 +864,11 @@ export default function Dashboard() {
             className="w-full h-10 md:h-9 flex items-center gap-2.5 px-3 rounded-xl text-xs font-black text-purple-700 dark:text-purple-300 hover:bg-purple-600 hover:text-white dark:hover:bg-purple-900 dark:hover:text-white transition border border-purple-300 dark:border-purple-800/60 bg-purple-50/50 dark:bg-purple-950/30 shadow-sm"
           >
             <Shield className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-            <span>لوحة الإدارة</span>
+            <span>{t('nav.adminPanel')}</span>
           </Link>
         )}
         <Link 
-          to="/settings"
+          to="/settings" 
           onClick={() => { setSidebarOpen(false); setUserGalleriesOpen('none'); }}
           className={cn(
             "w-full h-10 md:h-9 flex items-center gap-2.5 px-3 rounded-xl text-xs font-extrabold transition cursor-pointer border border-transparent",
@@ -875,8 +878,17 @@ export default function Dashboard() {
           )}
         >
           <User className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-          <span>الإعدادات</span>
+          <span>{t('nav.settings')}</span>
         </Link>
+
+        {/* Legal & Account Deletion Quick Links */}
+        <div className="pt-2 px-1 flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400 border-t border-slate-200/60 dark:border-white/5">
+          <Link to="/Terms-of-Service" onClick={() => setSidebarOpen(false)} className="hover:text-purple-600 dark:hover:text-purple-400 transition">{t('nav.terms')}</Link>
+          <span>•</span>
+          <Link to="/Privacy-Policy" onClick={() => setSidebarOpen(false)} className="hover:text-purple-600 dark:hover:text-purple-400 transition">{t('nav.privacy')}</Link>
+          <span>•</span>
+          <Link to="/delete-account-request" onClick={() => setSidebarOpen(false)} className="text-red-500/90 hover:text-red-500 font-semibold transition">{t('nav.deleteAccount')}</Link>
+        </div>
       </div>
 
     </div>
@@ -1070,7 +1082,7 @@ export default function Dashboard() {
               <button 
                 onClick={() => setSidebarOpen(!sidebarOpen)}
                 className={`p-1.5 rounded-xl transition flex items-center justify-center cursor-pointer ${location.pathname.includes('/creative') || location.pathname.includes('naje-ad') || location.pathname.includes('naje-ident') || location.pathname.includes('naje-cv') ? 'text-slate-300 hover:text-white hover:bg-white/10' : 'text-gray-800 dark:text-purple-100 dark:hover:text-white hover:text-gray-900 hover:bg-white dark:hover:bg-gray-900'}`}
-                title="توسيع/طي القائمة"
+                title={sidebarOpen ? t('nav.collapseSidebar') : t('nav.expandSidebar')}
               >
                 <PanelRight className="w-5 h-5" />
               </button>
@@ -1078,12 +1090,13 @@ export default function Dashboard() {
               {/* Brand Logo & Name */}
               <Link to="/" onClick={() => { setActiveProjectId(null); setUserGalleriesOpen('none'); }} className="flex items-center gap-2 group shrink-0">
                 <NajeLogo size="md" className="group-hover:scale-105 transition-all shrink-0" />
-                <span className={`font-extrabold text-sm whitespace-nowrap shrink-0 transition-colors ${location.pathname.includes('/creative') || location.pathname.includes('naje-ad') || location.pathname.includes('naje-ident') || location.pathname.includes('naje-cv') ? 'text-white group-hover:text-amber-400' : 'text-gray-900 dark:text-white group-hover:text-indigo-600 dark:text-indigo-400'}`}>استوديو ناجي</span>
+                <span className={`font-extrabold text-sm whitespace-nowrap shrink-0 transition-colors ${location.pathname.includes('/creative') || location.pathname.includes('naje-ad') || location.pathname.includes('naje-ident') || location.pathname.includes('naje-cv') ? 'text-white group-hover:text-amber-400' : 'text-gray-900 dark:text-white group-hover:text-indigo-600 dark:text-indigo-400'}`}>{t('nav.brandTitle')}</span>
               </Link>
             </div>
             
-            {/* User Name + Balance + New Chat Button */}
-            <div className="flex items-center gap-3">
+            {/* User Name + Balance + Language + New Chat Button */}
+            <div className="flex items-center gap-2 sm:gap-3">
+              <LanguageSelector variant="compact" />
               <NotificationDropdown />
               <BalanceTopDropdown isCreativeMode={location.pathname.includes('/creative') || location.pathname.includes('naje-ad') || location.pathname.includes('naje-ident') || location.pathname.includes('naje-cv')} />
 
@@ -1091,7 +1104,7 @@ export default function Dashboard() {
               <button 
                 onClick={() => setNewChatModalOpen(true)}
                 className={`p-2 rounded-xl transition cursor-pointer flex items-center justify-center shadow-lg active:scale-[0.98] ${location.pathname.includes('naje-cv') ? 'bg-[#c4a35a] hover:bg-[#e8c36a] text-[#1a140c] shadow-[0_8px_18px_-8px_rgba(196,163,90,0.55)]' : location.pathname.includes('naje-ad') || location.pathname.includes('naje-ident') ? 'bg-[#d4a574] hover:bg-[#e8b86d] text-[#1a140c] shadow-[0_8px_18px_-8px_rgba(212,165,116,0.55)]' : location.pathname.includes('/creative') ? 'bg-amber-600 hover:bg-amber-500 text-white shadow-amber-500/15' : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-500/15'}`}
-                title="دردشة جديدة"
+                title={t('nav.newChatSpace')}
               >
                 <Plus className="w-4 h-4" />
               </button>

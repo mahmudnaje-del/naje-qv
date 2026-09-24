@@ -16,6 +16,7 @@ import { auth, db } from '../../firebase';
 import { collection, addDoc } from 'firebase/firestore';
 import { toast } from '../../toastStore';
 import { useAppStore } from '../../store';
+import { useI18n } from '../../i18n';
 import { fetchWithRetry } from '../../lib/fetchWithRetry';
 
 interface UiChatPanelProps {
@@ -95,6 +96,7 @@ export default function UiChatPanel({
   setActiveHistoryDocId,
   setActiveHistoryContent,
 }: UiChatPanelProps) {
+  const { isRtl, t } = useI18n();
   // Guard against infinite auto-repair loops (same runtime error re-firing forever).
   const autoRepairCountRef = React.useRef(0);
   const lastRepairSigRef = React.useRef<string>('');
@@ -106,7 +108,7 @@ export default function UiChatPanel({
     }
   }, [messages]);
   return (
-    <div className="flex-1 flex flex-col lg:flex-row min-h-0 overflow-hidden relative">
+    <div className="flex-1 flex flex-col lg:flex-row min-h-0 overflow-hidden relative" dir={isRtl ? 'rtl' : 'ltr'}>
       {/* Left Pane: Chat Stream + Dedicated Input */}
       <div className={cn(
         "flex flex-col h-full bg-transparent transition-all duration-200 w-full",
@@ -325,7 +327,7 @@ export default function UiChatPanel({
                     handleSend(e); 
                   } 
                 }}
-                placeholder={selectedUiElement ? "اكتب طلب التعديل على هذا العنصر..." : "صف واجهة المستخدم..."}
+                placeholder={selectedUiElement ? "اكتب طلب التعديل على هذا العنصر..." : t('chat.inputPlaceholder')}
                 className="flex-1 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl px-3 py-2 text-xs focus:border-indigo-500 outline-none resize-none min-h-[38px] max-h-[100px] text-gray-900 dark:text-white"
                 rows={1}
               />
@@ -337,7 +339,7 @@ export default function UiChatPanel({
                     setLoading(false);
                   }}
                   className="p-2.5 bg-rose-500 hover:bg-rose-600 text-white rounded-xl font-bold transition flex items-center justify-center cursor-pointer active:scale-95"
-                  title="إيقاف"
+                  title={t('chat.stopGeneration')}
                 >
                   <div className="w-2.5 h-2.5 bg-white rounded-[2px]" />
                 </button>
@@ -346,6 +348,7 @@ export default function UiChatPanel({
                   type="submit"
                   disabled={!input.trim() && files.length === 0}
                   className="p-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl disabled:opacity-40 font-bold transition flex items-center justify-center cursor-pointer active:scale-95"
+                  title={t('chat.sendTooltip')}
                 >
                   <ArrowUp className="w-4 h-4" />
                 </button>

@@ -19,6 +19,7 @@ import StudioHeader from '../components/StudioHeader';
 import FeaturePaywallModal from '../components/FeaturePaywallModal';
 import { hasFeatureAccess } from '../lib/featureAccess';
 import { readNajeSse } from '../lib/sseRead';
+import { useI18n } from '../i18n';
 
 type Tab = 'sources' | 'chat';
 type SourceItem = { id: string; type: string; title: string; url?: string; excerpt?: string };
@@ -36,6 +37,7 @@ const LS_WS = 'naje-source-workspace';
 
 export default function NajeSource() {
   const { user, sidebarOpen, setSidebarOpen, updateBalance, setNewChatModalOpen } = useAppStore();
+  const { isRtl, t } = useI18n();
   const [searchParams, setSearchParams] = useSearchParams();
   const chatId = searchParams.get('chatId');
 
@@ -438,12 +440,12 @@ export default function NajeSource() {
   };
 
   return (
-    <div className="flex-1 flex flex-col h-full min-h-0 bg-naje-canvas overflow-hidden" dir="rtl">
+    <div className="flex-1 flex flex-col h-full min-h-0 bg-naje-canvas overflow-hidden" dir={isRtl ? 'rtl' : 'ltr'}>
       <FeaturePaywallModal isOpen={showPaywall} onClose={() => setShowPaywall(false)} feature="najeSource" />
 
       <StudioHeader
         title={chatSessionTitle || 'Naje Source'}
-        badge="مصادر موثقة"
+        badge={t('studio.verifiedSources')}
         subtitle={items.length > 0 ? `${items.length} مصدر نشط · استجابة صارمة وموثقة` : 'ما في المصدر ما ينقال · بحث حازم وموثق'}
         icon={BookOpen}
         iconColorClass="text-emerald-600 dark:text-emerald-400"
@@ -459,10 +461,10 @@ export default function NajeSource() {
                   ? 'bg-white dark:bg-gray-800 text-emerald-600 dark:text-emerald-400 shadow-xs' 
                   : 'text-gray-500 hover:text-gray-800 dark:hover:text-white'
               }`}
-              title="المصادر المعتمدة"
+              title={t('studio.sourcesTab')}
             >
               <BookOpen className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">المصادر</span>
+              <span className="hidden sm:inline">{t('studio.sourcesTab')}</span>
             </button>
 
             <button
@@ -472,10 +474,10 @@ export default function NajeSource() {
                   ? 'bg-white dark:bg-gray-800 text-emerald-600 dark:text-emerald-400 shadow-xs' 
                   : 'text-gray-500 hover:text-gray-800 dark:hover:text-white'
               }`}
-              title="الدردشة والمناقشة"
+              title={t('studio.chatTab')}
             >
               <MessageSquare className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">الدردشة</span>
+              <span className="hidden sm:inline">{t('studio.chatTab')}</span>
             </button>
           </div>
         }

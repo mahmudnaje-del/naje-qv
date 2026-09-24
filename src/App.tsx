@@ -1,6 +1,7 @@
 import React, { useEffect, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAppStore } from './store';
+import { useI18n, applyLocaleToDocument } from './i18n';
 import { applyThemeToDocument } from './lib/themes';
 import { lazyWithRetry } from './lib/lazyRetry';
 import Auth from './pages/Auth';
@@ -36,11 +37,16 @@ const AuthAction = lazyWithRetry(() => import('./pages/AuthAction'));
 const NotFound = lazyWithRetry(() => import('./pages/NotFound'));
 
 export default function App() {
-  const { initializeAuth, loadingAuth, user, themeMode, themeColor } = useAppStore();
+  const { initializeAuth, loadingAuth, user, themeMode, themeColor, language } = useAppStore();
+  const { t, isRtl, locale } = useI18n();
 
   useEffect(() => {
     applyThemeToDocument(themeColor, themeMode);
   }, [themeMode, themeColor]);
+
+  useEffect(() => {
+    applyLocaleToDocument(language || locale || 'ar');
+  }, [language, locale]);
 
   useEffect(() => {
     initializeAuth();
@@ -48,9 +54,14 @@ export default function App() {
 
   if (loadingAuth) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-3 bg-naje-canvas">
+      <div 
+        className="min-h-screen flex flex-col items-center justify-center gap-3 bg-naje-canvas"
+        dir={isRtl ? 'rtl' : 'ltr'}
+      >
         <NajeThinking size={56} />
-        <span className="text-xs font-black text-indigo-600 dark:text-indigo-300">ناجي يفكّر…</span>
+        <span className="text-xs font-black text-indigo-600 dark:text-indigo-300">
+          {t('chat.thinkingStatus') || 'ناجي يفكّر…'}
+        </span>
       </div>
     );
   }

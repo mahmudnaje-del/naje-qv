@@ -29,6 +29,8 @@ import {
   AmexBadge,
   PayPalBadge,
 } from '../components/PaymentBadges';
+import { useI18n } from '../i18n';
+import LanguageSelector from '../components/LanguageSelector';
 
 declare global {
   interface Window {
@@ -130,14 +132,14 @@ const FALLBACK_PACKAGES: StorePackage[] = [
 
 export default function Store() {
   const { user, updateBalance } = useAppStore();
+  const { t, locale, isRtl } = useI18n();
   const [searchParams] = useSearchParams();
   const highlightParam = searchParams.get('highlight');
-  const [lang, setLang] = useState<'ar' | 'en'>('ar');
   const [packages, setPackages] = useState<StorePackage[]>(FALLBACK_PACKAGES);
   const [clientId, setClientId] = useState<string>('');
   const [mode, setMode] = useState<'sandbox' | 'live'>('sandbox');
   const [selectedId, setSelectedId] = useState<string>(
-    highlightParam && PACKAGE_CONTENT[highlightParam] ? highlightParam : 'pkg_10'
+    highlightParam && (highlightParam === 'pkg_5' || highlightParam === 'pkg_10' || highlightParam === 'pkg_20') ? highlightParam : 'pkg_10'
   );
   const [sdkLoading, setSdkLoading] = useState<boolean>(true);
   const [sdkError, setSdkError] = useState<string | null>(null);
@@ -145,6 +147,55 @@ export default function Store() {
   const [successInfo, setSuccessInfo] = useState<{ points: number; newBalance: number } | null>(null);
   const buttonContainerRef = useRef<HTMLDivElement>(null);
   const selectedIdRef = useRef<string>(selectedId);
+
+  const getPackageDetails = (pkgId: string) => {
+    if (pkgId === 'pkg_5') {
+      return {
+        name: t('store.sparkName'),
+        tagline: t('store.sparkTagline'),
+        iconType: 'sparkles' as const,
+        accent: 'slate',
+        badge: undefined,
+        features: [
+          t('store.sparkFeat1'),
+          t('store.sparkFeat2'),
+          t('store.sparkFeat3'),
+          t('store.sparkFeat4'),
+          t('store.sparkFeat5'),
+        ],
+      };
+    }
+    if (pkgId === 'pkg_10') {
+      return {
+        name: t('store.innovatorName'),
+        tagline: t('store.innovatorTagline'),
+        iconType: 'zap' as const,
+        accent: 'amber',
+        badge: t('store.mostPopularBadge'),
+        features: [
+          t('store.innovatorFeat1'),
+          t('store.innovatorFeat2'),
+          t('store.innovatorFeat3'),
+          t('store.innovatorFeat4'),
+          t('store.innovatorFeat5'),
+        ],
+      };
+    }
+    return {
+      name: t('store.legendName'),
+      tagline: t('store.legendTagline'),
+      iconType: 'crown' as const,
+      accent: 'legend',
+      badge: t('store.ultimateBadge'),
+      features: [
+        t('store.legendFeat1'),
+        t('store.legendFeat2'),
+        t('store.legendFeat3'),
+        t('store.legendFeat4'),
+        t('store.legendFeat5'),
+      ],
+    };
+  };
 
   useEffect(() => {
     selectedIdRef.current = selectedId;
@@ -174,11 +225,11 @@ export default function Store() {
     };
   }, []);
 
-  // 2. Load PayPal JS SDK enforcing Arabic or English locale and US buyer country (preventing Hebrew default)
+  // 2. Load PayPal JS SDK enforcing locale and US buyer country
   useEffect(() => {
     if (!clientId) return;
     const scriptId = 'naje-store-paypal-sdk';
-    const targetLocale = lang === 'en' ? 'en_US' : 'ar_EG';
+    const targetLocale = locale === 'ar' ? 'ar_EG' : locale === 'es' ? 'es_ES' : locale === 'fr' ? 'fr_FR' : locale === 'de' ? 'de_DE' : locale === 'pt' ? 'pt_PT' : 'en_US';
     const desiredSrc = `https://www.paypal.com/sdk/js?client-id=${encodeURIComponent(
       clientId
     )}&currency=USD&intent=capture&locale=${targetLocale}&buyer-country=US`;
@@ -208,13 +259,13 @@ export default function Store() {
     script.onerror = () => {
       setSdkLoading(false);
       setSdkError(
-        lang === 'ar'
+        locale === 'ar'
           ? 'تعذر تحميل بوابة الدفع. تحقق من اتصال الإنترنت وحاول مرة أخرى.'
           : 'Failed to load payment gateway. Please check your connection and try again.'
       );
     };
     document.body.appendChild(script);
-  }, [clientId, lang]);
+  }, [clientId, locale]);
 
   // 3. Render the PayPal Buttons for the currently selected package
   useEffect(() => {
@@ -232,7 +283,7 @@ export default function Store() {
               const token = await auth.currentUser?.getIdToken();
               if (!token) {
                 toast.error(
-                  lang === 'ar'
+                  locale === 'ar'
                     ? 'يجب تسجيل الدخول أولاً لإتمام عملية الدفع'
                     : 'Please log in first to complete payment'
                 );
@@ -247,7 +298,7 @@ export default function Store() {
               if (!res.ok || !data.order_id) {
                 toast.error(
                   data.error ||
-                    (lang === 'ar'
+                    (locale === 'ar'
                       ? 'فشل في إنشاء طلب الدفع عبر PayPal'
                       : 'Failed to create PayPal payment order')
                 );
@@ -271,7 +322,7 @@ export default function Store() {
               if (!res.ok) {
                 toast.error(
                   result.error ||
-                    (lang === 'ar'
+                    (locale === 'ar'
                       ? 'حدث خطأ أثناء تأكيد عملية الدفع'
                       : 'An error occurred while confirming payment')
                 );
@@ -284,14 +335,14 @@ export default function Store() {
                 0;
               setSuccessInfo({ points: pointsAdded, newBalance: result.newBalance });
               toast.success(
-                lang === 'ar'
+                locale === 'ar'
                   ? `تم شحن ${pointsAdded} نقطة إلى رصيدك بنجاح!`
                   : `Successfully added ${pointsAdded} points to your balance!`
               );
             } catch (err: any) {
               toast.error(
                 err.message ||
-                  (lang === 'ar' ? 'فشل في إتمام عملية الشحن' : 'Payment completion failed')
+                  (locale === 'ar' ? 'فشل في إتمام عملية الشحن' : 'Payment completion failed')
               );
             } finally {
               setIsProcessing(false);
@@ -301,7 +352,7 @@ export default function Store() {
             setIsProcessing(false);
             console.error('PayPal button error:', err);
             toast.error(
-              lang === 'ar'
+              locale === 'ar'
                 ? 'تعذرت عملية الدفع عبر PayPal أو البطاقة. يرجى التحقق من البيانات والمحاولة مرة أخرى.'
                 : 'Payment via PayPal or card was unsuccessful. Please check card info and try again.'
             );
@@ -315,10 +366,10 @@ export default function Store() {
     } catch (err) {
       console.error('PayPal Buttons initialization error:', err);
     }
-  }, [clientId, sdkLoading, selectedId, packages, updateBalance, lang]);
+  }, [clientId, sdkLoading, selectedId, packages, updateBalance, locale]);
 
   const selectedPackage = packages.find((p) => p.id === selectedId);
-  const selectedContent = PACKAGE_CONTENT[selectedId];
+  const selectedContent = getPackageDetails(selectedId);
 
   const renderIcon = (type: 'sparkles' | 'zap' | 'crown') => {
     switch (type) {
@@ -333,7 +384,7 @@ export default function Store() {
 
   return (
     <div
-      dir={lang === 'ar' ? 'rtl' : 'ltr'}
+      dir={isRtl ? 'rtl' : 'ltr'}
       className="flex-1 overflow-y-auto p-6 sm:p-8 max-w-6xl mx-auto w-full font-sans scrollbar-thin transition-all"
     >
       {/* Top Bar with Navigation and Language Switcher */}
@@ -342,36 +393,12 @@ export default function Store() {
           to="/settings"
           className="inline-flex items-center gap-1.5 text-xs font-bold text-gray-500 dark:text-gray-400 hover:text-indigo-500 transition"
         >
-          <ArrowRight className={`w-3.5 h-3.5 ${lang === 'en' ? 'rotate-180' : ''}`} />
-          <span>{lang === 'ar' ? 'العودة للإعدادات' : 'Back to Settings'}</span>
+          <ArrowRight className={`w-3.5 h-3.5 ${isRtl ? '' : 'rotate-180'}`} />
+          <span>{t('common.back')}</span>
         </Link>
 
-        {/* Bilingual Selector (Arabic & English) */}
-        <div className="flex items-center gap-2 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-1 shadow-sm">
-          <Globe className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 ml-1.5 mr-1" />
-          <button
-            type="button"
-            onClick={() => setLang('ar')}
-            className={`px-3 py-1 rounded-lg text-xs font-bold transition ${
-              lang === 'ar'
-                ? 'bg-amber-400 text-black shadow-sm'
-                : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
-            }`}
-          >
-            العربية
-          </button>
-          <button
-            type="button"
-            onClick={() => setLang('en')}
-            className={`px-3 py-1 rounded-lg text-xs font-bold transition ${
-              lang === 'en'
-                ? 'bg-amber-400 text-black shadow-sm'
-                : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
-            }`}
-          >
-            English
-          </button>
-        </div>
+        {/* Global Multi-Language Selector */}
+        <LanguageSelector />
       </div>
 
       {/* Header */}
@@ -382,28 +409,26 @@ export default function Store() {
           </div>
           <div>
             <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">
-              {lang === 'ar' ? 'متجر شحن رصيد ناجي' : 'Naje AI Points Store'}
+              {t('store.heroTitle')}
             </h1>
           </div>
           {mode === 'sandbox' && (
             <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">
-              {lang === 'ar' ? 'وضع تجريبي (Sandbox)' : 'Sandbox Mode'}
+              {locale === 'ar' ? 'وضع تجريبي (Sandbox)' : 'Sandbox Mode'}
             </span>
           )}
         </div>
         <p className="text-sm text-gray-600 dark:text-gray-400 max-w-xl">
-          {lang === 'ar'
-            ? 'اشحن رصيدك فوراً للوصول الكامل إلى جميع أدوات وتوليدات الذكاء الاصطناعي وصناعة الإعلانات.'
-            : 'Top up your points balance instantly for full access to all AI tools, autonomous agents, and video ads.'}
+          {t('store.heroSubtitle')}
         </p>
 
         {user && (
           <div className="mt-4 inline-flex items-center gap-2 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-2">
             <span className="text-xs text-gray-600 dark:text-gray-400">
-              {lang === 'ar' ? 'رصيدك الحالي:' : 'Current Balance:'}
+              {t('store.balanceLabel')}:
             </span>
             <span className="text-sm font-extrabold text-gray-900 dark:text-white font-mono">
-              {Number((user.balance || 0).toFixed(2))} {lang === 'ar' ? 'نقطة' : 'pts'}
+              {Number((user.balance || 0).toFixed(2))} {t('store.pointsUnit')}
             </span>
           </div>
         )}
@@ -416,10 +441,10 @@ export default function Store() {
             <CheckCircle2 className="w-6 h-6 text-emerald-400 flex-shrink-0" />
             <div>
               <p className="text-sm font-bold text-white">
-                {lang === 'ar' ? 'تم شحن رصيدك بنجاح!' : 'Points Added Successfully!'}
+                {t('store.paymentSuccess')}
               </p>
               <p className="text-xs text-emerald-300">
-                {lang === 'ar' ? (
+                {locale === 'ar' ? (
                   <>
                     أضيفت <span className="font-extrabold text-white">{successInfo.points} نقطة</span> — رصيدك الآن{' '}
                     <span className="font-mono font-bold text-white">{successInfo.newBalance}</span> نقطة
@@ -437,7 +462,7 @@ export default function Store() {
             to="/"
             className="bg-emerald-500 hover:bg-emerald-400 text-black text-xs font-extrabold px-4 py-2 rounded-xl transition whitespace-nowrap"
           >
-            {lang === 'ar' ? 'ابدأ الإبداع الآن' : 'Start Creating Now'}
+            {locale === 'ar' ? 'ابدأ الإبداع الآن' : 'Start Creating Now'}
           </Link>
         </div>
       )}
@@ -445,8 +470,7 @@ export default function Store() {
       {/* Pricing cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-8">
         {packages.map((pkg) => {
-          const content = PACKAGE_CONTENT[pkg.id];
-          if (!content) return null;
+          const content = getPackageDetails(pkg.id);
           const isSelected = selectedId === pkg.id;
           return (
             <button
@@ -454,7 +478,7 @@ export default function Store() {
               type="button"
               onClick={() => setSelectedId(pkg.id)}
               className={`relative ${
-                lang === 'ar' ? 'text-right' : 'text-left'
+                isRtl ? 'text-right' : 'text-left'
               } p-6 rounded-2xl border transition-all duration-200 cursor-pointer flex flex-col bg-white dark:bg-zinc-900 ${
                 isSelected
                   ? 'border-amber-500 shadow-lg shadow-amber-500/10 ring-1 ring-amber-400/40'
@@ -464,14 +488,14 @@ export default function Store() {
               {content.badge && (
                 <span
                   className={`absolute -top-3 ${
-                    lang === 'ar' ? 'right-5' : 'left-5'
+                    isRtl ? 'right-5' : 'left-5'
                   } text-[10px] font-extrabold px-3 py-1 rounded-full border shadow-sm ${
                     isSelected
                       ? 'bg-amber-400 text-black border-amber-300'
                       : 'bg-zinc-900 text-white border-zinc-800 dark:bg-zinc-800'
                   }`}
                 >
-                  {content.badge[lang]}
+                  {content.badge}
                 </span>
               )}
 
@@ -480,15 +504,15 @@ export default function Store() {
                   {renderIcon(content.iconType)}
                 </div>
                 <div>
-                  <h3 className="text-base font-extrabold text-zinc-900 dark:text-white">{content.name[lang]}</h3>
-                  <p className="text-[11px] text-zinc-600 dark:text-zinc-400">{content.tagline[lang]}</p>
+                  <h3 className="text-base font-extrabold text-zinc-900 dark:text-white">{content.name}</h3>
+                  <p className="text-[11px] text-zinc-600 dark:text-zinc-400">{content.tagline}</p>
                 </div>
               </div>
 
               <div className="flex items-baseline gap-2 mb-1">
                 <span className="text-3xl font-extrabold text-zinc-900 dark:text-white font-mono">{pkg.points}</span>
                 <span className="text-xs font-semibold text-amber-700 dark:text-amber-400">
-                  {lang === 'ar' ? 'نقطة إبداع' : 'Creative Points'}
+                  {t('store.pointsUnit')}
                 </span>
               </div>
               <div className="text-lg font-extrabold font-mono text-amber-700 dark:text-amber-300 mb-5">
@@ -496,7 +520,7 @@ export default function Store() {
               </div>
 
               <ul className="space-y-2.5 flex-1">
-                {content.features[lang].map((feature, i) => (
+                {content.features.map((feature, i) => (
                   <li key={i} className="flex items-start gap-2 text-xs text-zinc-700 dark:text-zinc-300">
                     <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 flex-shrink-0 mt-0.5" />
                     <span>{feature}</span>
@@ -512,12 +536,10 @@ export default function Store() {
                 }`}
               >
                 {isSelected
-                  ? lang === 'ar'
+                  ? locale === 'ar'
                     ? 'مُختارة الآن'
-                    : 'Currently Selected'
-                  : lang === 'ar'
-                  ? 'اختر هذه الباقة'
-                  : 'Choose This Package'}
+                    : 'Selected'
+                  : t('store.purchaseBtn')}
               </div>
             </button>
           );
@@ -533,13 +555,13 @@ export default function Store() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-5 border-b border-zinc-200 dark:border-zinc-800">
             <div>
               <p className="text-xs text-zinc-600 dark:text-zinc-400 mb-1">
-                {lang === 'ar' ? 'إتمام الشراء للباقة المحددة' : 'Checkout for Selected Package'}
+                {locale === 'ar' ? 'إتمام الشراء للباقة المحددة' : 'Checkout for Selected Package'}
               </p>
               <p className="text-lg font-bold text-zinc-900 dark:text-white flex items-center gap-2 flex-wrap">
-                <span>{selectedContent?.name[lang]}</span>
+                <span>{selectedContent?.name}</span>
                 <span className="text-zinc-400">•</span>
                 <span className="text-amber-700 dark:text-amber-300 font-mono font-black">
-                  {selectedPackage?.points} {lang === 'ar' ? 'نقطة' : 'pts'}
+                  {selectedPackage?.points} {t('store.pointsUnit')}
                 </span>
                 <span className="text-zinc-400">•</span>
                 <span className="text-amber-700 dark:text-amber-400 font-mono font-extrabold text-xl">
@@ -550,7 +572,7 @@ export default function Store() {
             <div className="flex flex-wrap items-center gap-2.5 bg-gradient-to-r from-amber-500/10 via-purple-500/10 to-amber-500/10 border border-amber-500/30 px-3.5 py-2 rounded-xl text-xs">
               <div className="flex items-center gap-1.5 text-amber-300 font-bold">
                 <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                <span>{lang === 'ar' ? 'دفع مؤمّن ومشفر 100%' : '100% Secure & Encrypted'}</span>
+                <span>{t('store.guaranteedSecurity')}</span>
               </div>
               <span className="text-gray-600">|</span>
               <div className="flex items-center gap-1">
@@ -573,18 +595,18 @@ export default function Store() {
                   <div>
                     <div className="flex items-center gap-2 flex-wrap">
                       <h4 className="text-sm font-extrabold text-white">
-                        {lang === 'ar'
+                        {locale === 'ar'
                           ? 'بطاقات الائتمان والدفع المباشر (Credit & Debit Cards)'
                           : 'Credit & Debit Cards (Visa • Mastercard • Mada • Amex)'}
                       </h4>
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
-                        {lang === 'ar'
+                        {locale === 'ar'
                           ? 'دفع فوري بدون الحاجة لحساب PayPal'
                           : 'Instant Direct Card Checkout'}
                       </span>
                     </div>
                     <p className="text-xs text-gray-300 mt-1 leading-relaxed">
-                      {lang === 'ar'
+                      {locale === 'ar'
                         ? 'تدعم البوابة الدفع المباشر بجميع بطاقات الائتمان والسحب البنكي (Visa • Mastercard • مدى • Amex) دون الحاجة لامتلاك أو فتح حساب، كما يمكنك الدفع مباشرة برصيد حساب PayPal.'
                         : 'Supports all major credit & debit cards worldwide without requiring a PayPal account, or you can pay with your existing PayPal balance.'}
                     </p>
@@ -604,7 +626,7 @@ export default function Store() {
             <div className="p-3.5 rounded-xl bg-indigo-950/20 border border-indigo-500/25 flex items-start gap-2.5 text-xs text-indigo-300">
               <Info className="w-4 h-4 text-indigo-400 shrink-0 mt-0.5" />
               <p className="leading-relaxed">
-                {lang === 'ar' ? (
+                {locale === 'ar' ? (
                   <>
                     <strong className="text-white">حماية بنكية عالمية:</strong> عند الضغط على زر الدفع، تفتح بوابة PayPal نافذة مشفرة لمعالجة بيانات بطاقتك مباشرة على خوادم بنكية آمنة معتمدة (PCI-DSS). لا يتم تخزين أرقام بطاقتك على خوادمنا نهائياً، وتضاف النقاط فوراً لحسابك.
                   </>
@@ -625,7 +647,7 @@ export default function Store() {
                     <div className="flex items-center gap-2">
                       <Lock className="w-4 h-4 text-amber-400" />
                       <span className="text-xs font-bold text-white">
-                        {lang === 'ar' ? 'بوابة الدفع والمعالجة المباشرة' : 'Direct Payment Gateway'}
+                        {locale === 'ar' ? 'بوابة الدفع والمعالجة المباشرة' : 'Direct Payment Gateway'}
                       </span>
                     </div>
                     <span className="text-[11px] font-mono text-emerald-400 flex items-center gap-1">
@@ -640,7 +662,7 @@ export default function Store() {
                         <div className="py-8 flex flex-col items-center justify-center gap-2.5 text-xs text-gray-400">
                           <NajeSpinner className="w-6 h-6 text-amber-400" />
                           <span>
-                            {lang === 'ar'
+                            {locale === 'ar'
                               ? 'جاري تحميل بوابة الدفع الآمنة وشارات البطاقات...'
                               : 'Loading secure payment gateway...'}
                           </span>
@@ -657,7 +679,7 @@ export default function Store() {
                             onClick={() => window.location.reload()}
                             className="text-[11px] underline text-rose-400 hover:text-white cursor-pointer"
                           >
-                            {lang === 'ar' ? 'إعادة المحاولة' : 'Retry'}
+                            {locale === 'ar' ? 'إعادة المحاولة' : 'Retry'}
                           </button>
                         </div>
                       )}
@@ -671,7 +693,7 @@ export default function Store() {
                         <div className="mt-3 text-xs text-amber-300 flex items-center justify-center gap-2 animate-pulse bg-amber-500/10 p-2.5 rounded-xl border border-amber-500/20">
                           <RefreshCw className="w-4 h-4 animate-spin text-amber-400" />
                           <span>
-                            {lang === 'ar'
+                            {locale === 'ar'
                               ? 'جاري معالجة الشحن وإيداع النقاط في حسابك...'
                               : 'Processing transaction and crediting points...'}
                           </span>
@@ -684,12 +706,12 @@ export default function Store() {
                         <AlertCircle className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
                         <div>
                           <p className="font-bold text-amber-300 text-sm mb-1">
-                            {lang === 'ar'
+                            {locale === 'ar'
                               ? 'خدمة الدفع ببطاقات الائتمان والسحب مفعلة برمجياً'
                               : 'Credit & Debit Card Checkout Configured'}
                           </p>
                           <p className="text-gray-300 text-xs">
-                            {lang === 'ar' ? (
+                            {locale === 'ar' ? (
                               <>
                                 بوابة PayPal وبطاقات Visa و Mastercard جاهزة. بانتظار تعيين{' '}
                                 <code className="text-amber-300 font-mono bg-black/50 px-1 py-0.5 rounded">
@@ -712,7 +734,7 @@ export default function Store() {
 
                       <div className="pt-3 border-t border-amber-500/20 flex items-center justify-between">
                         <span className="text-[11px] text-gray-400">
-                          {lang === 'ar' ? 'البطاقات المعتمدة فور التفعيل:' : 'Accepted cards:'}
+                          {locale === 'ar' ? 'البطاقات المعتمدة فور التفعيل:' : 'Accepted cards:'}
                         </span>
                         <div className="flex items-center gap-1.5">
                           <VisaBadge size="sm" />
@@ -729,13 +751,13 @@ export default function Store() {
                     <div className="flex items-center gap-1.5 text-emerald-400">
                       <ShieldCheck className="w-3.5 h-3.5" />
                       <span>
-                        {lang === 'ar'
+                        {locale === 'ar'
                           ? 'معتمد ومحمي بمعايير PCI-DSS المصرفية'
                           : 'Certified PCI-DSS Compliant'}
                       </span>
                     </div>
                     <span className="text-gray-500">
-                      {lang === 'ar'
+                      {locale === 'ar'
                         ? 'لا يتم تخزين بيانات بطاقتك أبداً'
                         : 'Card info is never stored'}
                     </span>
@@ -747,35 +769,35 @@ export default function Store() {
               <div className="lg:col-span-5 space-y-4">
                 <div className="bg-naje-elevated border border-gray-800 rounded-2xl p-4 text-xs space-y-2.5 shadow-md">
                   <div className="flex items-center justify-between pb-2 border-b border-gray-800 text-gray-400 font-medium">
-                    <span>{lang === 'ar' ? 'ملخص الفاتورة الفورية' : 'Order Receipt'}</span>
+                    <span>{locale === 'ar' ? 'ملخص الفاتورة الفورية' : 'Order Receipt'}</span>
                     <span className="text-[10px] text-emerald-400 flex items-center gap-1 font-bold">
                       <Zap className="w-3 h-3" />
-                      {lang === 'ar' ? 'تسليم فوري لحظي' : 'Instant Delivery'}
+                      {locale === 'ar' ? 'تسليم فوري لحظي' : 'Instant Delivery'}
                     </span>
                   </div>
 
                   <div className="flex items-center justify-between text-gray-300">
-                    <span>{lang === 'ar' ? 'الباقة المختارة:' : 'Selected Package:'}</span>
-                    <span className="font-bold text-white">{selectedContent?.name[lang]}</span>
+                    <span>{locale === 'ar' ? 'الباقة المختارة:' : 'Selected Package:'}</span>
+                    <span className="font-bold text-white">{selectedContent?.name}</span>
                   </div>
 
                   <div className="flex items-center justify-between text-gray-300">
-                    <span>{lang === 'ar' ? 'الرصيد الإبداعي:' : 'Creative Points:'}</span>
+                    <span>{locale === 'ar' ? 'الرصيد الإبداعي:' : 'Creative Points:'}</span>
                     <span className="font-bold text-amber-400 font-mono">
-                      +{selectedPackage?.points} {lang === 'ar' ? 'نقطة إبداع' : 'points'}
+                      +{selectedPackage?.points} {t('store.pointsUnit')}
                     </span>
                   </div>
 
                   <div className="flex items-center justify-between text-gray-300">
-                    <span>{lang === 'ar' ? 'الضرائب ورسوم المعالجة:' : 'Taxes & Gateway Fees:'}</span>
+                    <span>{locale === 'ar' ? 'الضرائب ورسوم المعالجة:' : 'Taxes & Gateway Fees:'}</span>
                     <span className="text-emerald-400 font-bold">
-                      {lang === 'ar' ? '$0.00 (شاملة)' : '$0.00 (Included)'}
+                      {locale === 'ar' ? '$0.00 (شاملة)' : '$0.00 (Included)'}
                     </span>
                   </div>
 
                   <div className="pt-2 border-t border-gray-800/80 flex items-center justify-between text-sm">
                     <span className="font-extrabold text-white">
-                      {lang === 'ar' ? 'المبلغ الإجمالي للدفع:' : 'Total Amount Due:'}
+                      {locale === 'ar' ? 'المبلغ الإجمالي للدفع:' : 'Total Amount Due:'}
                     </span>
                     <span className="font-mono font-black text-lg text-amber-300">
                       ${selectedPackage?.usd.toFixed(2)} USD
@@ -792,32 +814,32 @@ export default function Store() {
       <div className="mt-6 flex flex-wrap gap-3 text-[11px] text-gray-500 dark:text-gray-400">
         <span className="flex items-center gap-1.5">
           <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
-          {lang === 'ar' ? 'دفع مشفّر بالكامل 256-bit' : 'Full 256-bit SSL Encryption'}
+          {locale === 'ar' ? 'دفع مشفّر بالكامل 256-bit' : 'Full 256-bit SSL Encryption'}
         </span>
         <span className="flex items-center gap-1.5">
           <Zap className="w-3.5 h-3.5 text-amber-500" />
-          {lang === 'ar'
+          {locale === 'ar'
             ? 'النقاط تُضاف تلقائياً فور تأكيد الدفع'
             : 'Instant Automatic Balance Top-up'}
         </span>
         <span className="flex items-center gap-1.5">
           <Bot className="w-3.5 h-3.5 text-purple-400" />
-          {lang === 'ar' ? 'وصول فوري للوكيل الذكي' : 'Full Naje AI Agent Access'}
+          {locale === 'ar' ? 'وصول فوري للوكيل الذكي' : 'Full Naje AI Agent Access'}
         </span>
         <span className="flex items-center gap-1.5">
           <Megaphone className="w-3.5 h-3.5 text-indigo-400" />
-          {lang === 'ar' ? 'أدوات إعلانية متقدمة' : 'Advanced Video Ad Studio'}
+          {locale === 'ar' ? 'أدوات إعلانية متقدمة' : 'Advanced Video Ad Studio'}
         </span>
         <span className="flex items-center gap-1.5">
           <Clapperboard className="w-3.5 h-3.5 text-rose-400" />
-          {lang === 'ar' ? 'فيديو سينمائي حتى 30 ثانية' : 'Up to 30s Cinematic Videos'}
+          {locale === 'ar' ? 'فيديو سينمائي حتى 30 ثانية' : 'Up to 30s Cinematic Videos'}
         </span>
       </div>
 
       <p className="mt-6 text-center text-xs text-gray-500">
-        {lang === 'ar' ? 'عندك كود شحن مسبق الدفع؟ ' : 'Have a prepaid activation code? '}
+        {locale === 'ar' ? 'عندك كود شحن مسبق الدفع؟ ' : 'Have a prepaid activation code? '}
         <Link to="/settings" className="text-indigo-500 font-bold hover:text-indigo-400">
-          {lang === 'ar' ? 'استخدمه من صفحة الإعدادات' : 'Redeem it in Settings'}
+          {locale === 'ar' ? 'استخدمه من صفحة الإعدادات' : 'Redeem it in Settings'}
         </Link>
       </p>
     </div>

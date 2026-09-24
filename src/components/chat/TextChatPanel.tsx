@@ -18,6 +18,7 @@ import NajeSelect from '../NajeSelect';
 import NajeModelTierSelector, { NajeImageModelSelector, NajeVideoModelSelector } from '../NajeModelTierSelector';
 import NajeErrorCard from '../NajeErrorCard';
 import { useAppStore } from '../../store';
+import { useI18n } from '../../i18n';
 import { usePricingConfig } from '../../hooks/usePricingConfig';
 import { ImageSettingsPanel } from './ImageChatPanel';
 import { VideoSettingsPanel } from './VideoChatPanel';
@@ -301,6 +302,7 @@ export default function TextChatPanel({
   setLoading
 }: TextChatPanelProps) {
   const { user, systemStatus, maintenanceDismissed, setMaintenanceDismissed } = useAppStore();
+  const { isRtl, t } = useI18n();
   const pricing = usePricingConfig();
   const [isBrandKitModalOpen, setIsBrandKitModalOpen] = useState(false);
   const [showInfographicModal, setShowInfographicModal] = useState(false);
@@ -314,7 +316,7 @@ export default function TextChatPanel({
   ];
 
   return (
-    <div className="flex-1 min-h-0 flex flex-col w-full overflow-hidden relative">
+    <div className="flex-1 min-h-0 flex flex-col w-full overflow-hidden relative" dir={isRtl ? 'rtl' : 'ltr'}>
       {/* Scrollable Messages Region */}
       <div className="flex-1 min-h-0 overflow-y-auto p-3 sm:p-5 md:p-6 pb-12 sm:pb-6 w-full">
         <div className="max-w-[800px] mx-auto space-y-6 w-full">
@@ -1312,7 +1314,7 @@ export default function TextChatPanel({
                               ? "اكتب النص الذي تريد تحويله إلى تسجيل صوتي احترافي..."
                               : `اكتب سكريبت الحوار بالسطور متناوبة، مثال:\n${speaker1Name || 'أحمد'}: أهلاً بك في استوديو الصوت...\n${speaker2Name || 'سارة'}: مرحباً، يسعدني التواجد اليوم...`)
                           : chat.type === 'text' 
-                            ? "اكتب رسالتك هنا..." 
+                            ? t('chat.inputPlaceholder') 
                             : `صف خيالك لـ Naje AI لتوليد ${chat.type === 'image' ? 'الصورة' : 'الفيديو'}...`
                     }
                     className="w-full bg-transparent border-none py-1 sm:py-2 text-gray-900 dark:text-white outline-none resize-none min-h-[34px] sm:min-h-[40px] max-h-[80px] sm:max-h-[120px] overflow-y-auto leading-normal px-1 sm:px-2 text-xs sm:text-sm focus:ring-0 transition-[height] duration-150 ease-out scrollbar-none my-auto"
@@ -1330,7 +1332,7 @@ export default function TextChatPanel({
                         setIsJobCompleted(true);
                       }}
                       className="w-7.5 h-7.5 sm:w-9 sm:h-9 flex items-center justify-center bg-white dark:bg-gray-900 border border-purple-200/40 dark:border-gray-800 text-black dark:text-white rounded-lg sm:rounded-xl transition shadow-md cursor-pointer relative active:scale-95"
-                      title="إيقاف التوليد"
+                      title={t('chat.stopGeneration')}
                     >
                       {/* Spinning Arc */}
                       <div className="absolute inset-1 rounded-full border-2 border-transparent border-t-black dark:border-t-white animate-spin" />
@@ -1347,6 +1349,7 @@ export default function TextChatPanel({
                           ? "bg-black dark:bg-black text-gray-700 dark:text-gray-800 border-transparent cursor-not-allowed"
                           : "bg-white dark:bg-white text-black dark:text-black border-purple-200/50 dark:border-gray-800 shadow-md"
                       )}
+                      title={t('chat.sendTooltip')}
                     >
                       <ArrowUp className="w-3.5 h-3.5 sm:w-4 sm:h-4" strokeWidth={2.5} />
                     </button>

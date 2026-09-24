@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useAppStore } from '../store';
+import { useI18n } from '../i18n';
 import { auth } from '../firebase';
 import { toast } from '../toastStore';
 import { ShieldCheck, Sparkles, CheckCircle, AlertCircle, RefreshCw, CreditCard, Lock, Zap } from 'lucide-react';
@@ -25,13 +26,14 @@ interface PayPalPackage {
 }
 
 const DEFAULT_PACKAGES: PayPalPackage[] = [
-  { id: 'pkg_10', points: 10, usd: 2.0, badge: 'انطلاقة' },
-  { id: 'pkg_50', points: 50, usd: 8.0, badge: 'الأكثر طلباً' },
-  { id: 'pkg_120', points: 120, usd: 15.0, badge: 'أفضل قيمة' },
+  { id: 'pkg_10', points: 10, usd: 2.0, badge: 'pkgStarter' },
+  { id: 'pkg_50', points: 50, usd: 8.0, badge: 'pkgPopular' },
+  { id: 'pkg_120', points: 120, usd: 15.0, badge: 'pkgValue' },
 ];
 
 export const PayPalRechargeSection: React.FC = () => {
   const { updateBalance } = useAppStore();
+  const { t, isRtl, formatNumber } = useI18n();
   const [packages, setPackages] = useState<PayPalPackage[]>(DEFAULT_PACKAGES);
   const [selectedPackage, setSelectedPackage] = useState<string>('pkg_50');
   const [clientId, setClientId] = useState<string>('');
@@ -220,8 +222,20 @@ export const PayPalRechargeSection: React.FC = () => {
     }
   }, [clientId, sdkLoading, selectedPackage, updateBalance]);
 
+  const getBadgeLabel = (badgeKey?: string) => {
+    if (!badgeKey) return '';
+    if (badgeKey === 'pkgStarter' || badgeKey === 'انطلاقة') return t('recharge.pkgStarter');
+    if (badgeKey === 'pkgPopular' || badgeKey === 'الأكثر طلباً') return t('recharge.pkgPopular');
+    if (badgeKey === 'pkgValue' || badgeKey === 'أفضل قيمة') return t('recharge.pkgValue');
+    return badgeKey;
+  };
+
   return (
-    <div id="paypal-recharge-card" className="bg-[#0b0c10] border border-amber-500/30 hover:border-amber-500/50 rounded-2xl p-6 sm:p-8 transition-all shadow-xl relative overflow-hidden font-sans">
+    <div 
+      id="paypal-recharge-card" 
+      className="bg-[#0b0c10] border border-amber-500/30 hover:border-amber-500/50 rounded-2xl p-6 sm:p-8 transition-all shadow-xl relative overflow-hidden font-sans text-start"
+      dir={isRtl ? 'rtl' : 'ltr'}
+    >
       {/* Subtle Dark Luxe background aura */}
       <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/5 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-0 left-0 w-64 h-64 bg-purple-600/5 rounded-full blur-3xl pointer-events-none" />
@@ -234,15 +248,17 @@ export const PayPalRechargeSection: React.FC = () => {
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-lg sm:text-xl font-bold text-white tracking-tight">اشحن عبر PayPal</h2>
+              <h2 className="text-lg sm:text-xl font-bold text-white tracking-tight">
+                {t('recharge.paypalTitle')}
+              </h2>
               {mode === 'sandbox' && (
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-300 border border-amber-500/20">
-                  Sandbox التجريبي
+                  Sandbox
                 </span>
               )}
             </div>
             <p className="text-xs text-gray-400 mt-0.5">
-              شحن فوري للنقاط مباشرة ببطاقتك الائتمانية أو رصيد PayPal بأمان معتمد
+              {t('recharge.paypalSubtitle')}
             </p>
           </div>
         </div>
@@ -250,7 +266,7 @@ export const PayPalRechargeSection: React.FC = () => {
         <div className="flex flex-wrap items-center gap-2 text-xs bg-amber-500/10 border border-amber-500/20 px-3 py-1.5 rounded-xl self-start sm:self-center">
           <div className="flex items-center gap-1.5 text-amber-400">
             <ShieldCheck className="w-4 h-4 text-amber-400" />
-            <span>دفع مؤمّن ومشفر 100%</span>
+            <span>{t('recharge.securePayment')}</span>
           </div>
           <span className="text-gray-600">|</span>
           <div className="flex items-center gap-1">
@@ -294,7 +310,7 @@ export const PayPalRechargeSection: React.FC = () => {
                 key={pkg.id}
                 type="button"
                 onClick={() => setSelectedPackage(pkg.id)}
-                className={`relative text-right p-4 rounded-xl border transition-all duration-200 cursor-pointer flex flex-col justify-between group ${
+                className={`relative text-start p-4 rounded-xl border transition-all duration-200 cursor-pointer flex flex-col justify-between group ${
                   isSelected
                     ? 'bg-gradient-to-b from-amber-500/15 via-purple-950/20 to-black border-amber-400 shadow-lg shadow-amber-500/10 ring-1 ring-amber-400/50'
                     : 'bg-[#12141a] hover:bg-[#161922] border-gray-800 hover:border-gray-700 text-gray-300'
@@ -303,26 +319,25 @@ export const PayPalRechargeSection: React.FC = () => {
                 {/* Value Tag Badge */}
                 {pkg.badge && (
                   <span
-                    className={`absolute -top-2.5 left-3 text-[10px] font-extrabold px-2 py-0.5 rounded-full border shadow-sm ${
+                    className={`absolute -top-2.5 end-3 text-[10px] font-extrabold px-2 py-0.5 rounded-full border shadow-sm ${
                       isSelected
                         ? 'bg-amber-400 text-black border-amber-300'
                         : 'bg-purple-950/80 text-purple-300 border-purple-500/30'
                     }`}
                   >
-                    {pkg.badge}
+                    {getBadgeLabel(pkg.badge)}
                   </span>
                 )}
 
                 <div>
                   <div className="flex items-baseline justify-between mb-1">
                     <span className="text-2xl font-extrabold text-white tracking-tight">
-                      {pkg.points}
+                      {formatNumber(pkg.points)}
                     </span>
-                    <span className="text-xs font-semibold text-amber-400">نقطة</span>
+                    <span className="text-xs font-semibold text-amber-400">
+                      {t('common.pointsShort') || 'نقطة'}
+                    </span>
                   </div>
-                  <p className="text-[11px] text-gray-400">
-                    كافية لتوليد صور ونصوص وفيديوهات ذكية
-                  </p>
                 </div>
 
                 <div className="mt-4 pt-3 border-t border-gray-800/80 flex items-center justify-between">

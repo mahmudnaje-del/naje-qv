@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useSmartDownloadStore } from '../stores/smartDownloadStore';
 import { sanitizeFilename } from '../utils/smartNamingGateway';
+import { useI18n } from '../i18n';
 import { Sparkles, Download, X, FileText, Code, Image as ImageIcon, FileSpreadsheet, Check, RefreshCw, Wand2, ShieldCheck } from 'lucide-react';
 
 export default function SmartDownloadGatewayModal() {
+  const { t, isRtl } = useI18n();
   const {
     isOpen,
     request,
@@ -51,8 +53,8 @@ export default function SmartDownloadGatewayModal() {
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-fadeIn">
       <div 
-        className="relative w-full max-w-lg bg-white dark:bg-[#111520] border border-gray-200 dark:border-gray-800 rounded-3xl shadow-2xl overflow-hidden text-right"
-        dir="rtl"
+        className="relative w-full max-w-lg bg-white dark:bg-[#111520] border border-gray-200 dark:border-gray-800 rounded-3xl shadow-2xl overflow-hidden text-start"
+        dir={isRtl ? 'rtl' : 'ltr'}
       >
         {/* Glow Header Accent */}
         <div className="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r from-indigo-500 via-purple-500 to-emerald-400" />
@@ -65,13 +67,13 @@ export default function SmartDownloadGatewayModal() {
             </div>
             <div>
               <h3 className="font-bold text-gray-900 dark:text-white text-base flex items-center gap-2">
-                <span>بوابة التسمية الذكية للملفات</span>
+                <span>{t('smartGateway.title')}</span>
                 <span className="text-[10px] bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 px-2 py-0.5 rounded-full font-sans">
-                  Smart Naje Gateway
+                  Smart Gateway
                 </span>
               </h3>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                تم تحليل محتوى الملف واقتراح اسم ذكي ومُعبر تلقائياً
+                {t('smartGateway.subtitle')}
               </p>
             </div>
           </div>
@@ -95,14 +97,14 @@ export default function SmartDownloadGatewayModal() {
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
                 <span className="text-xs font-bold text-gray-700 dark:text-gray-300">
-                  صيغة الملف:
+                  {t('studio.requiredFileType') || 'File format:'}
                 </span>
                 <span className="uppercase text-[11px] font-mono font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50 px-2 py-0.5 rounded-md border border-indigo-200/50 dark:border-indigo-900/40">
                   .{ext}
                 </span>
               </div>
               <p className="text-[11px] text-gray-500 dark:text-gray-400 truncate mt-1">
-                {request.prompt ? `الأمر: "${request.prompt.slice(0, 40)}..."` : 'محتوى معالج بذكاء اصطناعي عالِ الدقة'}
+                {request.prompt ? `"${request.prompt.slice(0, 45)}..."` : 'Naje AI Gateway'}
               </p>
             </div>
           </div>
@@ -112,9 +114,9 @@ export default function SmartDownloadGatewayModal() {
             <label className="block text-xs font-bold text-gray-800 dark:text-gray-200 flex items-center justify-between">
               <span className="flex items-center gap-1.5">
                 <Wand2 className="w-3.5 h-3.5 text-indigo-500" />
-                <span>الاسم المقترح للملف (قابل للتعديل):</span>
+                <span>{t('smartGateway.filenameLabel')}</span>
               </span>
-              <span className="text-[11px] text-indigo-600 dark:text-indigo-400">مبني على المحتوى</span>
+              <span className="text-[11px] text-indigo-600 dark:text-indigo-400">AI Verified</span>
             </label>
 
             <div className="relative flex items-center">
@@ -122,49 +124,22 @@ export default function SmartDownloadGatewayModal() {
                 type="text"
                 value={baseNameOnly}
                 onChange={(e) => setFilenameInput(e.target.value.replace(new RegExp(`\\.${ext}$`, 'i'), ''))}
-                className="w-full px-4 py-3 bg-white dark:bg-[#0c0e14] border border-indigo-300 dark:border-indigo-900/60 rounded-2xl text-sm font-medium text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm transition pl-12 pr-16"
+                className="w-full px-4 py-3 bg-white dark:bg-[#0c0e14] border border-indigo-300 dark:border-indigo-900/60 rounded-2xl text-sm font-medium text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm transition ps-4 pe-20"
                 dir="auto"
                 autoFocus
               />
-              {/* Fixed, non-editable extension suffix, always visible, never part of the editable value */}
-              <span className="absolute right-4 text-sm font-mono font-bold text-gray-500 dark:text-gray-400 pointer-events-none select-none">
+              <span className="absolute end-12 text-sm font-mono font-bold text-gray-500 dark:text-gray-400 pointer-events-none select-none">
                 .{ext}
               </span>
               <button
                 type="button"
                 onClick={() => setFilenameInput(suggestedFilename.replace(new RegExp(`\\.${ext}$`, 'i'), ''))}
-                title="إعادة للعنوان الافتراضي"
-                className="absolute left-3 p-1.5 text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition cursor-pointer"
+                title={t('smartGateway.regenerateBtn')}
+                className="absolute end-3 p-1.5 text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition cursor-pointer"
               >
                 <RefreshCw className="w-4 h-4" />
               </button>
             </div>
-          </div>
-
-          {/* Quick AI Presets */}
-          <div className="flex flex-wrap items-center gap-2 pt-1">
-            <span className="text-[11px] text-gray-500 dark:text-gray-400 font-medium">اختصارات سريعة:</span>
-            <button
-              type="button"
-              onClick={() => regenerateName('short')}
-              className="px-2.5 py-1 text-[11px] bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/80 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300 rounded-xl transition cursor-pointer"
-            >
-              اسم مختصر
-            </button>
-            <button
-              type="button"
-              onClick={() => regenerateName('date')}
-              className="px-2.5 py-1 text-[11px] bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/80 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300 rounded-xl transition cursor-pointer"
-            >
-              إضافة التاريخ
-            </button>
-            <button
-              type="button"
-              onClick={() => regenerateName('arabic')}
-              className="px-2.5 py-1 text-[11px] bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/80 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300 rounded-xl transition cursor-pointer"
-            >
-              بادئة تطبيق
-            </button>
           </div>
 
           {/* Always Auto Download Preference Checkbox */}
@@ -176,9 +151,9 @@ export default function SmartDownloadGatewayModal() {
                 onChange={(e) => setAutoDownload(e.target.checked)}
                 className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 dark:bg-gray-900 dark:border-gray-700 cursor-pointer"
               />
-              <span className="flex items-center gap-1">
+              <span className="flex items-center gap-1.5">
                 <ShieldCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                <span>التنزيل الذكي المباشر دائماً (تجاوز النافذة مستقبلاً)</span>
+                <span>{t('smartGateway.autoDownload')}</span>
               </span>
             </label>
           </div>
@@ -190,7 +165,7 @@ export default function SmartDownloadGatewayModal() {
               className="flex-1 py-3 px-5 bg-gradient-to-r from-indigo-600 via-indigo-700 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold rounded-2xl shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/30 transition active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer text-sm"
             >
               <Download className="w-4 h-4" />
-              <span>تنزيل الملف باسمه الذكي</span>
+              <span>{t('smartGateway.downloadBtn')}</span>
             </button>
 
             <button
@@ -198,7 +173,7 @@ export default function SmartDownloadGatewayModal() {
               onClick={closeGateway}
               className="py-3 px-4 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-bold rounded-2xl transition cursor-pointer text-sm"
             >
-              إلغاء
+              {t('common.cancel')}
             </button>
           </div>
         </form>
