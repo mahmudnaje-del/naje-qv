@@ -53,7 +53,7 @@ export default function NajeSource() {
   const [adding, setAdding] = useState(false);
   const [pasteText, setPasteText] = useState('');
   const [pasteUrl, setPasteUrl] = useState('');
-  const [chatSessionTitle, setChatSessionTitle] = useState('مساحة ناجي من مصادرك');
+  const [chatSessionTitle, setChatSessionTitle] = useState(() => t('tools.source.sessionTitle'));
 
   const fileRef = useRef<HTMLInputElement>(null);
   const imgRef = useRef<HTMLInputElement>(null);
@@ -101,7 +101,7 @@ export default function NajeSource() {
           await setDoc(newRef, {
             ownerId: user.uid,
             type: 'najeSource',
-            title: 'مساحة ناجي من مصادرك',
+            title: t('tools.source.sessionTitle'),
             createdAt: Date.now()
           });
           if (!active) return;
@@ -194,7 +194,7 @@ export default function NajeSource() {
       await setDoc(newRef, {
         ownerId: user.uid,
         type: 'najeSource',
-        title: 'مساحة مصادر جديدة',
+        title: t('tools.source.newSpace'),
         createdAt: Date.now()
       });
       setSearchParams({ chatId: newRef.id });
@@ -202,9 +202,9 @@ export default function NajeSource() {
       setWorkspaceId('');
       localStorage.removeItem(LS_WS);
       setTab('sources');
-      toast.success('تم إنشاء مساحة مصادر جديدة.');
+      toast.success(t('tools.source.newSpaceOk'));
     } catch {
-      toast.error('تعذّر إنشاء مساحة جديدة.');
+      toast.error(t('tools.source.newSpaceFail'));
     }
   };
 
@@ -221,9 +221,9 @@ export default function NajeSource() {
       const data = await res.json();
       if (res.status === 402) { 
         setShowPaywall(true); 
-        throw new Error('الميزة تحتاج باقة الشرارة'); 
+        throw new Error(t('tools.source.needSpark')); 
       }
-      if (!res.ok) throw new Error(data.error || 'تعذّر إضافة المصدر');
+      if (!res.ok) throw new Error(data.error || t('tools.source.addFail'));
 
       setWorkspaceId(data.workspaceId);
       localStorage.setItem(LS_WS, data.workspaceId);
@@ -231,7 +231,7 @@ export default function NajeSource() {
 
       // Update Firestore chat doc
       if (chatId) {
-        const titleCandidate = data.item.title ? `مصادر: ${data.item.title.slice(0, 24)}` : 'مساحة ناجي من مصادرك';
+        const titleCandidate = data.item.title ? t('tools.source.titlePrefix', { name: data.item.title.slice(0, 24) }) : t('tools.source.sessionTitle');
         setChatSessionTitle(titleCandidate);
         await updateDoc(doc(db, 'chats', chatId), {
           workspaceId: data.workspaceId,
@@ -240,9 +240,9 @@ export default function NajeSource() {
         }).catch(() => {});
       }
 
-      toast.success('تمت إضافة المصدر بنجاح');
+      toast.success(t('tools.source.added'));
     } catch (e: any) {
-      toast.error(e.message || 'تعذّر إضافة المصدر');
+      toast.error(e.message || t('tools.source.addFail'));
     } finally {
       setAdding(false);
     }
@@ -258,9 +258,9 @@ export default function NajeSource() {
         body: JSON.stringify({ workspaceId, itemId })
       });
       setItems(prev => prev.filter(i => i.id !== itemId));
-      toast.success('تم حذف المصدر.');
+      toast.success(t('tools.source.deleted'));
     } catch {
-      toast.error('تعذّر الحذف');
+      toast.error(t('tools.source.deleteFail'));
     }
   };
 
@@ -276,7 +276,7 @@ export default function NajeSource() {
       } else {
         const remainingSlots = 4 - attachedImages.length;
         if (remainingSlots <= 0) {
-          toast.error('الحد الأقصى 4 صور مرفقة دفعة واحدة');
+          toast.error(t('tools.developer.maxImages'));
           break;
         }
         const reader = new FileReader();
@@ -299,7 +299,7 @@ export default function NajeSource() {
     const currentImages = [...attachedImages];
     if ((!prompt && currentImages.length === 0) || sending) return;
     if (!workspaceId || items.length === 0) {
-      toast.error('أضف مصدراً واحداً على الأقل من تبويب المصادر.');
+      toast.error(t('tools.source.needOne'));
       setTab('sources');
       return;
     }
@@ -355,11 +355,11 @@ export default function NajeSource() {
 
       if (res.status === 402) { 
         setShowPaywall(true); 
-        throw new Error('الميزة مقفلة'); 
+        throw new Error(t('tools.source.locked')); 
       }
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || 'تعذّر الرد');
+        throw new Error(err.error || t('tools.developer.replyFail'));
       }
 
       await readNajeSse(res, (chunk) => {
@@ -392,7 +392,7 @@ export default function NajeSource() {
       }
 
     } catch (e: any) {
-      const errorMsg = e.message || 'حدث خطأ أثناء الرد.';
+      const errorMsg = e.message || t('tools.source.replyError');
       setMessages(prev => prev.map(m => m.id === asstId ? { ...m, content: m.content || errorMsg } : m));
       toast.error(errorMsg);
     } finally {
@@ -402,7 +402,7 @@ export default function NajeSource() {
 
   const onFile = async (file: File, asImage: boolean) => {
     if (file.size > 15 * 1024 * 1024) {
-      toast.error('حجم الملف يتجاوز الحد المسموح (15MB).');
+      toast.error(t('tools.source.tooBig'));
       return;
     }
     if (asImage) {
@@ -418,7 +418,7 @@ export default function NajeSource() {
       const isDocOrPdf = fileNameLower.endsWith('.pdf') || fileNameLower.endsWith('.docx') || fileNameLower.endsWith('.doc') || file.type.includes('pdf') || file.type.includes('word');
       
       if (isDocOrPdf) {
-        toast.info(`جاري استخراج وقراءة المستند (${file.name})...`);
+        toast.info(t('tools.source.readingDoc', { name: file.name }));
         const fileBase64 = await new Promise<string>((resolve, reject) => {
           const r = new FileReader();
           r.onload = () => resolve(String(r.result || ''));
@@ -446,7 +446,7 @@ export default function NajeSource() {
       <StudioHeader
         title={chatSessionTitle || 'Naje Source'}
         badge={t('studio.verifiedSources')}
-        subtitle={items.length > 0 ? `${items.length} مصدر نشط · استجابة صارمة وموثقة` : 'ما في المصدر ما ينقال · بحث حازم وموثق'}
+        subtitle={items.length > 0 ? t('tools.source.subtitleActive', { count: items.length }) : t('tools.source.subtitleEmpty')}
         icon={BookOpen}
         iconColorClass="text-emerald-600 dark:text-emerald-400"
         iconBgClass="bg-emerald-500/10 border-emerald-500/20"
@@ -491,7 +491,7 @@ export default function NajeSource() {
           <div className="bg-emerald-500/5 border border-emerald-500/15 rounded-2xl p-4 flex items-center gap-3">
             <BookOpen className="w-5 h-5 text-emerald-500 shrink-0" />
             <p className="text-xs text-gray-700 dark:text-gray-300 leading-relaxed">
-              أضف المستندات، الروابط، النصوص، أو الصور المرجعية. ناجي سيعتمد عليها حصرًا للإجابة، ولن يتكهن بمعلومات خارج مصادرك إلا إذا أذنت له بذلك صراحة.
+              {t('tools.source.intro')}
             </p>
           </div>
 
@@ -507,7 +507,7 @@ export default function NajeSource() {
               }}
             >
               <div className="text-xs font-extrabold flex items-center gap-1.5 text-gray-900 dark:text-white">
-                <Link2 className="w-4 h-4 text-emerald-500" /> إضافة رابط مرجعي
+                <Link2 className="w-4 h-4 text-emerald-500" /> {t('tools.source.addLink')}
               </div>
               <input 
                 value={pasteUrl} 
@@ -520,7 +520,7 @@ export default function NajeSource() {
                 disabled={adding || !pasteUrl.trim()} 
                 className="h-9 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-extrabold disabled:opacity-50 transition cursor-pointer"
               >
-                {adding ? 'جاري الاستيراد...' : 'إضافة الرابط'}
+                {adding ? t('tools.source.importing') : t('tools.source.addLinkBtn')}
               </button>
             </form>
 
@@ -529,26 +529,26 @@ export default function NajeSource() {
               onSubmit={(e) => { 
                 e.preventDefault(); 
                 if (pasteText.trim()) { 
-                  addSource({ type: 'text', title: 'نص مضاف', content: pasteText }); 
+                  addSource({ type: 'text', title: t('tools.source.pastedTitle'), content: pasteText }); 
                   setPasteText(''); 
                 } 
               }}
             >
               <div className="text-xs font-extrabold flex items-center gap-1.5 text-gray-900 dark:text-white">
-                <FileText className="w-4 h-4 text-emerald-500" /> لصق مادة نصية مباشرة
+                <FileText className="w-4 h-4 text-emerald-500" /> {t('tools.source.pasteLabel')}
               </div>
               <textarea 
                 value={pasteText} 
                 onChange={(e) => setPasteText(e.target.value)} 
                 rows={3} 
-                placeholder="الصق أي مقال، محضر اجتماع، وثيقة أو نصوص هنا..." 
+                placeholder={t('tools.source.pastePh')} 
                 className="w-full rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 resize-none" 
               />
               <button 
                 disabled={adding || !pasteText.trim()} 
                 className="h-9 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-extrabold disabled:opacity-50 transition cursor-pointer"
               >
-                {adding ? 'جاري الحفظ...' : 'حفظ النص كمصدر'}
+                {adding ? t('common.saving') : t('tools.source.saveText')}
               </button>
             </form>
           </div>
@@ -583,7 +583,7 @@ export default function NajeSource() {
               className="h-9 px-3.5 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-xs font-bold flex items-center gap-1.5 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 transition cursor-pointer"
             >
               <FileText className="w-3.5 h-3.5 text-emerald-500" />
-              <span>رفع مستند (Word, PDF, نصوص)</span>
+              <span>{t('tools.source.uploadDoc')}</span>
             </button>
 
             <button 
@@ -591,14 +591,14 @@ export default function NajeSource() {
               className="h-9 px-3.5 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-xs font-bold flex items-center gap-1.5 hover:bg-gray-50 dark:hover:bg-gray-800 transition cursor-pointer"
             >
               <ImageIcon className="w-3.5 h-3.5 text-emerald-500" />
-              <span>رفع صورة أو وثيقة مصورة</span>
+              <span>{t('tools.source.uploadImage')}</span>
             </button>
           </div>
 
           <div className="space-y-3 pt-2">
             <div className="flex items-center justify-between px-1">
               <h3 className="text-xs font-extrabold text-gray-900 dark:text-white flex items-center gap-2">
-                <span>المصادر المعتمدة حالياً</span>
+                <span>{t('tools.source.current')}</span>
                 <span className="text-[10px] bg-emerald-500/15 text-emerald-600 font-sans font-bold px-1.5 py-0.5 rounded">
                   {items.length}
                 </span>
@@ -608,7 +608,7 @@ export default function NajeSource() {
                   onClick={() => setTab('chat')}
                   className="text-xs text-emerald-600 font-bold hover:underline cursor-pointer"
                 >
-                  الانتقال للدردشة والمناقشة ←
+                  {t('tools.source.goChat')}
                 </button>
               )}
             </div>
@@ -616,8 +616,8 @@ export default function NajeSource() {
             {items.length === 0 ? (
               <div className="text-center py-12 border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-2xl">
                 <BookOpen className="w-8 h-8 mx-auto text-gray-400 mb-2" />
-                <p className="text-xs text-gray-500">لا توجد مصادر مضافة بعد.</p>
-                <p className="text-[11px] text-gray-400 mt-1">أضف رابطاً أو نصاً أو ملفاً أعلاه لتبدأ البحث الصارم.</p>
+                <p className="text-xs text-gray-500">{t('tools.source.empty')}</p>
+                <p className="text-[11px] text-gray-400 mt-1">{t('tools.source.emptyHint')}</p>
               </div>
             ) : (
               items.map(it => (
@@ -641,7 +641,7 @@ export default function NajeSource() {
                   <button 
                     onClick={() => removeItem(it.id)} 
                     className="p-1.5 text-gray-400 hover:text-red-500 rounded-lg transition cursor-pointer"
-                    title="حذف المصدر"
+                    title={t('tools.agent.deleteSource')}
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -658,9 +658,9 @@ export default function NajeSource() {
                 <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center mx-auto border border-emerald-500/20">
                   <BookOpen className="w-7 h-7" />
                 </div>
-                <p className="text-sm font-extrabold text-gray-900 dark:text-white">اسأل حصراً مما في المصادر</p>
+                <p className="text-sm font-extrabold text-gray-900 dark:text-white">{t('tools.source.askTitle')}</p>
                 <p className="text-xs text-gray-500 leading-relaxed">
-                  إذا لم يجد ناجي إجابة مباشرة من مصادرك، سيرد بحزم: «لم أجد في المصادر.» ولا مجال للتخمين أو المعلومات غير المؤكدة.
+                  {t('tools.source.askDesc')}
                 </p>
                 {items.length === 0 && (
                   <div className="pt-2">
@@ -668,7 +668,7 @@ export default function NajeSource() {
                       onClick={() => setTab('sources')}
                       className="h-8 px-4 rounded-xl bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-500 transition cursor-pointer"
                     >
-                      أضف مصادر أولاً
+                      {t('tools.source.addFirst')}
                     </button>
                   </div>
                 )}
@@ -685,7 +685,7 @@ export default function NajeSource() {
                           <img
                             key={idx}
                             src={img}
-                            alt="مرفق"
+                            alt={t('tools.developer.attachmentAlt')}
                             className="max-h-48 max-w-[240px] rounded-xl border border-white/20 object-cover shadow-sm cursor-pointer hover:opacity-95"
                             onClick={() => window.open(img, '_blank')}
                           />
@@ -721,7 +721,7 @@ export default function NajeSource() {
 
                       {m.usage && (
                         <div className="mt-2 text-[10px] font-bold text-amber-600 dark:text-amber-400">
-                          التكلفة: {Number(m.usage.charged || 0).toFixed(2)} نقطة
+                          {t('tools.developer.cost', { points: Number(m.usage.charged || 0).toFixed(2) })}
                         </div>
                       )}
                     </div>
@@ -734,7 +734,7 @@ export default function NajeSource() {
           <div className="p-3 border-t border-gray-200 dark:border-gray-800 bg-white/90 dark:bg-gray-950/90 backdrop-blur-md space-y-2">
             <div className="flex items-center justify-between gap-3 text-[11px] font-bold text-gray-600 dark:text-gray-300 px-1">
               <span className="flex items-center gap-1.5">
-                <span>السماح بالبحث خارج المصادر (الويب)</span>
+                <span>{t('tools.source.allowWeb')}</span>
               </span>
               <button
                 type="button"
@@ -748,8 +748,8 @@ export default function NajeSource() {
 
             <p className="text-[10px] text-gray-400 px-1">
               {allowWeb 
-                ? 'مفعل: إذا لم يجد في مصادرك، يبحث بالإنترنت ويبدأ رده ببيان أنه استعان بالويب.' 
-                : 'مقفل: الرد الصارم فقط مما هو موثق في مصادرك. إذا لم يجد، سيقول: لم أجد في المصادر.'}
+                ? t('tools.source.webOn')
+                : t('tools.source.webOff')}
             </p>
 
             {/* Image Preview Strip */}
@@ -757,19 +757,19 @@ export default function NajeSource() {
               <div className="flex flex-wrap items-center gap-2 mb-2 p-2 rounded-xl bg-gray-50 dark:bg-gray-900/60 border border-gray-200/80 dark:border-gray-800">
                 {attachedImages.map((img, idx) => (
                   <div key={idx} className="relative group w-14 h-14 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 shrink-0 shadow-xs">
-                    <img src={img} alt="مرفق" className="w-full h-full object-cover" />
+                    <img src={img} alt={t('tools.developer.attachmentAlt')} className="w-full h-full object-cover" />
                     <button
                       type="button"
                       onClick={() => handleRemoveImage(idx)}
                       className="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-black/70 hover:bg-red-600 text-white flex items-center justify-center transition cursor-pointer"
-                      title="حذف الصورة"
+                      title={t('tools.developer.removeImage')}
                     >
                       <X className="w-3 h-3" />
                     </button>
                   </div>
                 ))}
                 <span className="text-[11px] text-gray-400 mr-2">
-                  {attachedImages.length} من 4 صور مرفقة
+                  {t('tools.developer.imagesAttached', { count: attachedImages.length })}
                 </span>
               </div>
             )}
@@ -790,7 +790,7 @@ export default function NajeSource() {
                 onClick={() => chatImageRef.current?.click()}
                 disabled={sending || items.length === 0 || attachedImages.length >= 4} 
                 className="h-11 w-11 rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/80 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400 flex items-center justify-center disabled:opacity-40 transition-all cursor-pointer shrink-0 shadow-xs"
-                title="إرفاق صورة أو مستند (Word / PDF)"
+                title={t('tools.source.attachTitle')}
               >
                 <ImageIcon className="w-5 h-5" />
               </button>
@@ -800,7 +800,7 @@ export default function NajeSource() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 rows={1}
-                placeholder={items.length === 0 ? "أضف مصادر أولاً من تبويب المصادر..." : "اسأل استناداً إلى مصادرك فقط (Enter لسطر جديد)..."}
+                placeholder={items.length === 0 ? t('tools.source.placeholderEmpty') : t('tools.source.placeholderReady')}
                 disabled={sending || items.length === 0}
                 className="flex-1 min-h-[44px] max-h-[130px] overflow-y-auto resize-none rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 disabled:opacity-50 transition-colors leading-relaxed"
                 onKeyDown={(e) => {
@@ -816,7 +816,7 @@ export default function NajeSource() {
                 type="submit" 
                 disabled={sending || (!input.trim() && attachedImages.length === 0) || items.length === 0} 
                 className="h-11 w-11 rounded-xl bg-gradient-to-tr from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white flex items-center justify-center disabled:opacity-40 shadow-sm shadow-emerald-600/25 active:scale-95 transition-all cursor-pointer shrink-0"
-                title="إرسال"
+                title={t('tools.agent.send')}
               >
                 {sending ? <NajeSpinner className="w-4 h-4" /> : <ArrowUp className="w-5 h-5 stroke-[2.5]" />}
               </button>

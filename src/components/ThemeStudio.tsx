@@ -87,7 +87,7 @@ export default function ThemeStudio() {
       const result = await unlockThemeForUser(user, pendingId);
       markThemeUnlocked(pendingId, result.newBalance);
       await persistSelection(pendingId);
-      toast.success(t('themeStudio.unlockThemeTitle', { theme: pendingTheme?.nameAr || '' }));
+      toast.success(t('themeStudio.unlockThemeTitle', { theme: pendingTheme ? themeLabel(pendingTheme.id, pendingTheme.nameAr, pendingTheme.nameEn) : '' }));
     } catch (err: any) {
       setThemeColor(previousColor);
       toast.error(err?.message || t('common.error'));
@@ -96,7 +96,14 @@ export default function ThemeStudio() {
     }
   };
 
-  const pendingTheme = THEMES.find((t) => t.id === pendingId);
+  const themeLabel = (id: string, fallbackAr: string, fallbackEn: string) => {
+    const key = `shared.theme.${id}`;
+    const value = t(key);
+    if (value !== key) return value;
+    return isRtl ? fallbackAr : fallbackEn;
+  };
+
+  const pendingTheme = THEMES.find((theme) => theme.id === pendingId);
 
   return (
     <div dir={isRtl ? 'rtl' : 'ltr'} className="text-start">
@@ -161,7 +168,7 @@ export default function ThemeStudio() {
                 <ThemePie primary={theme.primary} secondary={theme.secondary} canvas="#111111" size={36} />
               </div>
               <div className="flex items-center justify-between gap-1">
-                <span className="text-[11px] font-extrabold text-gray-900 dark:text-white">{theme.nameAr}</span>
+                <span className="text-[11px] font-extrabold text-gray-900 dark:text-white">{themeLabel(theme.id, theme.nameAr, theme.nameEn)}</span>
                 {selected ? (
                   <Check className="w-3.5 h-3.5 text-indigo-500" />
                 ) : unlocked ? null : (
@@ -169,7 +176,7 @@ export default function ThemeStudio() {
                 )}
               </div>
               <div className="mt-0.5 text-[9px] font-bold text-gray-500 dark:text-gray-400">
-                {theme.free ? t('themeStudio.free') : unlocked ? t('themeStudio.unlocked') : `${THEME_UNLOCK_COST} ${t('common.pointsShort') || 'نقطة'}`}
+                {theme.free ? t('themeStudio.free') : unlocked ? t('themeStudio.unlocked') : `${THEME_UNLOCK_COST} ${t('common.points')}`}
               </div>
             </button>
           );
@@ -192,7 +199,7 @@ export default function ThemeStudio() {
               <ThemePie primary={pendingTheme.primary} secondary={pendingTheme.secondary} canvas="#111" size={44} />
               <div>
                 <h3 className="text-sm font-extrabold text-gray-900 dark:text-white">
-                  {t('themeStudio.unlockThemeTitle', { theme: pendingTheme.nameAr })}
+                  {t('themeStudio.unlockThemeTitle', { theme: themeLabel(pendingTheme.id, pendingTheme.nameAr, pendingTheme.nameEn) })}
                 </h3>
                 <p className="text-[11px] text-gray-600 dark:text-gray-400 mt-0.5">
                   {t('themeStudio.unlockThemeDesc')}

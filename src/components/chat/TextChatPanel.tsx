@@ -37,6 +37,7 @@ import najeTemplateGallery from '../../assets/icons/naje-template-gallery.svg';
 
 function NajeEditTransmission({ imageSrc, getLocalDoc }: { imageSrc: string; getLocalDoc?: (id: string) => Promise<string | null> }) {
   const [b64Src, setB64Src] = React.useState<string | null>(null);
+  const { t } = useI18n();
 
   React.useEffect(() => {
     if (!imageSrc) return;
@@ -75,7 +76,7 @@ function NajeEditTransmission({ imageSrc, getLocalDoc }: { imageSrc: string; get
           />
         ))}
       </div>
-      <span className="font-semibold text-indigo-100">جاري إرسال الصورة الأصلية والتعليمات للنموذج...</span>
+      <span className="font-semibold text-indigo-100">{t('chatui.sendingOriginal')}</span>
     </div>
   );
 }
@@ -304,6 +305,11 @@ export default function TextChatPanel({
   const { user, systemStatus, maintenanceDismissed, setMaintenanceDismissed } = useAppStore();
   const { isRtl, t } = useI18n();
   const pricing = usePricingConfig();
+  const cat = (group: 'vt' | 'it' | 'ig', id: string, field: 'name' | 'desc', fallback: string) => {
+    const key = `chatui.${group}.${id}.${field}`;
+    const value = t(key);
+    return value === key ? fallback : value;
+  };
   const [isBrandKitModalOpen, setIsBrandKitModalOpen] = useState(false);
   const [showInfographicModal, setShowInfographicModal] = useState(false);
   const [dismissedInfographicChip, setDismissedInfographicChip] = useState(false);
@@ -328,12 +334,12 @@ export default function TextChatPanel({
                 onClose={() => setMaintenanceDismissed(true)}
                 jsonContent={`__NAJE_ERROR_JSON__:${JSON.stringify({
                   emoji: "",
-                  title: systemStatus.title || "إيقاف الخدمات مؤقتاً للتطوير والإصلاح",
-                  intro: systemStatus.intro || "تم إيقاف الخدمات من أجل التطوير والإصلاح، شكراً لكم.",
-                  explanation: systemStatus.explanation || "يقوم فريق المطورين حالياً بإجراء تحديثات هامة وتحسينات أمنية وشاملة للبنية التحتية لضمان تقديم أداء أفضل وأسرع لكافة المستخدمين. سينتهي العمل وتعود كافة الخدمات فور اكتمال التحديثات.",
+                  title: systemStatus.title || t('chatui.maintenanceTitle'),
+                  intro: systemStatus.intro || t('chatui.maintenanceIntro'),
+                  explanation: systemStatus.explanation || t('chatui.maintenanceExplanation'),
                   solutions: Array.isArray(systemStatus.solutions) && systemStatus.solutions.length > 0 
                     ? systemStatus.solutions 
-                    : ["يرجى الانتظار والعودة لاحقاً.", "تابع الإشعارات الرسمية لمعرفة فور عودة الخدمة للعمل."]
+                    : [t('chatui.maintenanceS1'), t('chatui.maintenanceS2')]
                 })}`}
               />
             </div>
@@ -357,14 +363,16 @@ export default function TextChatPanel({
               </div>
 
               <h3 className="text-xl sm:text-3xl font-extrabold text-gray-900 dark:text-white mb-2 tracking-tight">
-                مرحباً {user?.displayName?.split(" ")[0] || ""}، كيف يمكنني مساعدتك اليوم؟
+                {t('studio.welcomeGreeting', { name: user?.displayName?.split(' ')[0] || '' })}
               </h3>
               <p className="text-xs sm:text-sm text-gray-800 dark:text-gray-400 max-w-md mx-auto leading-relaxed opacity-80">
-                {chat?.type === 'text' 
-                  ? 'مساعدك الشخصي الذكي لصياغة وتحليل النصوص وتوليد التقارير والمستندات منسقة بالكامل.' 
+                {chat?.type === 'text'
+                  ? t('studio.welcomeTextDesc')
                   : chat?.type === 'voice'
-                  ? 'استوديو التسجيلات الصوتية الاحترافي لتوليد المحادثات والتعليق الصوتي.'
-                  : `استعد لابتكار أرقى ${chat?.type === 'image' ? 'التصاميم والصور الإبداعية' : 'مقاطع الفيديو الفنية السينمائية'} بدقة بكسلية متناهية.`}
+                  ? t('studio.welcomeVoiceDesc')
+                  : chat?.type === 'image'
+                  ? t('studio.welcomeImageDesc')
+                  : t('studio.welcomeVideoDesc')}
               </p>
             </div>
           )}
@@ -375,7 +383,7 @@ export default function TextChatPanel({
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-gray-800 dark:text-gray-300 text-xs sm:text-sm font-bold flex items-center gap-1.5">
                   <img src={najeTemplateGallery} alt="" className="w-4 h-4 object-contain" />
-                  <span>اختر أسلوب فني للمقطع ({videoTemplates.length} نمط):</span>
+                  <span>{t('chatui.patternCount', { label: t('studio.selectVideoStyle'), count: videoTemplates.length })}</span>
                 </h3>
                 {selectedVideoTemplate && (
                   <button
@@ -383,13 +391,15 @@ export default function TextChatPanel({
                     onClick={() => setSelectedVideoTemplate(null)}
                     className="text-[11px] sm:text-xs text-rose-500 hover:text-rose-600 font-bold flex items-center gap-1 cursor-pointer bg-rose-500/10 px-2 py-1 rounded-lg"
                   >
-                    <X className="w-3 h-3" /> إلغاء المحدد
+                    <X className="w-3 h-3" /> {t('studio.cancelSelected')}
                   </button>
                 )}
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-3.5">
                 {videoTemplates.map(tmpl => {
                   const isSelected = selectedVideoTemplate === tmpl.id;
+                  const tmplName = cat('vt', String(tmpl.id), 'name', tmpl.name);
+                  const tmplDesc = cat('vt', String(tmpl.id), 'desc', tmpl.desc);
                   return (
                     <button
                       key={tmpl.id}
@@ -397,7 +407,7 @@ export default function TextChatPanel({
                       onClick={() => {
                         setSelectedVideoTemplate(isSelected ? null : tmpl.id);
                       }}
-                      className={`group relative rounded-2xl overflow-hidden text-right transition-all duration-200 border cursor-pointer flex flex-col ${
+                      className={`group relative rounded-2xl overflow-hidden text-start transition-all duration-200 border cursor-pointer flex flex-col ${
                         isSelected
                           ? 'border-indigo-500 ring-2 ring-indigo-500/40 shadow-lg shadow-indigo-500/20 scale-[1.02]'
                           : 'border-gray-200 dark:border-gray-800 hover:border-indigo-400 dark:hover:border-indigo-500/50 bg-white dark:bg-gray-900'
@@ -406,7 +416,7 @@ export default function TextChatPanel({
                       <div className="relative aspect-[4/3] w-full overflow-hidden bg-gray-100 dark:bg-gray-800">
                         <img
                           src={tmpl.image}
-                          alt={tmpl.name}
+                          alt={tmplName}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                           loading="lazy"
                           decoding="async"
@@ -422,13 +432,13 @@ export default function TextChatPanel({
                             <Sparkles className="w-3.5 h-3.5" />
                           </div>
                         )}
-                        <span className="absolute bottom-2 right-2 left-2 text-white font-bold text-xs sm:text-sm line-clamp-1 drop-shadow-md">
-                          {tmpl.name}
+                        <span className="absolute bottom-2 start-2 end-2 text-white font-bold text-xs sm:text-sm line-clamp-1 drop-shadow-md">
+                          {tmplName}
                         </span>
                       </div>
                       <div className="p-2 sm:p-2.5 flex-1 flex flex-col justify-between">
                         <p className="text-[11px] sm:text-xs text-gray-700 dark:text-gray-400 leading-snug line-clamp-2">
-                          {tmpl.desc}
+                          {tmplDesc}
                         </p>
                       </div>
                     </button>
@@ -443,7 +453,7 @@ export default function TextChatPanel({
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-gray-800 dark:text-gray-300 text-xs sm:text-sm font-bold flex items-center gap-1.5">
                   <img src={najeTemplateGallery} alt="" className="w-4 h-4 object-contain" />
-                  <span>اختر أسلوباً للتصميم ({imageTemplates.length} نمط):</span>
+                  <span>{t('chatui.patternCount', { label: t('studio.selectImageStyle'), count: imageTemplates.length })}</span>
                 </h3>
                 {selectedImageTemplate && (
                   <button
@@ -451,13 +461,15 @@ export default function TextChatPanel({
                     onClick={() => setSelectedImageTemplate(null)}
                     className="text-[11px] sm:text-xs text-rose-500 hover:text-rose-600 font-bold flex items-center gap-1 cursor-pointer bg-rose-500/10 px-2 py-1 rounded-lg"
                   >
-                    <X className="w-3 h-3" /> إلغاء المحدد
+                    <X className="w-3 h-3" /> {t('studio.cancelSelected')}
                   </button>
                 )}
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-3.5">
                 {imageTemplates.map(tmpl => {
                   const isSelected = selectedImageTemplate === tmpl.id;
+                  const tmplName = cat('it', String(tmpl.id), 'name', tmpl.name);
+                  const tmplDesc = cat('it', String(tmpl.id), 'desc', tmpl.desc);
                   return (
                     <button
                       key={tmpl.id}
@@ -465,7 +477,7 @@ export default function TextChatPanel({
                       onClick={() => {
                         setSelectedImageTemplate(isSelected ? null : tmpl.id);
                       }}
-                      className={`group relative rounded-2xl overflow-hidden text-right transition-all duration-200 border cursor-pointer flex flex-col ${
+                      className={`group relative rounded-2xl overflow-hidden text-start transition-all duration-200 border cursor-pointer flex flex-col ${
                         isSelected
                           ? 'border-indigo-500 ring-2 ring-indigo-500/40 shadow-lg shadow-indigo-500/20 scale-[1.02]'
                           : 'border-gray-200 dark:border-gray-800 hover:border-indigo-400 dark:hover:border-indigo-500/50 bg-white dark:bg-gray-900'
@@ -474,7 +486,7 @@ export default function TextChatPanel({
                       <div className="relative aspect-[4/3] w-full overflow-hidden bg-gray-100 dark:bg-gray-800">
                         <img
                           src={tmpl.image}
-                          alt={tmpl.name}
+                          alt={tmplName}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                           loading="lazy"
                           decoding="async"
@@ -490,13 +502,13 @@ export default function TextChatPanel({
                             <Sparkles className="w-3.5 h-3.5" />
                           </div>
                         )}
-                        <span className="absolute bottom-2 right-2 left-2 text-white font-bold text-xs sm:text-sm line-clamp-1 drop-shadow-md">
-                          {tmpl.name}
+                        <span className="absolute bottom-2 start-2 end-2 text-white font-bold text-xs sm:text-sm line-clamp-1 drop-shadow-md">
+                          {tmplName}
                         </span>
                       </div>
                       <div className="p-2 sm:p-2.5 flex-1 flex flex-col justify-between">
                         <p className="text-[11px] sm:text-xs text-gray-700 dark:text-gray-400 leading-snug line-clamp-2">
-                          {tmpl.desc}
+                          {tmplDesc}
                         </p>
                       </div>
                     </button>
@@ -508,8 +520,8 @@ export default function TextChatPanel({
 
           {/* Text Features Quick Suggestions */}
           {chat.type === 'text' && messages.length === 0 && (
-            <div className="mb-6 text-right w-full">
-              <h3 className="text-gray-800 dark:text-gray-400 text-sm font-semibold mb-3 pr-1">الميزات والإمكانات المتاحة:</h3>
+            <div className="mb-6 text-start w-full">
+              <h3 className="text-gray-800 dark:text-gray-400 text-sm font-semibold mb-3 ps-1">{t('chatui.featuresAvailable')}</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                 {textFeatures.map(feat => (
                   <button
@@ -518,17 +530,17 @@ export default function TextChatPanel({
                       setInput(feat.prompt);
                       executeSubmission(feat.prompt);
                     }}
-                    className="p-3.5 sm:p-4 rounded-2xl text-right transition border bg-[#f2f0f5] dark:bg-gray-900/80 dark:hover:bg-gray-800 border-purple-200/60 dark:border-gray-800 hover:border-purple-300 hover:bg-purple-100/10 flex flex-col gap-1 cursor-pointer group w-full shadow-sm"
+                    className="p-3.5 sm:p-4 rounded-2xl text-start transition border bg-[#f2f0f5] dark:bg-gray-900/80 dark:hover:bg-gray-800 border-purple-200/60 dark:border-gray-800 hover:border-purple-300 hover:bg-purple-100/10 flex flex-col gap-1 cursor-pointer group w-full shadow-sm"
                   >
                     <div className="flex items-center gap-2.5">
                       <div className="w-8 h-8 rounded-xl bg-purple-50 dark:bg-purple-950/40 border border-purple-200/50 dark:border-purple-800/50 flex items-center justify-center shrink-0">
                         <img src={feat.icon} alt="" className="w-4 h-4 object-contain" />
                       </div>
-                      <span className="font-bold text-sm text-gray-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">{feat.title}</span>
+                      <span className="font-bold text-sm text-gray-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">{t(`chatui.feat.${feat.id}.title`)}</span>
                     </div>
-                    <div className="text-xs text-gray-700 dark:text-gray-400 leading-relaxed mt-1">{feat.desc}</div>
+                    <div className="text-xs text-gray-700 dark:text-gray-400 leading-relaxed mt-1">{t(`chatui.feat.${feat.id}.desc`)}</div>
                     <div className="text-[10px] text-indigo-600 dark:text-indigo-400/80 font-semibold mt-2 border-t border-gray-200/60 dark:border-gray-800/40 pt-1.5 flex items-center gap-1">
-                      <span>تجربة سريعة:</span>
+                      <span>{t('chatui.quickTry')}</span>
                       <span className="text-gray-800 dark:text-gray-400 font-normal truncate">"{feat.prompt}"</span>
                     </div>
                   </button>
@@ -618,25 +630,28 @@ export default function TextChatPanel({
                 </div>
                 <div className="flex-1 min-w-0">
                   <h3 className="font-bold text-base text-gray-900 dark:text-white mb-1">
-                    طلب إنشاء مستند إبداعي تلقائي
+                    {t('chatui.autoDocTitle')}
                   </h3>
                   <p className="text-sm text-gray-600 dark:text-gray-300 mb-4 leading-relaxed">
-                    هل ترغب في تحويل هذه المحادثة إلى مستند <span className="font-bold text-indigo-600 dark:text-indigo-400">{pendingDocConfirm.docType.toUpperCase()}</span>؟ يتطلب هذا الإجراء خصم نقاط من رصيدك.
+                    {t('chatui.autoDocBody')}{' '}
+                    <span className="font-bold text-indigo-600 dark:text-indigo-400">{pendingDocConfirm.docType.toUpperCase()}</span>
                   </p>
                   <div className="naje-glass-card p-3.5 mb-5">
                     <div className="flex justify-between items-center text-sm mb-1.5">
-                      <span className="text-gray-500 dark:text-gray-400">نوع المستند:</span>
+                      <span className="text-gray-500 dark:text-gray-400">{t('chatui.docTypeLabel')}</span>
                       <span className="font-semibold text-gray-900 dark:text-white">
-                        {pendingDocConfirm.docType === 'pptx' ? 'عرض تقديمي (PowerPoint)' : pendingDocConfirm.docType === 'docx' ? 'مستند Word' : pendingDocConfirm.docType === 'pdf_slides' ? 'شرائح PDF' : 'مستند PDF'}
+                        {pendingDocConfirm.docType === 'pptx' ? t('chatui.docPptxFull') : pendingDocConfirm.docType === 'docx' ? t('chatui.docWordFull') : pendingDocConfirm.docType === 'pdf_slides' ? t('studio.docPdfSlides') : t('studio.docPdfDoc')}
                       </span>
                     </div>
                     <div className="flex justify-between items-center text-sm">
-                      <span className="text-gray-500 dark:text-gray-400">التكلفة المتوقعة:</span>
+                      <span className="text-gray-500 dark:text-gray-400">{t('chatui.expectedCost')}</span>
                       <span className="font-bold text-indigo-600 dark:text-indigo-400">
-                        {(pendingDocConfirm.docType === 'pptx' || pendingDocConfirm.docType === 'pdf_slides') 
-                          ? parseFloat((pendingDocConfirm.estimatedCount * 0.20).toFixed(2)) 
+                        {t('chatui.pointsCount', { count: (pendingDocConfirm.docType === 'pptx' || pendingDocConfirm.docType === 'pdf_slides')
+                          ? parseFloat((pendingDocConfirm.estimatedCount * 0.20).toFixed(2))
                           : parseFloat((pendingDocConfirm.estimatedCount * (paperSize === 'a5' ? 0.10 : 0.15)).toFixed(2))
-                        } نقاط ({pendingDocConfirm.estimatedCount} {(pendingDocConfirm.docType === 'pptx' || pendingDocConfirm.docType === 'pdf_slides') ? 'شريحة' : 'صفحة'} مقترحة)
+                        })} ({(pendingDocConfirm.docType === 'pptx' || pendingDocConfirm.docType === 'pdf_slides')
+                          ? t('chatui.suggestedSlides', { count: pendingDocConfirm.estimatedCount })
+                          : t('chatui.suggestedPages', { count: pendingDocConfirm.estimatedCount })})
                       </span>
                     </div>
                   </div>
@@ -661,10 +676,10 @@ export default function TextChatPanel({
                       type="button"
                       className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white py-2.5 px-4 rounded-xl text-sm font-semibold shadow-md shadow-indigo-600/10 active:scale-95 transition cursor-pointer"
                     >
-                      توليد المستند ({(pendingDocConfirm.docType === 'pptx' || pendingDocConfirm.docType === 'pdf_slides') 
-                        ? parseFloat((pendingDocConfirm.estimatedCount * 0.20).toFixed(2)) 
+                      {t('chatui.generateDocPoints', { cost: (pendingDocConfirm.docType === 'pptx' || pendingDocConfirm.docType === 'pdf_slides')
+                        ? parseFloat((pendingDocConfirm.estimatedCount * 0.20).toFixed(2))
                         : parseFloat((pendingDocConfirm.estimatedCount * (paperSize === 'a5' ? 0.10 : 0.15)).toFixed(2))
-                      } نقاط)
+                      })}
                     </button>
                     <button
                       onClick={() => {
@@ -673,7 +688,7 @@ export default function TextChatPanel({
                       type="button"
                       className="px-4 py-2.5 bg-gray-100 dark:hover:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl text-sm font-semibold active:scale-95 transition cursor-pointer"
                     >
-                      إلغاء
+                      {t('common.cancel')}
                     </button>
                   </div>
                 </div>
@@ -691,11 +706,14 @@ export default function TextChatPanel({
           <form onSubmit={handleSend} className="w-full max-w-4xl mx-auto flex flex-col gap-2.5 relative transition-all duration-200">
             
             {/* Info Packet Card placed directly above the send button/input box */}
-            {chat.type === 'video' && selectedVideoTemplate && (
+            {chat.type === 'video' && selectedVideoTemplate && (() => {
+              const selected = videoTemplates.find(item => item.id === selectedVideoTemplate);
+              if (!selected) return null;
+              return (
               <div className="naje-glass-card p-3 sm:p-3.5 rounded-2xl border-indigo-500/40 bg-indigo-500/10 dark:bg-indigo-500/10 relative overflow-hidden flex items-center gap-3 shadow-md animate-in fade-in duration-200">
                 <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl overflow-hidden flex-shrink-0 border border-indigo-500/40 shadow">
                   <img
-                    src={videoTemplates.find(t => t.id === selectedVideoTemplate)?.image}
+                    src={selected.image}
                     alt="style preview"
                     className="w-full h-full object-cover"
                   />
@@ -703,35 +721,39 @@ export default function TextChatPanel({
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-0.5">
                     <span className="text-[10px] sm:text-xs bg-indigo-600 text-white px-2 py-0.5 rounded-md font-bold flex-shrink-0 shadow-sm">
-                      تم تثبيت الأسلوب
+                      {t('studio.stylePinned')}
                     </span>
                     <h4 className="font-bold text-xs sm:text-sm text-gray-900 dark:text-white truncate">
-                      {videoTemplates.find(t => t.id === selectedVideoTemplate)?.name}
+                      {cat('vt', String(selected.id), 'name', selected.name)}
                     </h4>
                   </div>
                   <p className="text-[10px] sm:text-xs text-gray-700 dark:text-gray-300 line-clamp-1">
-                    {videoTemplates.find(t => t.id === selectedVideoTemplate)?.desc}
+                    {cat('vt', String(selected.id), 'desc', selected.desc)}
                   </p>
                   <p className="text-[10px] sm:text-[11px] text-indigo-600 dark:text-indigo-400 font-semibold mt-0.5">
-                    اكتب موضوع المقطع فقط وسنطبق الأسلوب تلقائياً.
+                    {t('studio.styleVideoPromptHint')}
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={() => setSelectedVideoTemplate(null)}
                   className="p-1.5 sm:p-2 rounded-xl text-gray-800 dark:text-gray-400 hover:text-rose-500 hover:bg-rose-500/10 transition flex-shrink-0 cursor-pointer"
-                  title="إلغاء الأسلوب"
+                  title={t('studio.cancelStyle')}
                 >
                   <X className="w-4 h-4 sm:w-5 sm:h-5" />
                 </button>
               </div>
-            )}
+              );
+            })()}
 
-            {chat.type === 'image' && selectedImageTemplate && (
+            {chat.type === 'image' && selectedImageTemplate && (() => {
+              const selected = imageTemplates.find(item => item.id === selectedImageTemplate);
+              if (!selected) return null;
+              return (
               <div className="naje-glass-card p-3 sm:p-3.5 rounded-2xl border-indigo-500/40 bg-indigo-500/10 dark:bg-indigo-500/10 relative overflow-hidden flex items-center gap-3 shadow-md animate-in fade-in duration-200">
                 <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl overflow-hidden flex-shrink-0 border border-indigo-500/40 shadow">
                   <img
-                    src={imageTemplates.find(t => t.id === selectedImageTemplate)?.image}
+                    src={selected.image}
                     alt="style preview"
                     className="w-full h-full object-cover"
                   />
@@ -739,36 +761,37 @@ export default function TextChatPanel({
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-0.5">
                     <span className="text-[10px] sm:text-xs bg-indigo-600 text-white px-2 py-0.5 rounded-md font-bold flex-shrink-0 shadow-sm">
-                      تم تثبيت الأسلوب
+                      {t('studio.stylePinned')}
                     </span>
                     <h4 className="font-bold text-xs sm:text-sm text-gray-900 dark:text-white truncate">
-                      {imageTemplates.find(t => t.id === selectedImageTemplate)?.name}
+                      {cat('it', String(selected.id), 'name', selected.name)}
                     </h4>
                   </div>
                   <p className="text-[10px] sm:text-xs text-gray-700 dark:text-gray-300 line-clamp-1">
-                    {imageTemplates.find(t => t.id === selectedImageTemplate)?.desc}
+                    {cat('it', String(selected.id), 'desc', selected.desc)}
                   </p>
                   <p className="text-[10px] sm:text-[11px] text-indigo-600 dark:text-indigo-400 font-semibold mt-0.5">
-                    أرفق صورتك أو وصفك وسنطبق الأسلوب تلقائياً.
+                    {t('studio.styleImagePromptHint')}
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={() => setSelectedImageTemplate(null)}
                   className="p-1.5 sm:p-2 rounded-xl text-gray-800 dark:text-gray-400 hover:text-rose-500 hover:bg-rose-500/10 transition flex-shrink-0 cursor-pointer"
-                  title="إلغاء الأسلوب"
+                  title={t('studio.cancelStyle')}
                 >
                   <X className="w-4 h-4" />
                 </button>
               </div>
-            )}
+              );
+            })()}
 
             {/* Custom Image Instructions Input Field (Only in Image generation) */}
             {chat.type === 'image' && (
               <input
                 value={imageInstructions}
                 onChange={e => setImageInstructions(e.target.value)}
-                placeholder="تعليمات مخصصة (مثال: شعار بدون خلفية، التركيز على ألوان دافئة، نمط ثلاثي الأبعاد...)"
+                placeholder={t('studio.customImageInstructions')}
                 className="w-full bg-white dark:bg-gray-900/45 border border-gray-200 dark:border-gray-800/60 rounded-2xl px-4 py-2 text-xs text-gray-900 dark:text-gray-300 focus:border-indigo-500/50 outline-none transition"
                 disabled={loading}
               />
@@ -789,7 +812,7 @@ export default function TextChatPanel({
                     <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-900/60 pb-2">
                       <div className="flex items-center gap-1.5 font-bold text-gray-900 dark:text-white">
                         <FileText className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-                        <span>توليد وتأسيس مستند متكامل</span>
+                        <span>{t('studio.fullDocumentGeneration')}</span>
                       </div>
                       <button 
                         type="button" 
@@ -802,14 +825,14 @@ export default function TextChatPanel({
 
                     <div className={cn("grid grid-cols-1 gap-4", docType === 'none' ? "sm:grid-cols-1" : (docType === 'pptx' || docType === 'pdf_slides') ? "sm:grid-cols-2" : "sm:grid-cols-3")}>
                       <div className="flex flex-col gap-2 col-span-full">
-                        <span className="text-xs text-gray-800 dark:text-gray-400 font-bold">نوع الملف المطلوب:</span>
+                        <span className="text-xs text-gray-800 dark:text-gray-400 font-bold">{t('studio.requiredFileType')}</span>
                         <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
                           {[
-                            { id: 'none', label: 'بدون مستند', desc: 'دردشة فقط', icon: najeChatTyping },
-                            { id: 'pptx', label: 'عرض PowerPoint', desc: 'موصى به للتعديل أو المشاركة', icon: najeChartBars, isPptx: true },
-                            { id: 'pdf_slides', label: 'شرائح PDF', desc: 'مضمون 100% (تضمين الخطوط)', icon: najeFilmstrip },
-                            { id: 'pdf_doc', label: 'مستند PDF', desc: 'للتقارير والعروض المكتوبة', icon: najeDocument },
-                            { id: 'docx', label: 'Word', desc: 'قابل للتعديل', icon: najePencilWrite }
+                            { id: 'none', label: t('studio.docNone'), desc: t('studio.docNoneDesc'), icon: najeChatTyping },
+                            { id: 'pptx', label: t('studio.docPptx'), desc: t('studio.docPptxDesc'), icon: najeChartBars, isPptx: true },
+                            { id: 'pdf_slides', label: t('studio.docPdfSlides'), desc: t('studio.docPdfSlidesDesc'), icon: najeFilmstrip },
+                            { id: 'pdf_doc', label: t('studio.docPdfDoc'), desc: t('studio.docPdfDocDesc'), icon: najeDocument },
+                            { id: 'docx', label: t('studio.docWord'), desc: t('studio.docWordDesc'), icon: najePencilWrite }
                           ].map(opt => (
                             <button
                               key={opt.id}
@@ -832,7 +855,7 @@ export default function TextChatPanel({
 
                       {docType !== 'none' && (docType === 'pptx' || docType === 'pdf_slides') && (
                         <div className="flex flex-col gap-1.5">
-                          <span className="text-xs text-gray-800 dark:text-gray-400 ">عدد الشرائح المطلوبة</span>
+                          <span className="text-xs text-gray-800 dark:text-gray-400 ">{t('studio.slidesCount')}</span>
                           <div className="flex flex-wrap gap-2">
                             {[3, 5, 7, 10, 15, 20].map(num => (
                               <button
@@ -846,7 +869,7 @@ export default function TextChatPanel({
                                     : "bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 text-gray-800 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                                 )}
                               >
-                                {num} شرائح
+                                {t('chatui.nSlides', { count: num })}
                               </button>
                             ))}
                           </div>
@@ -856,18 +879,18 @@ export default function TextChatPanel({
                       {(docType === 'pdf_doc' || docType === 'docx') && (
                         <>
                           <div className="flex flex-col gap-1.5">
-                            <span className="text-xs text-gray-800 dark:text-gray-400 ">مقاس الصفحة</span>
+                            <span className="text-xs text-gray-800 dark:text-gray-400 ">{t('studio.pageSize')}</span>
                             <NajeSelect
                                value={paperSize}
                                onChange={(val) => setPaperSize(val as 'a4' | 'a5')}
                                options={[
-                                 { value: 'a4', label: `A4 (${pricing.document?.a4PerPage ?? 0.15} نقطة/صفحة)` },
-                                 { value: 'a5', label: `A5 (${pricing.document?.a5PerPage ?? 0.10} نقطة/صفحة)` }
+                                 { value: 'a4', label: `A4 (${t('chatui.perPage', { cost: pricing.document?.a4PerPage ?? 0.15 })})` },
+                                 { value: 'a5', label: `A5 (${t('chatui.perPage', { cost: pricing.document?.a5PerPage ?? 0.10 })})` }
                                ]}
                             />
                           </div>
                           <div className="flex flex-col gap-1.5">
-                            <span className="text-xs text-gray-800 dark:text-gray-400 ">عدد الصفحات التقريبي</span>
+                            <span className="text-xs text-gray-800 dark:text-gray-400 ">{t('studio.approxPages')}</span>
                             <NajeSelect
                                value={pagesCount.toString()}
                                onChange={(val) => setPagesCount(parseInt(val))}
@@ -876,7 +899,9 @@ export default function TextChatPanel({
                                  const total = parseFloat((cnt * rate).toFixed(2));
                                  return {
                                    value: cnt.toString(),
-                                   label: `${cnt} ${cnt <= 10 ? 'صفحات' : 'صفحة'} (${total} نقطة)`
+                                   label: cnt <= 10
+                                     ? t('chatui.pagesOrPageFew', { count: cnt, total })
+                                     : t('chatui.pagesOrPageMany', { count: cnt, total })
                                  };
                                })}
                             />
@@ -888,14 +913,14 @@ export default function TextChatPanel({
                     <div className="flex flex-col sm:flex-row justify-between items-center gap-2 sm:gap-3 bg-indigo-50 dark:bg-indigo-500/10 p-2 sm:p-2.5 rounded-xl border border-indigo-400 dark:border-indigo-500/20 mt-2">
                       <div className="flex items-center gap-1.5 text-[10px] sm:text-[11px] text-indigo-700 dark:text-indigo-300 font-medium">
                         <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
-                        <span className="leading-tight">التكلفة: <strong className="text-indigo-600 dark:text-indigo-400 font-bold">{getCalculatedCost()}</strong> نقطة (تُخصم عند الإرسال)</span>
+                        <span className="leading-tight">{t('chatui.costDeducted', { cost: getCalculatedCost() })}</span>
                       </div>
                       <button 
                         type="button"
                         onClick={() => setShowDocSettings(false)}
                         className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-1.5 rounded-lg text-[11px] font-bold transition cursor-pointer flex-shrink-0"
                       >
-                        تأكيد
+                        {t('studio.confirm')}
                       </button>
                     </div>
                   </motion.div>
@@ -1025,7 +1050,12 @@ export default function TextChatPanel({
                         onClick={() => { setShowDocSettings(!showDocSettings); setShowImageSettings(false); setShowVideoSettings(false); }}
                      >
                         <FileText className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-indigo-600 dark:text-indigo-400 shrink-0" />
-                        <span>مستند: {docType === 'pdf_slides' ? 'شرائح PDF' : docType === 'pdf_doc' ? 'مستند PDF' : docType === 'docx' ? 'Word' : 'PowerPoint'} ({(docType === 'pptx' || docType === 'pdf_slides') ? `${slidesCount} شرائح` : `${pagesCount} صفحات (${paperSize.toUpperCase()})`})</span>
+                        <span>{t('chatui.docBadge', {
+                          type: docType === 'pdf_slides' ? t('studio.docPdfSlides') : docType === 'pdf_doc' ? t('studio.docPdfDoc') : docType === 'docx' ? t('studio.docWord') : t('studio.docPptx'),
+                          detail: (docType === 'pptx' || docType === 'pdf_slides')
+                            ? t('chatui.slidesDetail', { count: slidesCount })
+                            : t('chatui.pagesDetail', { count: pagesCount, size: paperSize.toUpperCase() })
+                        })}</span>
                         <ChevronDown className="w-2.5 h-2.5 sm:w-3 sm:h-3 opacity-70 mr-0.5 shrink-0" />
                         <button type="button" onClick={(e) => { e.stopPropagation(); setDocType('none'); }} className="hover:text-gray-900 dark:hover:text-white hover:bg-indigo-900/50 rounded-full p-0.5 transition-colors mr-0.5 shrink-0">
                            <X className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
@@ -1056,7 +1086,9 @@ export default function TextChatPanel({
                         )}
                       >
                         <ImageIcon className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0 text-indigo-500" />
-                        <span>{imagePreset !== 'custom' ? (imagePreset === 'fb_cover' ? 'غلاف FB' : imagePreset === 'fb_post' ? 'منشور FB' : imagePreset === 'ig_square' ? '1:1 IG' : imagePreset === 'ig_portrait' ? '4:5 IG' : imagePreset === 'ig_story' ? '9:16 IG' : 'يوتيوب') : aspectRatio} • {imageQuality.toUpperCase()}</span>
+                        <span>{imagePreset !== 'custom'
+                          ? (t(`chatui.preset.${imagePreset}`) === `chatui.preset.${imagePreset}` ? t('chatui.preset.youtube') : t(`chatui.preset.${imagePreset}`))
+                          : aspectRatio} • {imageQuality.toUpperCase()}</span>
                         <ChevronDown className={cn("w-2.5 h-2.5 sm:w-3 sm:h-3 opacity-70 mr-0.5 shrink-0 transition-transform", showImageSettings && "rotate-180")} />
                       </button>
                     </>
@@ -1085,7 +1117,7 @@ export default function TextChatPanel({
                         )}
                       >
                         <Film className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0 text-pink-500" />
-                        <span>{(aspectRatio === '9:16' ? '9:16' : '16:9')} • {videoResolution} • {videoDuration} ث</span>
+                        <span>{(aspectRatio === '9:16' ? '9:16' : '16:9')} • {videoResolution} • {t('chatui.secondsShort', { count: videoDuration })}</span>
                         <ChevronDown className={cn("w-2.5 h-2.5 sm:w-3 sm:h-3 opacity-70 mr-0.5 shrink-0 transition-transform", showVideoSettings && "rotate-180")} />
                       </button>
                     </>
@@ -1098,7 +1130,7 @@ export default function TextChatPanel({
                         onClick={() => { setShowVoiceSettings(!showVoiceSettings); setShowDocSettings(false); setShowImageSettings(false); setShowVideoSettings(false); }}
                      >
                         <Mic2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-emerald-500 shrink-0" />
-                        <span>Naje Voice {voiceTier === 'pro' ? 'Pro' : 'Core'} ({voiceMode === 'single' ? VOICES.find(v => v.id === selectedVoice)?.name : `${speaker1Name || 'المتحدث 1'} & ${speaker2Name || 'المتحدث 2'}`})</span>
+                        <span>Naje Voice {voiceTier === 'pro' ? 'Pro' : 'Core'} ({voiceMode === 'single' ? t(`chatui.voiceName.${selectedVoice}`) : `${speaker1Name || t('chatui.speakerFallback1')} & ${speaker2Name || t('chatui.speakerFallback2')}`})</span>
                         <ChevronDown className="w-2.5 h-2.5 sm:w-3 sm:h-3 opacity-70 mr-0.5 shrink-0" />
                      </div>
                   )}
@@ -1108,7 +1140,7 @@ export default function TextChatPanel({
                 {getCalculatedCost() > 0 && (
                   <div className="inline-flex items-center gap-1 bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-500/15 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-xl text-[10px] sm:text-[11px] text-indigo-600 dark:text-indigo-400 font-bold tracking-tight shadow-sm ms-auto whitespace-nowrap shrink-0">
                     <Sparkles className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-indigo-600 dark:text-indigo-400 flex-shrink-0" />
-                    <span><span className="hidden xs:inline sm:inline">تكلفة الطلب: </span>{getCalculatedCost()} نقاط</span>
+                    <span><span className="hidden xs:inline sm:inline">{t('studio.requestCost')} </span>{getCalculatedCost()} {t('common.points')}</span>
                   </div>
                 )}
               </div>
@@ -1121,7 +1153,7 @@ export default function TextChatPanel({
                   <div className="flex items-center gap-2 min-w-0">
                     <img src={najePersonaDesignerData} alt="" className="w-5 h-5 object-contain shrink-0" />
                     <span className="text-gray-800 dark:text-gray-200 font-medium leading-relaxed">
-                      تريد تحويل هذه البيانات إلى <strong>إنفوجرافيك مرئي احترافي</strong> عبر المصمم؟
+                      {t('studio.convertDataInfographic')}
                     </span>
                   </div>
                   <div className="flex items-center gap-2 shrink-0 flex-wrap sm:flex-nowrap">
@@ -1136,7 +1168,7 @@ export default function TextChatPanel({
                       className="px-2.5 py-1 rounded-lg bg-amber-600 hover:bg-amber-500 text-white font-bold text-[11px] transition shadow-sm cursor-pointer whitespace-nowrap flex items-center gap-1"
                     >
                       <img src={najeSpark} alt="" className="w-3 h-3 object-contain" />
-                      <span>تصميم إنفوجرافيك ذكي</span>
+                      <span>{t('studio.smartInfographicBtn')}</span>
                     </button>
                     <button
                       type="button"
@@ -1147,13 +1179,13 @@ export default function TextChatPanel({
                       className="px-2.5 py-1 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 font-bold text-[11px] transition cursor-pointer whitespace-nowrap border border-gray-300 dark:border-gray-700 flex items-center gap-1"
                     >
                       <img src={najeRulerSpec} alt="" className="w-3 h-3 object-contain" />
-                      <span>تصفح الهياكل والقوالب</span>
+                      <span>{t('studio.browseTemplatesBtn')}</span>
                     </button>
                     <button
                       type="button"
                       onClick={() => setDismissedInfographicChip(true)}
                       className="p-1 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer"
-                      title="إغلاق الاقتراح"
+                      title={t('chatui.closeSuggestion')}
                     >
                       <X className="w-3.5 h-3.5" />
                     </button>
@@ -1173,7 +1205,7 @@ export default function TextChatPanel({
                       type="button" 
                       onClick={() => setIsBrandKitModalOpen(true)} 
                       className="w-7 h-7 sm:w-8.5 sm:h-8.5 rounded-lg sm:rounded-xl transition flex items-center justify-center cursor-pointer bg-amber-500/10 border border-amber-500/30 text-amber-500 hover:bg-amber-500/20 active:scale-95 shrink-0"
-                      title="نموذج تصميم الهوية والشعار (Brand Kit Studio)"
+                      title={t('studio.brandKitTooltip')}
                     >
                       <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                     </button>
@@ -1186,7 +1218,7 @@ export default function TextChatPanel({
                         type="button" 
                         onClick={() => setShowInfographicModal(true)} 
                         className="w-7 h-7 sm:w-8.5 sm:h-8.5 rounded-lg sm:rounded-xl transition flex items-center justify-center cursor-pointer text-gray-800 dark:text-gray-400 hover:text-amber-500 hover:bg-amber-500/10 active:scale-95 shrink-0"
-                        title="استوديو الإنفوجرافيك — «المصمم» (عرض مرئي للبيانات والمقارنات)"
+                        title={t('studio.infographicTooltip')}
                       >
                         <BarChart3 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-500" />
                       </button>
@@ -1204,7 +1236,7 @@ export default function TextChatPanel({
                           ? 'bg-indigo-600/10 border border-indigo-400 dark:border-indigo-500/20 text-indigo-600 dark:text-indigo-400' 
                           : 'text-gray-800 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:bg-gray-800/60'
                       )}
-                      title="إعدادات الصورة"
+                      title={t('studio.imageSettingsTooltip')}
                     >
                       <Sliders className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                     </button>
@@ -1221,7 +1253,7 @@ export default function TextChatPanel({
                           ? 'bg-indigo-600/10 border border-indigo-400 dark:border-indigo-500/20 text-indigo-600 dark:text-indigo-400' 
                           : 'text-gray-800 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:bg-gray-800/60'
                       )}
-                      title="إعدادات الفيديو"
+                      title={t('studio.videoSettingsTooltip')}
                     >
                       <Sliders className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                     </button>
@@ -1238,7 +1270,7 @@ export default function TextChatPanel({
                           ? 'bg-emerald-600/10 border border-emerald-400 dark:border-emerald-500/20 text-emerald-600 dark:text-emerald-400' 
                           : 'text-gray-800 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:bg-gray-800/60'
                       )}
-                      title="إعدادات استوديو الصوت"
+                      title={t('studio.voiceSettingsTooltip')}
                     >
                       <Sliders className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                     </button>
@@ -1246,7 +1278,7 @@ export default function TextChatPanel({
 
                   {/* Paperclip button */}
                   {chat.type !== 'voice' && (
-                    <label className="cursor-pointer w-7 h-7 sm:w-8.5 sm:h-8.5 rounded-lg sm:rounded-xl text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800/60 transition flex items-center justify-center active:scale-95 shrink-0" title="إرفاق ملف أو صورة">
+                    <label className="cursor-pointer w-7 h-7 sm:w-8.5 sm:h-8.5 rounded-lg sm:rounded-xl text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800/60 transition flex items-center justify-center active:scale-95 shrink-0" title={t('studio.attachFileTooltip')}>
                        <Paperclip className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                        <input 
                          type="file" 
@@ -1268,7 +1300,7 @@ export default function TextChatPanel({
                         ? "bg-rose-500 text-white animate-pulse shadow-lg shadow-rose-500/20" 
                         : "text-gray-800 dark:text-gray-400 hover:text-gray-900 dark:text-white hover:bg-gray-100 dark:bg-gray-800/60"
                     )}
-                    title={isListening ? "جاري الاستماع... اضغط للإيقاف" : "إملاء صوتي (الدردشة الصوتية)"}
+                    title={isListening ? t('studio.listeningNow') : t('studio.voiceTyping')}
                   >
                     <Mic className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   </button>
@@ -1284,10 +1316,10 @@ export default function TextChatPanel({
                           ? "bg-indigo-600 text-white shadow-sm shadow-indigo-500/30" 
                           : "text-gray-800 dark:text-gray-400 hover:text-gray-900 dark:text-white hover:bg-gray-100 dark:bg-gray-800/60"
                       )}
-                      title={enableSearchGrounding ? "البحث المباشر مفعل (Google Search Grounding)" : "تفعيل البحث المباشر في جوجل (Google Search)"}
+                      title={enableSearchGrounding ? t('studio.liveSearchEnabled') : t('studio.liveSearchDisabled')}
                     >
                       <Globe className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
-                      <span className="hidden sm:inline text-[11px]">{enableSearchGrounding ? 'بحث مباشر' : 'بحث'}</span>
+                      <span className="hidden sm:inline text-[11px]">{enableSearchGrounding ? t('studio.liveSearch') : t('common.search')}</span>
                     </button>
                   )}
                 </div>
@@ -1311,11 +1343,14 @@ export default function TextChatPanel({
                         ? ""
                         : chat.type === 'voice'
                           ? (voiceMode === 'single'
-                              ? "اكتب النص الذي تريد تحويله إلى تسجيل صوتي احترافي..."
-                              : `اكتب سكريبت الحوار بالسطور متناوبة، مثال:\n${speaker1Name || 'أحمد'}: أهلاً بك في استوديو الصوت...\n${speaker2Name || 'سارة'}: مرحباً، يسعدني التواجد اليوم...`)
-                          : chat.type === 'text' 
-                            ? t('chat.inputPlaceholder') 
-                            : `صف خيالك لـ Naje AI لتوليد ${chat.type === 'image' ? 'الصورة' : 'الفيديو'}...`
+                              ? t('studio.writeVoiceScriptPlaceholder')
+                              : t('chatui.dialoguePlaceholder', {
+                                  line1: `${speaker1Name || t('chatui.sampleName1')}: ${t('chatui.lineHello1')}`,
+                                  line2: `${speaker2Name || t('chatui.sampleName2')}: ${t('chatui.lineHello2')}`,
+                                }))
+                          : chat.type === 'text'
+                            ? t('chat.inputPlaceholder')
+                            : (chat.type === 'image' ? t('chatui.describeImage') : t('chatui.describeVideo'))
                     }
                     className="w-full bg-transparent border-none py-1 sm:py-2 text-gray-900 dark:text-white outline-none resize-none min-h-[34px] sm:min-h-[40px] max-h-[80px] sm:max-h-[120px] overflow-y-auto leading-normal px-1 sm:px-2 text-xs sm:text-sm focus:ring-0 transition-[height] duration-150 ease-out scrollbar-none my-auto"
                     rows={1}
@@ -1378,11 +1413,11 @@ export default function TextChatPanel({
             <div className="p-4 sm:p-5 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between bg-gray-50/50 dark:bg-gray-950/40 shrink-0">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-500">
-                  <img src={najePersonaDesignerData} alt="المصمم" className="w-6 h-6 object-contain" />
+                  <img src={najePersonaDesignerData} alt={t('chatui.designerAlt')} className="w-6 h-6 object-contain" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-gray-900 dark:text-white text-base">استوديو الإنفوجرافيك — «المصمم»</h3>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">اختر قالباً أو هيكلاً بصرياً للبدء فوراً — يلتزم ناجي بالتناغم اللوني والدمج الإبداعي تلقائياً</p>
+                  <h3 className="font-bold text-gray-900 dark:text-white text-base">{t('chatui.infographicStudioTitle')}</h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{t('chatui.infographicStudioDesc')}</p>
                 </div>
               </div>
               <button 
@@ -1457,14 +1492,14 @@ export default function TextChatPanel({
                     className="group rounded-2xl border border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-950/40 p-3 flex flex-col justify-between hover:border-amber-500/60 dark:hover:border-amber-500/60 hover:shadow-lg transition-all cursor-pointer"
                   >
                     <div className="aspect-video w-full rounded-xl overflow-hidden mb-3 border border-gray-200/60 dark:border-gray-800 bg-gray-900 flex items-center justify-center">
-                      <img src={tpl.preview} alt={tpl.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                      <img src={tpl.preview} alt={cat('ig', tpl.id, 'name', tpl.name)} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                     </div>
                     <div>
-                      <h4 className="font-bold text-sm text-gray-900 dark:text-white mb-1 group-hover:text-amber-500 transition-colors">{tpl.name}</h4>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 leading-relaxed">{tpl.desc}</p>
+                      <h4 className="font-bold text-sm text-gray-900 dark:text-white mb-1 group-hover:text-amber-500 transition-colors">{cat('ig', tpl.id, 'name', tpl.name)}</h4>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 leading-relaxed">{cat('ig', tpl.id, 'desc', tpl.desc)}</p>
                     </div>
                     <div className="mt-3 pt-2.5 border-t border-gray-200/50 dark:border-gray-800/60 flex items-center justify-between text-[11px] font-bold text-amber-600 dark:text-amber-400">
-                      <span>استخدام القالب فوراً</span>
+                      <span>{t('chatui.useTemplateNow')}</span>
                       <span>←</span>
                     </div>
                   </div>

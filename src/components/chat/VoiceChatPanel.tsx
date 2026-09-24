@@ -6,6 +6,12 @@ import NajeSelect from '../NajeSelect';
 import { VOICES } from '../../lib/voiceCatalog';
 import { usePricingConfig } from '../../hooks/usePricingConfig';
 import { calcVoicePointsCost, spokenTextFromVoiceScript } from '../../lib/voicePricing';
+import { t as translate, useI18n } from '../../i18n';
+import { useAppStore } from '../../store';
+
+function L(key: string, params?: Record<string, string | number>) {
+  return translate(key, params, useAppStore.getState().language || 'ar');
+}
 
 export function buildVoiceChatPayload(state: any) {
   return {
@@ -37,9 +43,9 @@ export function parseDualScriptLines(text: string, spk1Name: string, spk2Name: s
     const colonIdx = line.indexOf(':');
     if (colonIdx === -1) {
       if (!isInformalNarrative) {
-        errors.push(`السطر ${i + 1}: لم يتم تحديد اسم المتحدث (مثال: "${spk1Name}: النص...")`);
+        errors.push(L('chatui.lineMissingSpeaker', { line: i + 1, name: spk1Name }));
       }
-      parsed.push({ speaker: 'informal', speakerName: 'نص/سرد عامي', text: line, lineNum: i + 1 });
+      parsed.push({ speaker: 'informal', speakerName: L('chatui.informalLabel'), text: line, lineNum: i + 1 });
       continue;
     }
     const speakerPart = line.substring(0, colonIdx).trim();
@@ -51,7 +57,7 @@ export function parseDualScriptLines(text: string, spk1Name: string, spk2Name: s
       parsed.push({ speaker: 'speaker2', speakerName: speakerPart, text: dialoguePart, lineNum: i + 1 });
     } else {
       if (!isInformalNarrative) {
-        errors.push(`السطر ${i + 1}: الاسم "${speakerPart}" لا يطابق المتحدثين المعرفين ("${spk1Name}" أو "${spk2Name}")`);
+        errors.push(L('chatui.lineNameMismatch', { line: i + 1, speaker: speakerPart, a: spk1Name, b: spk2Name }));
       }
       parsed.push({ speaker: 'informal', speakerName: speakerPart, text: dialoguePart, lineNum: i + 1 });
     }
@@ -84,6 +90,12 @@ export function VoiceSettingsPanel({
   input
 }: any) {
   const pricing = usePricingConfig();
+  const { t, isRtl } = useI18n();
+  const voiceLabel = (v: { id: string; gender: string }) => t('chatui.voiceOption', {
+    name: t(`chatui.voiceName.${v.id}`),
+    gender: v.gender === 'male' ? t('chatui.male') : t('chatui.female'),
+    tone: t(`chatui.voiceTone.${v.id}`),
+  });
   if (chat?.type !== 'voice' || !showVoiceSettings || loading) return null;
 
   const billed = calcVoicePointsCost({
@@ -101,12 +113,13 @@ export function VoiceSettingsPanel({
       initial={{ opacity: 0, height: 0 }}
       animate={{ opacity: 1, height: 'auto' }}
       exit={{ opacity: 0, height: 0 }}
-      className="bg-slate-50 dark:bg-slate-900/95 border-b border-gray-200 dark:border-white/10 p-2.5 sm:p-4 flex flex-col gap-2.5 sm:gap-4 text-xs sm:text-sm max-h-[220px] sm:max-h-[350px] overflow-y-auto scrollbar-thin"
+      dir={isRtl ? 'rtl' : 'ltr'}
+      className="bg-slate-50 dark:bg-slate-900/95 border-b border-gray-200 dark:border-white/10 p-2.5 sm:p-4 flex flex-col gap-2.5 sm:gap-4 text-xs sm:text-sm text-start max-h-[220px] sm:max-h-[350px] overflow-y-auto scrollbar-thin"
     >
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gray-200 dark:border-gray-800 pb-2.5">
         <div className="flex items-center gap-2 font-bold text-gray-900 dark:text-white">
           <Mic2 className="w-4 h-4 text-emerald-500" />
-          <span>إعدادات استوديو التسجيلات الصوتية (Voice Studio)</span>
+          <span>{t('chatui.voiceSettingsTitle')}</span>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {/* Model Tier: Core vs Pro */}
@@ -120,7 +133,7 @@ export function VoiceSettingsPanel({
                   ? "bg-emerald-600 text-white shadow-sm"
                   : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
               )}
-              title="نموذج الصوت الأساسي والسريع (NAJE_MODEL_VOICE_CORE)"
+              title={t('chatui.voiceCoreTitle')}
             >
               <Zap className="w-3 h-3" />
               <span>Core</span>
@@ -134,7 +147,7 @@ export function VoiceSettingsPanel({
                   ? "bg-purple-600 text-white shadow-sm"
                   : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
               )}
-              title="نموذج الصوت الاحترافي الفائق (NAJE_MODEL_VOICE_PRO)"
+              title={t('chatui.voiceProTitle')}
             >
               <Sparkles className="w-3 h-3" />
               <span>Pro</span>
@@ -154,7 +167,7 @@ export function VoiceSettingsPanel({
               )}
             >
               <User className="w-3.5 h-3.5" />
-              <span>صوت واحد</span>
+              <span>{t('chatui.oneVoice')}</span>
             </button>
             <button
               type="button"
@@ -167,7 +180,7 @@ export function VoiceSettingsPanel({
               )}
             >
               <Users className="w-3.5 h-3.5" />
-              <span>صوتان (حوار)</span>
+              <span>{t('chatui.twoVoices')}</span>
             </button>
           </div>
         </div>
@@ -175,14 +188,14 @@ export function VoiceSettingsPanel({
       {voiceMode === 'single' ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="flex flex-col gap-1.5">
-            <span className="text-xs font-bold text-gray-700 dark:text-gray-300">اختر الصوت (30 صوت متوفر):</span>
+            <span className="text-xs font-bold text-gray-700 dark:text-gray-300">{t('chatui.chooseVoice')}</span>
             <div className="flex items-center gap-2">
               <NajeSelect
                 value={selectedVoice}
                 onChange={val => setSelectedVoice(val)}
                 options={VOICES.map(v => ({
                   value: v.id,
-                  label: `${v.name} (${v.gender === 'male' ? 'رجل' : 'امرأة'}) — ${v.tone}`
+                  label: voiceLabel(v)
                 }))}
               />
               <button
@@ -194,28 +207,28 @@ export function VoiceSettingsPanel({
                     ? "bg-rose-500 border-rose-400 text-white animate-pulse"
                     : "bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500 hover:text-white"
                 )}
-                title="استماع لعينة الصوت الحية"
+                title={t('chatui.listenSample')}
               >
                 {playingVoiceSample === selectedVoice ? <Square className="w-4 h-4" /> : <Play className="w-4 h-4" />}
               </button>
             </div>
             {VOICES.find(v => v.id === selectedVoice) && (
               <p className="text-[11px] text-gray-500 dark:text-gray-400 italic">
-                "{VOICES.find(v => v.id === selectedVoice)?.description}"
+                "{t(`chatui.voiceTone.${selectedVoice}`)}"
               </p>
             )}
           </div>
           <div className="flex flex-col gap-1.5">
-            <span className="text-xs font-bold text-gray-700 dark:text-gray-300">أسلوب الإلقاء:</span>
+            <span className="text-xs font-bold text-gray-700 dark:text-gray-300">{t('chatui.deliveryStyle')}</span>
             <NajeSelect
               value={deliveryStyle}
               onChange={val => setDeliveryStyle(val)}
               options={[
-                { value: 'default', label: 'طبيعي معتدل (تلقائي)' },
-                { value: 'professional', label: 'رسمي هادئ احترافي' },
-                { value: 'warm', label: 'ودود ودافئ (بودكاست)' },
-                { value: 'energetic', label: 'حماسي وإعلاني (High Energy)' },
-                { value: 'news', label: 'إخباري واضح ومباشر' }
+                { value: 'default', label: t('chatui.delivery.default') },
+                { value: 'professional', label: t('chatui.delivery.professional') },
+                { value: 'warm', label: t('chatui.delivery.warm') },
+                { value: 'energetic', label: t('chatui.delivery.energetic') },
+                { value: 'news', label: t('chatui.delivery.news') }
               ]}
             />
           </div>
@@ -227,12 +240,12 @@ export function VoiceSettingsPanel({
             <div className="p-3 bg-indigo-50/50 dark:bg-indigo-950/20 rounded-xl border border-indigo-200 dark:border-indigo-800/40 flex flex-col gap-2">
               <div className="flex items-center gap-2">
                 <span className="w-2.5 h-2.5 rounded-full bg-indigo-500" />
-                <span className="text-xs font-bold text-indigo-700 dark:text-indigo-300">المتحدث الأول:</span>
+                <span className="text-xs font-bold text-indigo-700 dark:text-indigo-300">{t('chatui.speaker1')}</span>
                 <input
                   type="text"
                   value={speaker1Name}
                   onChange={e => setSpeaker1Name(e.target.value)}
-                  placeholder="اسم المتحدث الأول (مثال: أحمد)"
+                  placeholder={t('chatui.speaker1Placeholder', { name: t('chatui.sampleName1') })}
                   className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg px-2.5 py-1 text-xs text-gray-900 dark:text-white font-bold flex-1 outline-none focus:border-indigo-500"
                 />
               </div>
@@ -242,7 +255,7 @@ export function VoiceSettingsPanel({
                   onChange={val => setSpeaker1Voice(val)}
                   options={VOICES.map(v => ({
                     value: v.id,
-                    label: `${v.name} (${v.gender === 'male' ? 'رجل' : 'امرأة'}) — ${v.tone}`
+                    label: voiceLabel(v)
                   }))}
                 />
                 <button
@@ -254,7 +267,7 @@ export function VoiceSettingsPanel({
                       ? "bg-rose-500 border-rose-400 text-white animate-pulse"
                       : "bg-indigo-500/10 border-indigo-500/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-500 hover:text-white"
                   )}
-                  title="استماع لعينة الصوت"
+                  title={t('chatui.listenSampleShort')}
                 >
                   {playingVoiceSample === speaker1Voice ? <Square className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
                 </button>
@@ -264,12 +277,12 @@ export function VoiceSettingsPanel({
             <div className="p-3 bg-emerald-50/50 dark:bg-emerald-950/20 rounded-xl border border-emerald-200 dark:border-emerald-800/40 flex flex-col gap-2">
               <div className="flex items-center gap-2">
                 <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-                <span className="text-xs font-bold text-emerald-700 dark:text-emerald-300">المتحدث الثاني:</span>
+                <span className="text-xs font-bold text-emerald-700 dark:text-emerald-300">{t('chatui.speaker2')}</span>
                 <input
                   type="text"
                   value={speaker2Name}
                   onChange={e => setSpeaker2Name(e.target.value)}
-                  placeholder="اسم المتحدث الثاني (مثال: سارة)"
+                  placeholder={t('chatui.speaker2Placeholder', { name: t('chatui.sampleName2') })}
                   className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg px-2.5 py-1 text-xs text-gray-900 dark:text-white font-bold flex-1 outline-none focus:border-emerald-500"
                 />
               </div>
@@ -279,7 +292,7 @@ export function VoiceSettingsPanel({
                   onChange={val => setSpeaker2Voice(val)}
                   options={VOICES.map(v => ({
                     value: v.id,
-                    label: `${v.name} (${v.gender === 'male' ? 'رجل' : 'امرأة'}) — ${v.tone}`
+                    label: voiceLabel(v)
                   }))}
                 />
                 <button
@@ -291,7 +304,7 @@ export function VoiceSettingsPanel({
                       ? "bg-rose-500 border-rose-400 text-white animate-pulse"
                       : "bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500 hover:text-white"
                   )}
-                  title="استماع لعينة الصوت"
+                  title={t('chatui.listenSampleShort')}
                 >
                   {playingVoiceSample === speaker2Voice ? <Square className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
                 </button>
@@ -299,23 +312,23 @@ export function VoiceSettingsPanel({
             </div>
           </div>
           <div className="flex flex-col gap-1.5">
-            <span className="text-xs font-bold text-gray-700 dark:text-gray-300">أسلوب الإلقاء للحوار:</span>
+            <span className="text-xs font-bold text-gray-700 dark:text-gray-300">{t('chatui.deliveryDialogue')}</span>
             <NajeSelect
               value={deliveryStyle}
               onChange={val => setDeliveryStyle(val)}
               options={[
-                { value: 'default', label: 'طبيعي معتدل (تلقائي)' },
-                { value: 'professional', label: 'رسمي هادئ احترافي' },
-                { value: 'warm', label: 'ودود ودافئ (بودكاست)' },
-                { value: 'energetic', label: 'حماسي وإعلاني (High Energy)' },
-                { value: 'news', label: 'إخباري واضح ومباشر' }
+                { value: 'default', label: t('chatui.delivery.default') },
+                { value: 'professional', label: t('chatui.delivery.professional') },
+                { value: 'warm', label: t('chatui.delivery.warm') },
+                { value: 'energetic', label: t('chatui.delivery.energetic') },
+                { value: 'news', label: t('chatui.delivery.news') }
               ]}
             />
           </div>
           <p className="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed bg-amber-500/10 p-2.5 rounded-lg border border-amber-500/20">
-            <strong>تنبيه صياغة السكريبت للحوار:</strong> يرجى إدخال الحوار بسطور منفصلة وتبدأ باسم المتحدث بالضبط مثل:<br/>
-            <code className="text-indigo-600 dark:text-indigo-400 font-mono font-bold">{speaker1Name || 'أحمد'}: مرحبا بك في البرنامج...</code><br/>
-            <code className="text-emerald-600 dark:text-emerald-400 font-mono font-bold">{speaker2Name || 'سارة'}: أهلاً وسهلاً، يسعدني التواجد اليوم...</code>
+            <strong>{t('chatui.scriptHintTitle')}</strong> {t('chatui.scriptHintBody')}<br/>
+            <code className="text-indigo-600 dark:text-indigo-400 font-mono font-bold">{speaker1Name || t('chatui.sampleName1')}: {t('chatui.scriptExample1')}</code><br/>
+            <code className="text-emerald-600 dark:text-emerald-400 font-mono font-bold">{speaker2Name || t('chatui.sampleName2')}: {t('chatui.scriptExample2')}</code>
           </p>
         </div>
       )}
@@ -325,9 +338,9 @@ export function VoiceSettingsPanel({
         return (
           <div className="flex flex-col gap-2 p-2.5 bg-gray-100 dark:bg-gray-800/60 rounded-xl border border-gray-200 dark:border-gray-700">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-gray-700 dark:text-gray-300">تحليل وسياق الحوار:</span>
+              <span className="text-xs font-bold text-gray-700 dark:text-gray-300">{t('chatui.dialogueAnalysis')}</span>
               <span className={cn("text-[11px] font-bold px-2 py-0.5 rounded-full", parsedResult.isInformalNarrative ? "bg-cyan-500/20 text-cyan-600 dark:text-cyan-400" : parsedResult.isValid ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400" : "bg-rose-500/20 text-rose-600 dark:text-rose-400")}>
-                {parsedResult.isInformalNarrative ? 'صياغة عامية (سيتم التنظيم والفرز الذكي تلقائياً)' : parsedResult.isValid ? 'السكريبت منظم ومباشر' : 'يوجد أخطاء صياغة'}
+                {parsedResult.isInformalNarrative ? t('chatui.informalWillSort') : parsedResult.isValid ? t('chatui.scriptValid') : t('chatui.scriptErrors')}
               </span>
             </div>
             <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto p-1">
@@ -344,7 +357,7 @@ export function VoiceSettingsPanel({
                   title={item.text}
                 >
                   <span className="opacity-60">#{item.lineNum}</span>
-                  <strong>{item.speakerName || 'عامي'}:</strong>
+                  <strong>{item.speakerName || t('chatui.colloquial')}:</strong>
                   <span className="truncate max-w-[120px]">{item.text || '...'}</span>
                 </span>
               ))}
@@ -361,11 +374,11 @@ export function VoiceSettingsPanel({
         <div className="flex items-center gap-2">
           <Zap className="w-4 h-4 text-emerald-500 animate-pulse" />
           <span>
-            {charCount} حرف × {billed.perChar} نقطة
+            {t('chatui.charCost', { count: charCount, rate: billed.perChar })}
           </span>
         </div>
         <div className="font-bold">
-          التكلفة التقديرية: ~{estimatedCost.toFixed(2)} نقطة
+          {t('chatui.estimatedCost', { cost: estimatedCost.toFixed(2) })}
         </div>
       </div>
     </motion.div>

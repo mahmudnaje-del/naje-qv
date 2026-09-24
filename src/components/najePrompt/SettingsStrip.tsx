@@ -5,6 +5,8 @@ import {
   type ModelChoice,
   type PromptSettings,
 } from '../../lib/najePromptEngine';
+import { useI18n } from '../../i18n';
+import { modelHintKey, modelLabelKey } from './promptLabels';
 
 interface SettingsStripProps {
   settings: PromptSettings;
@@ -12,24 +14,25 @@ interface SettingsStripProps {
 }
 
 const TOGGLES: Array<{ key: keyof PromptSettings; label: string; hint: string }> = [
-  { key: 'showUnderstanding', label: 'أظهر الفهم', hint: 'عرض ما فهمه ناجي' },
-  { key: 'askBeforeExpensive', label: 'أكد قبل الاستوديو', hint: 'تأكيد قبل الإرسال لأد/انترو/سيرة/تصميم' },
-  { key: 'expertMode', label: 'تحرير متقدم', hint: 'هدف/سياق/قيود/مخرج قابل للتعديل' },
+  { key: 'showUnderstanding', label: 'prompt.settings.showUnderstanding', hint: 'prompt.settings.showUnderstandingHint' },
+  { key: 'askBeforeExpensive', label: 'prompt.settings.askBefore', hint: 'prompt.settings.askBeforeHint' },
+  { key: 'expertMode', label: 'prompt.settings.expert', hint: 'prompt.settings.expertHint' },
 ];
 
 export function SettingsStrip({ settings, onChange }: SettingsStripProps) {
+  const { t, isRtl } = useI18n();
   const patch = (partial: Partial<PromptSettings>) => {
     onChange({ ...settings, ...partial });
   };
 
   return (
-    <div className="mt-3 space-y-2">
+    <div className="mt-3 space-y-2" dir={isRtl ? 'rtl' : 'ltr'}>
       <div className="flex flex-wrap items-center gap-1.5">
         {MODEL_OPTIONS.map((opt) => (
           <button
             key={opt.id}
             type="button"
-            title={opt.hint}
+            title={t(modelHintKey(opt.id))}
             onClick={() => {
               const id = opt.id as ModelChoice;
               patch({
@@ -38,13 +41,13 @@ export function SettingsStrip({ settings, onChange }: SettingsStripProps) {
               });
             }}
             className={cn(
-              'min-h-8 rounded-full px-2.5 py-1 text-[10px] font-black transition',
+              'min-h-11 rounded-full px-3 py-1 text-[11px] font-black transition',
               settings.defaultModel === opt.id
                 ? 'bg-indigo-600 text-white'
                 : 'border border-zinc-200 text-naje-muted hover:text-naje-ink dark:border-zinc-700',
             )}
           >
-            {opt.label}
+            {t(modelLabelKey(opt.id))}
           </button>
         ))}
       </div>
@@ -55,16 +58,16 @@ export function SettingsStrip({ settings, onChange }: SettingsStripProps) {
             <button
               key={row.key}
               type="button"
-              title={row.hint}
+              title={t(row.hint)}
               onClick={() => patch({ [row.key]: !on } as Partial<PromptSettings>)}
               className={cn(
-                'min-h-8 rounded-full px-2.5 py-1 text-[10px] font-black transition',
+                'min-h-11 rounded-full px-3 py-1 text-[11px] font-black transition',
                 on
                   ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900'
                   : 'border border-zinc-200 text-naje-muted hover:text-naje-ink dark:border-zinc-700',
               )}
             >
-              {row.label}
+              {t(row.label)}
             </button>
           );
         })}

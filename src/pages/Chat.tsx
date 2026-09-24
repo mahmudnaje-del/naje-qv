@@ -19,7 +19,7 @@ import {
 import NajeSpinner from '../components/NajeSpinner';
 import { VOICES, NAJE_VOICES } from '../lib/voiceCatalog';
 import { useAppStore } from '../store';
-import { useI18n } from '../i18n';
+import { t as translate, useI18n } from '../i18n';
 import { exportSingleImagePDF, exportChatPDF } from '../utils/pdfExport';
 import { formatProfessionalError } from '../utils/errorFormatter';
 import { cn } from '../lib/utils';
@@ -76,6 +76,10 @@ import LocalMediaRenderer, { detectBase64MimeType } from '../components/LocalMed
 
 import GroundingReportViewer from '../components/GroundingReportViewer';
 
+function ct(key: string, params?: Record<string, string | number>) {
+  return translate(key, params, useAppStore.getState().language || 'ar');
+}
+
 export function sanitizeUrl(url: string): string {
   if (!url) return '#';
   let cleaned = String(url).trim();
@@ -102,12 +106,13 @@ export function cleanMarkdownLinks(text: string): string {
 }
 
 function SearchSourcesViewer({ sources }: { sources?: Array<{ title: string; url: string }> }) {
+  const { t } = useI18n();
   if (!sources || !Array.isArray(sources) || sources.length === 0) return null;
   return (
     <div className="mt-2.5 p-2.5 bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-200/60 dark:border-indigo-900/50 rounded-xl flex flex-col gap-1.5 text-xs">
       <div className="flex items-center gap-1.5 text-indigo-700 dark:text-indigo-300 font-bold text-[11px]">
         <Globe className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 shrink-0" />
-        <span>المصادر المباشرة والروابط المستخرجة عبر Google Search:</span>
+        <span>{t('chatui.sourcesTitle')}</span>
       </div>
       <div className="flex flex-wrap gap-1.5 mt-0.5">
         {sources.map((src, idx) => {
@@ -140,6 +145,7 @@ export function AssistantTextMessage({ content, isStreaming, searchSources }: { 
   const processedContent = cleanMarkdownLinks(content);
   const revealedText = useSmoothReveal(processedContent, !!isStreaming);
   const [copied, setCopied] = useState(false);
+  const { t } = useI18n();
 
   return (
     <div className="group/msg relative">
@@ -223,17 +229,17 @@ export function AssistantTextMessage({ content, isStreaming, searchSources }: { 
             ? "bg-emerald-50 dark:bg-emerald-950/80 border-emerald-300 dark:border-emerald-700/80 text-emerald-600 dark:text-emerald-400 opacity-100"
             : "bg-white/95 dark:bg-slate-800/95 hover:bg-slate-100 dark:hover:bg-slate-700 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 opacity-0 group-hover/msg:opacity-100"
         )}
-        title="نسخ النص"
+        title={t('chat.copyMessage')}
       >
         {copied ? (
           <>
             <Check className="w-3.5 h-3.5 text-emerald-500 stroke-[2.5]" />
-            <span className="text-emerald-600 dark:text-emerald-400 font-bold">تم النسخ</span>
+            <span className="text-emerald-600 dark:text-emerald-400 font-bold">{t('common.copied')}</span>
           </>
         ) : (
           <>
             <Copy className="w-3.5 h-3.5" />
-            <span>نسخ</span>
+            <span>{t('common.copy')}</span>
           </>
         )}
       </button>
@@ -317,8 +323,8 @@ export default function Chat() {
   const [selectedVoice, setSelectedVoice] = useState<string>('Kore');
   const [speaker1Voice, setSpeaker1Voice] = useState<string>('Puck');
   const [speaker2Voice, setSpeaker2Voice] = useState<string>('Kore');
-  const [speaker1Name, setSpeaker1Name] = useState<string>('أحمد');
-  const [speaker2Name, setSpeaker2Name] = useState<string>('سارة');
+  const [speaker1Name, setSpeaker1Name] = useState<string>(() => ct('chatui.sampleName1'));
+  const [speaker2Name, setSpeaker2Name] = useState<string>(() => ct('chatui.sampleName2'));
   const [deliveryStyle, setDeliveryStyle] = useState<string>('default');
   const [showVoiceSettings, setShowVoiceSettings] = useState<boolean>(true);
   const [playingVoiceSample, setPlayingVoiceSample] = useState<string | null>(null);
@@ -360,9 +366,10 @@ export default function Chat() {
       if ('speechSynthesis' in window) {
         try {
           window.speechSynthesis.cancel();
-          const label = matchedVoice ? matchedVoice.labelAr : voiceId;
-          const utterance = new SpeechSynthesisUtterance(`مرحباً بك، أنا صوت ${label} في منصة ناجي للذكاء الاصطناعي.`);
-          utterance.lang = 'ar-SA';
+          const label = matchedVoice ? ct(`chatui.voiceName.${matchedVoice.id}`) : voiceId;
+          const utterance = new SpeechSynthesisUtterance(ct('chatui.voiceSample', { label }));
+          const lang = useAppStore.getState().language || 'ar';
+          utterance.lang = lang === 'ar' ? 'ar-SA' : lang;
           utterance.rate = 0.95;
           utterance.onend = () => setPlayingVoiceSample(null);
           utterance.onerror = () => setPlayingVoiceSample(null);
@@ -412,8 +419,8 @@ export default function Chat() {
   const handleFavorite = (id: string) => { setFavorites(prev => prev.includes(id) ? prev.filter(f => f !== id) : [...prev, id]) };
 
   // ===== Feedback system (Naje) =====
-  const feedbackReasonsDown = ['المحتوى مسيء أو غير آمن', 'معلومات غير صحيحة', 'لا يتّبع التعليمات', 'مشكلة في التخصيص', 'اللغة غير صحيحة', 'غير ذلك'];
-  const feedbackReasonsUp = ['معلومات صحيحة', 'سهل الفهم', 'غني بالمعلومات', 'إبداعي / مثير للاهتمام', 'غير ذلك'];
+  const feedbackReasonsDown = [ct('chatui.fb.down1'), ct('chatui.fb.down2'), ct('chatui.fb.down3'), ct('chatui.fb.down4'), ct('chatui.fb.down5'), ct('chatui.fb.down6')];
+  const feedbackReasonsUp = [ct('chatui.fb.up1'), ct('chatui.fb.up2'), ct('chatui.fb.up3'), ct('chatui.fb.up4'), ct('chatui.fb.up5')];
   const [feedbackTarget, setFeedbackTarget] = useState<{ msgId: string; signal: 'up' | 'down' } | null>(null);
   const [feedbackReasons, setFeedbackReasons] = useState<string[]>([]);
   const [feedbackNote, setFeedbackNote] = useState('');
@@ -450,11 +457,11 @@ export default function Chat() {
         createdAt: Date.now()
       });
       setVotedMessages(prev => ({ ...prev, [feedbackTarget.msgId]: feedbackTarget.signal }));
-      toast.success('شكراً لملاحظتك! رح تساعدنا نطوّر ناجي');
+      toast.success(ct('chatui.feedbackThanks'));
       setFeedbackTarget(null);
     } catch (e) {
       console.error('feedback error', e);
-      toast.error('تعذّر إرسال الملاحظة، حاول مرة ثانية.');
+      toast.error(ct('chatui.feedbackFail'));
     } finally {
       setFeedbackSubmitting(false);
     }
@@ -855,13 +862,13 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
     if (systemStatus?.isMaintenance) {
       setMaintenanceDismissed(false);
       if (!user?.isAdmin) {
-        toast.error('تم إيقاف الخدمات مؤقتاً للتطوير والإصلاح، شكراً لكم.');
+        toast.error(ct('chatui.maintenancePaused'));
         return;
       }
     }
 
     if (loading) {
-      toast.error('الرجاء الانتظار حتى يكتمل طلبك الحالي قبل إرسال طلب جديد.');
+      toast.error(ct('chatui.waitCurrent'));
       return;
     }
 
@@ -877,7 +884,7 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
     if (chat?.type === 'video' && selectedVideoTemplate) {
       const matchedTemplate = videoTemplates.find(t => t.id === selectedVideoTemplate);
       if (matchedTemplate) {
-        appliedTemplateName = matchedTemplate.name;
+        appliedTemplateName = ct(`chatui.vt.${matchedTemplate.id}.name`);
         finalPrompt = `${matchedTemplate.prompt} Subject: ${finalPrompt}`;
       }
     }
@@ -885,10 +892,10 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
       const matchedTemplate = imageTemplates.find(t => t.id === selectedImageTemplate);
       if (matchedTemplate) {
         if (matchedTemplate.requiresPhoto && files.length === 0) {
-          toast.error('هذا القالب يحتاج ترفق صورتك أولاً');
+          toast.error(ct('chatui.templateNeedsPhoto'));
           return;
         }
-        appliedTemplateName = matchedTemplate.name;
+        appliedTemplateName = ct(`chatui.it.${matchedTemplate.id}.name`);
 
         const parts = [matchedTemplate.prompt];
 
@@ -920,27 +927,27 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
     const userHasRecharged = !!(user?.isAdmin || user?.hasRecharged);
     if (!userHasRecharged) {
       if (chat?.type === 'video') {
-        toast.error('خدمة إنشاء الفيديو (العادية و Pro) متاحة فقط بعد أول عملية شحن رصيد ناجحة. يرجى شحن رصيدك لتفعيل محرك الفيديو');
+        toast.error(ct('chatui.videoNeedsTopup'));
         return;
       }
       const activeImageModel = imageModelOverride || imageModel;
       if (chat?.type === 'image' && (activeImageModel === 'nova' || activeImageModel === 'pro')) {
-        toast.error('نموذج توليد الصور الاحترافي (Naje Imagen Pro) متاح فقط بعد أول عملية شحن رصيد ناجحة. يمكنك التبديل للنموذج العادي أو شحن رصيدك');
+        toast.error(ct('chatui.imageProNeedsTopup'));
         return;
       }
       if (chat?.type === 'text' && textModelTier === 'max') {
-        toast.error('نموذج Naje Max للدردشة النصية متاح فقط بعد أول عملية شحن رصيد ناجحة. يمكنك اختيار Naje Core/Lite أو شحن رصيدك لتفعيل Max');
+        toast.error(ct('chatui.textMaxNeedsTopup'));
         return;
       }
       if (chat?.type === 'ui' && uiModelTier === 'max') {
-        toast.error('نموذج Naje Max لإنشاء وتوليد الواجهات متاح فقط بعد أول عملية شحن رصيد ناجحة. يمكنك اختيار Naje Core/Lite أو شحن رصيدك لتفعيل Max');
+        toast.error(ct('chatui.uiMaxNeedsTopup'));
         return;
       }
     }
 
     let cost = getCalculatedCost(finalDocType, pagesCountOverride, slidesCountOverride);
     if (user.balance < cost) {
-      toast.error(`رصيدك غير كافٍ. تحتاج ${cost} نقاط.`);
+      toast.error(ct('chatui.needPoints', { cost }));
       return;
     }
 
@@ -995,7 +1002,7 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
       ownerId: user?.uid,
       chatId,
       role: 'user',
-      content: rawUserText || (appliedTemplateName ? `أسلوب: ${appliedTemplateName}` : ''),
+      content: rawUserText || (appliedTemplateName ? ct('chatui.stylePrefix', { name: appliedTemplateName }) : ''),
       templateName: appliedTemplateName || null,
       fullPrompt: finalPrompt,
       files: currentFiles,
@@ -1099,7 +1106,7 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
       if (!res.ok) {
         let errText = await res.text();
         try { const errJson = JSON.parse(errText); errText = errJson.error || errText; } catch(e) {}
-        throw new Error(errText || 'فشل التوليد');
+        throw new Error(errText || ct('chatui.genFailed'));
       }
 
       let data: any = {};
@@ -1207,11 +1214,11 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
 
         if (!assistantContent.trim()) {
           if (triggerDocGeneration) {
-            assistantContent = 'تم تجهيز مسودة المستند للمراجعة والإنشاء.';
+            assistantContent = ct('chatui.docDraftReady');
           } else if (lastStreamError) {
             throw new Error(lastStreamError);
           } else {
-            assistantContent = 'النموذج أنهى الرد بدون نص ظاهر (تفكير أو أداة فقط). أعد المحاولة بصيغة أوضح.';
+            assistantContent = ct('chatui.emptyModelReply');
           }
         }
 
@@ -1246,7 +1253,7 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
             triggerEstimatedCount = data.estimatedCount || 5;
           }
         } catch (e) { 
-          throw new Error(text && text.length < 200 ? text : 'حدث خطأ غير متوقع أثناء معالجة الاستجابة.'); 
+          throw new Error(text && text.length < 200 ? text : ct('chatui.unexpectedResponse')); 
         }
 
         // Text-risk gate: offer Pro model suggestion card
@@ -1329,13 +1336,13 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
 
             // If snap does not exist for 15s => reject
             notExistTimer = setTimeout(() => {
-              safeReject(new Error('تعذّر تتبع مهمة التوليد.'));
+              safeReject(new Error(ct('chatui.jobTrackFail')));
             }, 15000);
 
             // If status stays queued|starting|generating longer than 180s (image/voice/document) or 360s (video) => reject
             const maxDurationMs = (chat?.type === 'video' || requestType === 'video') ? 360000 : 180000;
             timeoutTimer = setTimeout(() => {
-              safeReject(new Error('انتهت مهلة التوليد. إذا تم خصم نقاط بالخطأ ستُعاد تلقائياً.'));
+              safeReject(new Error(ct('chatui.genTimeout')));
             }, maxDurationMs);
 
             unsubJob = onSnapshot(doc(db, 'generation_jobs', jobIdToTrack), (snap) => {
@@ -1374,7 +1381,7 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
                 return;
               }
               if (jobData.status === 'failed') {
-                safeReject(new Error(jobData.error || 'تعذّر إكمال التوليد. لم يتم خصم أي نقاط.'));
+                safeReject(new Error(jobData.error || ct('chatui.genIncomplete')));
                 return;
               }
             }, (err) => {
@@ -1385,7 +1392,7 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
           return;
         }
 
-        assistantContent = 'تم التوليد بنجاح.';
+        assistantContent = ct('chatui.genSuccess');
       }
 
       if (shouldSimulate) {
@@ -1411,7 +1418,7 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
 
       let documentData = null;
       if (finalDocType && finalDocType !== 'none' && data.result) {
-        assistantContent = `تم إنشاء مستند ${finalDocType.toUpperCase()} بنجاح.`;
+        assistantContent = ct('chatui.docCreated', { type: finalDocType.toUpperCase() });
         const localDocId = currentJobId || Date.now().toString();
         saveDoc(localDocId, data.result).catch(e => console.error(e));
         documentData = {
@@ -1463,7 +1470,7 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
       }
       console.error(err);
       const formattedErrorContent = isAbort
-        ? 'انقطع الاتصال أثناء التوليد. أعد المحاولة.'
+        ? ct('chatui.connectionDropped')
         : await formatProfessionalError(err, { chatType: chat?.type });
       const eRef = doc(collection(db, 'messages'));
       setDoc(eRef, stripUndefined({
@@ -1602,7 +1609,7 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
 
   const toggleListening = () => {
     if (!recognition) {
-      toast.error('ميزة الإملاء الصوتي غير مدعومة في متصفحك الحالي.');
+      toast.error(ct('chatui.dictationUnsupported'));
       return;
     }
     if (isListening) {
@@ -1752,7 +1759,7 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
         },
         (fallbackErr) => {
           console.error('[Messages onSnapshot] Fallback query failed:', fallbackErr);
-          toast.error('تعذّر تحميل الرسائل، جاري إعادة المحاولة...');
+          toast.error(ct('chatui.messagesLoadFail'));
         }
       );
     };
@@ -1763,7 +1770,7 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
       setMessages(msgs);
     }, (error) => {
       console.error('[Messages onSnapshot] Primary query failed:', error?.code, error?.message);
-      toast.error('جاري جلب الرسائل من النسخة الاحتياطية...');
+      toast.error(ct('chatui.messagesBackup'));
       setupFallbackListener();
     });
 
@@ -1829,7 +1836,7 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
       await exportChatPDF(chat.title, messages, project?.name);
     } catch (err) {
       console.error(err);
-      toast.error('حدث خطأ أثناء تصدير المحادثة كـ PDF');
+      toast.error(ct('chatui.pdfExportFail'));
     } finally {
       setExportingChatPDF(false);
     }
@@ -1855,7 +1862,7 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
       downloadBase64File(realUrl, `NajeAI_${label}_${Date.now()}.${ext}`, mime, { prompt: msg.content });
     } catch (err) {
       console.error(err);
-      toast.error('حدث خطأ أثناء تحميل الملف');
+      toast.error(ct('chatui.fileDownloadFail'));
     } finally {
       setExportingMsgPDFId(null);
     }
@@ -1864,7 +1871,7 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
     if (loading) {
-      toast.error('الرجاء الانتظار حتى يكتمل طلبك الحالي قبل إرسال طلب جديد.');
+      toast.error(ct('chatui.waitCurrent'));
       return;
     }
     if ((!input.trim() && files.length === 0) || !chat || !user) return;
@@ -1904,8 +1911,8 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
             <div className="p-6 bg-indigo-500/10 rounded-full mb-4 text-indigo-400 animate-bounce">
               <Paperclip className="w-12 h-12" />
             </div>
-            <h3 className="text-xl font-bold text-white mb-1">أفلت الملفات هنا للتحميل المباشر</h3>
-            <p className="text-sm text-gray-400">يدعم الصور والمستندات والملفات المدعومة</p>
+            <h3 className="text-xl font-bold text-white mb-1">{t('studio.dropFilesHere')}</h3>
+            <p className="text-sm text-gray-400">{t('studio.dropFilesDesc')}</p>
           </motion.div>
         )}
       </AnimatePresence>
@@ -1915,23 +1922,25 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
         title={chat.title}
         subtitle={
           chat.type === 'voice'
-            ? 'استوديو التسجيلات الصوتية (Naje Voice)'
+            ? t('chatui.subtitleVoice')
             : chat.type === 'ui'
-              ? 'مُنشئ واجهات النواة الناتجة'
+              ? t('chatui.subtitleUi')
               : chat.type === 'text'
-                ? 'دردشة عادية وتحليل نصوص'
-                : `توليد ${chat.type === 'image' ? 'صور (نقاط)' : 'فيديو سينمائي (نقاط)'}`
+                ? t('chatui.subtitleText')
+                : chat.type === 'image'
+                  ? t('chatui.subtitleImage')
+                  : t('chatui.subtitleVideo')
         }
         badge={
           chat.type === 'ui'
             ? 'UI'
             : chat.type === 'voice'
-              ? 'صوت'
+              ? t('chatui.badgeVoice')
               : chat.type === 'image'
-                ? 'صور'
+                ? t('chatui.badgeImage')
                 : chat.type === 'video'
-                  ? 'فيديو'
-                  : 'دردشة'
+                  ? t('chatui.badgeVideo')
+                  : t('chatui.badgeChat')
         }
         icon={
           chat.type === 'ui'
@@ -2195,32 +2204,32 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
               initial={{ opacity: 0, scale: 0.95, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              className="relative bg-white dark:bg-[#0d0f12] border border-gray-200 dark:border-gray-900 rounded-2xl p-6 w-full max-w-[480px] shadow-2xl flex flex-col gap-5 text-right z-10"
-              dir="rtl"
+              className="relative bg-white dark:bg-[#0d0f12] border border-gray-200 dark:border-gray-900 rounded-2xl p-6 w-full max-w-[480px] shadow-2xl flex flex-col gap-5 text-start z-10"
+              dir={isRtl ? 'rtl' : 'ltr'}
             >
               <div className="flex items-center gap-3 border-b border-gray-200 dark:border-gray-900 pb-3">
                 <div className="w-10 h-10 rounded-full bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center flex-shrink-0">
                   <FileText className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-base font-extrabold text-gray-900 dark:text-white">تفويض وتفعيل توليد الملفات</h3>
-                  <p className="text-[11px] text-gray-800 dark:text-gray-400 mt-0.5">لقد لاحظنا أنك تطلب إنشاء ملف أو مستند في رسالتك.</p>
+                  <h3 className="text-base font-extrabold text-gray-900 dark:text-white">{t('studio.fileGenerationAuth')}</h3>
+                  <p className="text-[11px] text-gray-800 dark:text-gray-400 mt-0.5">{t('studio.fileGenerationDesc')}</p>
                 </div>
               </div>
 
               <div className="text-xs text-gray-800 dark:text-gray-400 leading-relaxed bg-indigo-950/10 border border-indigo-900/10 p-3 rounded-xl">
-                <span>الرسالة المكتوبة:</span>
+                <span>{t('studio.enteredPrompt')}</span>
                 <p className="text-gray-900 dark:text-white font-medium mt-1 italic font-sans truncate">"{interceptedPrompt}"</p>
               </div>
 
               <div className="flex flex-col gap-4">
                 <div className="flex flex-col gap-1.5">
-                  <span className="text-xs text-gray-800 dark:text-gray-400 ">تحديد نوع الملف المراد توليده:</span>
+                  <span className="text-xs text-gray-800 dark:text-gray-400 ">{t('studio.selectDocType')}</span>
                   <div className="grid grid-cols-4 gap-2">
                     {[
                       { id: 'pptx', label: 'PowerPoint', icon: najeChartBars },
-                      { id: 'pdf_slides', label: 'شرائح PDF', icon: najeFilmstrip },
-                      { id: 'pdf_doc', label: 'مستند PDF', icon: najeDocument },
+                      { id: 'pdf_slides', label: t('studio.docPdfSlides'), icon: najeFilmstrip },
+                      { id: 'pdf_doc', label: t('studio.docPdfDoc'), icon: najeDocument },
                       { id: 'docx', label: 'Word', icon: najePencilWrite }
                     ].map(opt => (
                       <button
@@ -2244,7 +2253,7 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
                 {/* Sub-config depending on chosen type */}
                 {(chosenAuthDocType === 'pptx' || chosenAuthDocType === 'pdf_slides') ? (
                   <div className="flex flex-col gap-1.5 mt-3">
-                    <span className="text-xs text-gray-800 dark:text-gray-400 ">عدد الشرائح المطلوبة (0.2 نقطة/شريحة):</span>
+                    <span className="text-xs text-gray-800 dark:text-gray-400 ">{t('chatui.slidesCountCost', { cost: pricing.document?.pdf_per_slide ?? 0.2 })}</span>
                     <div className="flex flex-wrap gap-2">
                       {[3, 5, 7, 10, 15, 20].map(num => (
                         <button
@@ -2258,7 +2267,7 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
                               : "bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 text-gray-800 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                           )}
                         >
-                          {num} شرائح
+                          {t('chatui.nSlides', { count: num })}
                         </button>
                       ))}
                     </div>
@@ -2266,7 +2275,7 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
                 ) : (
                   <div className="flex flex-col gap-3 mt-3">
                     <div className="flex flex-col gap-1.5">
-                      <span className="text-xs text-gray-800 dark:text-gray-400 ">مقاس الصفحة:</span>
+                      <span className="text-xs text-gray-800 dark:text-gray-400 ">{t('chatui.pageSizeLabel')}</span>
                       <div className="flex gap-2">
                         {['a4', 'a5'].map(size => (
                           <button
@@ -2274,19 +2283,19 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
                             type="button"
                             onClick={() => setPaperSize(size as 'a4' | 'a5')}
                             className={cn(
-                              "flex-1 px-3 py-1.5 rounded-lg border text-xs font-bold transition cursor-pointer uppercase",
+                              "flex-1 px-3 py-1.5 rounded-lg border text-xs font-bold transition cursor-pointer",
                               paperSize === size
                                 ? "bg-indigo-600/20 border-indigo-500/50 text-indigo-600 dark:text-indigo-400"
                                 : "bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 text-gray-800 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                             )}
                           >
-                            {size} ({size === 'a4' ? '0.15' : '0.1'} نقطة/صفحة)
+                            {t('chatui.pageRate', { size: size.toUpperCase(), cost: size === 'a4' ? '0.15' : '0.1' })}
                           </button>
                         ))}
                       </div>
                     </div>
                     <div className="flex flex-col gap-1.5">
-                      <span className="text-xs text-gray-800 dark:text-gray-400 ">عدد الصفحات:</span>
+                      <span className="text-xs text-gray-800 dark:text-gray-400 ">{t('chatui.pagesCount')}</span>
                       <div className="flex flex-wrap gap-2">
                         {[1, 2, 3, 5, 7, 10, 15, 20].map(num => (
                           <button
@@ -2311,8 +2320,8 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
 
               {/* Total points card */}
               <div className="bg-indigo-600/[0.03] border border-indigo-500/15 rounded-xl p-3 flex justify-between items-center text-xs">
-                <span className="text-gray-800 dark:text-gray-400 font-semibold">التكلفة الإجمالية المطلوبة:</span>
-                <span className="text-indigo-600 dark:text-indigo-400 font-extrabold text-sm">{getAuthModalCost()} نقاط</span>
+                <span className="text-gray-800 dark:text-gray-400 font-semibold">{t('chatui.totalRequired')}</span>
+                <span className="text-indigo-600 dark:text-indigo-400 font-extrabold text-sm">{t('chatui.pointsCount', { count: getAuthModalCost() })}</span>
               </div>
 
               {/* Buttons */}
@@ -2322,17 +2331,17 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
                   onClick={async () => {
                     const textToSend = interceptedPrompt || input;
                     if (!textToSend || !textToSend.trim()) {
-                      toast.error('الرجاء كتابة نص طلبك أولاً.');
+                      toast.error(ct('chatui.writePromptFirst'));
                       return;
                     }
                     setDocType(chosenAuthDocType);
                     setShowAuthModal(false);
-                    toast.success('تم تفعيل محرك توليد الملفات! جاري إنشاء المستند...');
+                    toast.success(ct('chatui.fileEngineOn'));
                     await executeSubmission(textToSend, chosenAuthDocType);
                   }}
                   className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition shadow-lg shadow-indigo-600/10 cursor-pointer text-center active:scale-95"
                 >
-                  نعم، تفعيل محرك الملفات وتوليد المستند
+                  {t('chatui.activateFileEngine')}
                 </button>
                 <div className="flex gap-2">
                   <button
@@ -2344,7 +2353,7 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
                     }}
                     className="w-1/2 py-2.5 bg-gray-50 dark:hover:bg-gray-950 hover:bg-white dark:hover:bg-gray-900 border border-gray-200 dark:border-gray-900 text-gray-800 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white rounded-xl text-xs font-bold transition cursor-pointer text-center focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none"
                   >
-                    استمرار كدردشة نصية فقط
+                    {t('chatui.continueTextOnly')}
                   </button>
                   <button
                     type="button"
@@ -2354,7 +2363,7 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
                     }}
                     className="w-1/2 py-2.5 bg-white dark:hover:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-800 dark:text-gray-400 rounded-xl text-xs font-bold transition cursor-pointer text-center focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none"
                   >
-                    تراجع وإلغاء الأمر
+                    {t('chatui.cancelAction')}
                   </button>
                 </div>
               </div>
@@ -2372,7 +2381,7 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
               exit={{ y: '100%' }}
               transition={{ type: 'spring', damping: 30, stiffness: 300 }}
               onClick={e => e.stopPropagation()}
-              dir="rtl"
+              dir={isRtl ? 'rtl' : 'ltr'}
               className="relative w-full max-w-lg bg-white dark:bg-[#0c0d10] border-t border-x border-gray-200 dark:border-gray-800 rounded-t-3xl p-6 pb-8 shadow-2xl"
             >
               <div className="w-10 h-1 bg-gray-300 dark:bg-gray-700 rounded-full mx-auto mb-5" />
@@ -2380,7 +2389,7 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
                 <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${feedbackTarget.signal === 'up' ? 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400' : 'bg-red-500/10 text-red-500'}`}>
                   {feedbackTarget.signal === 'up' ? <ThumbsUp className="w-4 h-4" /> : <ThumbsDown className="w-4 h-4" />}
                 </div>
-                <h3 className="text-lg font-bold text-gray-900 dark:text-white">ليش اخترت هالتقييم؟</h3>
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white">{t('chatui.whyRating')}</h3>
               </div>
 
               <div className="flex flex-wrap gap-2 mb-5">
@@ -2398,13 +2407,13 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
               <textarea
                 value={feedbackNote}
                 onChange={e => setFeedbackNote(e.target.value)}
-                placeholder="تقديم ملاحظات إضافية (اختياري)"
+                placeholder={t('chatui.feedbackPlaceholder')}
                 rows={3}
                 className="w-full bg-gray-100 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl px-4 py-3 text-sm text-gray-900 dark:text-white outline-none focus:border-indigo-500 transition resize-none mb-4"
               />
 
               <p className="text-[11px] text-gray-500 leading-relaxed mb-5">
-                تُستخدم ملاحظتك لتحسين جودة ناجي. لا نخزّن أي محتوى حساس، ويمكنك تجاهل هذا في أي وقت.
+                {t('chatui.feedbackPrivacy')}
               </p>
 
               <div className="flex gap-3">
@@ -2413,13 +2422,13 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
                   disabled={feedbackSubmitting}
                   className="flex-1 py-3 bg-gradient-to-tr from-indigo-600 to-purple-600 hover:opacity-90 text-white rounded-2xl text-sm font-bold transition cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
                 >
-                  {feedbackSubmitting ? <NajeSpinner className="w-4 h-4" /> : 'إرسال'}
+                  {feedbackSubmitting ? <NajeSpinner className="w-4 h-4" /> : t('chatui.sendFeedback')}
                 </button>
                 <button
                   onClick={() => setFeedbackTarget(null)}
                   className="px-5 py-3 bg-gray-100 dark:bg-gray-900 hover:bg-gray-200 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-2xl text-sm font-bold transition cursor-pointer"
                 >
-                  إلغاء
+                  {t('common.cancel')}
                 </button>
               </div>
             </motion.div>
@@ -2428,7 +2437,7 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
 
         {/* Smart Text-Risk Gate Confirmation Modal */}
         {textRiskPrompt && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm" dir="rtl">
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm" dir={isRtl ? 'rtl' : 'ltr'}>
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
@@ -2440,20 +2449,26 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
                   
                 </div>
                 <div>
-                  <h3 className="text-sm sm:text-base font-bold text-gray-900 dark:text-white">تنبيه جودة النص في الصورة</h3>
-                  <span className="text-[10px] sm:text-[11px] text-amber-600 dark:text-amber-400 font-medium">نظام الفحص والتوليد الذكي</span>
+                  <h3 className="text-sm sm:text-base font-bold text-gray-900 dark:text-white">{t('chatui.textQualityTitle')}</h3>
+                  <span className="text-[10px] sm:text-[11px] text-amber-600 dark:text-amber-400 font-medium">{t('chatui.smartCheck')}</span>
                 </div>
               </div>
 
               {textRiskPrompt.extractedText && (
                 <div className="p-2.5 sm:p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-900/60 rounded-xl sm:rounded-2xl space-y-1.5">
                   <div className="flex items-center justify-between text-xs text-amber-800 dark:text-amber-300 font-medium">
-                    <span>النص المطلوب كتابته داخل الصورة:</span>
+                    <span>{t('chatui.textInsideImage')}</span>
                     <span className="px-2 py-0.5 bg-amber-200/60 dark:bg-amber-900/80 text-amber-900 dark:text-amber-200 rounded-md font-bold text-[10px] sm:text-[11px]">
-                      {textRiskPrompt.wordCount === 1 ? 'كلمة واحدة' : textRiskPrompt.wordCount === 2 ? 'كلمتان' : (textRiskPrompt.wordCount >= 3 && textRiskPrompt.wordCount <= 10) ? `${textRiskPrompt.wordCount} كلمات` : `${textRiskPrompt.wordCount} كلمة`}
+                      {textRiskPrompt.wordCount === 1
+                        ? t('chatui.words.one')
+                        : textRiskPrompt.wordCount === 2
+                        ? t('chatui.words.two')
+                        : textRiskPrompt.wordCount <= 10
+                        ? t('chatui.words.few', { count: textRiskPrompt.wordCount })
+                        : t('chatui.words.many', { count: textRiskPrompt.wordCount })}
                     </span>
                   </div>
-                  <div className="bg-white dark:bg-gray-900/80 p-2.5 rounded-xl border border-amber-200/60 dark:border-amber-900/40 text-center dir-rtl">
+                  <div className="bg-white dark:bg-gray-900/80 p-2.5 rounded-xl border border-amber-200/60 dark:border-amber-900/40 text-center" dir="auto">
                     <p className="text-xs sm:text-sm font-bold text-gray-900 dark:text-white break-words leading-relaxed">
                       "{(!showFullTextRisk && textRiskPrompt.extractedText.length > 80)
                         ? textRiskPrompt.extractedText.slice(0, 80) + '...'
@@ -2465,7 +2480,7 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
                         onClick={() => setShowFullTextRisk(!showFullTextRisk)}
                         className="mt-1.5 text-[11px] font-bold text-amber-700 dark:text-amber-300 hover:text-amber-900 dark:hover:text-amber-100 underline cursor-pointer inline-flex items-center gap-1"
                       >
-                        {showFullTextRisk ? 'عرض أقل' : 'عرض المزيد'}
+                        {showFullTextRisk ? t('chatui.showLess') : t('chatui.showMore')}
                       </button>
                     )}
                   </div>
@@ -2477,8 +2492,8 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
               </p>
 
               <div className="p-2.5 bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900/50 rounded-xl sm:rounded-2xl text-[11px] text-indigo-900 dark:text-indigo-300 flex items-center gap-2">
-                <span>تنبيه</span>
-                <span>ننصح بالترقية إلى <strong className="font-bold text-indigo-600 dark:text-indigo-400">Naje Imagen Pro</strong> لمعالجة اتصال الحروف والنصوص بدقة متناهية.</span>
+                <span>{t('chatui.notice')}</span>
+                <span>{t('chatui.upgradeImagenAdvice')}</span>
               </div>
 
               <div className="pt-1 sm:pt-2 space-y-2">
@@ -2492,7 +2507,7 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
                   }}
                   className="w-full py-2.5 sm:py-3 bg-gradient-to-tr from-indigo-600 to-purple-600 hover:opacity-90 text-white rounded-xl sm:rounded-2xl text-xs font-bold transition cursor-pointer shadow-md flex items-center justify-center gap-2"
                 >
-                  الترقية إلى Naje Imagen Pro والمتابعة
+                  {t('chatui.upgradeImagenContinue')}
                 </button>
                 <button
                   onClick={() => {
@@ -2503,7 +2518,7 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
                   }}
                   className="w-full py-2 sm:py-2.5 bg-gray-100 dark:bg-gray-900 hover:bg-gray-200 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-xl sm:rounded-2xl text-xs font-semibold transition cursor-pointer"
                 >
-                  المتابعة بالنموذج العادي الحالي
+                  {t('chatui.continueStandard')}
                 </button>
                 <button
                   onClick={() => {
@@ -2512,7 +2527,7 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
                   }}
                   className="w-full py-1.5 sm:py-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-xs font-medium transition cursor-pointer"
                 >
-                  إلغاء الأمر
+                  {t('chatui.cancelAction')}
                 </button>
               </div>
             </motion.div>
@@ -2532,7 +2547,7 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
             const maskBase64 = maskDataUrl.includes(',') ? maskDataUrl.split(',')[1] : maskDataUrl;
             setMaskData(maskBase64); // Dedicated top-level mask channel (never push to files)
             setEditInstruction('');
-            toast.success('تم تحديد القناع بالفرشاة! اكتب تفاصيل التعديل واضغط تطبيق.');
+            toast.success(ct('chatui.maskReady'));
           }}
           onClose={() => setInpaintImageUrl(null)}
         />
@@ -2544,7 +2559,7 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
           docId={activeHistoryDocId}
           currentContent={activeHistoryContent || ''}
           onRestoreVersion={(restoredContent, versionNumber) => {
-            toast.success(`تم استرجاع الإصدار v${versionNumber} بنجاح!`);
+            toast.success(ct('chatui.versionRestored', { version: versionNumber }));
           }}
           onClose={() => setActiveHistoryDocId(null)}
         />

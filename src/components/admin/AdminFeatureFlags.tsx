@@ -4,8 +4,10 @@ import { db, auth } from '../../firebase';
 import { FeatureFlags, DEFAULT_FEATURE_FLAGS } from '../../lib/featureFlags';
 import { ToggleLeft, ToggleRight, ShieldAlert, Power, CheckCircle, Save, Mic, Layers, FileText, Film } from 'lucide-react';
 import { toast } from '../../toastStore';
+import { useI18n } from '../../i18n';
 
 export default function AdminFeatureFlags() {
+  const { t } = useI18n();
   const [flags, setFlags] = useState<FeatureFlags>(DEFAULT_FEATURE_FLAGS);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -57,10 +59,10 @@ export default function AdminFeatureFlags() {
         }
       } catch (e) {}
 
-      toast.success('تم حفظ مفاتيح التحكم بالميزات بنجاح!');
+      toast.success(t('tools.admin.flagsSaved'));
     } catch (err: any) {
       console.error('Error saving feature flags:', err);
-      toast.error('حدث خطأ أثناء حفظ مفاتيح الميزات: ' + err.message);
+      toast.error(t('tools.admin.flagsSaveError', { message: err.message }));
     } finally {
       setSaving(false);
     }
@@ -69,26 +71,26 @@ export default function AdminFeatureFlags() {
   const featureItems: { key: keyof FeatureFlags; title: string; desc: string; icon: any }[] = [
     {
       key: 'voiceChatEnabled',
-      title: 'المحادثات الصوتية والوضع المباشر',
-      desc: 'التحكم بإتاحة أزرار التسجيل الصوتي وتوليد الردود الصوتية المباشرة للمستخدمين.',
+      title: t('tools.admin.flagVoiceTitle'),
+      desc: t('tools.admin.flagVoiceDesc'),
       icon: Mic
     },
     {
       key: 'uiStudioEnabled',
-      title: 'استوديو توليد ومعاينة الواجهات UI Studio',
-      desc: 'إمكانية بناء وتوليد الواجهات البرمجية وتفاعلاتها المباشرة بالـ Canvas.',
+      title: t('tools.admin.flagUiTitle'),
+      desc: t('tools.admin.flagUiDesc'),
       icon: Layers
     },
     {
       key: 'pdfSlidesEnabled',
-      title: 'توليد العروض التقديمية وملفات PPTX/PDF',
-      desc: 'التحكم بأداة تحويل الأفكار إلى شرائح وعروض تقديمية واحترافية.',
+      title: t('tools.admin.flagSlidesTitle'),
+      desc: t('tools.admin.flagSlidesDesc'),
       icon: FileText
     },
     {
       key: 'videoGenerationEnabled',
-      title: 'توليد المقاطع السينمائية والفيديو',
-      desc: 'التحكم بمحرك تحويل النصوص والصور إلى مقاطع فيديو متكاملة.',
+      title: t('tools.admin.flagVideoTitle'),
+      desc: t('tools.admin.flagVideoDesc'),
       icon: Film
     }
   ];
@@ -100,13 +102,13 @@ export default function AdminFeatureFlags() {
         <div>
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs font-black mb-2">
             <Power className="w-3.5 h-3.5" />
-            <span>مفاتيح الإيقاف والتشغيل الفوري (Feature Kill Switches)</span>
+            <span>{t('tools.admin.flagsBadge')}</span>
           </div>
           <h2 className="text-2xl font-black text-white tracking-tight">
-            مفاتيح التحكم بميزات المنصة
+            {t('tools.admin.flagsTitle')}
           </h2>
           <p className="text-gray-400 text-xs mt-1">
-            تمكّنك هذه القواطع من إيقاف أي ميزة رئيسية فوراً في البيئة الحية عند الصيانة أو تحديث الخوادم دون الحاجة إلى إعادة رفع الكود.
+            {t('tools.admin.flagsDesc')}
           </p>
         </div>
 
@@ -116,14 +118,14 @@ export default function AdminFeatureFlags() {
           className="px-6 py-3 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-gray-950 font-black text-xs rounded-xl shadow-lg shadow-amber-500/20 transition flex items-center gap-2 cursor-pointer disabled:opacity-50"
         >
           <Save className="w-4 h-4" />
-          <span>{saving ? 'جاري الحفظ...' : 'حفظ مفاتيح الميزات'}</span>
+          <span>{saving ? t('common.saving') : t('tools.admin.flagsSave')}</span>
         </button>
       </div>
 
       {/* Feature Flags Cards */}
       <div className="bg-[#0e1015] border border-gray-800 rounded-3xl p-6 shadow-xl space-y-4">
         {loading ? (
-          <div className="text-center py-12 text-xs text-gray-500">جاري تحميل إعدادات الميزات...</div>
+          <div className="text-center py-12 text-xs text-gray-500">{t('tools.admin.flagsLoading')}</div>
         ) : (
           featureItems.map((item) => {
             const isEnabled = flags[item.key];
@@ -149,7 +151,7 @@ export default function AdminFeatureFlags() {
                       <span className={`px-2 py-0.5 text-[10px] font-black rounded-full ${
                         isEnabled ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
                       }`}>
-                        {isEnabled ? 'مُفعّلة ونشطة' : 'متوقفة للصيانة'}
+                        {isEnabled ? t('tools.admin.flagOn') : t('tools.admin.flagOff')}
                       </span>
                     </h3>
                     <p className="text-xs text-gray-400 mt-1 max-w-2xl">{item.desc}</p>
@@ -167,12 +169,12 @@ export default function AdminFeatureFlags() {
                   {isEnabled ? (
                     <>
                       <ToggleRight className="w-5 h-5 text-rose-400" />
-                      <span>إيقاف الميزة</span>
+                      <span>{t('tools.admin.flagDisable')}</span>
                     </>
                   ) : (
                     <>
                       <ToggleLeft className="w-5 h-5 text-emerald-400" />
-                      <span>تفعيل الميزة</span>
+                      <span>{t('tools.admin.flagEnable')}</span>
                     </>
                   )}
                 </button>

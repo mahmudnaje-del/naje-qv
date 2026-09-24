@@ -30,45 +30,33 @@ export default function TermsOfService() {
 
         <div className="space-y-8 text-gray-900 dark:text-gray-300 leading-relaxed text-sm md:text-base">
           <section>
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">1. مقدمة</h2>
-            <p>
-              مرحباً بكم في استوديو ناجي (Naje AI). باستخدامكم لمنصتنا وتطبيقنا، فإنكم توافقون صراحة على الامتثال لهذه الشروط والأحكام. إذا كنتم لا توافقون على أي جزء من هذه الشروط، يرجى الامتناع عن استخدام خدماتنا.
-            </p>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">{t('tools.legal.terms.s1Title')}</h2>
+            <p>{t('tools.legal.terms.s1Body')}</p>
           </section>
 
           <section>
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">2. استخدام الخدمات</h2>
-            <p>
-              تُوفر لك Naje AI وصولاً إلى أدوات تعتمد على الذكاء الاصطناعي لإنشاء محتوى نصي، مرئي، وإداري. يجب استخدام هذه الخدمات لأغراض قانونية ومشروعة فقط. يُحظر استخدام المنصة لتوليد محتوى مسيء، غير قانوني، أو ينتهك حقوق الملكية الفكرية للآخرين.
-            </p>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">{t('tools.legal.terms.s2Title')}</h2>
+            <p>{t('tools.legal.terms.s2Body')}</p>
           </section>
 
           <section>
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">3. الحسابات والأمان</h2>
-            <p>
-              أنت مسؤول بشكل كامل عن الحفاظ على سرية معلومات حسابك وأي نشاط يحدث تحته. نحتفظ بالحق في تعليق أو إنهاء الحسابات التي تنتهك شروط الخدمة أو تسيء استخدام النظام.
-            </p>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">{t('tools.legal.terms.s3Title')}</h2>
+            <p>{t('tools.legal.terms.s3Body')}</p>
           </section>
 
           <section>
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">4. الملكية الفكرية</h2>
-            <p>
-              جميع حقوق النشر، العلامات التجارية، والممتلكات الفكرية المرتبطة بمنصة Naje AI (بما في ذلك التصميم والنظام البرمجي) تعود لـ Naje AI. ومع ذلك، المحتوى الذي تقوم بتوليده عبر المنصة يعود لك بناءً على تراخيص النماذج المستخدمة، دون تحمل Naje AI مسؤولية قانونية عن كيفية استخدامه.
-            </p>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">{t('tools.legal.terms.s4Title')}</h2>
+            <p>{t('tools.legal.terms.s4Body')}</p>
           </section>
 
           <section>
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">5. التعديلات على الخدمة</h2>
-            <p>
-              نحتفظ بالحق في تعديل، تعليق، أو إيقاف الخدمة (أو أي جزء منها) في أي وقت دون إشعار مسبق. كما يحق لنا تحديث شروط الخدمة، وسيعتبر استمرارك في استخدام الخدمة موافقة على الشروط المُعدلة.
-            </p>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">{t('tools.legal.terms.s5Title')}</h2>
+            <p>{t('tools.legal.terms.s5Body')}</p>
           </section>
 
           <section>
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">6. تحديد المسؤولية</h2>
-            <p>
-              لا تتحمل Naje AI تحت أي ظرف مسؤولية أي أضرار مباشرة أو غير مباشرة ناتجة عن استخدام أو عدم القدرة على استخدام الخدمات المُقدمة.
-            </p>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">{t('tools.legal.terms.s6Title')}</h2>
+            <p>{t('tools.legal.terms.s6Body')}</p>
           </section>
         </div>
         

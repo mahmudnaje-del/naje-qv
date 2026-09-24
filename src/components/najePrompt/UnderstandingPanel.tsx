@@ -3,12 +3,13 @@ import { ThumbsDown, ThumbsUp } from 'lucide-react';
 import type { PromptFields, Understanding } from '../../lib/najePromptEngine';
 import { splitAssumptions } from '../../lib/najePromptEngine';
 import { cn } from '../../lib/utils';
+import { useI18n } from '../../i18n';
 
-const FIELD_ROWS: Array<{ key: keyof PromptFields; label: string }> = [
-  { key: 'duration', label: 'المدة' },
-  { key: 'ratio', label: 'النسبة' },
-  { key: 'mood', label: 'المزاج' },
-  { key: 'platform', label: 'المنصة' },
+const FIELD_ROWS: Array<{ key: keyof PromptFields; labelKey: string }> = [
+  { key: 'duration', labelKey: 'prompt.field.duration' },
+  { key: 'ratio', labelKey: 'prompt.field.ratio' },
+  { key: 'mood', labelKey: 'prompt.field.mood' },
+  { key: 'platform', labelKey: 'prompt.field.platform' },
 ];
 
 interface UnderstandingPanelProps {
@@ -34,6 +35,7 @@ export function UnderstandingPanel({
   onUpdatePrompt,
   onFeedback,
 }: UnderstandingPanelProps) {
+  const { t, isRtl } = useI18n();
   const [open, setOpen] = useState(defaultOpen);
   const [vote, setVote] = useState<'up' | 'down' | null>(null);
   const [draft, setDraft] = useState({
@@ -68,7 +70,7 @@ export function UnderstandingPanel({
   ]);
 
   const extras = (fields ? FIELD_ROWS : [])
-    .map((row) => ({ label: row.label, value: String(fields?.[row.key] || '').trim() }))
+    .map((row) => ({ label: t(row.labelKey), value: String(fields?.[row.key] || '').trim() }))
     .filter((row) => row.value);
   const { facts, assumptions } = splitAssumptions(understanding.constraints || []);
 
@@ -118,27 +120,39 @@ export function UnderstandingPanel({
   };
 
   const compactRows: Array<{ label: string; value: string }> = [
-    { label: 'الهدف', value: draft.goal },
-    { label: 'الجمهور', value: draft.audience },
-    { label: 'الصيغة', value: draft.format },
-    { label: 'السياق', value: draft.context },
-    { label: 'المخرج', value: draft.output },
+    { label: t('prompt.understand.goal'), value: draft.goal },
+    { label: t('prompt.understand.audience'), value: draft.audience },
+    { label: t('prompt.understand.format'), value: draft.format },
+    { label: t('prompt.understand.context'), value: draft.context },
+    { label: t('prompt.understand.output'), value: draft.output },
   ].filter((row) => row.value.trim());
 
+  const editRows = [
+    { key: 'goal' as const, label: t('prompt.understand.goal') },
+    { key: 'audience' as const, label: t('prompt.understand.audience') },
+    { key: 'format' as const, label: t('prompt.understand.format') },
+    ...(expert
+      ? [
+          { key: 'context' as const, label: t('prompt.understand.context') },
+          { key: 'output' as const, label: t('prompt.understand.output') },
+        ]
+      : []),
+  ];
+
   return (
-    <div className="space-y-2">
+    <div className="space-y-2" dir={isRtl ? 'rtl' : 'ltr'}>
       {showToggle && (
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
           className={cn(
-            'inline-flex min-h-8 items-center rounded-full px-2.5 py-1 text-[10px] font-black tracking-wide transition',
+            'inline-flex min-h-11 items-center rounded-full px-3 py-1 text-[11px] font-black tracking-wide transition',
             open
               ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400'
               : 'text-naje-muted hover:text-naje-ink',
           )}
         >
-          {open ? 'إخفاء ما فهمه ناجي' : 'أظهر ما فهمه ناجي'}
+          {open ? t('prompt.understand.hide') : t('prompt.understand.show')}
         </button>
       )}
 
@@ -146,47 +160,40 @@ export function UnderstandingPanel({
         <div className="space-y-2">
           {editable ? (
             <div className="space-y-2">
-              {([
-                { key: 'goal', label: 'الهدف' },
-                { key: 'audience', label: 'الجمهور' },
-                { key: 'format', label: 'الصيغة' },
-                ...(expert
-                  ? ([
-                      { key: 'context', label: 'السياق' },
-                      { key: 'output', label: 'المخرج' },
-                    ] as const)
-                  : []),
-              ] as const).map((row) => (
-                <label key={row.key} className="block">
+              {editRows.map((row) => (
+                <label key={row.key} className="block text-start">
                   <span className="mb-1 block text-[10px] font-black text-naje-muted">{row.label}</span>
                   <input
                     value={draft[row.key]}
+                    dir={isRtl ? 'rtl' : 'ltr'}
                     disabled={busy}
                     onChange={(e) => setDraft((prev) => ({ ...prev, [row.key]: e.target.value }))}
-                    className="min-h-11 w-full rounded-2xl border border-zinc-200 bg-white px-3 py-2 text-[12px] text-naje-ink focus:border-indigo-500 focus:outline-none disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-950"
+                    className="min-h-11 w-full rounded-2xl border border-zinc-200 bg-white px-3 py-2 text-start text-[12px] text-naje-ink focus:border-indigo-500 focus:outline-none disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-950"
                   />
                 </label>
               ))}
               {expert && (
                 <>
-                  <label className="block">
-                    <span className="mb-1 block text-[10px] font-black text-naje-muted">القيود والمتطلبات</span>
+                  <label className="block text-start">
+                    <span className="mb-1 block text-[10px] font-black text-naje-muted">{t('prompt.understand.constraints')}</span>
                     <textarea
                       value={draft.constraints}
+                      dir={isRtl ? 'rtl' : 'ltr'}
                       disabled={busy}
                       rows={3}
                       onChange={(e) => setDraft((prev) => ({ ...prev, constraints: e.target.value }))}
-                      className="w-full rounded-2xl border border-zinc-200 bg-white px-3 py-2 text-[12px] text-naje-ink focus:border-indigo-500 focus:outline-none disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-950"
+                      className="min-h-11 w-full rounded-2xl border border-zinc-200 bg-white px-3 py-2 text-start text-[12px] text-naje-ink focus:border-indigo-500 focus:outline-none disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-950"
                     />
                   </label>
-                  <label className="block">
-                    <span className="mb-1 block text-[10px] font-black text-naje-muted">مراجع</span>
+                  <label className="block text-start">
+                    <span className="mb-1 block text-[10px] font-black text-naje-muted">{t('prompt.understand.references')}</span>
                     <textarea
                       value={draft.references}
+                      dir={isRtl ? 'rtl' : 'ltr'}
                       disabled={busy}
                       rows={2}
                       onChange={(e) => setDraft((prev) => ({ ...prev, references: e.target.value }))}
-                      className="w-full rounded-2xl border border-zinc-200 bg-white px-3 py-2 text-[12px] text-naje-ink focus:border-indigo-500 focus:outline-none disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-950"
+                      className="min-h-11 w-full rounded-2xl border border-zinc-200 bg-white px-3 py-2 text-start text-[12px] text-naje-ink focus:border-indigo-500 focus:outline-none disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-950"
                     />
                   </label>
                 </>
@@ -197,15 +204,15 @@ export function UnderstandingPanel({
                 onClick={submit}
                 className="min-h-11 rounded-xl bg-indigo-600 px-3 py-2 text-[11px] font-black text-white disabled:cursor-not-allowed disabled:opacity-40"
               >
-                حدّث البرومبت
+                {t('prompt.understand.update')}
               </button>
             </div>
           ) : (
             <ul className="space-y-1.5">
               {compactRows.map((row) => (
-                <li key={row.label} className="flex gap-2 text-[12px] leading-relaxed text-naje-ink">
+                <li key={row.label} className="flex gap-2 text-start text-[12px] leading-relaxed text-naje-ink">
                   <span className="shrink-0 font-black text-naje-muted">{row.label}</span>
-                  <span>{row.value}</span>
+                  <span dir="auto">{row.value}</span>
                 </li>
               ))}
             </ul>
@@ -214,18 +221,18 @@ export function UnderstandingPanel({
           {(extras.length > 0 || facts.length > 0 || assumptions.length > 0) && (
             <ul className="space-y-1.5">
               {extras.map((row) => (
-                <li key={row.label} className="flex gap-2 text-[12px] leading-relaxed text-naje-ink">
+                <li key={row.label} className="flex gap-2 text-start text-[12px] leading-relaxed text-naje-ink">
                   <span className="shrink-0 font-black text-naje-muted">{row.label}</span>
-                  <span>{row.value}</span>
+                  <span dir="auto">{row.value}</span>
                 </li>
               ))}
               {facts.map((item) => (
-                <li key={item} className="text-[12px] leading-relaxed text-naje-muted">
+                <li key={item} className="text-start text-[12px] leading-relaxed text-naje-muted" dir="auto">
                   {item}
                 </li>
               ))}
               {assumptions.map((item) => (
-                <li key={item} className="text-[12px] leading-relaxed text-amber-700 dark:text-amber-400">
+                <li key={item} className="text-start text-[12px] leading-relaxed text-amber-700 dark:text-amber-400" dir="auto">
                   {item}
                 </li>
               ))}
@@ -234,14 +241,14 @@ export function UnderstandingPanel({
 
           {onFeedback && (
             <div className="flex items-center gap-2 pt-1">
-              <span className="text-[10px] font-black text-naje-muted">الفهم صحيح؟</span>
+              <span className="text-[10px] font-black text-naje-muted">{t('prompt.understand.correct')}</span>
               <button
                 type="button"
                 disabled={busy}
                 onClick={() => voteNow('up')}
-                aria-label="نعم"
+                aria-label={t('prompt.understand.yes')}
                 className={cn(
-                  'flex h-8 w-8 items-center justify-center rounded-full border',
+                  'flex h-11 w-11 items-center justify-center rounded-full border',
                   vote === 'up'
                     ? 'border-emerald-500 bg-emerald-500/15 text-emerald-700'
                     : 'border-zinc-200 text-naje-muted dark:border-zinc-700',
@@ -253,9 +260,9 @@ export function UnderstandingPanel({
                 type="button"
                 disabled={busy}
                 onClick={() => voteNow('down')}
-                aria-label="لا"
+                aria-label={t('prompt.understand.no')}
                 className={cn(
-                  'flex h-8 w-8 items-center justify-center rounded-full border',
+                  'flex h-11 w-11 items-center justify-center rounded-full border',
                   vote === 'down'
                     ? 'border-rose-500 bg-rose-500/15 text-rose-700'
                     : 'border-zinc-200 text-naje-muted dark:border-zinc-700',

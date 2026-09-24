@@ -44,183 +44,11 @@ const safeLocalStorage = {
   }
 };
 
-const T = {
-  ar: {
-    title: "Creative Ai",
-    subTitle: "إنشاء تصاميم للعامة",
-    startupSuffix: "الناشئة",
-    aiDomain: "في مجال تطوير خوارزميات الذكاء الاصطناعي",
-    installPwa: "تثبيت التطبيق (PWA)",
-    globalGalleryBtn: "تصاميم قام بها آخرون على Creative Ai",
-    startBrandingBtn: "انشئ شعارك او هويتك البصرية",
-    logoCardTitle: "شعار",
-    logoCardDesc: "تصميم شعار احترافي يعبر عن جوهر علامتك التجارية",
-    identityCardTitle: "هوية بصرية",
-    identityCardDesc: "بناء هوية بصرية متكاملة تميزك في السوق",
-    videoCardTitle: "إعلان فيديو",
-    videoCardDesc: "أنشئ إعلانات فيديو ترويجية بذكاء",
-    selectLogoType: "اختر نوع الشعار:",
-    logoDefault: "شعار رئيسي",
-    logoAppIcon: "أيقونة تطبيق",
-    logoBillboard: "لوحة إعلانية واجهة (بنر/ارمات محلات)",
-    selectIdentityType: "اختر نوع التصميم:",
-    idLogoAndIdentity: "الشعار والهوية معاً",
-    idHorizontal: "شعار رئيسي أفقي",
-    idYoutubeCover: "غلاف يوتيوب",
-    idYoutubeThumbnail: "صورة مصغرة ليوتيوب",
-    idSocialPost: "منشورات سوشال ميديا",
-    idStory: "ستوري (واتساب/إنستغرام)",
-    idBusinessCard: "بطاقة أعمال",
-    idWhatsappChannel: "غلاف/صورة قناة واتس آب",
-    uploadProductTitle: "إرفاق صور لمنتجات شركتك (اختياري، ليتم دمجها في الهوية):",
-    uploadProductTitleVideo: "إرفاق صور للمعلن أو المنتج (اختياري، ليتم دمجها في الفيديو):",
-    uploadProductTitleBillboard: "إرفاق صور للمنتجات، الشعار أو كروكي توضيحي للوحة (اختياري):",
-    uploadPlaceholder: "اضغط لرفع صورة أو اسحب الصورة هنا (يمكنك إضافة أكثر من صورة)",
-    promptLogoTitle: "تفاصيل الشعار",
-    promptIdentityTitle: "تفاصيل الهوية البصرية",
-    promptVideoTitle: "تفاصيل وملامح فيديو الذكاء الاصطناعي",
-    errorInputCompanyDetails: "يرجى إدخال تفاصيل الشركة أولاً",
-    errorInputCode: "يجب إدخال كود التفعيل بشكل صحيح",
-    errorCodeInvalid: "كود التفعيل غير صالح للتوليد حالياً!",
-    errorCodeCheckFail: "تعذر التحقق من الكود",
-    inputCodePlaceholder: "أدخل كود التفعيل",
-    getCodeText: "للحصول على كود",
-    clickHere: "اضغط هنا",
-    codeValidRemaining: (rem: number, total: number) => `كود صالح - متبقي لك ${rem} تصميم من أصل ${total}`,
-    codeExpired: (usage: number, limit: number) => `انتهى رصيد هذا الكود (${usage}/${limit} تصميم)`,
-    innovatingBtn: "جاري الابتكار...",
-    generationWarning: "قد يستغرق إنشاء التصميم من دقيقة لثلاث دقائق نبدع لك في كل بكسل",
-    startInnovatingBtn: "البدء بالابتكار",
-    footerInfo: "تم تطوير وبرمجة خوارزمية Creative Ai المتخصصة في ابتكار الهويات البصرية والشعارات بواسطة مهندسين محترفين في مجال الذكاء الاصطناعي والتصاميم ، بهدف تقديم تصاميم إبداعية تجمع بين الدقة والابتكار والهوية الفريدة.",
-    resultLogoHeader: "الشعار الخاص بك",
-    resultIdentityHeader: "الهوية البصرية الخاصة بك",
-    downloadBtn: "تحميل",
-    redesignBtn: "إعادة التصميم",
-    editDesignBtn: "تعديل التصميم",
-    cancelEditBtn: "إلغاء التعديل",
-    newBtn: "جديد",
-    editLabel: "اكتب طلبات التعديل الخاصة بك",
-    editPlaceholder: "مثال: اجعل الألوان أقرب للأزرق، الفكرة ممتازة لكن أريدها أن تبدو رسمية أكثر...",
-    applyEditBtn: "تطبيق التعديلات",
-    behindScenesPrompt: "AI Intelligence Prompt (Behind the scenes)",
-    backHomeBtn: "رجوع للرئيسية",
-    homeBtn: "الرئيسية",
-    galleryTitle: "معرض التصاميم",
-    tabGlobalDesigns: "أحدث التصاميم",
-    tabLocalDesigns: "مكتبتي (متصفحك)",
-    noLocalDesigns: "لا توجد تصاميم محفوظة في متصفحك بعد",
-    noGlobalDesigns: "لا يوجد تصاميم حديثة لعرضها",
-    installPwaSimple: "تثبيت (PWA)",
-    pwaName: "Creative Ai",
-    subCompany: "Qelva Ai",
-    adminTitle: "لوحة الإدارة والمراقبة",
-    adminHeader: "تسجيل الدخول للوحة التحكم",
-    adminPasswordPlaceholder: "كلمة المرور...",
-    adminLoginBtn: "دخول",
-    adminError: "اسم المستخدم أو كلمة المرور غير صحيحة",
-    adminAddCodeTitle: "إضافة كود جديد",
-    adminNamePlaceholder: "اسم المشترك",
-    adminLimitPlaceholder: "عدد الصور",
-    adminAddCodeBtn: "إنشاء كود",
-    adminCodesHeader: "بطاقات المشتركين",
-    adminRefreshBtn: "تحديث",
-    adminNoCodes: "لا يوجد أكواد حالياً.",
-    adminUsage: (u: number, l: number) => `الاستخدام: ${u} / ${l}`,
-    adminNoUserDesigns: "لم يقم بإنتاج أي تصميم بعد.",
-    confirmDeleteCode: "هل أنت متأكد من حذف هذا الكود؟",
-    codeChecking: "جاري التحقق..."
-  },
-  en: {
-    title: "Creative Ai",
-    subTitle: "Generate designs for the public",
-    startupSuffix: "Startup",
-    aiDomain: "In the field of AI algorithm development",
-    installPwa: "Install Application (PWA)",
-    globalGalleryBtn: "Designs created by others on Creative Ai",
-    startBrandingBtn: "Create your Logo or Visual Identity",
-    logoCardTitle: "Logo",
-    logoCardDesc: "Professional logo design that expresses the essence of your brand",
-    identityCardTitle: "Visual Identity",
-    identityCardDesc: "Build a coherent visual identity that sets you apart in the market",
-    videoCardTitle: "Video Ad",
-    videoCardDesc: "Create expressive promotional video ads intelligently",
-    selectLogoType: "Select Logo Type:",
-    logoDefault: "Main Logo",
-    logoAppIcon: "App Icon",
-    logoBillboard: "Commercial Signboard / Billboard",
-    selectIdentityType: "Select Design Type:",
-    idLogoAndIdentity: "Logo and Identity Together",
-    idHorizontal: "Main Horizontal Logo",
-    idYoutubeCover: "YouTube Cover",
-    idYoutubeThumbnail: "YouTube Thumbnail",
-    idSocialPost: "Social Media Post",
-    idStory: "Story (WhatsApp/Instagram)",
-    idBusinessCard: "Business Card",
-    idWhatsappChannel: "WhatsApp Channel Cover",
-    uploadProductTitle: "Attach product images (Optional, to incorporate into identity):",
-    uploadProductTitleVideo: "Attach actor/product images (Optional, to incorporate into video):",
-    uploadProductTitleBillboard: "Attach product, logo, or signboard sketches/images (Optional):",
-    uploadPlaceholder: "Click to upload or drag images here (You can add multiple images)",
-    promptLogoTitle: "Logo Details",
-    promptIdentityTitle: "Visual Identity Details",
-    promptVideoTitle: "AI Video Scene & Scenario Details",
-    errorInputCompanyDetails: "Please enter company details first",
-    errorInputCode: "Please enter a valid activation code correctly",
-    errorCodeInvalid: "Activation code is currently invalid for generation!",
-    errorCodeCheckFail: "Could not verify code",
-    inputCodePlaceholder: "Enter your Activation Code",
-    getCodeText: "To get a code",
-    clickHere: "click here",
-    codeValidRemaining: (rem: number, total: number) => `Valid Code - you have ${rem} designs remaining out of ${total}`,
-    codeExpired: (usage: number, limit: number) => `This code is expired (${usage}/${limit} designs)`,
-    innovatingBtn: "Innovating...",
-    generationWarning: "Generating the design may take 2 to 3 minutes as we craft perfection in every pixel",
-    startInnovatingBtn: "Start Innovating",
-    footerInfo: "The Creative Ai algorithm for logo and visual identity generation was designed and programmed by professional engineers in artificial intelligence and design to deliver highly precise, innovative, and uniquely personalized brand solutions.",
-    resultLogoHeader: "Your Logo",
-    resultIdentityHeader: "Your Visual Identity",
-    downloadBtn: "Download",
-    redesignBtn: "Re-design",
-    editDesignBtn: "Edit Design",
-    cancelEditBtn: "Cancel Edit",
-    newBtn: "New",
-    editLabel: "Write your edit requests",
-    editPlaceholder: "Example: Make the colors closer to blue, the concept is great but I want it to look more corporate...",
-    applyEditBtn: "Apply Edits",
-    behindScenesPrompt: "AI Intelligence Prompt (Behind the scenes)",
-    backHomeBtn: "Back Home",
-    homeBtn: "Home",
-    galleryTitle: "Design Gallery",
-    tabGlobalDesigns: "Recent Designs",
-    tabLocalDesigns: "My Library (Browser)",
-    noLocalDesigns: "No designs saved in your browser yet",
-    noGlobalDesigns: "No recent designs to show",
-    installPwaSimple: "Install (PWA)",
-    pwaName: "Creative Ai",
-    subCompany: "Qelva Ai",
-    adminTitle: "Admin Panel",
-    adminHeader: "Sign in to Dashboard",
-    adminPasswordPlaceholder: "Password...",
-    adminLoginBtn: "Login",
-    adminError: "Incorrect username or password",
-    adminAddCodeTitle: "Add New Code",
-    adminNamePlaceholder: "Subscriber Name",
-    adminLimitPlaceholder: "Image Count",
-    adminAddCodeBtn: "Create Code",
-    adminCodesHeader: "Subscriber Cards",
-    adminRefreshBtn: "Refresh",
-    adminNoCodes: "No codes available currently.",
-    adminUsage: (u: number, l: number) => `Usage: ${u} / ${l}`,
-    adminNoUserDesigns: "No designs generated yet.",
-    confirmDeleteCode: "Are you sure you want to delete this code?",
-    codeChecking: "Checking..."
-  }
-};
 
 
 const ObjectTraits = ['شبابي', 'ودود', 'احترافي', 'تقني', 'عصري', 'بسيط', 'مبتكر', 'مستقبلي', 'فخم', 'أنيق', 'جريء', 'رسمي', 'مرح', 'قوي', 'موثوق', 'كلاسيكي', 'هندسي', 'إبداعي', 'حيوي', 'رياضي', 'طبيعي', 'ثقافي', 'طبي', 'صناعي', 'عضوي', 'تعليمي', 'موسيقي'];
 const ObjectTraitsEn = ['Youthful', 'Friendly', 'Professional', 'Tech', 'Modern', 'Simple', 'Innovative', 'Futuristic', 'Luxurious', 'Elegant', 'Bold', 'Formal', 'Fun', 'Strong', 'Reliable', 'Classic', 'Geometric', 'Creative', 'Lively', 'Sporty', 'Natural', 'Cultural', 'Medical', 'Industrial', 'Organic', 'Educational', 'Musical'];
-const renderErrorText = (err: any) => typeof err === 'string' ? err : err?.message || 'حدث خطأ غير متوقع';
+const renderErrorText = (err: any, fallback = '') => typeof err === 'string' ? err : err?.message || fallback;
 
 export default function CreativelyAI() {
   const { user, updateBalance } = useAppStore();
@@ -256,21 +84,21 @@ export default function CreativelyAI() {
 
   const [mode, setMode] = useState<Mode | null>(null);
   useEffect(() => {
-    let title = lang === 'ar' ? "Creative AI | وكالتك الإبداعية الذكية" : "Creative AI | Your AI Creative Agency";
-    let desc = lang === 'ar' ? "منصة تصميم متكاملة مدعومة بالذكاء الاصطناعي." : "A complete AI-powered design platform.";
+    let title = t('creative.m109');
+    let desc = t('creative.m108');
 
     if (currentScreen === 'app') {
       if (mode === 'chat') {
-        title = lang === 'ar' ? "Creative AI | المساعد الذكي" : "Creative AI | Smart Assistant";
+        title = t('creative.m107');
       } else if (mode === 'brand_kit') {
-        title = lang === 'ar' ? "Creative AI | مولد الهوية البصرية" : "Creative AI | Brand Kit Generator";
+        title = t('creative.m106');
       } else {
-        title = lang === 'ar' ? "Creative AI | صمم هويتك البصرية" : "Creative AI | Design Brand Identity";
+        title = t('creative.m105');
       }
     } else if (currentScreen === 'creative_ai_pro') {
-      title = lang === 'ar' ? "Creative AI Pro | احترافية" : "Creative AI Pro | Professional";
+      title = t('creative.m104');
     } else if (currentScreen === 'gallery') {
-      title = lang === 'ar' ? "Creative AI | المعرض" : "Creative AI | Gallery";
+      title = t('creative.m103');
     }
 
     document.title = title;
@@ -720,9 +548,7 @@ const handleProUnlockSubmit = async () => {};
   const compileBrandKitPdf = async (brandAssets: Record<string, { imageUrl: string; prompt: string; concept: string }>) => {
     setKitGenerationStatus('compiling');
     setKitGenerationProgressMsg(
-      lang === 'ar'
-        ? 'جاري تجميع حزمة الهوية البصرية وصياغة كتاب الهوية بصيغة PDF...'
-        : 'Compiling brand assets and drafting your consolidated PDF Brand Book...'
+      t('creative.m102')
     );
 
     try {
@@ -895,11 +721,11 @@ const handleProUnlockSubmit = async () => {};
   // Sequential Generation Pipeline Trigger
   const handleGenerateKitSequentially = async () => {
     if (selectedKitItems.length === 0) {
-      alert(lang === 'ar' ? 'يرجى اختيار وتأكيد عنصر واحد على الأقل لتوليد حزمة الهوية!' : 'Please select and add at least one element to compile your Brand Identity Kit!');
+      alert(t('creative.m101'));
       return;
     }
     if (!df.projectName || !df.brandIdea) {
-      alert(lang === 'ar' ? 'يرجى ملء الاسم وفكرة المشروع أولاً قبل بدء التوليد.' : 'Please fill in the project/brand name and idea description first.');
+      alert(t('creative.m100'));
       return;
     }
 
@@ -910,7 +736,7 @@ const handleProUnlockSubmit = async () => {};
 
     
     if (balance <= 0) {
-      alert(lang === 'ar' ? 'رصيد النقاط غير كافٍ لإنشاء التصميم. يرجى إعادة شحن حسابك.' : 'Insufficient points balance.');
+      alert(t('creative.m099'));
       return;
     }
     setKitGenerationStatus('generating');
@@ -935,9 +761,7 @@ const handleProUnlockSubmit = async () => {};
       const config = kitItemConfigs[itemId] || {};
 
       setKitGenerationProgressMsg(
-        lang === 'ar'
-          ? `جاري تصميم: ${item?.labelAr || itemId} (خطوة ${kitGenerationStep + 1} من ${selectedKitItems.length})...`
-          : `Designing: ${item?.labelEn || itemId} (step ${kitGenerationStep + 1} of ${selectedKitItems.length})...`
+        t('creative.m098', { p0: item ? t(`creative.kit.${item.id}.label`) : itemId, p1: kitGenerationStep + 1, p2: selectedKitItems.length })
       );
 
       try {
@@ -1049,7 +873,7 @@ const handleProUnlockSubmit = async () => {};
             setKitGenerationStatus('idle');
             return;
           }
-          throw new Error(data?.error || `خطأ في الخادم (${response.status})`);
+          throw new Error(data?.error || t('creative.serverError', { status: response.status }));
         }
 
         setKitGeneratedAssets(prev => ({
@@ -1185,59 +1009,33 @@ const handleProUnlockSubmit = async () => {};
     const isAr = lang === 'ar';
     if (mode === 'logo') {
       if (logoFormat === 'app_icon') {
-        return isAr 
-          ? 'اكتب فكرة التطبيق والوظيفة الأساسية له لإنتاج أيقونة تطبيق احترافية وعصرية...'
-          : 'Write the app idea and main feature to generate a professional, modern app icon...';
+        return t('creative.m097');
       }
-      return isAr 
-        ? 'اكتب نبذة عن الشركة التي تود تصميم الشعار لها...'
-        : 'Write a brief description of the company you want to design a logo for...';
+      return t('creative.m096');
     } else if (mode === 'video_ad') {
-      return isAr
-        ? 'اكتب الفكرة العامة للفيديو الترويجي ليقوم الذكاء الاصطناعي ببناء أدق طلب...'
-        : 'Write the general ad concept and the AI will build the precision prompt...';
+      return t('creative.m095');
     } else {
       switch (identityFormat) {
         case 'full':
-          return isAr
-            ? 'اكتب تفاصيل الشركة بالكامل لإنتاج عرض هوية بصرية متكامل (Mockup) يشمل كافة العناصر...'
-            : 'Write full company details to produce an integrated brand identity presentation (Mockup) containing all assets...';
+          return t('creative.m094');
         case 'logo_and_identity':
-          return isAr
-            ? 'اكتب التفاصيل لتصميم استعراض احترافي يجمع بين الشعار الرئيسي وعناصر الهوية الأساسية بانسجام...'
-            : 'Write details to design a professional showcase blending the main logo and basic brand assets in harmony...';
+          return t('creative.m093');
         case 'horizontal_logo':
-          return isAr
-            ? 'اكتب تفاصيل الشعار والشركة لإنتاج تصميم شعار رئيسي أفقي...'
-            : 'Write logo and company details to produce a main horizontal logo layout...';
+          return t('creative.m092');
         case 'youtube_cover':
-          return isAr
-            ? 'اكتب تفاصيل القناة ومحتواها والشعار لإنتاج تصميم غلاف يوتيوب احترافي...'
-            : 'Write details of the channel, its content, and logo to produce a professional YouTube cover art...';
+          return t('creative.m091');
         case 'whatsapp_channel':
-          return isAr
-            ? 'اكتب تفاصيل ومحتوى القناة والشعار المطلوب لإنتاج غلاف/صورة قناة واتس آب مميزة...'
-            : 'Write details of the channel, its content, and the required logo/badge to produce a beautiful WhatsApp channel cover...';
+          return t('creative.m090');
         case 'youtube_thumbnail':
-          return isAr
-            ? 'اكتب عنوان الفيديو والفكرة الرئيسية لإنتاج تصميم صورة مصغرة وجذابة ليوتيوب...'
-            : 'Write the video title and main idea to produce a catchy, engaging YouTube thumbnail...';
+          return t('creative.m089');
         case 'social_post':
-          return isAr
-            ? 'اكتب فكرة المنشور، النص الأساسي، والهدف منه لتصميم منشور سوشيال ميديا مميز...'
-            : 'Write the post concept, main text, and target goal to design a unique social media post...';
+          return t('creative.m088');
         case 'story':
-          return isAr
-            ? 'اكتب محتوى القصة (ستوري) والعرض المراد الترويج له لتصميم ستوري جذاب...'
-            : 'Write the story content and the offer to promote to design an attractive story graphic...';
+          return t('creative.m087');
         case 'business_card':
-          return isAr
-            ? 'اكتب معلومات البطاقة والشركة لإنتاج تصميم بطاقة أعمال احترافية...'
-            : 'Write physical card details and company info to produce a professional business card mockup...';
+          return t('creative.m086');
         default:
-          return isAr
-            ? 'اكتب كل معلومات شركتك لنقوم بإنتاج أقوى هوية بصرية...'
-            : 'Write all details of your company for us to generate a powerful visual identity...';
+          return t('creative.m085');
       }
     }
   };
@@ -1301,7 +1099,7 @@ const handleProUnlockSubmit = async () => {};
     }
 
     if (!finalPrompt.trim()) {
-      setError(T[lang].errorInputCompanyDetails);
+      setError(t('creative.errorInputCompanyDetails'));
       return;
     }
 
@@ -1313,8 +1111,8 @@ const handleProUnlockSubmit = async () => {};
     setPrompt(finalPrompt);
 
     if (balance <= 0) {
-      setError("رصيد النقاط غير كافٍ لإنشاء التصميم. يرجى إعادة شحن حسابك.");
-      toast.error("رصيد النقاط غير كافٍ لإنشاء التصميم. يرجى إعادة شحن حسابك.");
+      setError(t('creative.insufficientPoints'));
+      toast.error(t('creative.insufficientPoints'));
       return;
     }
 
@@ -1390,7 +1188,7 @@ const handleProUnlockSubmit = async () => {};
           setIsGenerating(false);
           return;
         }
-        throw new Error(data?.error || `خطأ في الخادم (${response.status})`);
+        throw new Error(data?.error || t('creative.serverError', { status: response.status }));
       }
 
       if (data.type === "concepts") {
@@ -1476,7 +1274,7 @@ const handleProUnlockSubmit = async () => {};
 
         if (Date.now() - startedAt > MAX_TOTAL_WAIT_MS) {
           clearInterval(simulatedProgressInterval);
-          setError("استغرق توليد الفيديو وقتاً أطول من المتوقع. يرجى المحاولة مجدداً أو التواصل مع الدعم إذا تكررت المشكلة.");
+          setError(t('creative.videoTimeout'));
           setIsGenerating(false);
           setVideoOperationName(null);
           return;
@@ -1521,11 +1319,11 @@ const handleProUnlockSubmit = async () => {};
                 saveDesign(blob).catch(console.error);
               } else {
                 console.error("Failed to download video blob for local storage.");
-                setError("فشل تحميل ملف الفيديو النهائي.");
+                setError(t('creative.videoFileFail'));
               }
             } catch (err) {
               console.error("Error saving video blob:", err);
-              setError("حدث خطأ أثناء تنزيل الفيديو.");
+              setError(t('creative.videoDownloadError'));
             }
             return; // done — do not reschedule
           }
@@ -1569,10 +1367,10 @@ const handleProUnlockSubmit = async () => {};
             className="flex items-center gap-2 text-slate-300 hover:text-white transition-colors"
           >
             <ChevronLeft className="w-5 h-5 rtl:rotate-180" />
-            <span>{T[lang].homeBtn || 'الرئيسية'}</span>
+            <span>{t('nav.home')}</span>
           </button>
           <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-indigo-400">
-            {lang === 'ar' ? 'المعرض' : 'Gallery'}
+            {t('creative.m084')}
           </h1>
           <div className="w-20"></div>
         </header>
@@ -1583,20 +1381,20 @@ const handleProUnlockSubmit = async () => {};
               onClick={() => setGalleryTab('global')}
               className={`px-6 py-2 rounded-full text-sm font-bold transition-all ${galleryTab === 'global' ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:text-slate-200'}`}
             >
-              {lang === 'ar' ? 'تصاميم المجتمع' : 'Community Designs'}
+              {t('creative.m083')}
             </button>
             <button 
               onClick={() => setGalleryTab('local')}
               className={`px-6 py-2 rounded-full text-sm font-bold transition-all ${galleryTab === 'local' ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:text-slate-200'}`}
             >
-              {lang === 'ar' ? 'تصاميمي' : 'My Designs'}
+              {t('creative.m082')}
             </button>
           </div>
 
           {isGalleryLoading && galleryTab === 'global' ? (
             <div className="flex-1 flex flex-col items-center justify-center">
               <NajeSpinner className="w-10 h-10 mb-4" />
-              <p className="text-slate-400 text-sm">جاري التحميل...</p>
+              <p className="text-slate-400 text-sm">{t('common.loading')}</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 w-full">
@@ -1610,14 +1408,14 @@ const handleProUnlockSubmit = async () => {};
                     )}
                   </div>
                   <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-4">
-                    <p className="text-white text-sm font-bold mb-1 truncate">{design?.prompt || 'بدون وصف'}</p>
+                    <p className="text-white text-sm font-bold mb-1 truncate">{design?.prompt || t('creative.noDescription')}</p>
                     <a 
                       href={design?.url || design?.blobUrl} 
                       download={`design-${Date.now() + "-" + Math.random().toString(36).substring(7)}`}
                       className="mt-2 w-full flex items-center justify-center gap-2 py-2 bg-white/20 hover:bg-white/30 backdrop-blur-md rounded-lg text-white transition-all text-xs font-bold"
                     >
                       <Download className="w-4 h-4" />
-                      تنزيل
+                      {t('common.download')}
                     </a>
                   </div>
                 </div>
@@ -1628,8 +1426,8 @@ const handleProUnlockSubmit = async () => {};
                   <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mb-4">
                     <LayoutTemplate className="w-10 h-10 text-slate-500" />
                   </div>
-                  <h3 className="text-xl font-bold text-slate-300 mb-2">{lang === 'ar' ? 'لا توجد تصاميم' : 'No designs found'}</h3>
-                  <p className="text-slate-500">{lang === 'ar' ? 'لم يتم العثور على أي تصاميم لعرضها.' : 'No designs available to display.'}</p>
+                  <h3 className="text-xl font-bold text-slate-300 mb-2">{t('creative.m081')}</h3>
+                  <p className="text-slate-500">{t('creative.m080')}</p>
                 </div>
               )}
             </div>
@@ -1669,7 +1467,7 @@ if (currentScreen === 'welcome') {
 
   if (currentScreen === 'admin') {
     return (
-      <div className="flex-1 min-h-0 overflow-y-auto bg-slate-950 text-white font-sans flex flex-col items-center pt-8 pb-32 sm:pb-16 px-4 md:px-8 relative overflow-x-hidden" dir="rtl">
+      <div className="flex-1 min-h-0 overflow-y-auto bg-slate-950 text-white font-sans flex flex-col items-center pt-8 pb-32 sm:pb-16 px-4 md:px-8 relative overflow-x-hidden" dir={isRtl ? 'rtl' : 'ltr'}>
         <div className="fixed top-[-20%] left-[-10%] w-[50rem] h-[50rem] bg-rose-900 rounded-full mix-blend-multiply filter blur-[128px] opacity-30 pointer-events-none animate-pulse"></div>
 
         <div className="relative z-10 w-full max-w-7xl mx-auto flex flex-col items-center">
@@ -1681,23 +1479,23 @@ if (currentScreen === 'welcome') {
                className="p-3 bg-white/10 hover:bg-white/20 rounded-full transition-colors flex items-center gap-2"
             >
                <ChevronLeft className="w-5 h-5" />
-               رجوع للرئيسية
+               {t('creative.backHome')}
             </button>
             <h2 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-rose-400 to-orange-400">
-               لوحة الإدارة والمراقبة
+               {t('creative.adminPanel')}
             </h2>
           </div>
 
           {!isAdminLoggedIn ? (
             <div className="w-full max-w-md bg-white/5 border border-white/10 rounded-3xl p-8 text-center flex flex-col items-center shadow-lg mt-10">
               <Lock className="w-12 h-12 text-rose-500 mb-6" />
-              <h3 className="text-xl font-bold mb-6">تسجيل الدخول للوحة التحكم</h3>
+              <h3 className="text-xl font-bold mb-6">{t('creative.adminLoginTitle')}</h3>
               <form onSubmit={handleAdminLogin} className="w-full flex flex-col gap-4">
                 <input 
                   type="password" 
                   value={adminPassword}
                   onChange={(e) => setAdminPassword(e.target.value)}
-                  placeholder={T[lang].adminPasswordPlaceholder}
+                  placeholder={t('creative.adminPasswordPlaceholder')}
                   className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-rose-500 transition-colors"
                 />
                 {adminError && <p className="text-red-400 text-sm font-bold">{adminError}</p>}
@@ -1707,7 +1505,7 @@ if (currentScreen === 'welcome') {
                   className="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-3 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                   {isLoadingAdmin && <NajeSpinner className="w-5 h-5" />}
-                  {T[lang].adminLoginBtn}
+                  {t('creative.adminLoginBtn')}
                 </button>
               </form>
             </div>
@@ -1719,13 +1517,13 @@ if (currentScreen === 'welcome') {
                   onClick={() => setAdminTab('users')}
                   className={`flex-1 md:px-8 py-2 text-sm font-bold rounded-lg transition-colors ${adminTab === 'users' ? 'bg-rose-500/20 text-rose-400' : 'text-slate-400 hover:text-white'}`}
                 >
-                  المشتركين والأكواد
+                  {t('creative.subscribersCodes')}
                 </button>
                 <button 
                   onClick={() => setAdminTab('costs')}
                   className={`flex-1 md:px-8 py-2 text-sm font-bold rounded-lg transition-colors ${adminTab === 'costs' ? 'bg-amber-500/20 text-amber-400' : 'text-slate-400 hover:text-white'}`}
                 >
-                  حساب تكاليف الموقع (دولار)
+                  {t('creative.siteCosts')}
                 </button>
               </div>
 
@@ -1738,45 +1536,45 @@ if (currentScreen === 'welcome') {
                       <div className="p-3 bg-indigo-500/20 rounded-xl">
                         <KeyRound className="w-6 h-6 text-indigo-400" />
                       </div>
-                      <h3 className="text-2xl font-bold text-white tracking-tight">{T[lang].adminAddCodeTitle}</h3>
+                      <h3 className="text-2xl font-bold text-white tracking-tight">{t('creative.adminAddCodeTitle')}</h3>
                     </div>
                     <form onSubmit={handleCreateCode} className="relative z-10 grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
                       <div className="flex flex-col gap-2 md:col-span-1">
-                        <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">{T[lang].adminNamePlaceholder}</label>
+                        <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">{t('creative.adminNamePlaceholder')}</label>
                         <input 
                           type="text" 
                           value={newCodeName}
                           onChange={(e) => setNewCodeName(e.target.value)}
-                          placeholder="مثال: أحمد عبد الله"
+                          placeholder={t('creative.nameExample')}
                           className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500 transition-colors"
                           required
                         />
                       </div>
                       <div className="flex flex-col gap-2 md:col-span-1">
-                        <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">{T[lang].adminLimitPlaceholder}</label>
+                        <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">{t('creative.adminLimitPlaceholder')}</label>
                         <input 
                           type="number" 
                           value={isNaN(newCodeLimit) ? '' : newCodeLimit}
                           onChange={(e) => setNewCodeLimit(parseInt(e.target.value, 10) || 0)}
-                          placeholder="مثال: 50"
+                          placeholder={t('creative.countExample')}
                           min="1"
                           className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500 transition-colors"
                           required
                         />
                       </div>
                       <div className="flex flex-col gap-2 md:col-span-1">
-                        <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">{lang === 'ar' ? 'الصلاحيات وتخصيص الكود' : 'Permissions & Features'}</label>
+                        <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">{t('creative.m079')}</label>
                         <select
                           value={newCodeFeatures}
                           onChange={(e) => setNewCodeFeatures(e.target.value)}
                           className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500 transition-colors appearance-none cursor-pointer"
                         >
-                          <option value="all">{lang === 'ar' ? 'الكل' : 'All'}</option>
-                          <option value="all_except_pro">{lang === 'ar' ? 'الكل ماعدا creative ai pro' : 'All except Creative AI Pro'}</option>
+                          <option value="all">{t('common.all')}</option>
+                          <option value="all_except_pro">{t('creative.m078')}</option>
                           <option value="creative_ai">{lang === 'ar' ? 'Creative Ai' : 'Creative Ai'}</option>
                           <option value="creative_ai_pro">{lang === 'ar' ? 'Creative Ai Pro' : 'Creative Ai Pro'}</option>
-                          <option value="brand_kit">{lang === 'ar' ? 'مولد حزمة الهوية البصرية المتكاملة' : 'Integrated Brand Kit Generator'}</option>
-                          <option value="logo_identity">{lang === 'ar' ? 'انشئ شعارك او هويتك البصرية' : 'Create Logo or Visual Identity'}</option>
+                          <option value="brand_kit">{t('creative.m077')}</option>
+                          <option value="logo_identity">{t('creative.m076')}</option>
                         </select>
                       </div>
                       <div className="md:col-span-1">
@@ -1786,7 +1584,7 @@ if (currentScreen === 'welcome') {
                           className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-6 rounded-xl transition-all disabled:opacity-50 shadow-lg shadow-indigo-500/20 active:scale-95 flex items-center justify-center gap-2"
                         >
                           {isLoadingAdmin ? <NajeSpinner className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
-                          {T[lang].adminAddCodeBtn}
+                          {t('creative.adminAddCodeBtn')}
                         </button>
                       </div>
                     </form>
@@ -1794,7 +1592,7 @@ if (currentScreen === 'welcome') {
 
               <div className="flex justify-between items-center bg-white/5 border border-white/10 rounded-2xl p-6">
                 <div>
-                  <h3 className="text-2xl font-bold">{T[lang].adminCodesHeader}</h3>
+                  <h3 className="text-2xl font-bold">{t('creative.adminCodesHeader')}</h3>
                 </div>
                 <button 
                   onClick={handleRefreshAdmin} 
@@ -1802,13 +1600,13 @@ if (currentScreen === 'welcome') {
                   className="px-6 py-2 bg-rose-500/20 hover:bg-rose-500/40 border border-rose-500/50 rounded-xl text-rose-300 font-medium transition-colors flex items-center gap-2"
                 >
                   {isLoadingAdmin ? <NajeSpinner className="w-4 h-4" /> : <RefreshCw className="w-4 h-4" />}
-                  {T[lang].adminRefreshBtn}
+                  {t('common.refresh')}
                 </button>
               </div>
 
               {adminCodes.length === 0 ? (
                 <div className="w-full bg-white/5 border border-white/10 rounded-3xl p-12 text-center text-slate-400 text-lg">
-                  {T[lang].adminNoCodes}
+                  {t('creative.adminNoCodes')}
                 </div>
               ) : (
                 <div className="flex flex-col gap-4">
@@ -1826,7 +1624,7 @@ if (currentScreen === 'welcome') {
                          <div className="flex items-center gap-4">
                            <div className="flex flex-col items-end gap-1">
                              <div className="text-sm font-bold bg-white/10 px-3 py-1 rounded-full">
-                               {T[lang].adminUsage(codeObj.usage, codeObj.limit)}
+                               {t('creative.adminUsage', { u: codeObj.usage, l: codeObj.limit })}
                              </div>
                              {codeObj.features && codeObj.features !== 'all' && (
                                <span className="text-[10px] text-fuchsia-400 font-medium">
@@ -1845,13 +1643,13 @@ if (currentScreen === 'welcome') {
                                  onClick={(e) => { e.stopPropagation(); setCodeToDelete(null); }}
                                  className="px-3 py-1 text-sm bg-gray-500/20 text-gray-300 rounded hover:bg-gray-500/40"
                                >
-                                 إلغاء
+                                 {t('common.cancel')}
                                </button>
                                <button 
                                  onClick={(e) => { e.stopPropagation(); handleDeleteCode(codeObj.code); setCodeToDelete(null); }}
                                  className="px-3 py-1 text-sm bg-red-500/20 text-red-400 rounded hover:bg-red-500/40"
                                >
-                                 تأكيد الحذف
+                                 {t('creative.confirmDelete')}
                                </button>
                              </div>
                            ) : (
@@ -1878,7 +1676,7 @@ if (currentScreen === 'welcome') {
                               {codeDesigns[codeObj.code].map((design: any) => (
                                 <div key={design?.id} className="bg-white/5 border border-white/10 rounded-xl overflow-hidden p-2 flex flex-col gap-2">
                                   <div className="flex justify-between items-start">
-                                    <span className="bg-rose-500/20 text-rose-300 text-[10px] font-bold px-2 py-1 rounded">{design?.mode === 'logo' ? T[lang].logoCardTitle : design?.mode === 'video_ad' ? T[lang].videoCardTitle || 'Video' : T[lang].identityCardTitle}</span>
+                                    <span className="bg-rose-500/20 text-rose-300 text-[10px] font-bold px-2 py-1 rounded">{design?.mode === 'logo' ? t('creative.logoCardTitle') : design?.mode === 'video_ad' ? t('creative.videoCardTitle') || 'Video' : t('creative.identityCardTitle')}</span>
                                     <span className="text-slate-500 text-[10px]">{new Date(design?.createdAt).toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-US')}</span>
                                   </div>
                                   {design?.type === 'video' ? (
@@ -1894,7 +1692,7 @@ if (currentScreen === 'welcome') {
                               ))}
                             </div>
                           ) : (
-                            <p className="text-slate-400 text-sm text-center py-4">{T[lang].adminNoUserDesigns}</p>
+                            <p className="text-slate-400 text-sm text-center py-4">{t('creative.adminNoUserDesigns')}</p>
                           )}
                         </div>
                       )}
@@ -1909,7 +1707,7 @@ if (currentScreen === 'welcome') {
                 <div className="bg-white/5 border border-white/10 rounded-2xl p-6 md:p-8 animate-fade-in">
                   <div className="flex items-center gap-3 mb-8">
                     <Sparkles className="w-8 h-8 text-amber-400" />
-                    <h3 className="text-2xl font-bold text-white">تسعير وحساب تكاليف الموقع التفصيلية (بالدولار $)</h3>
+                    <h3 className="text-2xl font-bold text-white">{t('creative.pricingTitle')}</h3>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -1917,21 +1715,21 @@ if (currentScreen === 'welcome') {
                     <div className="bg-black/30 border border-white/10 rounded-xl p-5">
                       <div className="flex items-center gap-2 mb-4">
                         <ImageIcon className="w-6 h-6 text-purple-400" />
-                        <h4 className="text-xl font-bold text-slate-200">قسم الشعارات (Logo)</h4>
+                        <h4 className="text-xl font-bold text-slate-200">{t('creative.logoSection')}</h4>
                       </div>
-                      <p className="text-sm text-slate-400 mb-4">إنتاج الشعار بجودة احترافية عالية الدقة</p>
+                      <p className="text-sm text-slate-400 mb-4">{t('creative.logoSectionDesc')}</p>
                       <ul className="space-y-3 text-sm">
                         <li className="flex justify-between items-center border-b border-white/5 pb-2">
-                          <span className="text-slate-300">جودة 1K (الافتراضية)</span>
-                          <span className="font-bold text-amber-400">~0.03$ / تصميم</span>
+                          <span className="text-slate-300">{t('creative.quality1k')}</span>
+                          <span className="font-bold text-amber-400">{t('creative.perDesign', { price: '0.03' })}</span>
                         </li>
                         <li className="flex justify-between items-center border-b border-white/5 pb-2">
-                          <span className="text-slate-300">جودة 2K</span>
-                          <span className="font-bold text-amber-400">~0.07$ / تصميم</span>
+                          <span className="text-slate-300">{t('creative.quality2k')}</span>
+                          <span className="font-bold text-amber-400">{t('creative.perDesign', { price: '0.07' })}</span>
                         </li>
                         <li className="flex justify-between items-center border-b border-white/5 pb-2">
-                          <span className="text-slate-300">جودة 4K</span>
-                          <span className="font-bold text-amber-400">~0.12$ / تصميم</span>
+                          <span className="text-slate-300">{t('creative.quality4k')}</span>
+                          <span className="font-bold text-amber-400">{t('creative.perDesign', { price: '0.12' })}</span>
                         </li>
                       </ul>
                     </div>
@@ -1940,21 +1738,21 @@ if (currentScreen === 'welcome') {
                     <div className="bg-black/30 border border-white/10 rounded-xl p-5">
                       <div className="flex items-center gap-2 mb-4">
                         <Frame className="w-6 h-6 text-indigo-400" />
-                        <h4 className="text-xl font-bold text-slate-200">قسم الهوية البصرية (Identity)</h4>
+                        <h4 className="text-xl font-bold text-slate-200">{t('creative.identitySection')}</h4>
                       </div>
-                      <p className="text-sm text-slate-400 mb-4">استخراج تصاميم الهوية الكاملة بنقاء فائق</p>
+                      <p className="text-sm text-slate-400 mb-4">{t('creative.identitySectionDesc')}</p>
                       <ul className="space-y-3 text-sm">
                         <li className="flex justify-between items-center border-b border-white/5 pb-2">
-                          <span className="text-slate-300">جودة 1K</span>
-                          <span className="font-bold text-amber-400">~0.03$ / تصميم</span>
+                          <span className="text-slate-300">{t('creative.quality1kPlain')}</span>
+                          <span className="font-bold text-amber-400">{t('creative.perDesign', { price: '0.03' })}</span>
                         </li>
                         <li className="flex justify-between items-center border-b border-white/5 pb-2">
-                          <span className="text-slate-300">جودة 2K</span>
-                          <span className="font-bold text-amber-400">~0.07$ / تصميم</span>
+                          <span className="text-slate-300">{t('creative.quality2k')}</span>
+                          <span className="font-bold text-amber-400">{t('creative.perDesign', { price: '0.07' })}</span>
                         </li>
                         <li className="flex justify-between items-center border-b border-white/5 pb-2">
-                          <span className="text-slate-300">جودة 4K</span>
-                          <span className="font-bold text-amber-400">~0.12$ / تصميم</span>
+                          <span className="text-slate-300">{t('creative.quality4k')}</span>
+                          <span className="font-bold text-amber-400">{t('creative.perDesign', { price: '0.12' })}</span>
                         </li>
                       </ul>
                     </div>
@@ -1963,17 +1761,17 @@ if (currentScreen === 'welcome') {
                     <div className="bg-black/30 border border-white/10 rounded-xl p-5">
                       <div className="flex items-center gap-2 mb-4">
                         <Film className="w-6 h-6 text-pink-400" />
-                        <h4 className="text-xl font-bold text-slate-200">قسم إعلانات الفيديو (Video Ad)</h4>
+                        <h4 className="text-xl font-bold text-slate-200">{t('creative.videoSection')}</h4>
                       </div>
-                      <p className="text-sm text-slate-400 mb-4">إنشاء فيديوهات إعلانية سينمائية بحركات واقعية</p>
+                      <p className="text-sm text-slate-400 mb-4">{t('creative.videoSectionDesc')}</p>
                       <ul className="space-y-3 text-sm">
                         <li className="flex justify-between items-center border-b border-white/5 pb-2">
-                          <span className="text-slate-300">إعلان فيديو (16:9 أو 9:16)</span>
-                          <span className="font-bold text-rose-400">~0.57$ لـ5ث | ~0.95$ لـ8ث</span>
+                          <span className="text-slate-300">{t('creative.videoAdLine')}</span>
+                          <span className="font-bold text-rose-400">{t('creative.videoPriceLine')}</span>
                         </li>
                         <li className="flex justify-between items-center border-b border-white/5 pb-2">
-                          <span className="text-slate-300">التكلفة بالاعتمادات (Credits)</span>
-                          <span className="font-bold text-slate-300">3 أو 5 اعتمادات</span>
+                          <span className="text-slate-300">{t('creative.creditsCost')}</span>
+                          <span className="font-bold text-slate-300">{t('creative.creditsValue')}</span>
                         </li>
                       </ul>
                     </div>
@@ -1982,13 +1780,13 @@ if (currentScreen === 'welcome') {
                     <div className="bg-black/30 border border-white/10 rounded-xl p-5">
                       <div className="flex items-center gap-2 mb-4">
                         <Lightbulb className="w-6 h-6 text-yellow-400" />
-                        <h4 className="text-xl font-bold text-slate-200">محرك العصف الذهني والأفكار</h4>
+                        <h4 className="text-xl font-bold text-slate-200">{t('creative.brainstormEngine')}</h4>
                       </div>
-                      <p className="text-sm text-slate-400 mb-4">استخدام التحليل العميق والبحث الذكي لكل عملية قبل التصميم</p>
+                      <p className="text-sm text-slate-400 mb-4">{t('creative.brainstormDesc')}</p>
                       <ul className="space-y-3 text-sm">
                         <li className="flex justify-between items-center border-b border-white/5 pb-2">
-                          <span className="text-slate-300">تجهيز الأفكار + الفحص</span>
-                          <span className="font-bold text-emerald-400">~0.005$ / عملية</span>
+                          <span className="text-slate-300">{t('creative.prepIdeas')}</span>
+                          <span className="font-bold text-emerald-400">{t('creative.perOp')}</span>
                         </li>
                       </ul>
                     </div>
@@ -1996,20 +1794,20 @@ if (currentScreen === 'welcome') {
 
                   {/* Summary Box */}
                   <div className="mt-8 bg-gradient-to-br from-amber-500/10 to-orange-500/5 border border-amber-500/20 rounded-xl p-6 text-center">
-                    <h4 className="text-lg font-bold text-amber-300 mb-2">إجمالي الاستهلاك التقديري (لكل المشتركين)</h4>
-                    <p className="text-slate-300 text-sm mb-4">بناءً على مجموع الاعتمادات (الاستخدام) المسجلة للأكواد</p>
+                    <h4 className="text-lg font-bold text-amber-300 mb-2">{t('creative.totalEstimate')}</h4>
+                    <p className="text-slate-300 text-sm mb-4">{t('creative.totalEstimateDesc')}</p>
                     <div className="flex justify-center items-center gap-4">
                       <div className="bg-black/50 px-6 py-4 rounded-xl border border-white/10">
-                        <p className="text-xs text-slate-400 mb-1">إجمالي الاستخدام</p>
+                        <p className="text-xs text-slate-400 mb-1">{t('creative.totalUsage')}</p>
                         <p className="text-3xl font-extrabold text-white">
-                          {adminCodes.reduce((sum, code) => sum + (code.usage || 0), 0)} <span className="text-base font-normal text-slate-400">مرة</span>
+                          {adminCodes.reduce((sum, code) => sum + (code.usage || 0), 0)} <span className="text-base font-normal text-slate-400">{t('creative.times')}</span>
                         </p>
                       </div>
                       <div className="text-amber-500/50">
                         <ChevronLeft className="w-8 h-8" />
                       </div>
                       <div className="bg-black/50 px-6 py-4 rounded-xl border border-amber-500/30">
-                        <p className="text-xs text-amber-300/70 mb-1">التكلفة التقديرية الإجمالية</p>
+                        <p className="text-xs text-amber-300/70 mb-1">{t('creative.estimatedTotalCost')}</p>
                         <p className="text-3xl font-extrabold text-amber-400">
                           {((adminCodes.reduce((sum, code) => sum + (code.usage || 0), 0)) * 0.03).toFixed(2)} <span className="text-base font-normal">$</span>
                         </p>
@@ -2058,7 +1856,7 @@ if (currentScreen === 'welcome') {
                className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white rounded-full transition-colors flex items-center gap-2 text-sm font-bold shadow-lg"
             >
                <Download className="w-4 h-4" />
-               {T[lang].installPwaSimple}
+               {t('creative.installPwaSimple')}
             </button>
           ) : <div></div>}
           {mode !== 'chat' && (
@@ -2067,7 +1865,7 @@ if (currentScreen === 'welcome') {
                className="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full transition-colors flex items-center gap-2 text-sm text-slate-300 hover:text-white"
             >
                <ChevronLeft className="w-4 h-4" />
-               {T[lang].homeBtn}
+               {t('nav.home')}
             </button>
           )}
         </div>
@@ -2075,10 +1873,10 @@ if (currentScreen === 'welcome') {
           <>
             <header className="mb-8 md:mb-12 text-center animate-fade-in-down">
               <h1 className="text-4xl md:text-6xl font-black mb-4 bg-clip-text text-transparent bg-gradient-to-r from-purple-400 via-fuchsia-400 to-indigo-400 tracking-tight leading-tight drop-shadow-lg">
-                {lang === 'ar' ? 'صمم هويتك، ابتكِر علامتك.' : 'Design your identity, build your brand.'}
+                {t('creative.m075')}
               </h1>
               <p className="text-lg md:text-xl text-slate-400 font-light max-w-2xl mx-auto leading-relaxed">
-                {lang === 'ar' ? 'اختر نوع التصميم وابدأ رحلة الإبداع الاحترافية بسهولة.' : 'Choose the design type and start your professional creative journey with ease.'}
+                {t('creative.m074')}
               </p>
             </header>
 
@@ -2096,8 +1894,8 @@ if (currentScreen === 'welcome') {
               >
                 <div className={`absolute inset-0 bg-gradient-to-br from-purple-500/10 to-transparent opacity-0 transition-opacity duration-500 ${mode === 'logo' ? 'opacity-100' : 'group-hover:opacity-100'}`}></div>
                 <ImageIcon className={`w-5 h-5 sm:w-10 sm:h-10 md:w-12 md:h-12 lg:w-14 lg:h-14 transition-colors duration-500 relative z-10 ${mode === 'logo' ? 'text-purple-400' : 'text-slate-400 group-hover:text-purple-300'}`} />
-                <h2 className="text-[11px] sm:text-base md:text-xl lg:text-2xl font-bold relative z-10 text-center leading-tight">{T[lang].logoCardTitle}</h2>
-                <p className="text-[10px] md:text-xs lg:text-sm text-slate-400 text-center relative z-10 hidden md:block leading-tight">{T[lang].logoCardDesc}</p>
+                <h2 className="text-[11px] sm:text-base md:text-xl lg:text-2xl font-bold relative z-10 text-center leading-tight">{t('creative.logoCardTitle')}</h2>
+                <p className="text-[10px] md:text-xs lg:text-sm text-slate-400 text-center relative z-10 hidden md:block leading-tight">{t('creative.logoCardDesc')}</p>
               </button>
 
               {/* Visual Identity Card */}
@@ -2112,8 +1910,8 @@ if (currentScreen === 'welcome') {
               >
                 <div className={`absolute inset-0 bg-gradient-to-br from-indigo-500/10 to-transparent opacity-0 transition-opacity duration-500 ${mode === 'identity' ? 'opacity-100' : 'group-hover:opacity-100'}`}></div>
                 <Frame className={`w-5 h-5 sm:w-10 sm:h-10 md:w-12 md:h-12 lg:w-14 lg:h-14 transition-colors duration-500 relative z-10 ${mode === 'identity' ? 'text-indigo-400' : 'text-slate-400 group-hover:text-indigo-300'}`} />
-                <h2 className="text-[11px] sm:text-base md:text-xl lg:text-2xl font-bold relative z-10 text-center leading-tight">{T[lang].identityCardTitle}</h2>
-                <p className="text-[10px] md:text-xs lg:text-sm text-slate-400 text-center relative z-10 hidden md:block leading-tight">{T[lang].identityCardDesc}</p>
+                <h2 className="text-[11px] sm:text-base md:text-xl lg:text-2xl font-bold relative z-10 text-center leading-tight">{t('creative.identityCardTitle')}</h2>
+                <p className="text-[10px] md:text-xs lg:text-sm text-slate-400 text-center relative z-10 hidden md:block leading-tight">{t('creative.identityCardDesc')}</p>
               </button>
 
               {/* Video Ad Card */}
@@ -2128,8 +1926,8 @@ if (currentScreen === 'welcome') {
               >
                 <div className={`absolute inset-0 bg-gradient-to-br from-pink-500/10 to-transparent opacity-0 transition-opacity duration-500 ${mode === 'video_ad' ? 'opacity-100' : 'group-hover:opacity-100'}`}></div>
                 <Film className={`w-5 h-5 sm:w-10 sm:h-10 md:w-12 md:h-12 lg:w-14 lg:h-14 transition-colors duration-500 relative z-10 ${mode === 'video_ad' ? 'text-pink-400' : 'text-slate-400 group-hover:text-pink-300'}`} />
-                <h2 className="text-[11px] sm:text-base md:text-xl lg:text-2xl font-bold relative z-10 text-center leading-tight">{T[lang].videoCardTitle}</h2>
-                <p className="text-[10px] md:text-xs lg:text-sm text-slate-400 text-center relative z-10 hidden md:block leading-tight">{T[lang].videoCardDesc}</p>
+                <h2 className="text-[11px] sm:text-base md:text-xl lg:text-2xl font-bold relative z-10 text-center leading-tight">{t('creative.videoCardTitle')}</h2>
+                <p className="text-[10px] md:text-xs lg:text-sm text-slate-400 text-center relative z-10 hidden md:block leading-tight">{t('creative.videoCardDesc')}</p>
               </button>
               
             </div>
@@ -2162,12 +1960,10 @@ if (currentScreen === 'welcome') {
                   <Sparkles className="w-10 h-10" />
                 </div>
                 <h3 className="text-2xl font-extrabold text-white">
-                  {lang === 'ar' ? 'معالج بناء الهوية البصرية الذكي بالذكاء الاصطناعي' : 'Smart AI Brand Identity Kit Architect'}
+                  {t('creative.m073')}
                 </h3>
                 <p className="text-sm text-slate-400 mt-2 max-w-lg leading-relaxed">
-                  {lang === 'ar' 
-                    ? 'يقوم النظام الآن بتصميم وتوليد العناصر المحددة وتجميعها خطوة بخطوة ضمن كتاب الهوية البصرية لضمان الخلو التام من الأخطاء والانسجام الفني للألوان والرموز...'
-                    : 'The pipeline is generating individual components and assembling them step-by-step within your consolidated Brand Identity Manual...'}
+                  {t('creative.m072')}
                 </p>
               </div>
 
@@ -2194,20 +1990,18 @@ if (currentScreen === 'welcome') {
                   />
                 </div>
                 <div className="flex justify-between w-full text-xs text-slate-500 font-bold mt-1">
-                  <span>{lang === 'ar' ? 'البدء بالتصميم' : 'Initiation'}</span>
+                  <span>{t('creative.m071')}</span>
                   <span>
-                    {lang === 'ar' 
-                      ? `خطوة ${Math.min(selectedKitItems.length, kitGenerationStep + 1)} من ${selectedKitItems.length}` 
-                      : `Step ${Math.min(selectedKitItems.length, kitGenerationStep + 1)} of ${selectedKitItems.length}`}
+                    {t('creative.m070', { p0: Math.min(selectedKitItems.length, kitGenerationStep + 1), p1: selectedKitItems.length })}
                   </span>
-                  <span>{lang === 'ar' ? 'تصدير PDF النهائي' : 'Final Export'}</span>
+                  <span>{t('creative.m069')}</span>
                 </div>
               </div>
 
               {/* Step Pipeline List */}
               <div className="space-y-3 mb-8">
                 <h4 className="text-slate-300 font-bold text-sm mb-4">
-                  {lang === 'ar' ? 'مراحل ومكونات خط الإنتاج الحالي:' : 'Active Pipeline Production Steps:'}
+                  {t('creative.m068')}
                 </h4>
                 {selectedKitItems.map((itemId, idx) => {
                   const item = BRAND_KIT_ITEMS.find(i => i.id === itemId);
@@ -2239,14 +2033,14 @@ if (currentScreen === 'welcome') {
                         </div>
                         <div>
                           <div className="font-bold text-sm text-white">
-                            {lang === 'ar' ? item?.labelAr : item?.labelEn}
+                            {item ? t(`creative.kit.${item.id}.label`) : itemId}
                           </div>
                           <div className="text-xs text-slate-400 mt-0.5">
                             {isCurrent 
-                              ? (lang === 'ar' ? 'جاري التصميم والتحسين بالذكاء الاصطناعي...' : 'Synthesizing layout details...') 
+                              ? (t('creative.m067')) 
                               : isDone 
-                                ? (lang === 'ar' ? 'اكتمل التصميم ومرشح لتصدير الـ PDF' : 'Completed & compiled') 
-                                : (lang === 'ar' ? 'في الانتظار...' : 'Pending execution queue...')
+                                ? (t('creative.m066')) 
+                                : (t('creative.m065'))
                             }
                           </div>
                         </div>
@@ -2259,7 +2053,7 @@ if (currentScreen === 'welcome') {
                               href={asset.imageUrl}
                               download={`${item?.id}-creative-ai.png`}
                               className="px-3 py-1 bg-white/5 hover:bg-white/10 text-[10px] sm:text-xs font-bold text-slate-300 rounded-md border border-white/10 transition-colors flex items-center gap-1"
-                              title={lang === 'ar' ? 'تحميل PNG' : 'Download PNG'}
+                              title={t('creative.m064')}
                             >
                               <Download className="w-3 h-3" /> PNG
                             </a>
@@ -2275,7 +2069,7 @@ if (currentScreen === 'welcome') {
                                 URL.revokeObjectURL(url);
                               }}
                               className="px-3 py-1 bg-white/5 hover:bg-white/10 text-[10px] sm:text-xs font-bold text-slate-300 rounded-md border border-white/10 transition-colors flex items-center gap-1"
-                              title={lang === 'ar' ? 'تحميل SVG' : 'Download SVG'}
+                              title={t('creative.m063')}
                             >
                               <Download className="w-3 h-3" /> SVG
                             </button>
@@ -2303,10 +2097,10 @@ if (currentScreen === 'welcome') {
                               : 'bg-slate-500/10 text-slate-500'
                         }`}>
                           {isCurrent 
-                            ? (lang === 'ar' ? 'نشط' : 'Active') 
+                            ? (t('creative.m062')) 
                             : isDone 
-                              ? (lang === 'ar' ? 'جاهز' : 'Ready') 
-                              : (lang === 'ar' ? 'معلق' : 'Queued')
+                              ? (t('common.ready')) 
+                              : (t('creative.m061'))
                           }
                         </span>
                       </div>
@@ -2323,12 +2117,10 @@ if (currentScreen === 'welcome') {
                   </div>
                   <div>
                     <h4 className="text-xl font-bold text-white">
-                      {lang === 'ar' ? 'تم تصميم وتجميع كتاب الهوية الموحد بنجاح!' : 'Identity Book Compiled Successfully!'}
+                      {t('creative.m060')}
                     </h4>
                     <p className="text-slate-400 text-sm mt-1 leading-relaxed">
-                      {lang === 'ar' 
-                        ? 'لقد تم تجميع كافة العناصر المصممة بشكل متناسق في الكتيب النهائي. يمكنك تحميل الملف بصيغة PDF وطباعته أو عرضه فوراً.'
-                        : 'Your dynamic visual assets are compiled flawlessly. Click below to download the official identity manual.'}
+                      {t('creative.m059')}
                     </p>
                   </div>
                   
@@ -2340,7 +2132,7 @@ if (currentScreen === 'welcome') {
                         className="px-6 py-3 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white rounded-xl font-bold transition-all shadow-lg flex items-center gap-2 text-sm"
                       >
                         <Download className="w-5 h-5" />
-                        {lang === 'ar' ? 'تحميل كتاب الهوية البصرية (PDF)' : 'Download Identity Book (PDF)'}
+                        {t('creative.m058')}
                       </a>
                     )}
                     
@@ -2349,7 +2141,7 @@ if (currentScreen === 'welcome') {
                       onClick={() => setKitGenerationStatus('idle')}
                       className="px-6 py-3 bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white rounded-xl font-bold border border-white/10 transition-all text-sm"
                     >
-                      {lang === 'ar' ? 'تصميم حزمة جديدة' : 'Configure New Kit'}
+                      {t('creative.m057')}
                     </button>
                   </div>
                 </div>
@@ -2361,10 +2153,10 @@ if (currentScreen === 'welcome') {
                     <X className="w-8 h-8" />
                   </div>
                   <h4 className="text-lg font-bold text-white">
-                    {lang === 'ar' ? 'فشل معالجة وتوليد الحزمة' : 'Pipeline Generation Failed'}
+                    {t('creative.m056')}
                   </h4>
                   <p className="text-red-300 text-xs leading-relaxed max-w-md">
-                    {renderErrorText(kitGenerationError) || (lang === 'ar' ? 'حدث خطأ غير متوقع أثناء الاتصال بالخادم وتوليد الأصول.' : 'An unexpected error occurred during asset design.')}
+                    {renderErrorText(kitGenerationError, t('creative.unexpectedError')) || (t('creative.m055'))}
                   </p>
                   
                   <div className="flex gap-4 justify-center mt-3">
@@ -2373,14 +2165,14 @@ if (currentScreen === 'welcome') {
                       onClick={() => handleGenerateKitSequentially()}
                       className="px-6 py-2.5 bg-red-600 hover:bg-red-500 text-white rounded-xl font-bold transition-all text-sm"
                     >
-                      {lang === 'ar' ? 'إعادة المحاولة' : 'Retry Pipeline'}
+                      {t('creative.m054')}
                     </button>
                     <button
                       type="button"
                       onClick={() => setKitGenerationStatus('idle')}
                       className="px-6 py-2.5 bg-white/5 hover:bg-white/10 text-slate-300 rounded-xl font-bold transition-all text-sm"
                     >
-                      {lang === 'ar' ? 'إلغاء وتعديل الخيارات' : 'Cancel & Configure'}
+                      {t('creative.m053')}
                     </button>
                   </div>
                 </div>
@@ -2404,11 +2196,11 @@ if (currentScreen === 'welcome') {
               className="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full transition-colors flex items-center gap-2 text-sm text-slate-300 hover:text-white"
             >
               <ChevronLeft className="w-4 h-4" />
-              {lang === 'ar' ? 'الرجوع للأدوات' : 'Back to tools'}
+              {t('creative.m052')}
             </button>
 
             <div className="flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-amber-400" /><span className="text-white font-bold">{lang === 'ar' ? 'الأنظمة المتكاملة المتقدمة' : 'Advanced Integrated Systems'}</span>
+              <Sparkles className="w-5 h-5 text-amber-400" /><span className="text-white font-bold">{t('creative.m051')}</span>
             </div>
           </div>
           )}
@@ -2418,13 +2210,13 @@ if (currentScreen === 'welcome') {
             <div className="w-full mb-8 animate-fade-in-down" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
               <h4 className="text-slate-300 font-semibold mb-4 flex items-center gap-2 justify-start">
                 <Frame className="w-5 h-5 text-purple-400" />
-                {T[lang].selectLogoType}
+                {t('creative.selectLogoType')}
               </h4>
               <div className="flex flex-wrap gap-2 md:gap-3 justify-start">
                 {[
-                  { id: 'default', label: T[lang].logoDefault },
-                  { id: 'app_icon', label: T[lang].logoAppIcon },
-                  { id: 'billboard', label: T[lang].logoBillboard },
+                  { id: 'default', label: t('creative.logoDefault') },
+                  { id: 'app_icon', label: t('creative.logoAppIcon') },
+                  { id: 'billboard', label: t('creative.logoBillboard') },
                 ].map((format) => (
                   <button
                     key={format.id}
@@ -2448,18 +2240,18 @@ if (currentScreen === 'welcome') {
             <div className="w-full mb-8 animate-fade-in-down" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
               <h4 className="text-slate-300 font-semibold mb-4 flex items-center gap-2 justify-start">
                 <Frame className="w-5 h-5 text-indigo-400" />
-                {T[lang].selectIdentityType}
+                {t('creative.selectIdentityType')}
               </h4>
               <div className="flex flex-wrap gap-2 md:gap-3 justify-start">
                 {[
-                  { id: 'logo_and_identity', label: T[lang].idLogoAndIdentity },
-                  { id: 'horizontal_logo', label: T[lang].idHorizontal },
-                  { id: 'youtube_cover', label: T[lang].idYoutubeCover },
-                  { id: 'youtube_thumbnail', label: T[lang].idYoutubeThumbnail },
-                  { id: 'social_post', label: T[lang].idSocialPost },
-                  { id: 'story', label: T[lang].idStory },
-                  { id: 'business_card', label: T[lang].idBusinessCard },
-                  { id: 'whatsapp_channel', label: T[lang].idWhatsappChannel },
+                  { id: 'logo_and_identity', label: t('creative.idLogoAndIdentity') },
+                  { id: 'horizontal_logo', label: t('creative.idHorizontal') },
+                  { id: 'youtube_cover', label: t('creative.idYoutubeCover') },
+                  { id: 'youtube_thumbnail', label: t('creative.idYoutubeThumbnail') },
+                  { id: 'social_post', label: t('creative.idSocialPost') },
+                  { id: 'story', label: t('creative.idStory') },
+                  { id: 'business_card', label: t('creative.idBusinessCard') },
+                  { id: 'whatsapp_channel', label: t('creative.idWhatsappChannel') },
                 ].map((format) => (
                   <button
                     key={format.id}
@@ -2485,8 +2277,8 @@ if (currentScreen === 'welcome') {
                 <h4 className="text-slate-300 font-semibold mb-4 flex items-center gap-2 justify-start">
                   <Upload className="w-5 h-5 text-indigo-400" />
                   {mode === 'logo' 
-                    ? (logoFormat === 'billboard' ? T[lang].uploadProductTitleBillboard : (lang === 'ar' ? 'ارفع صور مرجعية أو نماذج أو أفكار لشعارك (اختياري)' : 'Upload reference images or ideas for your logo (Optional)'))
-                    : (mode === 'identity' ? T[lang].uploadProductTitle : T[lang].uploadProductTitleVideo)}
+                    ? (logoFormat === 'billboard' ? t('creative.uploadProductTitleBillboard') : (t('creative.m050')))
+                    : (mode === 'identity' ? t('creative.uploadProductTitle') : t('creative.uploadProductTitleVideo'))}
                 </h4>
                 
                 {productImages.length > 0 && (
@@ -2505,7 +2297,7 @@ if (currentScreen === 'welcome') {
                 <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-white/20 hover:border-indigo-400/50 rounded-2xl cursor-pointer bg-white/5 transition-all">
                   <div className="flex flex-col items-center justify-center pt-5 pb-6 text-center px-4">
                     <Upload className="w-8 h-8 text-slate-400 mb-2" />
-                    <p className="text-sm text-slate-400">{T[lang].uploadPlaceholder}</p>
+                    <p className="text-sm text-slate-400">{t('creative.uploadPlaceholder')}</p>
                   </div>
                   <input type="file" accept="image/*" multiple className="hidden" onChange={handleImageChange} disabled={isGenerating} />
                 </label>
@@ -2518,7 +2310,7 @@ if (currentScreen === 'welcome') {
             <div className="w-full mb-8 bg-white/5 border border-white/10 p-5 rounded-3xl animate-fade-in-down" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
               <h4 className="text-slate-300 font-semibold mb-4 flex items-center gap-2 justify-start">
                 <Users className="w-5 h-5 text-fuchsia-400 animate-pulse" />
-                {lang === 'ar' ? 'هل أنت:' : 'Are you:'}
+                {t('creative.m049')}
               </h4>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {[
@@ -2543,7 +2335,7 @@ if (currentScreen === 'welcome') {
                     >
                       <IconComponent className={`w-6 h-6 ${isSelected ? 'text-fuchsia-400 scale-110' : 'text-slate-500'}`} />
                       <span className="text-xs font-bold text-center leading-tight">
-                        {lang === 'ar' ? item.labelAr : item.labelEn}
+                        {t(`creative.entity.${item.id}`)}
                       </span>
                     </button>
                   );
@@ -2556,12 +2348,12 @@ if (currentScreen === 'welcome') {
             <Sparkles className="w-6 h-6 text-fuchsia-400" />
             <h3 className="text-xl font-semibold">
               {mode === 'brand_kit' 
-                ? (lang === 'ar' ? 'تفاصيل ومعالم حزمة الهوية المتكاملة (Brand Kit)' : 'Integrated Brand Kit Details')
+                ? (t('creative.m048'))
                 : (mode === 'logo' 
                    ? (logoFormat === 'billboard' 
-                      ? (lang === 'ar' ? 'تفاصيل ومعالم اللوحة الإعلانية (Billboard)' : 'Billboard / Signboard Design Details') 
-                      : T[lang].promptLogoTitle) 
-                   : (mode === 'video_ad' ? T[lang].promptVideoTitle : T[lang].promptIdentityTitle))
+                      ? (t('creative.m047')) 
+                      : t('creative.promptLogoTitle')) 
+                   : (mode === 'video_ad' ? t('creative.promptVideoTitle') : t('creative.promptIdentityTitle')))
               }
             </h3>
           </div>
@@ -2581,9 +2373,16 @@ if (currentScreen === 'welcome') {
                    const isVideo = !df['resultType'] || df['resultType'].includes('Video') || df['resultType'].includes('فيديو');
                    if (!isVideo) return null;
                 }
-                const label = lang === 'ar' ? field.labelAr : field.labelEn;
+                const scope = mode === 'logo' ? 'billboard' : (mode === 'brand_kit' ? 'brand_kit' : (mode === 'video_ad' ? 'video_ad' : identityFormat));
+                const labelKey = `creative.ff.${scope}.${field.id}`;
+                const translatedLabel = t(labelKey);
+                const label = translatedLabel === labelKey ? (lang === 'ar' ? field.labelAr : field.labelEn) : translatedLabel;
                 const value = df[field.id] || '';
-                const placeholder = lang === 'ar' ? (field.placeholderAr || (label + '...')) : (field.placeholderEn || (label + '...'));
+                const phKey = `${labelKey}.ph`;
+                const translatedPh = t(phKey);
+                const placeholder = translatedPh === phKey
+                  ? (lang === 'ar' ? (field.placeholderAr || `${label}...`) : (field.placeholderEn || `${label}...`))
+                  : translatedPh;
                 return (
                   <div key={field.id} className="bg-white/5 border border-white/10 p-5 rounded-2xl">
                     <label className="block text-white font-medium mb-3">
@@ -2693,21 +2492,21 @@ if (currentScreen === 'welcome') {
                                             guide.id === 'street_4x3' ? 'w-8 h-6' :
                                             guide.id === 'stand_1_2x1_8' ? 'w-6 h-9' : 'w-9 h-6 border-dashed'
                                           }`}>
-                                            {guide.ratio.split(' ')[0]}
+                                            {guide.id === 'custom' ? t('creative.flexSize') : guide.ratio.split(' ')[0]}
                                           </div>
                                         </div>
 
                                         <div className="flex flex-col">
                                           <div className="flex items-center gap-2">
                                             <span className={`text-sm font-semibold transition-colors duration-300 ${isSelected ? 'text-white' : 'text-slate-200 group-hover:text-white'}`}>
-                                              {guideLabel}
+                                              {t(`creative.ff.billboard.billboardSize.${guide.id}`)}
                                             </span>
                                             <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold shrink-0 ${isSelected ? 'bg-fuchsia-500/20 text-fuchsia-400 border border-fuchsia-500/30' : 'bg-white/5 text-slate-400 border border-white/10'}`}>
-                                              {guide.ratio}
+                                              {guide.id === 'custom' ? t('creative.flexSize') : guide.ratio}
                                             </span>
                                           </div>
                                           <p className="text-slate-400 text-xs mt-1.5 leading-relaxed">
-                                            {lang === 'ar' ? guide.descAr : guide.descEn}
+                                            {t(`creative.guide.${guide.id}.desc`)}
                                           </p>
                                         </div>
                                       </div>
@@ -2724,10 +2523,10 @@ if (currentScreen === 'welcome') {
                                     <Eye className="w-5 h-5 text-fuchsia-400 animate-pulse" />
                                     <div className="text-start">
                                       <h5 className="text-white text-sm font-bold">
-                                        {lang === 'ar' ? 'محاكي اللوحة والبيئة التفاعلي (رؤية ثلاثية الأبعاد)' : 'Interactive Live Billboard & Scene Simulator'}
+                                        {t('creative.m046')}
                                       </h5>
                                       <p className="text-slate-400 text-[11px] mt-0.5">
-                                        {lang === 'ar' ? 'معاينة حية للمقاس والإضاءة في بيئة مقاربة للواقع' : 'Real-time look in a simulated physical space'}
+                                        {t('creative.m045')}
                                       </p>
                                     </div>
                                   </div>
@@ -2747,16 +2546,16 @@ if (currentScreen === 'welcome') {
                                       <span className={`relative inline-flex rounded-full h-2 w-2 ${simNight ? 'bg-purple-500' : 'bg-amber-500'}`}></span>
                                     </span>
                                     {simNight
-                                      ? (lang === 'ar' ? 'الوضع المسائي (مضيء)' : 'Night View (Illuminated)')
-                                      : (lang === 'ar' ? 'الوضع النهاري (بدون إضاءة)' : 'Day View (Matte)')}
+                                      ? (t('creative.m044'))
+                                      : (t('creative.m043'))}
                                   </button>
                                 </div>
 
                                 {/* Simulator Scene Viewport */}
                                 {(() => {
                                   const activeGuide = sizeGuides.find(g => g.labelAr === value || g.labelEn === value) || sizeGuides[0];
-                                  const storeName = df['projectName'] || (lang === 'ar' ? 'معرض التميز والفخامة' : 'AL-LUXURY SHOWROOM');
-                                  const sloganText = df['slogan'] || (lang === 'ar' ? 'أرقى المأكولات والمشروبات بنكهات أصلية' : 'Premium Quality & Elegant Taste');
+                                  const storeName = df['projectName'] || (t('creative.m042'));
+                                  const sloganText = df['slogan'] || (t('creative.m041'));
                                   
                                   // Determine glow colors from preferred colors input
                                   const preferredCol = String(df['preferredColors'] || '').toLowerCase();
@@ -2901,7 +2700,7 @@ if (currentScreen === 'welcome') {
                                           <div className={`h-0.5 bg-current grow mx-2 relative flex items-center justify-between ${simNight ? 'text-purple-400/60' : 'text-slate-500'}`}>
                                             <div className="w-1 h-1.5 bg-current rotate-45" />
                                             <span className={`px-2 py-0.5 rounded-md ${simNight ? 'bg-purple-950 text-purple-300 border border-purple-800/30' : 'bg-slate-100 text-slate-700'}`}>
-                                              {activeGuide.id === 'wide_3x1' ? '3.00m' : activeGuide.id === 'std_2x1' ? '2.00m' : activeGuide.id === 'street_4x3' ? '4.00m' : activeGuide.id === 'stand_1_2x1_8' ? '1.20m' : 'عرض مخصص'}
+                                              {activeGuide.id === 'wide_3x1' ? '3.00m' : activeGuide.id === 'std_2x1' ? '2.00m' : activeGuide.id === 'street_4x3' ? '4.00m' : activeGuide.id === 'stand_1_2x1_8' ? '1.20m' : t('creative.customWidth')}
                                             </span>
                                             <div className="w-1 h-1.5 bg-current -rotate-45" />
                                           </div>
@@ -2911,7 +2710,7 @@ if (currentScreen === 'welcome') {
                                           <div className={`w-0.5 bg-current grow my-2 relative flex flex-col items-center justify-between ${simNight ? 'text-purple-400/60' : 'text-slate-500'}`}>
                                             <div className="w-1.5 h-1 bg-current rotate-45" />
                                             <span className={`px-1.5 py-0.5 rounded-md whitespace-nowrap rotate-90 ${simNight ? 'bg-purple-950 text-purple-300 border border-purple-800/30' : 'bg-slate-100 text-slate-700'}`}>
-                                              {activeGuide.id === 'wide_3x1' ? '1.00m' : activeGuide.id === 'std_2x1' ? '1.00m' : activeGuide.id === 'street_4x3' ? '3.00m' : activeGuide.id === 'stand_1_2x1_8' ? '1.80m' : 'ارتفاع'}
+                                              {activeGuide.id === 'wide_3x1' ? '1.00m' : activeGuide.id === 'std_2x1' ? '1.00m' : activeGuide.id === 'street_4x3' ? '3.00m' : activeGuide.id === 'stand_1_2x1_8' ? '1.80m' : t('creative.customHeight')}
                                             </span>
                                             <div className="w-1.5 h-1 bg-current -rotate-45" />
                                           </div>
@@ -2921,7 +2720,7 @@ if (currentScreen === 'welcome') {
                                         <div className="flex flex-col gap-1 items-center max-w-full overflow-hidden px-2 py-1 select-none">
                                           {/* Calligraphy style badge */}
                                           <div className={`text-[9px] uppercase tracking-wider font-semibold font-mono ${simNight ? 'text-fuchsia-400' : 'text-fuchsia-600'}`}>
-                                            {df['calligraphyStyle'] || (lang === 'ar' ? 'الخط العربي الفني' : 'Arabic Typography')}
+                                            {df['calligraphyStyle'] || (t('creative.m040'))}
                                           </div>
 
                                           {/* Main Store Name */}
@@ -2966,15 +2765,18 @@ if (currentScreen === 'welcome') {
                       ) : (
                         <div className="flex flex-wrap gap-3">
                           {field.options.map(opt => {
-                            const optLabel = lang === 'ar' ? opt.labelAr : opt.labelEn;
-                            const isSelected = value === optLabel;
+                            const optStored = lang === 'ar' ? opt.labelAr : opt.labelEn;
+                            const optKey = `creative.ff.${scope}.${field.id}.${opt.id}`;
+                            const optTranslated = opt.id === 'yes' ? t('common.yes') : opt.id === 'no' ? t('common.no') : t(optKey);
+                            const optDisplay = (opt.id !== 'yes' && opt.id !== 'no' && optTranslated === optKey) ? optStored : optTranslated;
+                            const isSelected = value === optStored;
                             return (
-                              <label key={opt.id || (opt as any).value || optLabel} className={`relative flex items-center justify-center px-5 py-3 cursor-pointer rounded-xl border text-sm font-medium transition-all duration-300 overflow-hidden backdrop-blur-md ${isSelected ? 'border-fuchsia-500 text-white shadow-[0_0_20px_rgba(217,70,239,0.3)] bg-fuchsia-500/10 z-10' : 'border-white/10 text-slate-300 hover:text-white hover:border-white/30 hover:bg-white/10 bg-black/40'}`}>
+                              <label key={opt.id || (opt as any).value || optStored} className={`relative flex items-center justify-center px-5 py-3 cursor-pointer rounded-xl border text-sm font-medium transition-all duration-300 overflow-hidden backdrop-blur-md ${isSelected ? 'border-fuchsia-500 text-white shadow-[0_0_20px_rgba(217,70,239,0.3)] bg-fuchsia-500/10 z-10' : 'border-white/10 text-slate-300 hover:text-white hover:border-white/30 hover:bg-white/10 bg-black/40'}`}>
                                 {isSelected && <div className="absolute inset-0 bg-gradient-to-r from-purple-600/20 to-fuchsia-600/20 backdrop-blur-lg" />}
                                 <input
                                   type="radio"
                                   name={field.id}
-                                  value={optLabel}
+                                  value={optStored}
                                   checked={isSelected}
                                   onChange={(e) => setDf(prev => ({ ...prev, [field.id]: e.target.value }))}
                                   disabled={isGenerating}
@@ -2982,7 +2784,7 @@ if (currentScreen === 'welcome') {
                                 />
                                 <span className="relative z-10 flex items-center gap-2">
                                   {isSelected && <Check className="w-4 h-4 text-purple-400" />}
-                                  {optLabel}
+                                  {optDisplay}
                                 </span>
                               </label>
                             );
@@ -3028,6 +2830,9 @@ if (currentScreen === 'welcome') {
                       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                         {field.options.map(opt => {
                           const valLabel = lang === 'ar' ? opt.labelAr : opt.labelEn;
+                          const optKey = `creative.ff.${scope}.${field.id}.${opt.id}`;
+                          const optTranslated = opt.id === 'yes' ? t('common.yes') : opt.id === 'no' ? t('common.no') : t(optKey);
+                          const optDisplay = (opt.id !== 'yes' && opt.id !== 'no' && optTranslated === optKey) ? valLabel : optTranslated;
                           const isChecked = Array.isArray(df[field.id]) && df[field.id].includes(valLabel);
                           return (
                             <label key={opt.id} className="flex items-center gap-2 cursor-pointer text-slate-300 hover:text-white text-sm">
@@ -3047,7 +2852,7 @@ if (currentScreen === 'welcome') {
                                 disabled={isGenerating}
                                 className="accent-fuchsia-500 w-4 h-4 rounded"
                               />
-                              <span>{valLabel}</span>
+                              <span>{optDisplay}</span>
                             </label>
                           )
                         })}
@@ -3063,12 +2868,10 @@ if (currentScreen === 'welcome') {
             <div className="mt-8 pt-8 border-t border-white/10 animate-fade-in-up">
               <h3 className="text-xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-rose-400 flex items-center gap-2 justify-start">
                 <Sparkles className="w-5 h-5 text-amber-400 animate-pulse" />
-                {lang === 'ar' ? 'حدد عناصر الهوية البصرية المطلوب تجميعها وتضمينها:' : 'Select Brand Identity elements to generate & compile:'}
+                {t('creative.m039')}
               </h3>
               <p className="text-slate-400 text-sm mb-6 leading-relaxed text-start">
-                {lang === 'ar' 
-                  ? 'اختر العناصر التي تريد إدراجها في كتيب الهوية النهائي. اضغط على أي عنصر لتخصيص مقاساته، جودته وتفاصيله المخصصة. كل عنصر يتم تحديده واختياره سيكلفك نقطة تصميم PDF واحدة.'
-                  : 'Select elements you want in your final booklet. Click any item to configure its specific size, quality, and directions. Each selected item costs 1 PDF design point.'}
+                {t('creative.m038')}
               </p>
 
               {/* Selection helper buttons */}
@@ -3091,7 +2894,7 @@ if (currentScreen === 'welcome') {
                   }}
                   className="px-4 py-2 bg-fuchsia-500/15 hover:bg-fuchsia-500/25 border border-fuchsia-500/40 text-fuchsia-300 rounded-xl text-xs font-bold transition-all hover:scale-[1.02] active:scale-[0.98] shadow-sm"
                 >
-                  {lang === 'ar' ? 'تحديد كافة العناصر (10/10)' : 'Select All Elements (10/10)'}
+                  {t('creative.m037')}
                 </button>
                 {selectedKitItems.length > 0 && (
                   <button
@@ -3101,7 +2904,7 @@ if (currentScreen === 'welcome') {
                     }}
                     className="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 text-slate-400 hover:text-white rounded-xl text-xs font-bold transition-all hover:scale-[1.02] active:scale-[0.98]"
                   >
-                    {lang === 'ar' ? 'إلغاء تحديد الكل' : 'Clear All Selections'}
+                    {t('creative.m036')}
                   </button>
                 )}
               </div>
@@ -3127,17 +2930,17 @@ if (currentScreen === 'welcome') {
                         </div>
                         <div className="flex-1 text-start">
                           <h4 className="font-semibold text-white leading-snug">
-                            {lang === 'ar' ? item.labelAr : item.labelEn}
+                            {t(`creative.kit.${item.id}.label`)}
                           </h4>
                           <p className="text-slate-400 text-xs mt-1 leading-relaxed">
-                            {lang === 'ar' ? item.descAr : item.descEn}
+                            {t(`creative.kit.${item.id}.desc`)}
                           </p>
                         </div>
                       </div>
 
                       <div className="mt-4 pt-3 border-t border-white/5 flex items-center justify-between">
                         <span className={`text-xs font-semibold ${isSelected ? 'text-fuchsia-400' : 'text-slate-500'}`}>
-                          {lang === 'ar' ? 'التكلفة: 1 نقطة PDF' : 'Cost: 1 PDF Point'}
+                          {t('creative.m035')}
                         </span>
                         
                         <div className="flex items-center gap-2">
@@ -3154,8 +2957,8 @@ if (currentScreen === 'welcome') {
                             className="px-3 py-1.5 bg-white/5 hover:bg-white/10 text-white rounded-lg text-xs font-bold transition-all"
                           >
                             {isSelected 
-                              ? (lang === 'ar' ? 'تعديل الخيارات' : 'Edit Options') 
-                              : (lang === 'ar' ? 'تخصيص الخيارات' : 'Configure')
+                              ? (t('creative.m034')) 
+                              : (t('creative.m033'))
                             }
                           </button>
                           
@@ -3185,7 +2988,7 @@ if (currentScreen === 'welcome') {
                                 : 'bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white'
                             }`}
                           >
-                            {isSelected ? (lang === 'ar' ? 'إزالة' : 'Remove') : (lang === 'ar' ? 'تحديد' : 'Select')}
+                            {isSelected ? (t('common.remove')) : (t('common.select'))}
                           </button>
                         </div>
                       </div>
@@ -3199,12 +3002,10 @@ if (currentScreen === 'welcome') {
                 <div className="text-start">
                   <h4 className="font-bold text-white text-lg flex items-center gap-2">
                     <Star className="w-5 h-5 text-amber-400 fill-amber-400" />
-                    {lang === 'ar' ? `تكلفة الحزمة المطلوبة: ${selectedKitItems.length} نقاط PDF` : `Required Points: ${selectedKitItems.length} PDF Points`}
+                    {t('creative.m032', { p0: selectedKitItems.length })}
                   </h4>
                   <p className="text-xs text-slate-400 mt-1 leading-relaxed">
-                    {lang === 'ar' 
-                      ? 'سيتم توليد العناصر المختارة تدريجياً وبدقة مذهلة، ومن ثم دمجها بشكل متكامل وبدون أخطاء في ملف الـ PDF الموحد.'
-                      : 'All chosen elements will be generated sequentially with extreme detail, and merged flawlessly inside your unified PDF booklet.'}
+                    {t('creative.m031')}
                   </p>
                 </div>
                 
@@ -3217,7 +3018,7 @@ if (currentScreen === 'welcome') {
                     }}
                     className="text-xs font-bold text-slate-400 hover:text-white underline"
                   >
-                    {lang === 'ar' ? 'مسح التحديد الحالي' : 'Clear current selection'}
+                    {t('creative.m030')}
                   </button>
                 )}
               </div>
@@ -3228,14 +3029,14 @@ if (currentScreen === 'welcome') {
             <div className="mt-6 flex flex-col gap-6 animate-fade-in-up">
               <div className="bg-white/5 border border-white/10 p-5 rounded-2xl">
                 <label className="block text-white font-medium mb-3">
-                  {lang === 'ar' ? 'هل تود ان يتم تصميم الشعار بأسم التطبيق او بالحرف الأول من اسم التطبيق؟ (اختياري)' : 'Would you like the logo to be designed with the application name or its first letter? (Optional)'}
+                  {t('creative.m029')}
                 </label>
                 <input
                   type="text"
                   value={logoName}
                   onChange={(e) => setLogoName(e.target.value)}
                   disabled={isGenerating}
-                  placeholder={lang === 'ar' ? 'أدخل الاسم هنا...' : 'Enter name here...'}
+                  placeholder={t('creative.m028')}
                   className="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all"
                 />
               </div>
@@ -3244,13 +3045,13 @@ if (currentScreen === 'welcome') {
                 <>
                   <div className="bg-white/5 border border-white/10 p-5 rounded-2xl">
                     <label className="block text-white font-medium mb-3">
-                      {lang === 'ar' ? 'كيف تحب ابعاد التصميم؟' : 'How would you like the design dimensions?'}
+                      {t('creative.m027')}
                     </label>
                     <div className="flex gap-4">
                       {['2D', '3D', '2D & 3D'].map((dim) => (
                         <label key={dim} className="flex items-center gap-2 cursor-pointer text-slate-300 hover:text-white">
                           <input type="radio" name="dimension" value={dim} checked={dimension === dim} onChange={(e) => setDimension(e.target.value)} disabled={isGenerating} className="accent-fuchsia-500 w-4 h-4" />
-                          <span>{dim === '2D' ? `${dim} (${lang === 'ar' ? 'موصى به' : 'Recommended'})` : dim}</span>
+                          <span>{dim === '2D' ? `${dim} (${t('creative.m025')})` : dim}</span>
                         </label>
                       ))}
                     </div>
@@ -3258,7 +3059,7 @@ if (currentScreen === 'welcome') {
 
                   <div className="bg-white/5 border border-white/10 p-5 rounded-2xl">
                     <label className="block text-white font-medium mb-3">
-                      {lang === 'ar' ? 'هل تحب التصميم:' : 'How would you like the complexity?'}
+                      {t('creative.m026')}
                     </label>
                     <div className="flex flex-col gap-3 sm:flex-row sm:gap-6">
                       {[
@@ -3268,7 +3069,7 @@ if (currentScreen === 'welcome') {
                       ].map((comp) => (
                         <label key={comp.en} className="flex items-center gap-2 cursor-pointer text-slate-300 hover:text-white">
                           <input type="radio" name="complexity" value={lang === 'ar' ? comp.ar : comp.en} checked={complexity === (lang === 'ar' ? comp.ar : comp.en)} onChange={(e) => setComplexity(e.target.value)} disabled={isGenerating} className="accent-fuchsia-500 w-4 h-4" />
-                          <span>{lang === 'ar' ? comp.ar : comp.en}{comp.en === 'Simple' ? ` (${lang === 'ar' ? 'موصى به' : 'Recommended'})` : ''}</span>
+                          <span>{t(comp.en === 'Simple' ? 'creative.comp.simple' : comp.en === 'Complex' ? 'creative.comp.complex' : 'creative.comp.creative')}{comp.en === 'Simple' ? ` (${t('creative.m025')})` : ''}</span>
                         </label>
                       ))}
                     </div>
@@ -3278,9 +3079,7 @@ if (currentScreen === 'welcome') {
 
               <div className="bg-white/5 border border-white/10 p-5 rounded-2xl">
                 <label className="block text-white font-medium mb-3">
-                  {lang === 'ar' 
-                    ? (logoFormat === 'app_icon' ? 'كيف تصف طبيعة أيقونة التطبيق؟ (يمكن التحديد المتعدد)' : 'كيف تصف طبيعة الشعار المطلوبة؟ (يمكن التحديد المتعدد)')
-                    : (logoFormat === 'app_icon' ? 'How would you describe the nature of the app icon? (Multiple choice)' : 'How would you describe the nature of the logo? (Multiple choice)')}
+                  {logoFormat === 'app_icon' ? t('creative.traitsQuestionIcon') : t('creative.traitsQuestionLogo')}
                 </label>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   {(lang === 'ar' ? ObjectTraits : ObjectTraitsEn).map((trait, idx) => (
@@ -3289,15 +3088,15 @@ if (currentScreen === 'welcome') {
                         if (e.target.checked) {
                           setSelectedTraits([...selectedTraits, trait]);
                         } else {
-                          setSelectedTraits(selectedTraits.filter(t => t !== trait));
+                          setSelectedTraits(selectedTraits.filter(tr => tr !== trait));
                         }
                       }} disabled={isGenerating} className="accent-fuchsia-500 w-4 h-4 rounded" />
-                      <span>{trait}</span>
+                      <span>{t(`creative.trait.${idx}`)}</span>
                     </label>
                   ))}
                 </div>
                 <div className="mt-4">
-                  <input type="text" value={otherTrait} onChange={(e) => setOtherTrait(e.target.value)} disabled={isGenerating} placeholder={lang === 'ar' ? 'أخرى (اكتب هنا)' : 'Other (type here)'} className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 text-sm" />
+                  <input type="text" value={otherTrait} onChange={(e) => setOtherTrait(e.target.value)} disabled={isGenerating} placeholder={t('creative.m024')} className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 text-sm" />
                 </div>
               </div>
             </div>
@@ -3309,7 +3108,7 @@ if (currentScreen === 'welcome') {
                 <NajeErrorCard jsonContent={String(error)} onClose={() => setError(null)} />
               ) : (
                 <div className="p-4 bg-red-500/10 border border-red-500/50 text-red-400 rounded-xl text-center font-bold">
-                  {renderErrorText(error)}
+                  {renderErrorText(error, t('creative.unexpectedError'))}
                 </div>
               )}
             </div>
@@ -3321,16 +3120,16 @@ if (currentScreen === 'welcome') {
                 <Sparkles className="w-5 h-5" />
               </div>
               <div>
-                <p className="text-xs text-slate-400">رصيدك الحالي في ناجي AI</p>
-                <p className="text-lg font-extrabold text-amber-400">{balance.toFixed(2)} نقطة</p>
+                <p className="text-xs text-slate-400">{t('creative.balanceLabel')}</p>
+                <p className="text-lg font-extrabold text-amber-400">{t('creative.pointsValue', { n: balance.toFixed(2) })}</p>
               </div>
             </div>
-            <p className="text-xs text-slate-300 text-center sm:text-right">يتم خصم النقاط تلقائياً بعد كل عملية إنتاج ناجحة</p>
+            <p className="text-xs text-slate-300 text-center sm:text-start">{t('creative.pointsAuto')}</p>
           </div>
 
           {mode !== 'video_ad' && (
           <div className="mt-4 w-full">
-            <p className="text-xs text-slate-400 mb-2 text-center sm:text-right">اختر نموذج التوليد</p>
+            <p className="text-xs text-slate-400 mb-2 text-center sm:text-start">{t('creative.chooseModel')}</p>
             <div className="grid grid-cols-3 gap-2">
               {([
                 { key: 'lite',    name: 'Naje Imagen Lite', price: '0.5' },
@@ -3340,7 +3139,7 @@ if (currentScreen === 'welcome') {
                 <button key={m.key} type="button" onClick={() => setSelectedImageModel(m.key)}
                   className={`flex flex-col items-center gap-1 p-3 rounded-2xl border transition-all ${selectedImageModel === m.key ? 'border-purple-500 bg-purple-500/10 shadow-lg shadow-purple-500/20' : 'border-slate-700 hover:border-slate-500 bg-slate-800/40'}`}>
                   <span className="text-[12px] font-bold text-white">{m.name}</span>
-                  <span className="text-[11px] text-amber-400 font-semibold">{m.price} نقطة</span>
+                  <span className="text-[11px] text-amber-400 font-semibold">{t('creative.modelPoints', { price: m.price })}</span>
                 </button>
               ))}
             </div>
@@ -3361,15 +3160,15 @@ if (currentScreen === 'welcome') {
               {(isGenerating || (videoOperationName && !videoDownloadUrl) || kitGenerationStatus === 'generating' || kitGenerationStatus === 'compiling') ? (
                 <>
                   <NajeSpinner className="w-6 h-6" />
-                  <span>{T[lang].innovatingBtn}</span>
+                  <span>{t('creative.innovatingBtn')}</span>
                 </>
               ) : (
                 <>
                   <Wand2 className="w-6 h-6 transition-transform group-hover:rotate-12" />
                   <span>
                     {mode === 'brand_kit'
-                      ? (lang === 'ar' ? 'توليد حزمة الهوية والكتيب (PDF)' : 'Generate Identity Kit & Book (PDF)')
-                      : T[lang].startInnovatingBtn
+                      ? (t('creative.m023'))
+                      : t('creative.startInnovatingBtn')
                     }
                   </span>
                 </>
@@ -3380,10 +3179,10 @@ if (currentScreen === 'welcome') {
           {conceptOptions && conceptOptions.length > 0 && !generatedImage && (
             <div className="w-full max-w-4xl mx-auto mt-8 bg-white/5 border border-white/10 rounded-3xl p-6 md:p-8 backdrop-blur-xl animate-fade-in-up">
               <h3 className="text-2xl font-bold mb-2 text-center text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-indigo-400">
-                {lang === 'ar' ? 'اختر أحد المفهومات الابتكارية للبدء' : 'Select a Concept to Begin'}
+                {t('creative.m022')}
               </h3>
               <p className="text-slate-400 text-sm text-center mb-8">
-                {lang === 'ar' ? 'قمنا بصياغة توجهات ابتكارية مميزة لمشروعك، اختر المفهوم الأقرب لرؤيتك' : 'We drafted unique creative directions for your project, choose the concept closest to your vision'}
+                {t('creative.m021')}
               </p>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {conceptOptions.map((concept, idx) => (
@@ -3392,7 +3191,7 @@ if (currentScreen === 'welcome') {
                       <div className="w-10 h-10 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center font-bold mb-4 group-hover:scale-110 transition-transform">
                         {idx + 1}
                       </div>
-                      <h4 className="text-lg font-bold text-white mb-2">{concept.title || concept.name || `مفهوم ${idx + 1}`}</h4>
+                      <h4 className="text-lg font-bold text-white mb-2">{concept.title || concept.name || t('creative.conceptFallback', { n: idx + 1 })}</h4>
                       <p className="text-slate-300 text-sm leading-relaxed mb-4">{concept.description || concept.explanation || concept.prompt}</p>
                     </div>
                     <button
@@ -3401,7 +3200,7 @@ if (currentScreen === 'welcome') {
                       className="w-full py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold rounded-xl text-sm transition-all shadow-md flex items-center justify-center gap-2 mt-4"
                     >
                       <Sparkles className="w-4 h-4" />
-                      <span>{lang === 'ar' ? 'اختر هذا المفهوم' : 'Select This Concept'}</span>
+                      <span>{t('creative.m020')}</span>
                     </button>
                   </div>
                 ))}
@@ -3428,7 +3227,7 @@ if (currentScreen === 'welcome') {
           <div ref={outputRef} className="w-full mt-8 bg-white/5 border border-white/10 backdrop-blur-2xl shadow-[0_8px_30px_rgba(0,0,0,0.3)] hover:shadow-[0_8px_30px_rgba(255,255,255,0.05)] rounded-3xl p-6 md:p-8 shadow-2xl transition-all duration-500 animate-fade-in-up">
             <div className="flex flex-col items-center">
               <h3 className="text-2xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-rose-400">
-                {lang === 'ar' ? 'تم تجهيز الفيديو بنجاح!' : 'Video successfully generated!'}
+                {t('creative.m019')}
               </h3>
               
               <div className="relative rounded-2xl overflow-hidden border border-white/20 shadow-2xl w-full max-w-2xl mb-8 bg-black/40 flex items-center justify-center min-h-[40vh]">
@@ -3450,7 +3249,7 @@ if (currentScreen === 'welcome') {
                     className="flex flex-1 items-center gap-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white px-8 py-4 rounded-xl font-bold text-lg shadow-lg justify-center transition-all"
                   >
                     <Download className="w-5 h-5" />
-                     {lang === 'ar' ? 'تحميل الفيديو' : 'Download Video'}
+                     {t('creative.m018')}
                   </a>
                   <button
                     onClick={() => {
@@ -3462,14 +3261,14 @@ if (currentScreen === 'welcome') {
                     className="flex flex-1 items-center justify-center gap-3 bg-white/5 hover:bg-white/15 border border-white/10 text-white px-8 py-4 rounded-xl font-bold text-lg shadow-lg transition-all"
                   >
                     <Plus className="w-5 h-5" />
-                    {T[lang].newBtn}
+                    {t('creative.newBtn')}
                   </button>
                 </div>
                 <p className="text-emerald-400 text-sm md:text-base font-bold text-center mt-2 px-4 py-2 bg-emerald-500/10 rounded-lg border border-emerald-500/20">
-                  {lang === 'ar' ? 'لا تضغط على زر التحميل قبل ظهور الفيديو بشكل كامل، قد يتأخر ظهوره حسب سرعة الإنترنت لديك.' : 'Do not click the download button before the video appears completely, it may take some time depending on your internet connection.'}
+                  {t('creative.m017')}
                   <br />
                   <span className="text-emerald-300 text-xs md:text-sm mt-1 inline-block">
-                    {lang === 'ar' ? 'إذا واجهتك مشكلة في التحميل من الزر، اضغط مطولاً على الفيديو ثم اختر تحميل (أو تنزيل).' : 'If you encounter an issue downloading from the button, long-press the video and select download.'}
+                    {t('creative.m016')}
                   </span>
                 </p>
               </div>
@@ -3494,7 +3293,7 @@ if (currentScreen === 'welcome') {
           <div ref={outputRef} className="w-full mt-8 bg-white/5 border border-white/10 backdrop-blur-2xl shadow-[0_8px_30px_rgba(0,0,0,0.3)] hover:shadow-[0_8px_30px_rgba(255,255,255,0.05)] rounded-3xl p-6 md:p-8 shadow-2xl transition-all duration-500 animate-fade-in-up">
             <div className="flex flex-col items-center">
               <h3 className="text-2xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-indigo-400">
-                {mode === 'logo' ? T[lang].resultLogoHeader : T[lang].resultIdentityHeader}
+                {mode === 'logo' ? t('creative.resultLogoHeader') : t('creative.resultIdentityHeader')}
               </h3>
               
               <div className="relative rounded-2xl overflow-hidden border border-white/20 shadow-2xl w-full max-w-2xl mb-8 bg-black/40">
@@ -3514,7 +3313,7 @@ if (currentScreen === 'welcome') {
                     className="flex flex-1 items-center gap-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white px-8 py-4 rounded-xl font-bold text-lg shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 transform hover:-translate-y-1 transition-all justify-center"
                   >
                     <Download className="w-5 h-5" />
-                    {T[lang].downloadBtn} (PNG)
+                    {t('common.download')} (PNG)
                   </a>
 
                   <button
@@ -3532,7 +3331,7 @@ if (currentScreen === 'welcome') {
                     className="flex flex-1 items-center gap-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white px-8 py-4 rounded-xl font-bold text-lg shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 transform hover:-translate-y-1 transition-all justify-center"
                   >
                     <Download className="w-5 h-5" />
-                    {T[lang].downloadBtn} (SVG)
+                    {t('common.download')} (SVG)
                   </button>
                   
                   <button
@@ -3545,7 +3344,7 @@ if (currentScreen === 'welcome') {
                     className="flex flex-1 items-center justify-center gap-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 border border-white/20 text-white px-8 py-4 rounded-xl font-bold text-lg shadow-lg transform hover:-translate-y-1 transition-all"
                   >
                     <Wand2 className="w-5 h-5" />
-                    {T[lang].redesignBtn}
+                    {t('creative.redesignBtn')}
                   </button>
 
                   <button
@@ -3553,7 +3352,7 @@ if (currentScreen === 'welcome') {
                     className="flex flex-1 items-center justify-center gap-3 bg-white/10 hover:bg-white/20 border border-white/20 text-white px-8 py-4 rounded-xl font-bold text-lg shadow-lg transform hover:-translate-y-1 transition-all"
                   >
                     <Wand2 className="w-5 h-5" />
-                    {isEditing ? T[lang].cancelEditBtn : T[lang].editDesignBtn}
+                    {isEditing ? t('creative.cancelEditBtn') : t('creative.editDesignBtn')}
                   </button>
 
                   <button
@@ -3572,16 +3371,16 @@ if (currentScreen === 'welcome') {
                     className="flex flex-1 items-center justify-center gap-3 bg-white/5 hover:bg-white/15 border border-white/10 text-white px-8 py-4 rounded-xl font-bold text-lg shadow-lg transition-all"
                   >
                     <Plus className="w-5 h-5" />
-                    {T[lang].newBtn}
+                    {t('creative.newBtn')}
                   </button>
                 </div>
 
                 {isEditing && (
                   <div ref={editBoxRef} className="w-full bg-black/40 border border-purple-500/40 rounded-xl p-6 mt-4 animate-fade-in-down" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
-                     <h4 className="text-xl font-bold mb-4 text-purple-300 text-start">{T[lang].editLabel}</h4>
+                     <h4 className="text-xl font-bold mb-4 text-purple-300 text-start">{t('creative.editLabel')}</h4>
                      <textarea
                        className="w-full h-32 bg-white/5 border border-white/10 rounded-xl p-4 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all mb-4 resize-none text-start"
-                       placeholder={T[lang].editPlaceholder}
+                       placeholder={t('creative.editPlaceholder')}
                        value={editInput}
                        onChange={(e) => setEditInput(e.target.value)}
                      />
@@ -3598,7 +3397,7 @@ if (currentScreen === 'welcome') {
                         disabled={!editInput.trim() || isGenerating}
                         className="w-full py-4 rounded-xl font-bold text-lg text-white bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-400 hover:to-indigo-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                      >
-                       {isGenerating ? (lang === 'ar' ? 'جاري تعديل التصميم...' : 'Revising design...') : T[lang].applyEditBtn}
+                       {isGenerating ? (t('creative.m015')) : t('creative.applyEditBtn')}
                      </button>
                   </div>
                 )}
@@ -3606,7 +3405,7 @@ if (currentScreen === 'welcome') {
 
               <div className="w-full max-w-2xl bg-white/5 border border-white/10 rounded-2xl p-6 mb-8 text-center flex flex-col items-center">
                 <h4 className="text-xl font-bold mb-4 text-slate-200">
-                  {lang === 'ar' ? 'ما رأيك في هذا التصميم؟' : 'What do you think of this design?'}
+                  {t('creative.m014')}
                 </h4>
                 <div className="flex gap-2 mb-2">
                   {[1, 2, 3, 4, 5].map((star) => (
@@ -3630,7 +3429,7 @@ if (currentScreen === 'welcome') {
                 </div>
                 {isDesignRated && (
                   <p className="text-amber-400 font-medium text-sm animate-fade-in-up mt-2">
-                    {lang === 'ar' ? 'شكراً لتقييمك! نحن نتعلم ونتطور بفضلك.' : 'Thank you for your feedback! We grow and improve because of you.'}
+                    {t('creative.m013')}
                   </p>
                 )}
               </div>
@@ -3642,7 +3441,7 @@ if (currentScreen === 'welcome') {
                   
                   <h3 className="text-2xl md:text-3xl font-extrabold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-orange-400 to-rose-400 flex items-center gap-3 border-b border-white/10 pb-4">
                     <Sparkles className="w-7 h-7 text-amber-400 animate-pulse" />
-                    {lang === 'ar' ? 'حزمة استراتيجية الهوية البصرية' : 'Brand Visual Strategy Pack'}
+                    {t('creative.m012')}
                   </h3>
 
                   {conceptTitle && conceptExplanation && (
@@ -3654,7 +3453,7 @@ if (currentScreen === 'welcome') {
 
                   {brandKitSlogan && (
                     <div className="mb-6 bg-white/5 border border-white/5 rounded-xl p-5 text-center">
-                      <span className="text-xs text-slate-400 block uppercase tracking-wider mb-2">{lang === 'ar' ? 'الشعار اللفظي المقترح (Slogan)' : 'Suggested Slogan'}</span>
+                      <span className="text-xs text-slate-400 block uppercase tracking-wider mb-2">{t('creative.m011')}</span>
                       <p className="text-xl md:text-2xl font-extrabold italic bg-clip-text text-transparent bg-gradient-to-r from-teal-200 to-indigo-200">
                         "{brandKitSlogan}"
                       </p>
@@ -3663,7 +3462,7 @@ if (currentScreen === 'welcome') {
 
                   {brandKitColors && brandKitColors.length > 0 && (
                     <div className="mb-6 bg-white/5 border border-white/5 rounded-xl p-5">
-                      <span className="text-xs text-slate-400 block uppercase tracking-wider mb-3">{lang === 'ar' ? 'لوحة الألوان المتناسقة (Color Palette)' : 'Visual Color Palette'}</span>
+                      <span className="text-xs text-slate-400 block uppercase tracking-wider mb-3">{t('creative.m010')}</span>
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                         {brandKitColors.map((color, idx) => {
                           const hexColor = color.trim().startsWith('#') ? color.trim() : `#${color.trim()}`;
@@ -3683,7 +3482,7 @@ if (currentScreen === 'welcome') {
 
                   {brandKitTypography && (
                     <div className="mb-6 bg-white/5 border border-white/5 rounded-xl p-5">
-                      <span className="text-xs text-slate-400 block uppercase tracking-wider mb-2">{lang === 'ar' ? 'الخطوط المقترحة وهيكلة النصوص (Typography)' : 'Recommended Typography'}</span>
+                      <span className="text-xs text-slate-400 block uppercase tracking-wider mb-2">{t('creative.m009')}</span>
                       <p className="text-slate-200 font-medium whitespace-pre-line leading-relaxed text-sm md:text-base">
                         {brandKitTypography}
                       </p>
@@ -3692,7 +3491,7 @@ if (currentScreen === 'welcome') {
 
                   {brandKitGuidelines && (
                     <div className="bg-white/5 border border-white/5 rounded-xl p-5">
-                      <span className="text-xs text-slate-400 block uppercase tracking-wider mb-2">{lang === 'ar' ? 'دليل إرشادات استخدام الهوية (Guidelines)' : 'Brand Usage Guidelines'}</span>
+                      <span className="text-xs text-slate-400 block uppercase tracking-wider mb-2">{t('creative.m008')}</span>
                       <p className="text-slate-300 leading-relaxed font-light text-sm md:text-base whitespace-pre-line">
                         {brandKitGuidelines}
                       </p>
@@ -3718,7 +3517,7 @@ if (currentScreen === 'welcome') {
                 <div className="w-full max-w-2xl bg-black/30 border border-purple-500/20 rounded-2xl p-6 hidden md:block" dir="ltr text-left">
                   <h4 className="text-purple-400 font-semibold mb-3 text-sm tracking-wider uppercase flex items-center gap-2">
                     <Sparkles className="w-4 h-4" />
-                    {T[lang].behindScenesPrompt}
+                    {t('creative.behindScenesPrompt')}
                   </h4>
                   <p className="text-slate-400 text-xs leading-relaxed font-mono opacity-70 break-words">
                     {generatedPrompt}
@@ -3728,7 +3527,7 @@ if (currentScreen === 'welcome') {
 
               <div className="mt-12 w-full max-w-2xl animate-fade-in-up">
                 <p className="text-center font-bold text-sm md:text-base leading-relaxed bg-clip-text text-transparent bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-200 drop-shadow-[0_0_10px_rgba(251,191,36,0.3)]">
-                  {T[lang].footerInfo}
+                  {t('creative.footerInfo')}
                 </p>
               </div>
             </div>
@@ -3752,9 +3551,9 @@ if (currentScreen === 'welcome') {
               <div>
                 <div className="flex items-center justify-between mb-8 border-b border-white/10 pb-4">
                   <div className="text-start">
-                    <span className="text-xs text-fuchsia-400 font-bold uppercase tracking-wider">{lang === 'ar' ? 'إعداد عنصر الحزمة' : 'Configure Asset Options'}</span>
+                    <span className="text-xs text-fuchsia-400 font-bold uppercase tracking-wider">{t('creative.m007')}</span>
                     <h3 className="text-xl font-bold text-white mt-1">
-                      {lang === 'ar' ? item.labelAr : item.labelEn}
+                      {t(`creative.kit.${item.id}.label`)}
                     </h3>
                   </div>
                   <button 
@@ -3775,7 +3574,7 @@ if (currentScreen === 'welcome') {
                         return (
                         <div key={field.id} className="flex flex-col gap-2">
                           <label className="text-sm text-slate-300 font-semibold mb-1">
-                            {lang === 'ar' ? field.labelAr : field.labelEn}
+                            {t(`creative.kit.${item.id}.f.${field.id}`)}
                           </label>
                           
                           {(!field?.type || field?.type === 'text') && (
@@ -3788,7 +3587,7 @@ if (currentScreen === 'welcome') {
                                   [field.id]: e.target.value
                                 }));
                               }}
-                              placeholder={lang === 'ar' ? `أدخل ${field.labelAr}...` : `Enter ${field.labelEn}...`}
+                              placeholder={t('creative.enterField', { label: t(`creative.kit.${item.id}.f.${field.id}`) })}
                               className="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:border-fuchsia-500/50 focus:ring-fuchsia-500/50 text-sm transition-all shadow-inner"
                             />
                           )}
@@ -3801,7 +3600,7 @@ if (currentScreen === 'welcome') {
                                     {fieldValue === opt.value && <div className="w-2.5 h-2.5 bg-fuchsia-400 rounded-full" />}
                                   </div>
                                   <span className="text-sm text-slate-300 group-hover:text-slate-200 font-medium">
-                                    {lang === 'ar' ? opt.labelAr : opt.labelEn}
+                                    {opt.value === 'yes' ? t('common.yes') : opt.value === 'no' ? t('common.no') : t(`creative.kit.${item.id}.f.${field.id}.${opt.value}`)}
                                   </span>
                                   <input 
                                     type="radio" 
@@ -3831,7 +3630,7 @@ if (currentScreen === 'welcome') {
                                       {isChecked && <Check className="w-3.5 h-3.5" strokeWidth={3} />}
                                     </div>
                                     <span className="text-sm text-slate-300 group-hover:text-slate-200 font-medium">
-                                      {lang === 'ar' ? opt.labelAr : opt.labelEn}
+                                      {opt.value === 'yes' ? t('common.yes') : opt.value === 'no' ? t('common.no') : t(`creative.kit.${item.id}.f.${field.id}.${opt.value}`)}
                                     </span>
                                     <input 
                                       type="checkbox" 
@@ -3863,14 +3662,12 @@ if (currentScreen === 'welcome') {
                   {/* Directives/Notes */}
                   <div className={item.fields?.length ? 'pt-6 border-t border-white/10' : ''}>
                     <label className="block text-slate-300 font-medium mb-2 text-sm">
-                      {lang === 'ar' ? 'ملاحظات وتوجيهات إضافية (اختياري):' : 'Additional Notes & Directives (Optional):'}
+                      {t('creative.m005')}
                     </label>
                     <textarea
                       value={tempConfigNotes}
                       onChange={(e) => setTempConfigNotes(e.target.value)}
-                      placeholder={lang === 'ar' 
-                        ? 'أي تفاصيل أخرى تريد إضافتها للتصميم...' 
-                        : 'Any other details you want to add to the design...'}
+                      placeholder={t('creative.m004')}
                       className="w-full h-24 bg-black/40 border border-white/10 rounded-xl p-4 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 resize-none transition-all text-sm text-start"
                     />
                   </div>
@@ -3879,8 +3676,8 @@ if (currentScreen === 'welcome') {
 
               <div className="mt-8 pt-4 border-t border-white/10 flex flex-col gap-3">
                 <div className="flex items-center justify-between text-slate-300 text-sm">
-                  <span>{lang === 'ar' ? 'تكلفة العنصر:' : 'Asset Cost:'}</span>
-                  <span className="text-fuchsia-400 font-extrabold">{lang === 'ar' ? '1 نقطة تصميم PDF' : '1 PDF Design Point'}</span>
+                  <span>{t('creative.m003')}</span>
+                  <span className="text-fuchsia-400 font-extrabold">{t('creative.m002')}</span>
                 </div>
 
                 <div className="flex gap-3">
@@ -3905,7 +3702,7 @@ if (currentScreen === 'welcome') {
                     }}
                     className="flex-1 py-3 bg-gradient-to-r from-fuchsia-600 to-purple-600 hover:from-fuchsia-500 hover:to-purple-500 text-white rounded-xl font-bold transition-all text-sm"
                   >
-                    {lang === 'ar' ? 'تأكيد وإضافة للحزمة' : 'Confirm & Add to Bundle'}
+                    {t('creative.m001')}
                   </button>
                   
                   {selectedKitItems.includes(item.id) && (
@@ -3918,7 +3715,7 @@ if (currentScreen === 'welcome') {
                       }}
                       className="px-4 py-3 bg-red-600/10 hover:bg-red-600/20 border border-red-500/30 text-red-400 rounded-xl font-bold transition-all text-sm"
                     >
-                      {lang === 'ar' ? 'إزالة' : 'Remove'}
+                      {t('common.remove')}
                     </button>
                   )}
                 </div>

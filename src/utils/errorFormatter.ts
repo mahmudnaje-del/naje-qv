@@ -9,6 +9,9 @@ import { GoogleGenAI } from '@google/genai';
 import { db } from '../firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { createGenAIClient } from '../lib/genaiClient';
+import { t } from '../i18n';
+import { useAppStore } from '../store';
+import type { SupportedLocale } from '../i18n';
 
 export interface FormattedError {
   title: string;
@@ -17,6 +20,24 @@ export interface FormattedError {
   intro: string;
   explanation: string;
   solutions: string[];
+  kind?: string;
+}
+
+function ui(key: string, params?: Record<string, string | number>): string {
+  const locale = (useAppStore.getState().language || 'ar') as SupportedLocale;
+  return t(key, params, locale);
+}
+
+function errPack(kind: string, emoji: string, icon = emoji): FormattedError {
+  return {
+    kind,
+    title: ui(`chatui.err.${kind}.title`),
+    emoji,
+    icon,
+    intro: ui(`chatui.err.${kind}.intro`),
+    explanation: ui(`chatui.err.${kind}.explanation`),
+    solutions: [ui(`chatui.err.${kind}.s1`), ui(`chatui.err.${kind}.s2`), ui(`chatui.err.${kind}.s3`)],
+  };
 }
 
 export function parseAndCategorizeErrorSync(errorStr: string): FormattedError {
@@ -34,18 +55,7 @@ export function parseAndCategorizeErrorSync(errorStr: string): FormattedError {
     normalized.includes("limit exceeded")
   ) {
     console.error('[Naje Error - Classified as: quota]', errorStr);
-    return {
-      title: "تجاوز الحد الأقصى للمعدل الزمني للطلبات (حصص الاستخدام)",
-      emoji: "quota",
-      icon: "quota",
-      intro: "نعتذر منك؛ لقد تم تجاوز الحد الأقصى المسموح به لمعدل تكرار الطلبات أو الحصة المخصصة حالياً لخدمة الذكاء الاصطناعي.",
-      explanation: "تضع خوادم المعالجة السحابية حدوداً زمنية تلقائية لعدد الطلبات في الدقيقة الواحدة لضمان عدالة الاستخدام وثبات الأداء لجميع المستخدمين في نفس الوقت.",
-      solutions: [
-        "الانتظار لمدة دقيقة أو دقيقتين قبل محاولة إعادة إرسال طلبك.",
-        "تبسيط صياغة طلبك الحالي أو تقليص حجم المرفقات إن وُجدت.",
-        "ترقية الحساب أو الاشتراك للحصول على أولوية في سرعة الخوادم وحصص تشغيل أعلى."
-      ]
-    };
+    return errPack('quota', 'quota');
   }
 
   // 2. Safety block / Flagged Content
@@ -61,18 +71,7 @@ export function parseAndCategorizeErrorSync(errorStr: string): FormattedError {
     normalized.includes("الفحص الأمني")
   ) {
     console.error('[Naje Error - Classified as: safety]', errorStr);
-    return {
-      title: "إرشادات حماية المحتوى والسياسات الآمنة",
-      emoji: "shield",
-      icon: "shield",
-      intro: "عذراً؛ لم نتمكن من إتمام العملية نظراً لتعارض صياغة الطلب أو المحتوى المولد مع إرشادات الأمان الرقمي وسياسات الاستخدام لدينا.",
-      explanation: "يعمل نظام فلترة المحتوى الآلي في الخلفية على حماية المستخدمين ومنع توليد محتوى قد يندرج تحت تصنيفات غير ملائمة، أو يتناول مواضيع حساسة للغاية، أو يخرق حقوق النشر والعلامات التجارية.",
-      solutions: [
-        "إعادة كتابة طلبك بأسلوب أكثر موضوعية واحترافية وبدون عبارات ملتبسة.",
-        "تجنب الكلمات أو المواضيع التي قد تُفسر بشكل خاطئ من قِبل فلاتر الأمان التلقائية.",
-        "التأكد من أن الصور أو النصوص المرفقة متوافقة مع شروط الخدمة العامة."
-      ]
-    };
+    return errPack('safety', 'shield');
   }
 
   // 2.5 Security / Permission Denied / Firestore Rules / Billing
@@ -88,18 +87,7 @@ export function parseAndCategorizeErrorSync(errorStr: string): FormattedError {
     normalized.includes("غير مصرح")
   ) {
     console.error('[Naje Error - Classified as: permission]', errorStr);
-    return {
-      title: "توقف مؤقت في الخدمة",
-      emoji: "warning",
-      icon: "warning",
-      intro: "يا هلا بك.. يبدو أن هناك تحديثات داخلية أو ضغط مؤقت منعنا من إتمام طلبك بنجاح.",
-      explanation: "عادة ما يظهر هذا الإشعار بسبب وصولنا للحد الأقصى للاستخدام أو وجود الصيانة والتحديثات على سيرفرات الذكاء الاصطناعي.",
-      solutions: [
-        "جرب تحدث الصفحة وتطلب من جديد بعد شوي.",
-        "تأكد من اتصالك بالإنترنت.",
-        "إذا استمرت المشكلة، لا تتردد وتواصل مع دعم ناجي الفني عبر الواتس آب."
-      ]
-    };
+    return errPack('permission', 'warning');
   }
 
   // 3. Balance Insufficient / Points
@@ -116,18 +104,7 @@ export function parseAndCategorizeErrorSync(errorStr: string): FormattedError {
     !normalized.includes("تحديث الرصيد")
   ) {
     console.error('[Naje Error - Classified as: balance]', errorStr);
-    return {
-      title: "رصيد النقاط المتاح غير كافٍ للعملية",
-      emoji: "wallet",
-      icon: "wallet",
-      intro: "تنبيه: رصيد النقاط الحالي المتوفر في حسابكم لا يغطي تكلفة تنفيذ هذا الطلب الإبداعي.",
-      explanation: "تتطلب عمليات المعالجة المتقدمة (مثل التصميم عالي الدقة، تحرير وتوليد مقاطع الفيديو، أو تجميع المستندات الاحترافية الشاملة) استهلاك نقاط محددة تغطي تكلفة الحوسبة السحابية الفائقة المستخدمة.",
-      solutions: [
-        "التحقق من التكلفة التقريبية للعملية الموضحة في لوحة الإعدادات وتكييف حجم العمل.",
-        "شحن رصيد حسابك بمزيد من النقاط فوراً من خلال صفحة الدفع والاشتراكات.",
-        "استخدام النماذج الأساسية أو تقليص عدد الصفحات والشرائح لتقليل التكلفة."
-      ]
-    };
+    return errPack('balance', 'wallet');
   }
 
   // 4. File error / bad attached files (must specifically refer to uploaded/attached files, not output files)
@@ -143,18 +120,7 @@ export function parseAndCategorizeErrorSync(errorStr: string): FormattedError {
     (normalized.includes("uploaded file") && (normalized.includes("corrupt") || normalized.includes("invalid") || normalized.includes("unsupported")))
   ) {
     console.error('[Naje Error - Classified as: file]', errorStr);
-    return {
-      title: "صعوبة في معالجة الملفات المرفقة",
-      emoji: "folder",
-      icon: "folder",
-      intro: "واجه النظام صعوبة تقنية أثناء محاولة فحص أو قراءة الملفات المرفقة بطلبك.",
-      explanation: "قد يكون الملف المرفوع تالفاً، أو بتنسيق غير متوافق مع خوارزميات التحليل المعتمدة، أو يتجاوز الحجم الأقصى المسموح به للملف الواحد.",
-      solutions: [
-        "التأكد من رفع ملفات بتنسيقات قياسية مدعومة مثل (PDF, DOCX, PPTX للوثائق) أو (JPG, PNG للصور).",
-        "التحقق من أن الملف ليس محمياً بكلمة مرور أو تالفاً على جهازك.",
-        "تقليص حجم الملفات الكبيرة لتسهيل رفعها ومعالجتها سحابياً."
-      ]
-    };
+    return errPack('file', 'folder');
   }
 
   // 4.5 Document Generation Error / Output generation failure
@@ -169,18 +135,7 @@ export function parseAndCategorizeErrorSync(errorStr: string): FormattedError {
     normalized.includes("empty pdf")
   ) {
     console.error('[Naje Error - Classified as: doc_generation]', errorStr);
-    return {
-      title: "تعذر إكمال معالجة المستند المطلوب",
-      emoji: "document",
-      icon: "document",
-      intro: "لم نتمكن من تجميع ملف المستند النهائي، ولم يتم خصم أي نقاط من رصيدك إطلاقاً.",
-      explanation: "قد يحدث هذا في حال كانت صياغة الطلب موجزة للغاية، أو عند حدوث انقطاع مؤقت أثناء تجميع صفحات أو شرائح الملف في الخادم.",
-      solutions: [
-        "إعادة إرسال الطلب مع توضيح موضوع وعناصر المستند بشكل أكثر تفصيلاً.",
-        "تجربة اختيار صيغة أخرى (مثل شرائح PDF أو مستند Word) أو تقليل عدد الشرائح.",
-        "التأكد من وضوح النصوص في حال إرفاق مستندات مرجعية."
-      ]
-    };
+    return errPack('doc', 'document');
   }
 
   // 5. Network Timeout / Server Outage / API Connection failure
@@ -199,18 +154,7 @@ export function parseAndCategorizeErrorSync(errorStr: string): FormattedError {
     normalized.includes("unavailable")
   ) {
     console.error('[Naje Error - Classified as: network]', errorStr);
-    return {
-      title: "انقطاع مؤقت في الاتصال بالخوادم السحابية",
-      emoji: "globe",
-      icon: "globe",
-      intro: "نواجه حالياً تأخيراً أو انقطاعاً مؤقتاً في قنوات الاتصال بالخوادم المركزية للذكاء الاصطناعي.",
-      explanation: "قد يحدث هذا بشكل عارض نتيجة تذبذب اتصال الشبكة أو وجود صيانة وتحديثات على البنية التحتية السحابية لشركائنا من مزودي الخدمات الفائقة.",
-      solutions: [
-        "التحقق من جودة واستقرار اتصال الإنترنت الخاص بك حالياً.",
-        "الانتظار لبضع ثوانٍ ثم الضغط على زر إعادة الإرسال.",
-        "تحديث الصفحة لتجديد جلسة الاتصال الآمنة والمحاولة مرة أخرى."
-      ]
-    };
+    return errPack('network', 'globe');
   }
 
   // 5.5 Model Stream Interruption / Read Failure / High Demand
@@ -225,34 +169,12 @@ export function parseAndCategorizeErrorSync(errorStr: string): FormattedError {
     normalized.includes("empty response")
   ) {
     console.error('[Naje Error - Classified as: model_stream_interrupted]', errorStr);
-    return {
-      title: "تعذّر استلام رد النموذج الذكي",
-      emoji: "cpu",
-      icon: "cpu",
-      intro: "نعتذر منك؛ واجه النموذج الذكي ضغطاً مؤقتاً أو حدث انقطاع أثناء تدفق الرد البرمجي.",
-      explanation: "يحدث هذا غالباً عندما تواجه واجهات الذكاء الاصطناعي السحابية ذروة طلب لحظية أو انقطاعاً في حزمة التدفق الحي قبل اكتمال الرد.",
-      solutions: [
-        "الضغط على زر إعادة المحاولة أو إرسال طلبك مرة أخرى.",
-        "تبسيط صياغة السؤال وإرساله في جملة مباشرة وواضحة.",
-        "تحديث الصفحة لتجديد جلسة المعالجة السحابية."
-      ]
-    };
+    return errPack('stream', 'cpu');
   }
 
   // 6. General / Unknown Technical Error
   console.error('[Naje Error - Classified as: unclassified]', errorStr);
-  return {
-    title: "عارض فني غير متوقع",
-    emoji: "gear",
-    icon: "gear",
-    intro: "نأسف بشدة؛ واجه نظام المعالجة السحابي صعوبة فنية غير متوقعة أثناء معالجة طلبك.",
-    explanation: "حدث هذا بسبب خطأ غير مبرمج في مصفوفة المعالجة. لقد تم تسجيل هذا العارض وإرساله تلقائياً إلى نظام تتبع الأخطاء البرمجية لمراجعته من قبل فريق التطوير والدعم الفني لدينا.",
-    solutions: [
-      "تحديث متصفحك وإعادة صياغة الطلب بشكل مبسط.",
-      "تجنب إرسال طلبات متعددة بسرعة فائقة لمنع تجميد الجلسة.",
-      "في حال استمرار المشكلة، يرجى إرسال لقطة شاشة وتفاصيل الخطأ إلى مركز الدعم الفني."
-    ]
-  };
+  return errPack('unknown', 'gear');
 }
 
 async function getModelEndpointIdClient(endpointId: string, defaultFallback: string): Promise<string> {
@@ -327,7 +249,7 @@ export async function parseAndCategorizeError(
   const cat = parseAndCategorizeErrorSync(errorStr);
 
   // Apply smart explanation for 'file' and 'unclassified' categories only
-  if (cat.title === "صعوبة في معالجة الملفات المرفقة" || cat.title === "عارض فني غير متوقع") {
+  if (cat.kind === 'file' || cat.kind === 'unknown') {
     const smart = await generateSmartErrorExplanation(errorStr, context);
     if (smart) {
       return {

@@ -26,6 +26,7 @@ import { NajiLocation } from '../../data/locations/locationRegistry';
 import { AdDnaState, LIGHTING_PRESETS, CAMERA_PRESETS, FieldStatusMap } from '../../lib/adDnaEngine';
 import { CrewStatusBar } from './CrewStatusBar';
 import { FinalCutPanel } from './FinalCutPanel';
+import { useI18n } from '../../i18n';
 
 export interface StageAreaProps {
   avatar: NajiAvatar | null;
@@ -43,53 +44,18 @@ export interface StageAreaProps {
   status?: string;
 }
 
-const SUB_MESSAGES: Record<string, string[]> = {
-  pending: [
-    'تجهيز مسار العمل وحجز مساحة الذاكرة...',
-    'استدعاء بارامترات الإخراج وحمض الإعلان...'
-  ],
-  analyzing_prompt: [
-    'تحليل السيناريو الإعلاني وتفكيك اللقطات...',
-    'مواءمة هوية الأفاتار والموقع مع القصة...',
-    'توزيع التوقيت الزمني للمشاهد...'
-  ],
-  generating_shot_1: [
-    'تثبيت هوية الشخصية والملامح بدقة...',
-    'ضبط زاوية الكاميرا الافتتاحية وعمق الميدان...',
-    'معايرة الإضاءة السينمائية والألوان الأساسية...',
-    'رندرة حركة البطل والتفاعل المشهدي...'
-  ],
-  extracting_continuity: [
-    'تحليل الإطار الختامي للقطة الأولى...',
-    'بناء جسر الاستمرارية البصرية والضوئية...',
-    'نقل موضع الشخصية وحالة الإضاءة بدقة متناهية...'
-  ],
-  generating_shot_2: [
-    'مطابقة موضع الشخصية مع اللقطة السابقة...',
-    'استكمال الحركة بسلاسة تامة وتفادي القفزات...',
-    'ضبط زاوية الكاميرا الثانية للوصول للذروة الإعلانية...',
-    'تكامل الإضاءة والخلفية مع الإطار السابق...'
-  ],
-  stitching_and_encoding: [
-    'دمج اللقطات سينمائيًا بدون انقطاع...',
-    'مزامنة الانتقال اللوني ومعدل الإطارات...',
-    'ضغط وتشفير الفيديو النهائي بأعلى جودة H.264...'
-  ],
-  concatenating: [
-    'دمج اللقطات سينمائيًا...',
-    'مزامنة الانتقال بين المشاهد...'
-  ],
-  finalizing: [
-    'ترميز الفيديو النهائي...',
-    'رفع الملف وتجهيز الرابط النهائي للعرض...'
-  ]
+const SUB_KEYS: Record<string, string[]> = {
+  pending: ['adui.sub.pending.0', 'adui.sub.pending.1'],
+  analyzing_prompt: ['adui.sub.analyzing_prompt.0', 'adui.sub.analyzing_prompt.1', 'adui.sub.analyzing_prompt.2'],
+  generating_shot_1: ['adui.sub.generating_shot_1.0', 'adui.sub.generating_shot_1.1', 'adui.sub.generating_shot_1.2', 'adui.sub.generating_shot_1.3'],
+  extracting_continuity: ['adui.sub.extracting_continuity.0', 'adui.sub.extracting_continuity.1', 'adui.sub.extracting_continuity.2'],
+  generating_shot_2: ['adui.sub.generating_shot_2.0', 'adui.sub.generating_shot_2.1', 'adui.sub.generating_shot_2.2', 'adui.sub.generating_shot_2.3'],
+  stitching_and_encoding: ['adui.sub.stitching_and_encoding.0', 'adui.sub.stitching_and_encoding.1', 'adui.sub.stitching_and_encoding.2'],
+  concatenating: ['adui.sub.concatenating.0', 'adui.sub.concatenating.1'],
+  finalizing: ['adui.sub.finalizing.0', 'adui.sub.finalizing.1'],
 };
 
-const DEFAULT_SUB_MESSAGES = [
-  'معالجة لقطات الفيديو والتوليد الفائق...',
-  'مزامنة الكاميرا والإضاءة بدقة عالية...',
-  'تطبيق خوارزميات الاستمرارية المشهدية...'
-];
+const DEFAULT_SUB_KEYS = ['adui.sub.default.0', 'adui.sub.default.1', 'adui.sub.default.2'];
 
 export const StageArea: React.FC<StageAreaProps> = ({
   avatar,
@@ -106,6 +72,7 @@ export const StageArea: React.FC<StageAreaProps> = ({
   stepLabel,
   status = 'idle'
 }) => {
+  const { t } = useI18n();
   const [subMessageIndex, setSubMessageIndex] = useState(0);
 
   // Derive stage background gradient blending avatar & location color palettes
@@ -130,11 +97,11 @@ export const StageArea: React.FC<StageAreaProps> = ({
     return () => clearInterval(interval);
   }, [isGenerating]);
 
-  const activeMessages = SUB_MESSAGES[status] || DEFAULT_SUB_MESSAGES;
-  const currentSubMessage = activeMessages[subMessageIndex % activeMessages.length];
+  const activeMessages = SUB_KEYS[status] || DEFAULT_SUB_KEYS;
+  const currentSubMessage = t(activeMessages[subMessageIndex % activeMessages.length]);
 
   return (
-    <div className="flex flex-col h-full space-y-3.5 text-right" dir="rtl">
+    <div className="flex flex-col h-full space-y-3.5 text-start">
       {/* Top Stage Control Toolbar */}
       <div className="flex flex-wrap items-center justify-between gap-3 bg-[#0d0f14]/80 border border-gray-800/80 rounded-2xl p-3.5 backdrop-blur-md">
         <div className="flex items-center gap-2">
@@ -142,8 +109,8 @@ export const StageArea: React.FC<StageAreaProps> = ({
             <Film className="w-4 h-4" />
           </div>
           <div>
-            <h3 className="text-xs font-black text-white">منصة الإنتاج الافتراضي (Stage Area)</h3>
-            <p className="text-[10px] text-gray-400">معاينة التكوين المشهدي المباشر للشخصية والموقع والإضاءة</p>
+            <h3 className="text-xs font-black text-white">{t('adui.stage.title')}</h3>
+            <p className="text-[10px] text-gray-400">{t('adui.stage.hint')}</p>
           </div>
         </div>
 
@@ -159,7 +126,7 @@ export const StageArea: React.FC<StageAreaProps> = ({
             >
               {LIGHTING_PRESETS.map((lp) => (
                 <option key={lp.id} value={lp.id} className="bg-[#141721] text-gray-200">
-                  {lp.label}
+                  {t(`adui.lpreset.${lp.id}`)}
                 </option>
               ))}
             </select>
@@ -175,7 +142,7 @@ export const StageArea: React.FC<StageAreaProps> = ({
             >
               {CAMERA_PRESETS.map((cp) => (
                 <option key={cp.id} value={cp.id} className="bg-[#141721] text-gray-200">
-                  {cp.label}
+                  {t(`adui.cpreset.${cp.id}`)}
                 </option>
               ))}
             </select>
@@ -190,8 +157,8 @@ export const StageArea: React.FC<StageAreaProps> = ({
               disabled={ratioLocked}
               className={`bg-transparent text-xs text-gray-200 outline-none cursor-pointer ${ratioLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
-              <option value="16:9" className="bg-[#141721] text-gray-200">16:9 أفقي</option>
-              <option value="9:16" className="bg-[#141721] text-gray-200">9:16 عمودي</option>
+              <option value="16:9" className="bg-[#141721] text-gray-200">{t('adui.stage.horizontal')}</option>
+              <option value="9:16" className="bg-[#141721] text-gray-200">{t('adui.stage.vertical')}</option>
             </select>
             {ratioLocked && (
               <span className="text-[10px] text-amber-400" title={fieldStatuses['aspectRatio']?.reason}>
@@ -249,8 +216,8 @@ export const StageArea: React.FC<StageAreaProps> = ({
             </div>
             
             <div>
-              <h4 className="text-base font-black text-white">جاري توليد وإنتاج المشهد السينمائي...</h4>
-              <p className="text-xs text-indigo-300 font-medium mt-1">{stepLabel || 'معالجة لقطات الفيديو والتوليد الدقيق...'}</p>
+              <h4 className="text-base font-black text-white">{t('adui.stage.generating')}</h4>
+              <p className="text-xs text-indigo-300 font-medium mt-1">{stepLabel || t('adui.stage.processing')}</p>
               
               {/* Rotating Micro-Messages */}
               <div className="h-6 mt-2 flex items-center justify-center overflow-hidden">
@@ -279,9 +246,9 @@ export const StageArea: React.FC<StageAreaProps> = ({
             <div className="flex items-center justify-between text-xs font-mono text-gray-400">
               <span className="flex items-center gap-1 text-emerald-400 font-sans text-[11px]">
                 <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-                المحرك السينمائي يعمل
+                {t('adui.stage.engineOn')}
               </span>
-              <span>{progress}% مكتمل</span>
+              <span>{t('adui.stage.percentDone', { progress })}</span>
             </div>
           </motion.div>
         ) : (
@@ -300,7 +267,7 @@ export const StageArea: React.FC<StageAreaProps> = ({
               >
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/30">
-                    بطل الإعلان المختار
+                    {t('adui.stage.chosenHero')}
                   </span>
                   <button
                     type="button"
@@ -308,7 +275,7 @@ export const StageArea: React.FC<StageAreaProps> = ({
                     className="text-xs font-bold text-indigo-400 hover:text-indigo-300 transition flex items-center gap-1 cursor-pointer"
                   >
                     <User className="w-3.5 h-3.5" />
-                    <span>تغيير الأفاتار</span>
+                    <span>{t('adui.stage.changeAvatar')}</span>
                   </button>
                 </div>
 
@@ -322,26 +289,26 @@ export const StageArea: React.FC<StageAreaProps> = ({
                         className="w-14 h-14 rounded-2xl shadow-lg shrink-0 border border-white/20"
                       />
                       <div>
-                        <h4 className="text-sm font-black text-white">{avatar.name} ({avatar.age} سنة)</h4>
+                        <h4 className="text-sm font-black text-white">{avatar.name} ({t('adui.stage.years', { age: avatar.age })})</h4>
                         <p className="text-[11px] text-gray-400 leading-snug">{avatar.visualRegion}</p>
                         <span className="text-[10px] text-indigo-300 font-mono">{avatar.id} • {avatar.profession}</span>
                       </div>
                     </div>
                     <div className="text-[11px] text-gray-300/90 leading-relaxed bg-[#0b0d12] p-2.5 rounded-xl border border-gray-800/70">
-                      <p className="truncate"><strong className="text-gray-400">الملامح:</strong> {avatar.skin}</p>
-                      <p className="truncate"><strong className="text-gray-400">الملابس:</strong> {avatar.clothing}</p>
-                      <p className="truncate"><strong className="text-gray-400">التعبير:</strong> {avatar.expression}</p>
+                      <p className="truncate"><strong className="text-gray-400">{t('adui.stage.features')}</strong> {avatar.skin}</p>
+                      <p className="truncate"><strong className="text-gray-400">{t('adui.stage.clothing')}</strong> {avatar.clothing}</p>
+                      <p className="truncate"><strong className="text-gray-400">{t('adui.stage.expression')}</strong> {avatar.expression}</p>
                     </div>
                   </div>
                 ) : (
                   <div className="p-6 text-center text-gray-400">
-                    <p className="text-xs font-bold">لم يتم اختيار أفاتار بعد</p>
+                    <p className="text-xs font-bold">{t('adui.stage.noAvatar')}</p>
                     <button
                       type="button"
                       onClick={onOpenCasting}
                       className="mt-2 px-3 py-1.5 rounded-xl bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-700 transition"
                     >
-                      استعراض غرفة التمثيل (150 شخصية)
+                      {t('adui.stage.browseCast')}
                     </button>
                   </div>
                 )}
@@ -360,7 +327,7 @@ export const StageArea: React.FC<StageAreaProps> = ({
               >
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/30">
-                    بيئة وموقع التصوير
+                    {t('adui.stage.environment')}
                   </span>
                   <button
                     type="button"
@@ -368,7 +335,7 @@ export const StageArea: React.FC<StageAreaProps> = ({
                     className="text-xs font-bold text-purple-400 hover:text-purple-300 transition flex items-center gap-1 cursor-pointer"
                   >
                     <MapPin className="w-3.5 h-3.5" />
-                    <span>تغيير الموقع</span>
+                    <span>{t('adui.stage.changeLocation')}</span>
                   </button>
                 </div>
 
@@ -390,21 +357,21 @@ export const StageArea: React.FC<StageAreaProps> = ({
                     <div className="text-[11px] text-gray-300/90 leading-relaxed bg-[#0b0d12] p-2.5 rounded-xl border border-gray-800/70">
                       <p className="line-clamp-2 text-gray-300">{location.description}</p>
                       <div className="flex items-center gap-1 mt-1 text-[10px] text-amber-400">
-                        <span>الإضاءة: {dnaState.lighting}</span>
+                        <span>{t('adui.stage.lightLabel')} {dnaState.lighting}</span>
                         <span>•</span>
-                        <span>الكاميرا: {dnaState.cameraAngle}</span>
+                        <span>{t('adui.stage.cameraLabel')} {dnaState.cameraAngle}</span>
                       </div>
                     </div>
                   </div>
                 ) : (
                   <div className="p-6 text-center text-gray-400">
-                    <p className="text-xs font-bold">لم يتم اختيار موقع تصوير</p>
+                    <p className="text-xs font-bold">{t('adui.stage.noLocation')}</p>
                     <button
                       type="button"
                       onClick={onOpenLocationScout}
                       className="mt-2 px-3 py-1.5 rounded-xl bg-purple-600 text-white text-xs font-bold hover:bg-purple-700 transition"
                     >
-                      استعراض مكتبة المواقع (150 موقع)
+                      {t('adui.stage.browseLocations')}
                     </button>
                   </div>
                 )}

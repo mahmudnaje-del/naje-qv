@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'motion/react';
 import { Download, ExternalLink, RotateCcw } from 'lucide-react';
+import { useI18n } from '../../i18n';
 
 export interface FinalCutPanelProps {
   videoUrl: string;
@@ -8,6 +9,7 @@ export interface FinalCutPanelProps {
 }
 
 export const FinalCutPanel: React.FC<FinalCutPanelProps> = ({ videoUrl, onReset }) => {
+  const { t } = useI18n();
   const [downloading, setDownloading] = React.useState(false);
 
   const handleDownload = async () => {
@@ -40,7 +42,7 @@ export const FinalCutPanel: React.FC<FinalCutPanelProps> = ({ videoUrl, onReset 
         className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition flex justify-center items-center gap-1.5 shadow-lg shadow-indigo-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
       >
         <Download className="w-3.5 h-3.5" />
-        <span>{downloading ? 'جاري التحميل...' : 'تحميل الفيديو النهائي'}</span>
+        <span>{downloading ? t('common.loading') : t('adui.final.download')}</span>
       </button>
       
       <a
@@ -50,7 +52,7 @@ export const FinalCutPanel: React.FC<FinalCutPanelProps> = ({ videoUrl, onReset 
         className="px-4 py-2 rounded-xl bg-[#1c2230] hover:bg-[#252c3d] text-gray-200 border border-gray-700 text-xs font-bold transition flex justify-center items-center gap-1.5"
       >
         <ExternalLink className="w-3.5 h-3.5" />
-        <span>فتح بنافذة خارجية</span>
+        <span>{t('adui.final.open')}</span>
       </a>
       
       <button
@@ -59,7 +61,7 @@ export const FinalCutPanel: React.FC<FinalCutPanelProps> = ({ videoUrl, onReset 
         className="px-4 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-bold transition flex justify-center items-center gap-1.5 cursor-pointer"
       >
         <RotateCcw className="w-3.5 h-3.5" />
-        <span>إنتاج نسخة أخرى</span>
+        <span>{t('adui.final.another')}</span>
       </button>
     </div>
   );

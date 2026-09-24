@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Check, ImagePlus, Sparkles, Trash2 } from 'lucide-react';
 import { CvPhotoStyle, PHOTO_STYLES } from '../../lib/cvStudio';
+import { useI18n } from '../../i18n';
 
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
@@ -153,18 +154,12 @@ export async function gradePhotoStyle(dataUrl: string, style: CvPhotoStyle): Pro
   return canvas.toDataURL('image/jpeg', 0.92);
 }
 
-function dimWarning(w: number, h: number): string | null {
+function dimWarning(w: number, h: number): 'square' | 'wide' | 'low' | null {
   const ratio = w / Math.max(1, h);
   const min = Math.min(w, h);
-  if (min < 280 && ratio > 0.82 && ratio < 1.22) {
-    return 'أبعاد مربعة وصغيرة — غالباً سيلفي أو صورة جواز. استخدم رأس وأكتاف أوضح.';
-  }
-  if (ratio > 1.75) {
-    return 'الصورة عريضة جداً — قد تكون لقطة أفقية أو جماعية. انقر على الوجه لقصّها رأسياً.';
-  }
-  if (min < 220) {
-    return 'الدقة منخفضة للطباعة. ارفع صورة أوضح (رأس وأكتاف).';
-  }
+  if (min < 280 && ratio > 0.82 && ratio < 1.22) return 'square';
+  if (ratio > 1.75) return 'wide';
+  if (min < 220) return 'low';
   return null;
 }
 
@@ -181,6 +176,7 @@ export function PhotoBooth({
   photoStyle?: CvPhotoStyle;
   onStyleChange?: (style: CvPhotoStyle) => void;
 }) {
+  const { t } = useI18n();
   const inputRef = useRef<HTMLInputElement>(null);
   const sourceRef = useRef<string | null>(photo);
   const lastOutRef = useRef<string | null>(photo);
@@ -188,7 +184,7 @@ export function PhotoBooth({
   const [source, setSource] = useState<string | null>(photo);
   const [busy, setBusy] = useState<'crop' | 'enhance' | null>(null);
   const [focus, setFocus] = useState({ x: 0.5, y: 0.32 });
-  const [warn, setWarn] = useState<string | null>(null);
+  const [warn, setWarn] = useState<'square' | 'wide' | 'low' | null>(null);
 
   useEffect(() => {
     if (!photo) {
@@ -335,7 +331,7 @@ export function PhotoBooth({
             <>
               <img
                 src={preview}
-                alt="صورة السيرة"
+                alt={t('cv.photo.alt')}
                 className="h-full w-full object-cover"
                 style={{ objectPosition: `${focus.x * 100}% ${focus.y * 100}%` }}
               />
@@ -347,7 +343,7 @@ export function PhotoBooth({
           ) : (
             <span className="flex h-full w-full flex-col items-center justify-center gap-1 text-[#c4a35a]">
               <ImagePlus className="h-6 w-6" />
-              <span className="text-[9px] font-black">أرفق</span>
+              <span className="text-[9px] font-black">{t('cv.photo.attach')}</span>
             </span>
           )}
         </button>
@@ -357,17 +353,17 @@ export function PhotoBooth({
             onClick={() => inputRef.current?.click()}
             className="block w-full text-center text-[9px] font-bold text-white/40 hover:text-[#e8c36a]"
           >
-            تغيير
+            {t('cv.photo.change')}
           </button>
         ) : null}
       </div>
       <div className="min-w-0 flex-1 space-y-1.5">
-        <p className="text-[11px] font-black text-[#f3ead8]">صورة مهنية</p>
+        <p className="text-[11px] font-black text-[#f3ead8]">{t('cv.photo.title')}</p>
         <p className="text-[10px] leading-relaxed text-white/45">
-          الصورة اختيارية. في أسواق ATS يُفضَّل إخفاؤها. رأس وأكتاف، خلفية سادة، لباس رسمي.
-          {photo ? ' انقر على الوجه لتحريك القص.' : ''}
+          {t('cv.photo.hint')}
+          {photo ? ` ${t('cv.photo.hintCrop')}` : ''}
         </p>
-        {warn ? <p className="text-[10px] leading-relaxed text-amber-300/90">{warn}</p> : null}
+        {warn ? <p className="text-[10px] leading-relaxed text-amber-300/90">{t(`cv.photo.${warn}`)}</p> : null}
         <div className="flex flex-wrap gap-1.5">
           <button
             type="button"
@@ -376,11 +372,11 @@ export function PhotoBooth({
             className="inline-flex items-center gap-1 rounded-lg bg-[#c4a35a] px-2.5 py-1 text-[10px] font-black text-[#1a140c] disabled:opacity-40"
           >
             <Sparkles className="h-3 w-3" />
-            {busy === 'enhance' ? 'يُحسّن…' : enhanced ? 'حُسّنت' : 'تحسين الاستوديو'}
+            {busy === 'enhance' ? t('cv.photo.enhancing') : enhanced ? t('cv.photo.enhanced') : t('cv.photo.enhance')}
           </button>
           {enhanced && (
             <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-emerald-400">
-              <Check className="h-3 w-3" /> جاهزة
+              <Check className="h-3 w-3" /> {t('cv.photo.ready')}
             </span>
           )}
           {photo && (
@@ -397,13 +393,13 @@ export function PhotoBooth({
               }}
               className="inline-flex items-center gap-1 text-[10px] text-white/40"
             >
-              <Trash2 className="h-3 w-3" /> حذف
+              <Trash2 className="h-3 w-3" /> {t('cv.photo.remove')}
             </button>
           )}
         </div>
         {enhanced && photo ? (
           <div className="space-y-1">
-            <p className="text-[9px] leading-relaxed text-white/45">تحسين إضاءة — لا نغيّر ملامحك</p>
+            <p className="text-[9px] leading-relaxed text-white/45">{t('cv.photo.light')}</p>
             <div className="flex flex-wrap gap-1">
               {PHOTO_STYLES.map((s) => (
                 <button
@@ -417,13 +413,13 @@ export function PhotoBooth({
                       : 'border-white/10 text-white/55'
                   }`}
                 >
-                  {s.en}
+                  {t(`cv.photoStyle.${s.id}`)}
                 </button>
               ))}
             </div>
           </div>
         ) : null}
-        <p className="text-[9px] text-white/30">تحسين محلي: تباين وإضاءة فقط — بلا تغيير ملامح.</p>
+        <p className="text-[9px] text-white/30">{t('cv.photo.local')}</p>
       </div>
       <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={(e) => pick(e.target.files?.[0])} />
     </div>

@@ -2,8 +2,6 @@ import React, { useState } from 'react';
 import { Copy, Clapperboard, Film, Palette, FileText, Play, Undo2 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import {
-  BEST_FOR_LABEL,
-  HANDOFF_CREDIT_NOTICE,
   REFINE_CHIPS,
   STUDIO_ACTIONS,
   isExecutableBestFor,
@@ -11,6 +9,8 @@ import {
   type ReadyResult,
   type Understanding,
 } from '../../lib/najePromptEngine';
+import { useI18n } from '../../i18n';
+import { REFINE_LABEL_KEYS, STUDIO_LABEL_KEYS, bestForKey } from './promptLabels';
 import UnderstandingPanel from './UnderstandingPanel';
 
 const STUDIO_ICON = {
@@ -31,7 +31,7 @@ interface ReadyCardProps {
   balance?: number | null;
   onCopy: () => void;
   onHandoff: (path: string) => void;
-  onRefine: (instruction: string) => void;
+  onRefine: (instruction: string, displayLabel?: string) => void;
   onExecute?: () => void;
   onUndo?: () => void;
   onUpdateUnderstanding?: (next: Understanding) => void;
@@ -55,8 +55,10 @@ export function ReadyCard({
   onUpdateUnderstanding,
   onUnderstandingFeedback,
 }: ReadyCardProps) {
+  const { t, isRtl, formatNumber } = useI18n();
   const canExecute = isExecutableBestFor(data.bestFor) && Boolean(onExecute);
   const [pendingPath, setPendingPath] = useState<string | null>(null);
+  const bestLabel = t(bestForKey(data.bestFor));
 
   const requestHandoff = (path: string, studioId: string) => {
     if (askBeforeExpensive && isPaidStudioHandoff(studioId)) {
@@ -67,12 +69,12 @@ export function ReadyCard({
   };
 
   return (
-    <div className="space-y-4 rounded-3xl border border-emerald-500/20 bg-emerald-500/5 p-4 sm:p-5">
+    <div className="space-y-4 rounded-3xl border border-emerald-500/20 bg-emerald-500/5 p-4 sm:p-5" dir={isRtl ? 'rtl' : 'ltr'}>
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
-          <h2 className="text-sm font-black leading-snug text-naje-ink">{data.title}</h2>
-          <p className="mt-1 text-[10px] font-bold text-emerald-700 dark:text-emerald-400">
-            الأنسب: {BEST_FOR_LABEL[data.bestFor] || data.bestFor}
+          <h2 className="text-start text-sm font-black leading-snug text-naje-ink" dir="auto">{data.title}</h2>
+          <p className="mt-1 text-start text-[10px] font-bold text-emerald-700 dark:text-emerald-400">
+            {t('prompt.ready.bestFor', { label: bestLabel })}
           </p>
         </div>
       </div>
@@ -92,7 +94,7 @@ export function ReadyCard({
 
       <pre
         dir="auto"
-        className="max-h-80 overflow-y-auto whitespace-pre-wrap rounded-2xl bg-zinc-950 p-4 text-[12.5px] leading-relaxed text-zinc-100"
+        className="max-h-80 overflow-y-auto whitespace-pre-wrap rounded-2xl bg-zinc-950 p-4 text-start text-[12.5px] leading-relaxed text-zinc-100"
       >
         {data.prompt}
       </pre>
@@ -105,7 +107,7 @@ export function ReadyCard({
           className="inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-zinc-200 bg-white px-3 py-2 text-[11px] font-black text-naje-ink dark:border-zinc-700 dark:bg-zinc-950"
         >
           <Copy className="h-3.5 w-3.5" />
-          نسخ
+          {t('prompt.ready.copy')}
         </button>
         {canExecute && (
           <button
@@ -115,7 +117,7 @@ export function ReadyCard({
             className="inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-zinc-900 px-3 py-2 text-[11px] font-black text-white dark:bg-white dark:text-zinc-900"
           >
             <Play className="h-3.5 w-3.5" />
-            نفّذ هنا
+            {t('prompt.ready.execute')}
           </button>
         )}
         {canUndo && onUndo && (
@@ -126,7 +128,7 @@ export function ReadyCard({
             className="inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-zinc-200 bg-white px-3 py-2 text-[11px] font-black text-naje-ink dark:border-zinc-700 dark:bg-zinc-950"
           >
             <Undo2 className="h-3.5 w-3.5" />
-            النسخة قبل التعديل
+            {t('prompt.ready.undo')}
           </button>
         )}
         {STUDIO_ACTIONS.map((action) => {
@@ -146,7 +148,7 @@ export function ReadyCard({
               )}
             >
               <Icon className="h-3.5 w-3.5" />
-              {action.label}
+              {t(STUDIO_LABEL_KEYS[action.id] || action.label)}
             </button>
           );
         })}
@@ -154,10 +156,10 @@ export function ReadyCard({
 
       {pendingPath && (
         <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-3">
-          <p className="text-[12px] font-bold leading-relaxed text-naje-ink">{HANDOFF_CREDIT_NOTICE}</p>
+          <p className="text-start text-[12px] font-bold leading-relaxed text-naje-ink">{t('prompt.ready.creditNotice')}</p>
           {typeof balance === 'number' && (
-            <p className="mt-1 text-[11px] font-bold text-naje-muted">
-              رصيدك الحالي: {balance} نقطة — الخصم يتم داخل الاستوديو عند التوليد.
+            <p className="mt-1 text-start text-[11px] font-bold text-naje-muted">
+              {t('prompt.ready.balance', { balance: formatNumber(balance) })}
             </p>
           )}
           <div className="mt-2 flex flex-wrap gap-1.5">
@@ -169,16 +171,16 @@ export function ReadyCard({
                 setPendingPath(null);
                 if (path) onHandoff(path);
               }}
-              className="min-h-10 rounded-xl bg-indigo-600 px-3 py-1.5 text-[11px] font-black text-white"
+              className="min-h-11 rounded-xl bg-indigo-600 px-3 py-1.5 text-[11px] font-black text-white"
             >
-              متابعة إلى الاستوديو
+              {t('prompt.ready.continue')}
             </button>
             <button
               type="button"
               onClick={() => setPendingPath(null)}
-              className="min-h-10 rounded-xl border border-zinc-200 px-3 py-1.5 text-[11px] font-black text-naje-ink dark:border-zinc-700"
+              className="min-h-11 rounded-xl border border-zinc-200 px-3 py-1.5 text-[11px] font-black text-naje-ink dark:border-zinc-700"
             >
-              إلغاء
+              {t('common.cancel')}
             </button>
           </div>
         </div>
@@ -186,15 +188,15 @@ export function ReadyCard({
 
       {showRefine && (
         <div className="flex flex-wrap gap-1.5 pt-1">
-          {REFINE_CHIPS.map((chip) => (
+          {REFINE_CHIPS.map((chip, index) => (
             <button
               key={chip.label}
               type="button"
               disabled={busy}
-              onClick={() => onRefine(chip.text)}
-              className="min-h-8 rounded-full border border-zinc-200 px-3 py-1 text-[11px] font-bold text-naje-muted transition hover:border-indigo-400 hover:text-indigo-600 disabled:opacity-40 dark:border-zinc-700"
+              onClick={() => onRefine(chip.text, t(REFINE_LABEL_KEYS[index]))}
+              className="min-h-11 rounded-full border border-zinc-200 px-3 py-1 text-[11px] font-bold text-naje-muted transition hover:border-indigo-400 hover:text-indigo-600 disabled:opacity-40 dark:border-zinc-700"
             >
-              {chip.label}
+              {t(REFINE_LABEL_KEYS[index])}
             </button>
           ))}
         </div>

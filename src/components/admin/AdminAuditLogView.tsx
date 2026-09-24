@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { collection, query, orderBy, limit, onSnapshot } from 'firebase/firestore';
 import { db } from '../../firebase';
+import { useI18n } from '../../i18n';
 import { 
   ShieldCheck, Search, Filter, Calendar, User, Eye, 
   Terminal, ShieldAlert, ArrowDownUp, RefreshCw, Key, Bell, Power
@@ -18,6 +19,7 @@ interface AuditEntry {
 }
 
 export default function AdminAuditLogView() {
+  const { t } = useI18n();
   const [entries, setEntries] = useState<AuditEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -57,15 +59,15 @@ export default function AdminAuditLogView() {
   const getActionBadge = (action: string) => {
     switch (action) {
       case 'view_user_chats':
-        return <span className="px-2.5 py-1 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 rounded-lg text-[11px] font-bold">معاينة محادثات مستخدم</span>;
+        return <span className="px-2.5 py-1 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 rounded-lg text-[11px] font-bold">{t('tools.admin.badgeViewChats')}</span>;
       case 'view_chat_messages':
-        return <span className="px-2.5 py-1 bg-purple-500/10 border border-purple-500/20 text-purple-400 rounded-lg text-[11px] font-bold">قراءة رسائل محادثة</span>;
+        return <span className="px-2.5 py-1 bg-purple-500/10 border border-purple-500/20 text-purple-400 rounded-lg text-[11px] font-bold">{t('tools.admin.badgeReadMsgs')}</span>;
       case 'send_notification':
-        return <span className="px-2.5 py-1 bg-amber-500/10 border border-amber-500/20 text-amber-400 rounded-lg text-[11px] font-bold">بث إشعار جماعي</span>;
+        return <span className="px-2.5 py-1 bg-amber-500/10 border border-amber-500/20 text-amber-400 rounded-lg text-[11px] font-bold">{t('tools.admin.badgeBroadcast')}</span>;
       case 'update_feature_flags':
-        return <span className="px-2.5 py-1 bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded-lg text-[11px] font-bold">تعديل مفاتيح الميزات</span>;
+        return <span className="px-2.5 py-1 bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded-lg text-[11px] font-bold">{t('tools.admin.badgeFlags')}</span>;
       case 'generate_voice_samples':
-        return <span className="px-2.5 py-1 bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 rounded-lg text-[11px] font-bold">توليد عينات أصوات</span>;
+        return <span className="px-2.5 py-1 bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 rounded-lg text-[11px] font-bold">{t('tools.admin.badgeVoice')}</span>;
       default:
         return <span className="px-2.5 py-1 bg-gray-800 border border-gray-700 text-gray-300 rounded-lg text-[11px] font-bold">{action}</span>;
     }
@@ -78,13 +80,13 @@ export default function AdminAuditLogView() {
         <div>
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-black mb-2">
             <ShieldCheck className="w-3.5 h-3.5" />
-            <span>نظام الشفافية والمساءلة الإدارية الموثق (Audit Logging)</span>
+            <span>{t('tools.admin.auditBadge')}</span>
           </div>
           <h2 className="text-2xl font-black text-white tracking-tight">
-            سجل النشاط والعمليات الإدارية
+            {t('tools.admin.auditTitle')}
           </h2>
           <p className="text-gray-400 text-xs mt-1">
-            يُحفظ في هذا السجل غير القابل للتعديل كل إجراء إداري حساس (مثل الاطلاع على المحادثات، بث الإشعارات، تعديل الأسعار، ومفاتيح الميزات).
+            {t('tools.admin.auditDesc')}
           </p>
         </div>
       </div>
@@ -95,7 +97,7 @@ export default function AdminAuditLogView() {
           <Search className="w-4 h-4 text-gray-500 absolute right-3.5 top-3.5" />
           <input
             type="text"
-            placeholder="ابحث بالحساب الإداري، المعرف، أو نوع الإجراء..."
+            placeholder={t('tools.admin.auditSearch')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full bg-gray-900 border border-gray-800 rounded-xl pr-10 pl-4 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-amber-500 transition"
@@ -104,11 +106,11 @@ export default function AdminAuditLogView() {
 
         <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
           {[
-            { id: 'all', label: 'كافة الإجراءات' },
-            { id: 'view_user_chats', label: 'معاينة المحادثات' },
-            { id: 'view_chat_messages', label: 'قراءة الرسائل' },
-            { id: 'send_notification', label: 'الإشعارات' },
-            { id: 'update_feature_flags', label: 'مفاتيح الميزات' },
+            { id: 'all', label: t('tools.admin.auditAll') },
+            { id: 'view_user_chats', label: t('tools.admin.auditViewChats') },
+            { id: 'view_chat_messages', label: t('tools.admin.auditRead') },
+            { id: 'send_notification', label: t('tools.admin.auditNotifs') },
+            { id: 'update_feature_flags', label: t('tools.admin.featureKeys') },
           ].map(f => (
             <button
               key={f.id}
@@ -128,9 +130,9 @@ export default function AdminAuditLogView() {
       {/* Audit Logs Table / Card List */}
       <div className="bg-[#0e1015] border border-gray-800 rounded-3xl p-6 shadow-xl space-y-3">
         {loading ? (
-          <div className="text-center py-16 text-xs text-gray-500">جاري تحميل سجل الأنشطة...</div>
+          <div className="text-center py-16 text-xs text-gray-500">{t('tools.admin.auditLoading')}</div>
         ) : filteredEntries.length === 0 ? (
-          <div className="text-center py-16 text-xs text-gray-500">لا توجد سجلات مطابقة للبحث.</div>
+          <div className="text-center py-16 text-xs text-gray-500">{t('tools.admin.auditEmpty')}</div>
         ) : (
           filteredEntries.map((entry) => {
             const isExpanded = expandedId === entry.id;
@@ -147,7 +149,7 @@ export default function AdminAuditLogView() {
 
                   <div className="flex items-center gap-4 text-[11px] text-gray-400">
                     {entry.targetUserId && (
-                      <span>المستهدف: <strong className="text-amber-400 font-mono">{entry.targetUserId}</strong></span>
+                      <span>{t('tools.admin.target', { id: entry.targetUserId })}</span>
                     )}
                     <span>{entry.timestamp ? new Date(entry.timestamp).toLocaleString('ar-SA') : ''}</span>
 
@@ -155,7 +157,7 @@ export default function AdminAuditLogView() {
                       onClick={() => setExpandedId(isExpanded ? null : entry.id)}
                       className="text-amber-400 hover:text-amber-300 font-bold underline cursor-pointer"
                     >
-                      {isExpanded ? 'إخفاء التفاصيل' : 'التفاصيل'}
+                      {isExpanded ? t('tools.admin.hideDetails') : t('tools.admin.showDetails')}
                     </button>
                   </div>
                 </div>

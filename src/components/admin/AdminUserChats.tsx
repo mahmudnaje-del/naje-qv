@@ -11,6 +11,7 @@ import {
   Smartphone, Monitor, Maximize2, X, Copy, Check, Sparkles, Cpu, Layers3
 } from 'lucide-react';
 import { toast } from '../../toastStore';
+import { useI18n } from '../../i18n';
 import NajeUiPreview from '../NajeUiPreview';
 
 function parseUiMessage(content: string | undefined): { chatText: string; html: string; hasHtml: boolean } {
@@ -44,7 +45,7 @@ function isUiDocument(content: string | undefined): boolean {
   return parseUiMessage(content).hasHtml;
 }
 
-class MessageErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean }> {
+class MessageErrorBoundary extends React.Component<{ children: React.ReactNode; fallbackText: string }, { hasError: boolean }> {
   constructor(props: any) {
     super(props);
     this.state = { hasError: false };
@@ -59,7 +60,7 @@ class MessageErrorBoundary extends React.Component<{ children: React.ReactNode }
     if (this.state.hasError) {
       return (
         <div className="p-3 rounded-xl border border-red-900/40 bg-red-950/20 text-red-400 text-xs my-2">
-          تعذّر عرض هذه الرسالة (بيانات غير متوقعة). راجع سجل الأخطاء بالمتصفح للتفاصيل.
+          {this.props.fallbackText}
         </div>
       );
     }
@@ -100,6 +101,7 @@ export default function AdminUserChats({
   initialUserId,
   onClearInitialUser
 }: AdminUserChatsProps) {
+  const { t, formatDate } = useI18n();
   // Navigation State: Level 1 (user) -> Level 2 (chats) -> Level 3 (messages)
   const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
   const [userSearch, setUserSearch] = useState('');
@@ -162,7 +164,7 @@ export default function AdminUserChats({
     setChatsLoading(true);
 
     logAdminAction('view_user_chats', userObj.uid, undefined, {
-      userName: userObj.displayName || userObj.email || 'مستخدم'
+      userName: userObj.displayName || userObj.email || t('tools.admin.person')
     });
 
     try {
@@ -179,7 +181,7 @@ export default function AdminUserChats({
       setChats(fetched);
     } catch (err: any) {
       console.error('Error fetching user chats:', err);
-      toast.error('حدث خطأ أثناء جلب محادثات المستخدم: ' + err.message);
+      toast.error(t('tools.admin.chatsLoadError', { message: err.message }));
     } finally {
       setChatsLoading(false);
     }
@@ -211,7 +213,7 @@ export default function AdminUserChats({
       setMessages(fetched);
     } catch (err: any) {
       console.error('Error fetching chat messages:', err);
-      toast.error('حدث خطأ أثناء جلب رسائل المحادثة.');
+      toast.error(t('tools.admin.msgsLoadError'));
     } finally {
       setMessagesLoading(false);
     }
@@ -243,12 +245,12 @@ export default function AdminUserChats({
 
   const getChatTypeName = (type: string) => {
     switch (type) {
-      case 'image': return 'تصاميم وصور';
-      case 'video': return 'فيديو سينمائي';
-      case 'ui': return 'استوديو الواجهات';
-      case 'document': return 'مستند وعرض';
-      case 'voice': return 'صوتي';
-      default: return 'نصي حواري';
+      case 'image': return t('tools.admin.ctypeImage');
+      case 'video': return t('tools.admin.ctypeVideo');
+      case 'ui': return t('tools.admin.ctypeUi');
+      case 'document': return t('tools.admin.ctypeDoc');
+      case 'voice': return t('tools.admin.ctypeVoice');
+      default: return t('tools.admin.ctypeText');
     }
   };
 
@@ -275,7 +277,7 @@ export default function AdminUserChats({
   const copyToClipboard = (text: string, id: string) => {
     navigator.clipboard.writeText(text);
     setCopiedId(id);
-    toast.success('تم نسخ الكود بنجاح');
+    toast.success(t('tools.admin.copyCodeOk'));
     setTimeout(() => setCopiedId(null), 2000);
   };
 
@@ -286,13 +288,13 @@ export default function AdminUserChats({
         <div>
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-black mb-2">
             <ShieldCheck className="w-3.5 h-3.5" />
-            <span>خاصية رقابة الجودة والدعم الفني الموثق</span>
+            <span>{t('tools.admin.chatsBadge')}</span>
           </div>
           <h2 className="text-2xl font-black text-white tracking-tight flex items-center gap-2">
-            <span>استعراض وسجل محادثات المستخدمين المباشر</span>
+            <span>{t('tools.admin.chatsTitle')}</span>
           </h2>
           <p className="text-gray-400 text-xs mt-1">
-            اطّلع على محادثات المستخدمين بنفس شكل وتجربة الواجهة الأصلية: معاينة الواجهات المباشرة، الصور المرفقة والمولدة، الفيديوهات والتسجيلات الصوتية.
+            {t('tools.admin.chatsDesc')}
           </p>
         </div>
 
@@ -308,7 +310,7 @@ export default function AdminUserChats({
             className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white font-bold text-xs rounded-xl border border-gray-700 transition flex items-center gap-2 cursor-pointer shadow-sm"
           >
             <ArrowRight className="w-4 h-4" />
-            <span>العودة لقائمة جميع المستخدمين</span>
+            <span>{t('tools.admin.chatsBack')}</span>
           </button>
         )}
       </div>
@@ -319,17 +321,17 @@ export default function AdminUserChats({
         <div className="bg-[#0e1015] border border-gray-800 rounded-3xl p-6 shadow-xl space-y-6">
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
             <div className="relative flex-1">
-              <Search className="w-4 h-4 text-gray-500 absolute right-3.5 top-3.5" />
+              <Search className="w-4 h-4 text-gray-500 absolute end-3.5 top-3.5" />
               <input
                 type="text"
-                placeholder="ابحث بالاسم أو البريد الإلكتروني أو المعرف..."
+                placeholder={t('tools.admin.chatsSearch')}
                 value={userSearch}
                 onChange={(e) => setUserSearch(e.target.value)}
-                className="w-full bg-gray-900 border border-gray-800 rounded-xl pr-10 pl-4 py-2.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-amber-500 transition"
+                className="w-full bg-gray-900 border border-gray-800 rounded-xl pe-10 ps-4 py-2.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-amber-500 transition"
               />
             </div>
             <span className="text-xs text-gray-400 font-bold self-center">
-              إجمالي المستخدمين: <span className="text-amber-400">{filteredUsers.length}</span>
+              {t('tools.admin.totalUsersLine', { count: filteredUsers.length })}
             </span>
           </div>
 
@@ -349,20 +351,20 @@ export default function AdminUserChats({
                   )}
                   <div className="min-w-0 flex-1">
                     <h4 className="text-xs font-black text-white truncate group-hover:text-amber-300 transition">
-                      {u.displayName || 'مستخدم بدون اسم'}
+                      {u.displayName || t('tools.admin.unnamed')}
                     </h4>
-                    <p className="text-[11px] text-gray-400 truncate dir-ltr text-right">{u.email}</p>
+                    <p className="text-[11px] text-gray-400 truncate dir-ltr text-start">{u.email}</p>
                   </div>
                 </div>
 
                 <div className="flex items-center justify-between pt-3 border-t border-gray-800 text-[11px] text-gray-400">
-                  <span>الرصيد: <strong className="text-amber-400">{u.balance ?? 5}</strong> نقطة</span>
+                  <span>{t('tools.admin.balanceLabel', { count: u.balance ?? 5 })}</span>
                   <button
                     onClick={() => handleSelectUser(u)}
                     className="px-3 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-xl font-black text-[11px] transition flex items-center gap-1.5 cursor-pointer"
                   >
                     <MessageSquare className="w-3.5 h-3.5" />
-                    <span>عرض المحادثات</span>
+                    <span>{t('tools.admin.viewChats')}</span>
                   </button>
                 </div>
               </div>
@@ -381,24 +383,24 @@ export default function AdminUserChats({
                   {(selectedUser.displayName || selectedUser.email || 'U').charAt(0).toUpperCase()}
                 </div>
                 <div className="min-w-0">
-                  <h3 className="text-xs font-black text-white truncate">{selectedUser.displayName || 'مستخدم'}</h3>
-                  <p className="text-[10px] text-gray-400 truncate dir-ltr text-right">{selectedUser.email}</p>
+                  <h3 className="text-xs font-black text-white truncate">{selectedUser.displayName || t('tools.admin.person')}</h3>
+                  <p className="text-[10px] text-gray-400 truncate dir-ltr text-start">{selectedUser.email}</p>
                 </div>
               </div>
               <span className="text-[10px] font-bold px-2 py-0.5 bg-amber-500/10 text-amber-400 rounded-full shrink-0">
-                {chats.length} محادثات
+                {t('tools.admin.chatsCount', { count: chats.length })}
               </span>
             </div>
 
             {/* Chat Type Filter Strip */}
             <div className="flex items-center gap-1 overflow-x-auto no-scrollbar pb-1">
               {[
-                { id: 'all', label: 'الكل' },
-                { id: 'text', label: 'نصوص' },
-                { id: 'image', label: 'صور' },
-                { id: 'video', label: 'فيديو' },
-                { id: 'ui', label: 'واجهات' },
-                { id: 'voice', label: 'صوتي' }
+                { id: 'all', labelKey: 'common.all' },
+                { id: 'text', labelKey: 'tools.admin.fTexts' },
+                { id: 'image', labelKey: 'tools.admin.fImages' },
+                { id: 'video', labelKey: 'tools.admin.fVideos' },
+                { id: 'ui', labelKey: 'tools.admin.fUis' },
+                { id: 'voice', labelKey: 'tools.admin.fVoice' }
               ].map(f => (
                 <button
                   key={f.id}
@@ -409,29 +411,29 @@ export default function AdminUserChats({
                       : 'bg-gray-900 text-gray-400 hover:text-white border border-gray-800'
                   }`}
                 >
-                  {f.label}
+                  {t(f.labelKey)}
                 </button>
               ))}
             </div>
 
             {/* Search Input */}
             <div className="relative">
-              <Search className="w-3.5 h-3.5 text-gray-500 absolute right-3 top-2.5" />
+              <Search className="w-3.5 h-3.5 text-gray-500 absolute end-3 top-2.5" />
               <input
                 type="text"
-                placeholder="ابحث بعناوين المحادثات..."
+                placeholder={t('tools.admin.chatSearchPh')}
                 value={chatSearch}
                 onChange={(e) => setChatSearch(e.target.value)}
-                className="w-full bg-gray-900 border border-gray-800 rounded-xl pr-9 pl-3 py-1.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-amber-500 transition"
+                className="w-full bg-gray-900 border border-gray-800 rounded-xl pe-9 ps-3 py-1.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-amber-500 transition"
               />
             </div>
 
             {/* Chats Scroll List */}
             <div className="flex-1 overflow-y-auto space-y-2 pr-1 scrollbar-thin scrollbar-thumb-gray-800">
               {chatsLoading ? (
-                <div className="text-center py-12 text-xs text-gray-500">جاري تحميل المحادثات...</div>
+                <div className="text-center py-12 text-xs text-gray-500">{t('tools.admin.chatsLoading')}</div>
               ) : filteredChats.length === 0 ? (
-                <div className="text-center py-12 text-xs text-gray-500">لا توجد محادثات متطابقة.</div>
+                <div className="text-center py-12 text-xs text-gray-500">{t('tools.admin.chatsEmpty')}</div>
               ) : (
                 filteredChats.map((c) => {
                   const isSelected = selectedChat?.id === c.id;
@@ -439,7 +441,7 @@ export default function AdminUserChats({
                     <div
                       key={c.id}
                       onClick={() => handleSelectChat(c)}
-                      className={`p-3 rounded-2xl border text-right transition cursor-pointer flex items-center justify-between gap-3 ${
+                      className={`p-3 rounded-2xl border text-start transition cursor-pointer flex items-center justify-between gap-3 ${
                         isSelected
                           ? 'bg-amber-500/10 border-amber-500/40 text-white shadow-md'
                           : 'bg-gray-900/40 border-gray-800 hover:bg-gray-900/80 text-gray-300'
@@ -450,9 +452,9 @@ export default function AdminUserChats({
                           {getChatIcon(c.type)}
                         </div>
                         <div className="min-w-0">
-                          <h4 className="text-xs font-bold text-white truncate">{c.title || 'محادثة بدون عنوان'}</h4>
+                          <h4 className="text-xs font-bold text-white truncate">{c.title || t('tools.admin.untitledChat')}</h4>
                           <span className="text-[10px] text-gray-400 font-medium">
-                            {getChatTypeName(c.type)} • {c.createdAt ? new Date(c.createdAt).toLocaleDateString('ar-SA') : ''}
+                            {getChatTypeName(c.type)} • {c.createdAt ? formatDate(c.createdAt, { dateStyle: 'medium' }) : ''}
                           </span>
                         </div>
                       </div>
@@ -472,9 +474,9 @@ export default function AdminUserChats({
                 <div className="w-16 h-16 rounded-2xl bg-gray-900 border border-gray-800 flex items-center justify-center text-amber-400 mb-4 shadow-inner">
                   <Eye className="w-8 h-8" />
                 </div>
-                <h3 className="text-base font-black text-white mb-1">اختر محادثة لمعاينة تفاصيلها الحية</h3>
+                <h3 className="text-base font-black text-white mb-1">{t('tools.admin.pickChat')}</h3>
                 <p className="text-xs max-w-md">
-                  انقر على أي محادثة من القائمة لعرض الحوار الكامل بالصور، الفيديوهات، معاينة الواجهات الحية، والأصوات.
+                  {t('tools.admin.pickChatHint')}
                 </p>
               </div>
             ) : (
@@ -494,7 +496,7 @@ export default function AdminUserChats({
                         </span>
                       </div>
                       <p className="text-[11px] text-gray-400 mt-0.5">
-                        نوع المحادثة: <strong className="text-gray-200">{getChatTypeName(selectedChat.type)}</strong> • {messages.length} رسائل
+                        {t('tools.admin.chatKindLine', { type: getChatTypeName(selectedChat.type) })} • {t('tools.admin.messagesCount', { count: messages.length })}
                       </p>
                     </div>
                   </div>
@@ -509,7 +511,7 @@ export default function AdminUserChats({
                         }`}
                       >
                         <MessageSquare className="w-3.5 h-3.5" />
-                        <span>الحوار</span>
+                        <span>{t('tools.admin.tabDialogue')}</span>
                       </button>
                       <button
                         onClick={() => setViewMode('live_ui')}
@@ -518,7 +520,7 @@ export default function AdminUserChats({
                         }`}
                       >
                         <Layers3 className="w-3.5 h-3.5" />
-                        <span>المعاينة الحية</span>
+                        <span>{t('tools.admin.tabLive')}</span>
                       </button>
                       <button
                         onClick={() => setViewMode('code')}
@@ -527,7 +529,7 @@ export default function AdminUserChats({
                         }`}
                       >
                         <Code className="w-3.5 h-3.5" />
-                        <span>الكود</span>
+                        <span>{t('tools.admin.tabCode')}</span>
                       </button>
                     </div>
                   )}
@@ -539,7 +541,7 @@ export default function AdminUserChats({
                     <div className="flex items-center justify-between bg-gray-900 p-2 rounded-xl border border-gray-800">
                       <div className="flex items-center gap-2 text-xs font-bold text-gray-300">
                         <Sparkles className="w-4 h-4 text-purple-400" />
-                        <span>معاينة واجهة المستخدم المبرمجة من Naje AI</span>
+                        <span>{t('tools.admin.uiPreviewFrom')}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <button
@@ -549,7 +551,7 @@ export default function AdminUserChats({
                           }`}
                         >
                           <Monitor className="w-3.5 h-3.5" />
-                          <span>شاشة حاسوب</span>
+                          <span>{t('tools.admin.desktop')}</span>
                         </button>
                         <button
                           onClick={() => setUiDevice('mobile')}
@@ -558,7 +560,7 @@ export default function AdminUserChats({
                           }`}
                         >
                           <Smartphone className="w-3.5 h-3.5" />
-                          <span>هاتف</span>
+                          <span>{t('tools.admin.phone')}</span>
                         </button>
                       </div>
                     </div>
@@ -582,14 +584,14 @@ export default function AdminUserChats({
                     <div className="flex items-center justify-between bg-gray-900 p-2 rounded-xl border border-gray-800 text-xs font-mono text-gray-300 dir-rtl">
                       <div className="flex items-center gap-2">
                         <Code className="w-4 h-4 text-cyan-400" />
-                        <span>كود المصدر المولد بالكامل (HTML / React / Tailwind)</span>
+                        <span>{t('tools.admin.fullSource')}</span>
                       </div>
                       <button
                         onClick={() => copyToClipboard(latestUiCode, 'full-ui-code')}
                         className="px-3 py-1 bg-gray-800 hover:bg-gray-700 text-cyan-300 rounded-lg border border-gray-700 text-xs flex items-center gap-1.5 transition"
                       >
                         {copiedId === 'full-ui-code' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                        <span>{copiedId === 'full-ui-code' ? 'تم النسخ' : 'نسخ الكود'}</span>
+                        <span>{copiedId === 'full-ui-code' ? t('tools.admin.copiedShort') : t('tools.admin.copyTheCode')}</span>
                       </button>
                     </div>
 
@@ -601,19 +603,19 @@ export default function AdminUserChats({
                   /* VIEW MODE 3: FULL MESSAGES STREAM VIEWER */
                   <div className="flex-1 overflow-y-auto space-y-4 pr-2 pl-2 scrollbar-thin scrollbar-thumb-gray-800 dir-rtl">
                     {messagesLoading ? (
-                      <div className="text-center py-16 text-xs text-gray-500">جاري جلب الرسائل...</div>
+                      <div className="text-center py-16 text-xs text-gray-500">{t('tools.admin.msgsLoading')}</div>
                     ) : messages.length === 0 ? (
-                      <div className="text-center py-16 text-xs text-gray-500">لا توجد رسائل مسجلة في هذه المحادثة.</div>
+                      <div className="text-center py-16 text-xs text-gray-500">{t('tools.admin.msgsEmpty')}</div>
                     ) : (
                       messages.map((msg) => {
                         const isUser = msg.role === 'user';
                         return (
-                          <MessageErrorBoundary key={msg.id}>
+                          <MessageErrorBoundary key={msg.id} fallbackText={t('tools.admin.msgRenderFail')}>
                             <div className={`flex flex-col ${isUser ? 'items-start' : 'items-end'}`}>
                               <div className="flex items-center gap-2 mb-1 text-[10px] text-gray-500 font-bold">
-                                <span>{isUser ? selectedUser.displayName || 'المستخدم' : 'الذكاء الاصطناعي (Naje AI)'}</span>
+                                <span>{isUser ? selectedUser.displayName || t('tools.admin.theUser') : t('tools.admin.theAi')}</span>
                                 <span>•</span>
-                                <span>{msg.createdAt ? new Date(msg.createdAt).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' }) : ''}</span>
+                                <span>{msg.createdAt ? formatDate(msg.createdAt, { hour: '2-digit', minute: '2-digit' }) : ''}</span>
                               </div>
 
                               <div
@@ -631,7 +633,7 @@ export default function AdminUserChats({
                                 {/* User Uploaded Reference Files */}
                                 {isUser && Array.isArray(msg.files) && msg.files.length > 0 && (
                                   <div className="mt-2 pt-2 border-t border-amber-500/20">
-                                    <p className="text-[10px] text-amber-300/80 mb-1.5 font-bold">ملفات مرفقة من المستخدم ({msg.files.length})</p>
+                                    <p className="text-[10px] text-amber-300/80 mb-1.5 font-bold">{t('tools.admin.attachedFiles', { count: msg.files.length })}</p>
                                     <div className="flex flex-wrap gap-2">
                                       {msg.files.map((f: any, i: number) => {
                                         if (!f?.data || !f?.mimeType) return null;
@@ -641,7 +643,7 @@ export default function AdminUserChats({
                                           <div key={i} className="relative group cursor-pointer" onClick={() => setZoomedImage({ url: dataUri, title: f.name })}>
                                             <img
                                               src={dataUri}
-                                              alt={f.name || 'ملف مرفق'}
+                                              alt={f.name || t('tools.admin.attachedAlt')}
                                               className="h-20 w-20 object-cover rounded-lg border border-amber-500/30 shadow-sm"
                                             />
                                             <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition rounded-lg flex items-center justify-center text-white">
@@ -653,7 +655,7 @@ export default function AdminUserChats({
                                             key={i}
                                             className="h-20 w-20 flex items-center justify-center rounded-lg border border-amber-500/30 bg-black/40 text-[10px] text-amber-200 px-1 text-center font-mono truncate"
                                           >
-                                            {f.name || 'ملف'}
+                                            {f.name || t('tools.admin.fileFallback')}
                                           </div>
                                         );
                                       })}
@@ -664,10 +666,10 @@ export default function AdminUserChats({
                                 {/* Original Source Image for Image Edits (Side-by-side or comparison card) */}
                                 {isUser && msg.isEdit && msg.sourceMediaUrl && (
                                   <div className="mt-2 pt-2 border-t border-amber-500/20">
-                                    <p className="text-[10px] text-amber-300/80 mb-1 font-bold">الصورة الأصلية المراد تعديلها</p>
+                                    <p className="text-[10px] text-amber-300/80 mb-1 font-bold">{t('tools.admin.originalEdit')}</p>
                                     <div
                                       className="relative group cursor-pointer inline-block"
-                                      onClick={() => setZoomedImage({ url: msg.sourceMediaUrl!, title: 'الصورة الأصلية المراد تعديلها' })}
+                                      onClick={() => setZoomedImage({ url: msg.sourceMediaUrl!, title: t('tools.admin.originalEdit') })}
                                     >
                                       <img
                                         src={msg.sourceMediaUrl}
@@ -684,14 +686,14 @@ export default function AdminUserChats({
                                 {/* Generated Media / Code Result (Type-Aware) */}
                                 {msg.mediaUrl?.startsWith('local:') ? (
                                   <div className="p-3 rounded-xl bg-amber-950/30 border border-amber-900/40 text-amber-400 text-xs my-2">
-                                    هذا المحتوى تم إنشاؤه قبل تفعيل الأرشفة السحابية وغير متاح للمراجعة من هنا.
+                                    {t('tools.admin.localArchiveMissing')}
                                   </div>
                                 ) : (selectedChat.type === 'ui' || msg.uiCode) && (msg.uiCode || isUiDocument(msg.content)) ? (
                                   <div className="rounded-xl overflow-hidden border border-purple-900/40 mt-2 bg-slate-950 p-2 space-y-2">
                                     <div className="flex items-center justify-between text-[10px] text-purple-300 px-1 dir-rtl">
                                       <span className="font-bold flex items-center gap-1">
                                         <Layers3 className="w-3.5 h-3.5 text-purple-400" />
-                                        واجهة مستخدم مبرمجة (UI Studio)
+                                        {t('tools.admin.uiStudioBuilt')}
                                       </span>
                                     </div>
                                     <div className="rounded-lg overflow-hidden border border-gray-800 bg-white" style={{ height: 380 }}>
@@ -707,7 +709,7 @@ export default function AdminUserChats({
                                     <div className="flex items-center justify-between text-[10px] text-cyan-300 font-bold">
                                       <span className="flex items-center gap-1">
                                         <Mic className="w-3.5 h-3.5" />
-                                        تسجيل صوتي (TTS Engine)
+                                        {t('tools.admin.voiceRec')}
                                       </span>
                                     </div>
                                     <div className="flex items-center gap-3">
@@ -720,7 +722,7 @@ export default function AdminUserChats({
                                     <div className="flex items-center justify-between text-[10px] text-amber-300 px-1">
                                       <span className="font-bold flex items-center gap-1">
                                         <Film className="w-3.5 h-3.5 text-amber-400" />
-                                        فيديو سينمائي مولد من Veo / Omni Flash
+                                        {t('tools.admin.cineVideo')}
                                       </span>
                                       <a
                                         href={msg.mediaUrl || msg.videoUrl}
@@ -730,7 +732,7 @@ export default function AdminUserChats({
                                         className="text-amber-400 hover:underline flex items-center gap-1"
                                       >
                                         <Download className="w-3 h-3" />
-                                        <span>تنزيل</span>
+                                        <span>{t('common.download')}</span>
                                       </a>
                                     </div>
                                     <video
@@ -744,21 +746,21 @@ export default function AdminUserChats({
                                     <div className="flex items-center justify-between text-[10px] text-pink-300 px-1">
                                       <span className="font-bold flex items-center gap-1">
                                         <ImageIcon className="w-3.5 h-3.5" />
-                                        الصورة المولدَة من نموذج الصور
+                                        {t('tools.admin.generatedImage')}
                                       </span>
                                       <button
-                                        onClick={() => setZoomedImage({ url: msg.mediaUrl || msg.imageUrl!, title: 'الصورة المولدَة' })}
+                                        onClick={() => setZoomedImage({ url: msg.mediaUrl || msg.imageUrl!, title: t('tools.admin.generatedImageShort') })}
                                         className="text-gray-400 hover:text-white flex items-center gap-1 cursor-pointer"
                                       >
                                         <Maximize2 className="w-3 h-3" />
-                                        <span>تكبير</span>
+                                        <span>{t('tools.admin.zoom')}</span>
                                       </button>
                                     </div>
                                     <img
                                       src={msg.mediaUrl || msg.imageUrl}
                                       alt="Generated Result"
                                       className="max-h-80 w-auto object-contain mx-auto rounded-lg cursor-pointer hover:opacity-95 transition"
-                                      onClick={() => setZoomedImage({ url: msg.mediaUrl || msg.imageUrl!, title: 'الصورة المولدَة' })}
+                                      onClick={() => setZoomedImage({ url: msg.mediaUrl || msg.imageUrl!, title: t('tools.admin.generatedImageShort') })}
                                     />
                                   </div>
                                 ) : null}
@@ -781,7 +783,7 @@ export default function AdminUserChats({
         <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200">
           <div className="relative max-w-4xl w-full bg-gray-950 border border-gray-800 rounded-3xl p-4 overflow-hidden flex flex-col items-center space-y-3">
             <div className="w-full flex items-center justify-between border-b border-gray-800 pb-2 text-xs font-bold text-white dir-rtl">
-              <span>{zoomedImage.title || 'معاينة الصورة بدقة عالية'}</span>
+              <span>{zoomedImage.title || t('tools.admin.hiResPreview')}</span>
               <div className="flex items-center gap-2">
                 <a
                   href={zoomedImage.url}
@@ -791,7 +793,7 @@ export default function AdminUserChats({
                   className="px-3 py-1 bg-amber-500 hover:bg-amber-600 text-gray-950 rounded-xl font-bold flex items-center gap-1 text-xs"
                 >
                   <Download className="w-3.5 h-3.5" />
-                  <span>تنزيل</span>
+                  <span>{t('common.download')}</span>
                 </a>
                 <button
                   onClick={() => setZoomedImage(null)}

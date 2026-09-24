@@ -19,6 +19,15 @@ import ResultCard from '../components/najePrompt/ResultCard';
 import SettingsStrip from '../components/najePrompt/SettingsStrip';
 import { useI18n } from '../i18n';
 import {
+  engineMessageKey,
+  modeHintKey,
+  modeLabelKey,
+  modelHintKey,
+  modelLabelKey,
+  ROUTE_REASON_KEYS,
+  TRAIL_LABEL_KEYS,
+} from '../components/najePrompt/promptLabels';
+import {
   MODE_ASK_LIMIT,
   MODE_OPTIONS,
   MODEL_OPTIONS,
@@ -72,7 +81,15 @@ function isOpenClarification(item: ChatItem): item is ClarifyItem {
 
 export default function NajePrompt() {
   const navigate = useNavigate();
-  const { isRtl, t } = useI18n();
+  const { isRtl, t, formatNumber } = useI18n();
+  const showError = useCallback((message: string) => {
+    const key = engineMessageKey(message);
+    return key ? t(key) : message;
+  }, [t]);
+  const localizeTrail = useCallback((raw: string) => {
+    const key = TRAIL_LABEL_KEYS[raw];
+    return key ? t(key) : raw;
+  }, [t]);
   const balance = useAppStore((s) => s.user?.balance);
   const [draft, setDraft] = useState('');
   const [messages, setMessages] = useState<ChatItem[]>([]);
@@ -94,7 +111,7 @@ export default function NajePrompt() {
   const [pinnedMust, setPinnedMust] = useState<string[]>([]);
   const [readyStack, setReadyStack] = useState<ReadyResult[]>([]);
   const [trail, setTrail] = useState<TrailItem[]>([]);
-  const [busyHint, setBusyHint] = useState('ناجي يقرأ الفكرة…');
+  const [busyHint, setBusyHint] = useState('');
   const [streamingId, setStreamingId] = useState<string | null>(null);
 
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -190,7 +207,7 @@ export default function NajePrompt() {
     setPinnedMust([]);
     setReadyStack([]);
     setTrail([]);
-    setBusyHint('ناجي يقرأ الفكرة…');
+    setBusyHint('');
     setStreamingId(null);
     const nextSettings = live.current.settings || loadSettings();
     setModelChoice(nextSettings.defaultModel);
@@ -212,19 +229,19 @@ export default function NajePrompt() {
     setStreamingId(null);
     setMessages((prev) => [
       ...prev.filter((item) => !(item.kind === 'result' && !String(item.text || '').trim())),
-      { id: uid('n'), kind: 'notice', text: 'تم الإيقاف.' },
+      { id: uid('n'), kind: 'notice', text: t('prompt.notice.stopped') },
     ]);
-  }, []);
+  }, [t]);
 
   const copyPrompt = useCallback(async (payload: ReadyResult) => {
     try {
       await navigator.clipboard.writeText(payload.prompt);
       storeHandoff({ prompt: payload.prompt, bestFor: payload.bestFor, title: payload.title });
-      toast.success('تم نسخ البرومبت');
+      toast.success(t('prompt.toast.copiedPrompt'));
     } catch {
-      toast.error('ما قدرت أنسخ. حدّد النص وانسخه يدوياً.');
+      toast.error(t('prompt.toast.copyFail'));
     }
-  }, []);
+  }, [t]);
 
   const handoff = useCallback((path: string, payload: ReadyResult) => {
     storeHandoff({ prompt: payload.prompt, bestFor: payload.bestFor, title: payload.title });
@@ -238,8 +255,8 @@ export default function NajePrompt() {
     live.current.lastReady = ready;
     live.current.readyStack = [ready];
     live.current.trail = [
-      { id: uid('t'), kind: 'idea', label: 'الفكرة' },
-      { id: uid('t'), kind: 'ready', label: 'جاهز v1' },
+      { id: uid('t'), kind: 'idea', label: t('prompt.trail.idea') },
+      { id: uid('t'), kind: 'ready', label: t('prompt.trail.ready', { version: formatNumber(1) }) },
     ];
     live.current.sessionFiles = [];
     live.current.pinnedAvoid = [];
@@ -259,7 +276,7 @@ export default function NajePrompt() {
     setPinnedMust([]);
     setReadyStack([ready]);
     setTrail(live.current.trail);
-  }, []);
+  }, [t, formatNumber]);
 
   const removePinned = useCallback((kind: 'avoid' | 'must', value: string) => {
     const nextAvoid = kind === 'avoid' ? live.current.pinnedAvoid.filter((v) => v !== value) : live.current.pinnedAvoid;
@@ -366,7 +383,7 @@ export default function NajePrompt() {
 
     live.current.busy = true;
     live.current.sessionFiles = sessionKeep;
-    setBusyHint('ناجي يقرأ الفكرة…');
+    setBusyHint(t('prompt.busy.reading'));
     setBusy(true);
     setSessionFiles(sessionKeep);
     const myTurn = ++turnSeq.current;
@@ -375,10 +392,10 @@ export default function NajePrompt() {
     abortRef.current = ac;
 
     if (source === 'composer' && !snap.trail.length) {
-      pushTrail({ id: uid('t'), kind: 'idea', label: 'الفكرة' });
+      pushTrail({ id: uid('t'), kind: 'idea', label: t('prompt.trail.idea') });
     }
     if (source === 'refine' || source === 'followup') {
-      pushTrail({ id: uid('t'), kind: 'refine', label: refineTrailLabel(trimmed) });
+      pushTrail({ id: uid('t'), kind: 'refine', label: localizeTrail(refineTrailLabel(trimmed)) });
     }
 
     setMessages((prev) => {
@@ -453,7 +470,9 @@ export default function NajePrompt() {
         pushTrail({
           id: uid('t'),
           kind: 'ask',
-          label: snap.askedCount === 0 ? 'سؤال' : `سؤال ${snap.askedCount + 1}`,
+          label: snap.askedCount === 0
+            ? t('prompt.trail.ask')
+            : t('prompt.trail.askN', { n: formatNumber(snap.askedCount + 1) }),
         });
         setMessages((prev) => [
           ...prev,
@@ -490,7 +509,9 @@ export default function NajePrompt() {
         pushTrail({
           id: uid('t'),
           kind: 'ready',
-          label: stack.length === 1 ? 'جاهز v1' : `v${stack.length}`,
+          label: stack.length === 1
+            ? t('prompt.trail.ready', { version: formatNumber(1) })
+            : t('prompt.trail.version', { version: formatNumber(stack.length) }),
         });
         setMessages((prev) => [...prev, { id: uid('r'), kind: 'ready', payload: ready, version: stack.length }]);
         return;
@@ -501,8 +522,9 @@ export default function NajePrompt() {
       if (myTurn !== turnSeq.current) return;
       const message = humanError(err);
       if (message === 'تم الإيقاف') return;
-      setMessages((prev) => [...prev, { id: uid('e'), kind: 'error', text: message }]);
-      toast.error(message);
+      const shown = showError(message);
+      setMessages((prev) => [...prev, { id: uid('e'), kind: 'error', text: shown }]);
+      toast.error(shown);
     } finally {
       if (myTurn === turnSeq.current) {
         live.current.busy = false;
@@ -510,7 +532,7 @@ export default function NajePrompt() {
         if (abortRef.current === ac) abortRef.current = null;
       }
     }
-  }, [pinConstraints, pushTrail]);
+  }, [pinConstraints, pushTrail, t, formatNumber, showError, localizeTrail]);
 
   const pickChip = useCallback((chip: string) => {
     setDraft(chip);
@@ -525,7 +547,7 @@ export default function NajePrompt() {
     if (snap.busy) return;
     if (!isExecutableBestFor(payload.bestFor)) return;
     live.current.busy = true;
-    setBusyHint('ناجي ينفّذ البرومبت…');
+    setBusyHint(t('prompt.busy.executing'));
     setBusy(true);
     const myTurn = ++turnSeq.current;
     abortRef.current?.abort();
@@ -559,11 +581,12 @@ export default function NajePrompt() {
       if (myTurn !== turnSeq.current) return;
       const message = humanError(err);
       if (message === 'تم الإيقاف') return;
+      const shown = showError(message);
       setMessages((prev) => [
         ...prev.filter((item) => item.id !== resultId),
-        { id: uid('e'), kind: 'error', text: message },
+        { id: uid('e'), kind: 'error', text: shown },
       ]);
-      toast.error(message);
+      toast.error(shown);
     } finally {
       if (myTurn === turnSeq.current) {
         live.current.busy = false;
@@ -572,20 +595,21 @@ export default function NajePrompt() {
         if (abortRef.current === ac) abortRef.current = null;
       }
     }
-  }, []);
+  }, [showError, t]);
 
   const executeFollowUp = useCallback(async (
     instruction: string,
     artifact: string,
     bestFor: BestFor,
     title: string,
+    displayLabel?: string,
   ) => {
     const snap = live.current;
     if (snap.busy) return;
     const trimmed = instruction.trim();
     if (!trimmed || !artifact.trim()) return;
     live.current.busy = true;
-    setBusyHint('ناجي يعدّل الناتج…');
+    setBusyHint(t('prompt.busy.revising'));
     setBusy(true);
     const myTurn = ++turnSeq.current;
     abortRef.current?.abort();
@@ -595,7 +619,7 @@ export default function NajePrompt() {
     setStreamingId(resultId);
     setMessages((prev) => [
       ...prev,
-      { id: uid('u'), kind: 'user', text: trimmed.slice(0, 120) },
+      { id: uid('u'), kind: 'user', text: (displayLabel || trimmed).slice(0, 120) },
       { id: resultId, kind: 'result', text: '', bestFor, title },
     ]);
     const { model } = resolveModel(snap.modelChoice, trimmed, snap.settings?.autoRouting !== false);
@@ -621,11 +645,12 @@ export default function NajePrompt() {
       if (myTurn !== turnSeq.current) return;
       const message = humanError(err);
       if (message === 'تم الإيقاف') return;
+      const shown = showError(message);
       setMessages((prev) => [
         ...prev.filter((item) => item.id !== resultId),
-        { id: uid('e'), kind: 'error', text: message },
+        { id: uid('e'), kind: 'error', text: shown },
       ]);
-      toast.error(message);
+      toast.error(shown);
     } finally {
       if (myTurn === turnSeq.current) {
         live.current.busy = false;
@@ -634,12 +659,12 @@ export default function NajePrompt() {
         if (abortRef.current === ac) abortRef.current = null;
       }
     }
-  }, []);
+  }, [showError, t]);
 
   const sendDraft = useCallback(() => {
     const text = draft.trim();
     if (!text && attachments.length === 0) {
-      toast.error('احكي فكرتك أولاً');
+      toast.error(t('prompt.toast.needIdea'));
       return;
     }
     const last = live.current.messages[live.current.messages.length - 1];
@@ -649,7 +674,7 @@ export default function NajePrompt() {
       return;
     }
     void runTurn(text, 'composer', { files: attachments, imageIntent });
-  }, [draft, attachments, imageIntent, runTurn, executeFollowUp]);
+  }, [draft, attachments, imageIntent, runTurn, executeFollowUp, t]);
 
   const updateUnderstanding = useCallback((next: Understanding) => {
     const current = live.current.lastReady;
@@ -667,23 +692,23 @@ export default function NajePrompt() {
       `القيود: ${(next.constraints || []).join('؛ ') || '—'}`,
       `المراجع: ${(next.references || []).join('؛ ') || '—'}`,
     ].join('\n');
-    void runTurn(instruction, 'refine');
-  }, [runTurn]);
+    void runTurn(instruction, 'refine', { displayText: t('prompt.display.updateUnderstanding') });
+  }, [runTurn, t]);
 
   const onUnderstandingFeedback = useCallback((vote: 'up' | 'down') => {
     if (vote === 'up') {
-      toast.success('تمام، الفهم معتمد');
+      toast.success(t('prompt.toast.understood'));
       return;
     }
     setMessages((prev) => [
       ...prev,
-      { id: uid('n'), kind: 'notice', text: 'وين فهمتك غلط؟ احكيلي المقصود وأعدّل الاتجاه.' },
+      { id: uid('n'), kind: 'notice', text: t('prompt.notice.wrong') },
     ]);
     requestAnimationFrame(() => {
       const area = composerRef.current?.querySelector('textarea');
       area?.focus();
     });
-  }, []);
+  }, [t]);
 
   const editUserMessage = useCallback((id: string, text: string) => {
     const items = live.current.messages;
@@ -736,8 +761,6 @@ export default function NajePrompt() {
     const last = [...messages].reverse().find((m) => m.kind === 'user');
     return last?.id || null;
   }, [messages]);
-  const selectedMode = MODE_OPTIONS.find((opt) => opt.id === mode);
-  const selectedModel = MODEL_OPTIONS.find((opt) => opt.id === modelChoice);
 
   return (
     <div className="relative flex h-full min-h-0 flex-col overflow-hidden bg-naje-canvas" dir={isRtl ? 'rtl' : 'ltr'}>
@@ -751,13 +774,13 @@ export default function NajePrompt() {
                 <MessageSquareText className="h-3.5 w-3.5" />
                 {t('studio.promptStudio')}
               </div>
-              <h1 className="text-xl font-black leading-snug text-naje-ink">احكي فكرتك — ناجي يفهمها</h1>
+              <h1 className="text-start text-xl font-black leading-snug text-naje-ink">{t('prompt.hero.title')}</h1>
             </div>
             <div className="flex shrink-0 items-start gap-1.5">
               <button
                 type="button"
                 onClick={() => setShowSettings((v) => !v)}
-                aria-label="إعدادات ناجي برومبت"
+                aria-label={t('prompt.hero.settingsAria')}
                 className={cn(
                   'inline-flex min-h-11 items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-black',
                   showSettings
@@ -766,7 +789,7 @@ export default function NajePrompt() {
                 )}
               >
                 <Settings2 className="h-3 w-3" />
-                إعدادات
+                {t('prompt.hero.settings')}
               </button>
               {messages.length > 0 && (
                 <button
@@ -775,7 +798,7 @@ export default function NajePrompt() {
                   className="inline-flex min-h-11 items-center gap-1 rounded-full border border-zinc-200 px-2.5 py-1 text-[11px] font-black text-naje-muted dark:border-zinc-700"
                 >
                   <Plus className="h-3 w-3" />
-                  جديد
+                  {t('prompt.hero.new')}
                 </button>
               )}
             </div>
@@ -787,16 +810,16 @@ export default function NajePrompt() {
                 <button
                   key={opt.id}
                   type="button"
-                  title={opt.hint}
+                  title={t(modelHintKey(opt.id))}
                   onClick={() => setModelChoice(opt.id)}
                   className={cn(
-                    'min-h-8 rounded-full px-2.5 py-1 text-[11px] font-black transition',
+                    'min-h-11 rounded-full px-3 py-1 text-[11px] font-black transition',
                     modelChoice === opt.id
                       ? 'bg-indigo-600 text-white'
                       : 'text-naje-muted hover:text-naje-ink',
                   )}
                 >
-                  {opt.label}
+                  {t(modelLabelKey(opt.id))}
                 </button>
               ))}
             </div>
@@ -805,32 +828,32 @@ export default function NajePrompt() {
                 <button
                   key={opt.id}
                   type="button"
-                  title={opt.hint}
+                  title={t(modeHintKey(opt.id))}
                   onClick={() => setMode(opt.id)}
                   className={cn(
-                    'min-h-8 rounded-full px-2.5 py-1 text-[11px] font-black transition',
+                    'min-h-11 rounded-full px-3 py-1 text-[11px] font-black transition',
                     mode === opt.id
                       ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900'
                       : 'text-naje-muted hover:text-naje-ink',
                   )}
                 >
-                  {opt.label}
+                  {t(modeLabelKey(opt.id))}
                 </button>
               ))}
             </div>
           </div>
-          {(selectedMode || selectedModel) && (
-            <p className="mt-2 text-[10px] font-bold text-naje-muted">
-              {selectedModel?.hint} · {selectedMode?.hint}
-            </p>
-          )}
+          <p className="mt-2 text-start text-[10px] font-bold text-naje-muted">
+            {t(modelHintKey(modelChoice))} · {t(modeHintKey(mode))}
+          </p>
 
           {showSettings && (
             <SettingsStrip settings={settings} onChange={patchSettings} />
           )}
 
           {routeReason && messages.length > 0 && (
-            <p className="mt-2 text-[10px] font-bold text-naje-muted">{routeReason}</p>
+            <p className="mt-2 text-start text-[10px] font-bold text-naje-muted">
+              {ROUTE_REASON_KEYS[routeReason] ? t(ROUTE_REASON_KEYS[routeReason]) : routeReason}
+            </p>
           )}
 
           <HistoryStrip items={history} onSelect={restoreHistory} />
@@ -894,7 +917,7 @@ export default function NajePrompt() {
                       balance={typeof balance === 'number' ? balance : null}
                       onCopy={() => void copyPrompt(item.payload)}
                       onHandoff={(path) => handoff(path, item.payload)}
-                      onRefine={(instruction) => void runTurn(instruction, 'refine')}
+                      onRefine={(instruction, display) => void runTurn(instruction, 'refine', { displayText: display })}
                       onExecute={isLatest ? () => void executeReady(item.payload) : undefined}
                       onUndo={isLatest ? undoReady : undefined}
                       onUpdateUnderstanding={isLatest ? updateUnderstanding : undefined}
@@ -911,7 +934,7 @@ export default function NajePrompt() {
                       bestFor={item.bestFor}
                       busy={busy}
                       streaming={streamingId === item.id}
-                      onFollowUp={(instruction) => void executeFollowUp(instruction, item.text, item.bestFor, item.title)}
+                      onFollowUp={(instruction, display) => void executeFollowUp(instruction, item.text, item.bestFor, item.title, display)}
                     />
                   );
                 }
@@ -941,7 +964,7 @@ export default function NajePrompt() {
               {busy && (
                 <div className="flex items-center gap-3 py-2">
                   <NajeThinking size={36} />
-                  <span className="text-xs font-bold text-naje-muted">{busyHint}</span>
+                  <span className="text-xs font-bold text-naje-muted">{busyHint || t('prompt.busy.reading')}</span>
                 </div>
               )}
               <div ref={bottomRef} />
@@ -957,7 +980,7 @@ export default function NajePrompt() {
               onStop={stopTurn}
               disabled={false}
               busy={busy}
-              placeholder={lastReadyMsg ? 'عدّل البرومبت أو اطلب شي جديد…' : 'احكيلي شو بدك تعمل...'}
+              placeholder={lastReadyMsg ? t('prompt.composer.placeholderRefine') : t('prompt.composer.placeholder')}
               attachments={attachments}
               onAttachmentsChange={setAttachments}
               imageIntent={imageIntent}

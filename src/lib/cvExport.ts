@@ -5,6 +5,7 @@ import {
   DEGREE_LABELS,
   LANG_LEVELS,
   bulletsOf,
+  employmentLabel,
   rangeLabel,
   skillsNamesString,
 } from './cvStudio';
@@ -83,7 +84,7 @@ export function cvToHtml(cv: CvData) {
       const lis = bulletsOf(e.bullets)
         .map((b) => `<li>${esc(b)}</li>`)
         .join('');
-      const type = e.employmentType ? ` · ${esc(e.employmentType)}` : '';
+      const type = e.employmentType ? ` · ${esc(employmentLabel(e.employmentType, cv.lang))}` : '';
       return `<p><b>${esc(e.title)}</b> — ${esc(e.company)}${type} <span style="color:#555">${esc(
         rangeLabel(e.start, e.end, e.current, cv.lang)
       )}</span></p>${lis ? `<ul>${lis}</ul>` : ''}`;
@@ -159,6 +160,7 @@ export function cvToHtml(cv: CvData) {
   <p style="margin:4px 0 8px;color:#6a5420;font-weight:700">${esc(cv.headline || '')}</p>
   <p style="font-size:12px;color:#444">${contact}</p>
   ${h(ar ? 'الملخص المهني' : 'Professional Summary', cv.summary ? `<p>${esc(cv.summary)}</p>` : '')}
+  ${h(ar ? 'نبذة قصيرة' : 'Short bio', cv.shortBio ? `<p>${esc(cv.shortBio)}</p>` : '')}
   ${cv.showPersonal ? h(ar ? 'بيانات شخصية' : 'Personal', personal ? `<p>${personal}</p>` : '') : ''}
   ${h(ar ? 'الخبرات العملية' : 'Work Experience', exp + gapNote)}
   ${h(ar ? 'التعليم' : 'Education', edu)}
@@ -215,6 +217,10 @@ export async function exportCvDocx(cv: CvData): Promise<Blob> {
     if (cv.summary) {
       p(cv.lang === 'ar' ? 'الملخص المهني' : 'Professional Summary', true, 24);
       p(cv.summary);
+    }
+    if (cv.shortBio?.trim()) {
+      p(cv.lang === 'ar' ? 'نبذة قصيرة' : 'Short bio', true, 24);
+      p(cv.shortBio.trim());
     }
     const realExp = cv.experiences.filter((e) => e.title || e.company);
     if (realExp.length) {

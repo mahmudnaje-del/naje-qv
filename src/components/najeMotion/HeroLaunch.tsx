@@ -1,32 +1,30 @@
 import React from 'react';
-import { Clapperboard } from 'lucide-react';
 import type { HeroPresetId, MotionKind } from '../../lib/motionStudio';
+import { useMotionI18n } from './i18n';
 import { KindCards } from './KindCards';
+import { RegFrame } from './StudioUi';
 
 export function HeroLaunch({
   onChoose,
 }: {
   onChoose: (kind: MotionKind, preset?: HeroPresetId) => void;
 }) {
+  const { t } = useMotionI18n();
   return (
-    <section className="relative overflow-hidden rounded-2xl border border-white/8 bg-[radial-gradient(1100px_circle_at_100%_-8%,rgba(212,165,116,0.32),transparent_44%),radial-gradient(700px_circle_at_-10%_120%,rgba(196,92,74,0.14),transparent_48%),linear-gradient(180deg,#1a140e,#0b0c10_62%)] p-5 shadow-2xl sm:rounded-[32px] sm:p-8">
-      <div className="pointer-events-none absolute -left-16 top-10 h-40 w-40 rounded-full bg-[#d4a574]/10 blur-3xl" />
-      <div className="mb-3 inline-flex min-h-[44px] items-center gap-2 rounded-full border border-[#d4a574]/30 bg-[#d4a574]/10 px-3 py-1 text-[10px] font-black tracking-[0.16em] text-[#e8b86d]">
-        <Clapperboard className="h-3.5 w-3.5" /> NAJE MOTION
+    <RegFrame bars className="overflow-hidden rounded-2xl bg-[#10151f] p-5 sm:rounded-[28px] sm:p-8">
+      <div className="mb-4 inline-flex min-h-[44px] items-center gap-2 rounded-full border border-[#8ec8ff]/25 bg-[#8ec8ff]/10 px-3 py-1 text-[10px] font-black tracking-[0.16em] text-[#e7eef8]">
+        <span className="motion-tally inline-block h-2 w-2 rounded-full" aria-hidden />
+        <span className="text-[#ffb020]">REC</span>
+        NAJE MOTION
       </div>
-      <h1 className="max-w-xl text-2xl font-black leading-snug tracking-tight text-white sm:text-4xl">
-        اصنع مقدمتك وخاتمتك بأسلوبك
+      <h1 className="max-w-xl text-2xl font-black leading-snug tracking-tight text-[#e7eef8] sm:text-4xl">
+        {t('motion.hero.title')}
       </h1>
-      <p className="mt-3 max-w-xl text-sm leading-relaxed text-white/55 sm:text-base">
-        حوّل شعارك وهويتك إلى مقدمة أو خاتمة فيديو احترافية خلال دقائق.
-      </p>
-      <p className="mt-2 text-[12px] font-bold text-[#e8b86d]">اصنع حضورك قبل أن يبدأ المحتوى.</p>
+      <p className="mt-3 max-w-xl text-sm leading-relaxed text-[#93a0b5] sm:text-base">{t('motion.hero.subtitle')}</p>
       <div className="mt-6">
         <KindCards variant="hero" onChange={onChoose} />
       </div>
-      <p className="mt-4 text-[11px] leading-relaxed text-white/40">
-        البودكاست وحزمة القناة إعدادات جاهزة فوق الأنواع الأربعة — ليست مسارات محرّك جديدة.
-      </p>
-    </section>
+      <p className="mt-4 text-[11px] leading-relaxed text-[#93a0b5]">{t('motion.hero.presetNote')}</p>
+    </RegFrame>
   );
 }

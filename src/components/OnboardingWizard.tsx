@@ -35,10 +35,10 @@ export default function OnboardingWizard() {
         localStorage.setItem('naje_onboarding_done_' + user.uid, 'true');
       } catch (_) {}
 
-      toast.success(t('onboarding.completedToast') || 'تم إنهاء جولة التعريف بنجاح!');
+      toast.success(t('onboarding.completedToast'));
     } catch (err) {
       console.error('Error completing onboarding:', err);
-      toast.error('تعذّر حفظ الجولة سحابياً، يرجى المحاولة مرة أخرى.');
+      toast.error(t('chatui.onboardingSaveFail'));
     } finally {
       setLoading(false);
     }

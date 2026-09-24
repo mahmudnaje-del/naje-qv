@@ -13,13 +13,14 @@ import najeToolkit from '../assets/icons/naje-toolkit.svg';
 import najeWalletCoins from '../assets/icons/naje-wallet-coins.svg';
 
 function NajePageLoader() {
+  const { t } = useI18n();
   return (
     <div className="flex-1 flex flex-col items-center justify-center min-h-[60vh] w-full p-6 bg-naje-canvas">
       <div className="flex flex-col items-center justify-center gap-4 p-8 rounded-3xl bg-white/80 dark:bg-gray-900/60 border border-gray-200/80 dark:border-gray-800/80 backdrop-blur-xl shadow-2xl shadow-purple-500/5 max-w-sm w-full text-center">
         <NajeThinking size={56} />
         <div className="flex flex-col items-center gap-1.5 mt-1">
-          <span className="text-sm font-extrabold text-gray-900 dark:text-white">جاري تحضير الصفحة...</span>
-          <span className="text-xs text-purple-600 dark:text-purple-400 font-bold">استوديو ناجي يفكّر ويبني لك الواجهة</span>
+          <span className="text-sm font-extrabold text-gray-900 dark:text-white">{t('shell.preparingPage')}</span>
+          <span className="text-xs text-purple-600 dark:text-purple-400 font-bold">{t('shell.preparingPageHint')}</span>
         </div>
       </div>
     </div>
@@ -42,7 +43,11 @@ import NotificationDropdown from '../components/NotificationDropdown';
 import EmailVerificationBanner from '../components/EmailVerificationBanner';
 import BalanceTopDropdown from '../components/BalanceTopDropdown';
 import LanguageSelector from '../components/LanguageSelector';
-import { useI18n } from '../i18n';
+import { useI18n, translate } from '../i18n';
+
+function tr(key: string, params?: Record<string, string | number>) {
+  return translate(key, params, useAppStore.getState().language || 'ar');
+}
 
 function useResolvedMediaSrc(mediaUrl: string | undefined, defaultMime = 'image/jpeg') {
   const [src, setSrc] = useState<string | null>(null);
@@ -112,7 +117,7 @@ async function handleDownloadMedia(mediaUrl: string, filename: string, defaultMi
           ? localDoc
           : `data:${defaultMime};base64,${localDoc}`;
       } else {
-        toast.error('تعذر استخراج الملف من التخزين المحلي على هذا الجهاز.');
+        toast.error(tr('shell.localExtractFail'));
         return;
       }
     } else if (!realUrl.startsWith('data:') && !realUrl.startsWith('http')) {
@@ -121,11 +126,12 @@ async function handleDownloadMedia(mediaUrl: string, filename: string, defaultMi
     downloadBase64File(realUrl, filename, defaultMime, { prompt });
   } catch (err) {
     console.error('Download resolution error:', err);
-    toast.error('حدث خطأ أثناء تحميل الوسائط.');
+    toast.error(tr('shell.mediaDownloadError'));
   }
 }
 
 function GalleryImageThumb({ m, idx, onClose }: { m: any; idx: number; onClose: () => void }) {
+  const { t } = useI18n();
   const { src, loading, error } = useResolvedMediaSrc(m.mediaUrl, 'image/jpeg');
   const [downloading, setDownloading] = useState(false);
   const [imgError, setImgError] = useState(false);
@@ -140,11 +146,11 @@ function GalleryImageThumb({ m, idx, onClose }: { m: any; idx: number; onClose: 
     <div className="group bg-white dark:bg-[#11141c] border border-purple-200/80 dark:hover:border-gray-800 rounded-2xl overflow-hidden shadow-lg hover:border-purple-300 transition-all flex flex-col">
       <div className="aspect-square bg-gray-50 dark:bg-gray-950 relative overflow-hidden flex items-center justify-center">
         {loading ? (
-          <div className="text-gray-400 text-xs animate-pulse p-2 text-center">جاري التحميل...</div>
+          <div className="text-gray-400 text-xs animate-pulse p-2 text-center">{t('common.loading')}</div>
         ) : error || imgError || !src ? (
           <div className="w-full h-full flex flex-col items-center justify-center text-gray-400 dark:text-gray-500 text-xs text-center p-3 bg-gray-100 dark:bg-gray-900/50">
             <AlertCircle className="w-6 h-6 mb-1 text-amber-500/80" />
-            <span>المعاينة غير متاحة على هذا الجهاز</span>
+            <span>{t('nav.previewNotAvailable')}</span>
           </div>
         ) : (
           <img 
@@ -156,14 +162,14 @@ function GalleryImageThumb({ m, idx, onClose }: { m: any; idx: number; onClose: 
         )}
       </div>
       <div className="p-4 flex flex-col flex-1 justify-between gap-3">
-        <p className="text-xs text-gray-800 dark:text-gray-400 line-clamp-2" dir="rtl">{m.content || "تصميم مولد بواسطة الذكاء الاصطناعي"}</p>
+        <p className="text-xs text-gray-800 dark:text-gray-400 line-clamp-2">{m.content || t('shell.aiImageFallback')}</p>
         <div className="flex items-center justify-between border-t border-gray-200 dark:border-gray-900/50 pt-3">
           <Link 
             to={`/chat/${m.chatId}`} 
             onClick={onClose}
             className="text-[11px] text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-medium flex items-center gap-1"
           >
-            <span>عرض المحادثة</span>
+            <span>{t('shell.viewChat')}</span>
             <ExternalLink className="w-3 h-3" />
           </Link>
           <button 
@@ -172,7 +178,7 @@ function GalleryImageThumb({ m, idx, onClose }: { m: any; idx: number; onClose: 
             className="text-[11px] text-gray-800 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white flex items-center gap-1 font-medium cursor-pointer disabled:opacity-50"
           >
             <Download className="w-3 h-3" />
-            <span>تحميل</span>
+            <span>{t('common.download')}</span>
           </button>
         </div>
       </div>
@@ -181,6 +187,7 @@ function GalleryImageThumb({ m, idx, onClose }: { m: any; idx: number; onClose: 
 }
 
 function GalleryVideoThumb({ m, idx, onClose }: { m: any; idx: number; onClose: () => void }) {
+  const { t } = useI18n();
   const { src, loading, error } = useResolvedMediaSrc(m.mediaUrl, 'video/mp4');
   const [downloading, setDownloading] = useState(false);
   const [videoError, setVideoError] = useState(false);
@@ -195,11 +202,11 @@ function GalleryVideoThumb({ m, idx, onClose }: { m: any; idx: number; onClose: 
     <div className="group bg-white dark:bg-[#11141c] border border-purple-200/80 dark:hover:border-gray-800 rounded-2xl overflow-hidden shadow-lg hover:border-pink-500/30 transition-all flex flex-col">
       <div className="aspect-video bg-gray-50 dark:bg-gray-950 relative overflow-hidden flex items-center justify-center">
         {loading ? (
-          <div className="text-gray-400 text-xs animate-pulse p-2 text-center">جاري التحميل...</div>
+          <div className="text-gray-400 text-xs animate-pulse p-2 text-center">{t('common.loading')}</div>
         ) : error || videoError || !src ? (
           <div className="w-full h-full flex flex-col items-center justify-center text-gray-400 dark:text-gray-500 text-xs text-center p-3 bg-gray-100 dark:bg-gray-900/50">
             <AlertCircle className="w-6 h-6 mb-1 text-amber-500/80" />
-            <span>المعاينة غير متاحة على هذا الجهاز</span>
+            <span>{t('nav.previewNotAvailable')}</span>
           </div>
         ) : (
           <video 
@@ -211,14 +218,14 @@ function GalleryVideoThumb({ m, idx, onClose }: { m: any; idx: number; onClose: 
         )}
       </div>
       <div className="p-4 flex flex-col flex-1 justify-between gap-3">
-        <p className="text-xs text-gray-800 dark:text-gray-400 line-clamp-2" dir="rtl">{m.content || "فيديو مولد بواسطة الذكاء الاصطناعي"}</p>
+        <p className="text-xs text-gray-800 dark:text-gray-400 line-clamp-2">{m.content || t('shell.aiVideoFallback')}</p>
         <div className="flex items-center justify-between border-t border-gray-200 dark:border-gray-900/50 pt-3">
           <Link 
             to={`/chat/${m.chatId}`} 
             onClick={onClose}
             className="text-[11px] text-pink-600 dark:text-pink-400 hover:text-pink-300 font-medium flex items-center gap-1"
           >
-            <span>عرض المحادثة</span>
+            <span>{t('shell.viewChat')}</span>
             <ExternalLink className="w-3 h-3" />
           </Link>
           <button 
@@ -227,7 +234,7 @@ function GalleryVideoThumb({ m, idx, onClose }: { m: any; idx: number; onClose: 
             className="text-[11px] text-gray-800 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white flex items-center gap-1 font-medium cursor-pointer disabled:opacity-50"
           >
             <Download className="w-3 h-3" />
-            <span>تحميل</span>
+            <span>{t('common.download')}</span>
           </button>
         </div>
       </div>
@@ -243,7 +250,7 @@ export default function Dashboard() {
   } = useAppStore();
   const navigate = useNavigate();
   const location = useLocation();
-  const { t, isRtl, locale } = useI18n();
+  const { t, isRtl } = useI18n();
 
   const [projects, setProjects] = useState<any[]>([]);
   const [chats, setChats] = useState<any[]>([]);
@@ -268,7 +275,7 @@ export default function Dashboard() {
       setRenameChatTitle('');
     } catch (err) {
       console.error("Error renaming chat:", err);
-      toast.error("حدث خطأ أثناء تعديل الاسم.");
+      toast.error(tr("shell.renameError"));
     } finally {
       setIsRenamingChat(false);
     }
@@ -285,7 +292,7 @@ export default function Dashboard() {
       setDeleteChatId(null);
     } catch (err) {
       console.error("Error deleting chat:", err);
-      toast.error("حدث خطأ أثناء حذف المحادثة.");
+      toast.error(tr("shell.deleteChatError"));
     } finally {
       setIsDeletingChat(false);
     }
@@ -366,15 +373,15 @@ export default function Dashboard() {
       ownerId: user?.uid,
       projectId: projId,
       type,
-      title: type === 'ui' ? 'مساحة تصميم واجهات جديدة'
-           : type === 'design' ? 'مساحة التصميم الإبداعي والهوية'
-           : type === 'text' ? 'مساحة تحليل نصوص جديدة'
-           : type === 'image' ? 'مساحة صور جديدة'
-           : type === 'video' ? 'مساحة فيديو جديدة'
-           : type === 'najeDeveloper' ? 'مساحة ناجي المطور'
-           : type === 'najeSource' ? 'مساحة ناجي من مصادرك'
-           : type === 'agent' ? 'مساحة وكيل ناجي'
-           : 'مساحة تسجيلات صوتية جديدة',
+      title: type === 'ui' ? tr('shell.chatTitleUi')
+           : type === 'design' ? tr('shell.chatTitleDesign')
+           : type === 'text' ? tr('shell.chatTitleText')
+           : type === 'image' ? tr('shell.chatTitleImage')
+           : type === 'video' ? tr('shell.chatTitleVideo')
+           : type === 'najeDeveloper' ? tr('shell.chatTitleDeveloper')
+           : type === 'najeSource' ? tr('shell.chatTitleSource')
+           : type === 'agent' ? tr('shell.chatTitleAgent')
+           : tr('shell.chatTitleVoice'),
       createdAt: Date.now()
     };
 
@@ -397,7 +404,7 @@ export default function Dashboard() {
     // 3. Write in the background; the chat page already has the ID
     setDoc(newChatRef, chatData).catch(err => {
       console.error("Error creating chat:", err);
-      toast.error("حدث خطأ أثناء إنشاء المساحة.");
+      toast.error(tr("shell.spaceCreateError"));
     });
   };
 
@@ -456,7 +463,7 @@ export default function Dashboard() {
               </div>
               <div className="flex flex-col min-w-0 text-start leading-tight">
                 <span className="text-xs font-extrabold text-slate-900 dark:text-white group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors truncate leading-tight">
-                  {user?.displayName || (locale === 'ar' ? 'مبدع ناجي' : 'NAJE Creator')}
+                  {user?.displayName || t('shell.creatorFallback')}
                 </span>
                 <span className="text-[9px] text-slate-500 dark:text-slate-400 truncate flex items-center gap-1 mt-0.5 leading-tight">
                   <span>{user?.email}</span>
@@ -727,13 +734,13 @@ export default function Dashboard() {
               <div className="flex items-center gap-1.5 min-w-0">
                 <Folder className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400 flex-shrink-0" />
                 <span className="text-[10px] font-extrabold text-purple-700 dark:text-purple-300 truncate">
-                  مصفى: {projects.find(p => p.id === activeProjectId)?.name || 'المشروع'}
+                  {t('nav.filteredProject', { name: projects.find(p => p.id === activeProjectId)?.name || t('shell.projectFallback') })}
                 </span>
               </div>
               <button 
                 onClick={() => setActiveProjectId(null)}
                 className="p-1 text-purple-600 dark:text-purple-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 rounded transition cursor-pointer"
-                title="إلغاء التصفية"
+                title={t('nav.clearFilter')}
               >
                 <X className="w-3 h-3" />
               </button>
@@ -743,7 +750,7 @@ export default function Dashboard() {
           {recentChats.length === 0 ? (
             <div className="text-center py-6 px-3 flex flex-col items-center justify-center">
               <img src={najeEmptyChat} alt="" className="w-20 h-16 object-contain opacity-70 mb-1" />
-              <div className="text-[11px] text-slate-500 dark:text-slate-400">لا توجد محادثات مسبقة.</div>
+              <div className="text-[11px] text-slate-500 dark:text-slate-400">{t('nav.noRecentChats')}</div>
             </div>
           ) : (
             <div className="space-y-1">
@@ -792,7 +799,7 @@ export default function Dashboard() {
                         ) : (
                           <FileText className="w-3.5 h-3.5 flex-shrink-0 text-indigo-600 dark:text-indigo-400" />
                         )}
-                        <div className="flex flex-col min-w-0 text-right">
+                        <div className="flex flex-col min-w-0 text-start">
                           <span className="truncate leading-tight text-slate-900 dark:text-white font-extrabold">{c.title}</span>
                           {projName && (
                             <span className="text-[9px] text-purple-750 dark:text-purple-300 font-extrabold truncate mt-0.5 opacity-90">
@@ -812,7 +819,7 @@ export default function Dashboard() {
                           setRenameChatTitle(c.title);
                         }}
                         className="p-1 text-slate-500 dark:text-slate-400 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition cursor-pointer"
-                        title="تعديل الاسم"
+                        title={t('shell.rename')}
                       >
                         <Pencil className="w-3 h-3" />
                       </button>
@@ -823,7 +830,7 @@ export default function Dashboard() {
                           setDeleteChatId(c.id);
                         }}
                         className="p-1 text-slate-500 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition cursor-pointer"
-                        title="حذف المحادثة"
+                        title={t('shell.deleteChat')}
                       >
                         <Trash2 className="w-3 h-3" />
                       </button>
@@ -945,7 +952,7 @@ export default function Dashboard() {
             transition={{ type: 'spring', damping: 20, stiffness: 200 }}
             onClick={() => setSidebarOpen(true)}
             className="hidden md:flex fixed top-1/2 right-0 -translate-y-1/2 z-40 bg-white dark:bg-gray-900 border border-r-0 border-gray-200 dark:border-gray-800 py-5 px-2 rounded-l-2xl shadow-[0_0_20px_rgba(0,0,0,0.1)] dark:shadow-[0_0_20px_rgba(0,0,0,0.3)] hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-gray-800 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 cursor-pointer group"
-            title="إظهار القائمة الجانبية"
+            title={t('nav.expandSidebar')}
           >
             <PanelRight className="w-5 h-5 group-hover:-translate-x-0.5 transition-transform" />
           </motion.button>
@@ -962,22 +969,22 @@ export default function Dashboard() {
           <div className="bg-amber-500/15 border-b border-amber-500/30 text-amber-900 dark:text-amber-200 px-4 py-2 text-xs font-bold flex items-center justify-between gap-3 z-40 shrink-0">
             <div className="flex items-center gap-2">
               <img src={najeToolkit} alt="" className="w-4 h-4 object-contain" />
-              <span>{systemStatus.intro || "تم إيقاف الخدمات مؤقتاً من أجل التطوير والإصلاح، شكراً لكم."}</span>
+              <span>{systemStatus.intro || t('shell.maintenanceFallback')}</span>
             </div>
             <div className="flex items-center gap-2 shrink-0">
               {user?.isAdmin ? (
                 <span className="bg-amber-500 text-white text-[10px] px-2.5 py-0.5 rounded-full font-extrabold shadow-sm">
-                  وضع المسؤول (أدمن): يمكنك الوصول للاختبار
+                  {t('shell.adminBypass')}
                 </span>
               ) : (
                 <span className="bg-rose-500 text-white text-[10px] px-2.5 py-0.5 rounded-full font-extrabold shadow-sm">
-                  النظام متوقف حالياً
+                  {t('shell.systemPaused')}
                 </span>
               )}
               <button 
                 onClick={() => setMaintenanceDismissed(true)}
                 className="p-1 hover:bg-amber-500/20 rounded-lg text-amber-900 dark:text-amber-200 transition cursor-pointer"
-                title="إغلاق التنبيه"
+                title={t('shell.closeAlert')}
               >
                 <X className="w-4 h-4" />
               </button>
@@ -1001,16 +1008,16 @@ export default function Dashboard() {
                       <>
                         <ImageIcon className="w-7 h-7 text-indigo-600 dark:text-indigo-400" />
                         <div>
-                          <h2 className="text-xl font-bold text-gray-900 dark:text-white">معرض الصور المولدة</h2>
-                          <p className="text-xs text-gray-800 dark:text-gray-400 mt-1">تصفح وحمل جميع التصاميم والصور الإبداعية التي قمت بصياغتها.</p>
+                          <h2 className="text-xl font-bold text-gray-900 dark:text-white">{t('nav.galleryOverlayImagesTitle')}</h2>
+                          <p className="text-xs text-gray-800 dark:text-gray-400 mt-1">{t('nav.galleryOverlayImagesDesc')}</p>
                         </div>
                       </>
                     ) : (
                       <>
                         <Film className="w-7 h-7 text-pink-600 dark:text-pink-400" />
                         <div>
-                          <h2 className="text-xl font-bold text-gray-900 dark:text-white">معرض الفيديوهات المولدة</h2>
-                          <p className="text-xs text-gray-800 dark:text-gray-400 mt-1">شاهد وحمل مقاطع الفيديو السينمائية التي صنعتها ناجي الذكية.</p>
+                          <h2 className="text-xl font-bold text-gray-900 dark:text-white">{t('nav.galleryOverlayVideosTitle')}</h2>
+                          <p className="text-xs text-gray-800 dark:text-gray-400 mt-1">{t('nav.galleryOverlayVideosDesc')}</p>
                         </div>
                       </>
                     )}
@@ -1020,7 +1027,7 @@ export default function Dashboard() {
                     className="flex items-center gap-1.5 bg-white dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-900 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white px-4 py-2 rounded-xl text-sm font-medium transition cursor-pointer focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none"
                   >
                     <X className="w-4 h-4" />
-                    <span>إغلاق المعرض</span>
+                    <span>{t('nav.closeGallery')}</span>
                   </button>
                 </div>
 
@@ -1029,9 +1036,9 @@ export default function Dashboard() {
                   {userGalleriesOpen === 'images' ? (
                     imagesList.length === 0 ? (
                       <div className="text-center py-16 bg-white dark:bg-gray-950 rounded-3xl border border-purple-200 dark:border-gray-900 shadow-md flex flex-col items-center justify-center p-6">
-                        <img src={najeEmptyGallery} alt="لا توجد صور مولدة بعد" className="w-44 h-36 mx-auto mb-3 object-contain" />
-                        <h3 className="text-lg font-bold text-gray-900 dark:text-white">لا توجد صور مولدة بعد</h3>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">ابدأ محادثة توليد صور لتبدع تصميمك الأول.</p>
+                        <img src={najeEmptyGallery} alt={t('shell.noImagesYet')} className="w-44 h-36 mx-auto mb-3 object-contain" />
+                        <h3 className="text-lg font-bold text-gray-900 dark:text-white">{t('shell.noImagesYet')}</h3>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('shell.noImagesHint')}</p>
                       </div>
                     ) : (
                       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
@@ -1048,9 +1055,9 @@ export default function Dashboard() {
                   ) : (
                     videosList.length === 0 ? (
                       <div className="text-center py-16 bg-white dark:bg-gray-950 rounded-3xl border border-purple-200 dark:border-gray-900 shadow-md flex flex-col items-center justify-center p-6">
-                        <img src={najeEmptyVideo} alt="لا توجد فيديوهات مولدة بعد" className="w-44 h-36 mx-auto mb-3 object-contain" />
-                        <h3 className="text-lg font-bold text-gray-900 dark:text-white">لا توجد فيديوهات مولدة بعد</h3>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">ابدأ محادثة معالجة فيديو لتجرب قوة الإخراج السينمائي لـ Naje.</p>
+                        <img src={najeEmptyVideo} alt={t('shell.noVideosYet')} className="w-44 h-36 mx-auto mb-3 object-contain" />
+                        <h3 className="text-lg font-bold text-gray-900 dark:text-white">{t('shell.noVideosYet')}</h3>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('shell.noVideosHint')}</p>
                       </div>
                     ) : (
                       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
@@ -1076,7 +1083,7 @@ export default function Dashboard() {
          !location.pathname.includes('naje-developer') && 
          !location.pathname.includes('naje-source') && 
          !location.pathname.includes('naje-agent') && (
-          <header className={`flex items-center justify-between px-3 sm:px-4 py-2 sm:py-2.5 flex-shrink-0 z-30 h-12 sm:h-14 ${location.pathname.includes('/creative') ? 'bg-[#030303] naje-creative-studio' : location.pathname.includes('naje-cv') ? 'bg-[#0b1220] naje-cv-studio' : (location.pathname.includes('naje-ad') || location.pathname.includes('naje-ident')) ? 'bg-[#0b0c10] naje-ad-studio' : 'naje-glass-card-lg rounded-none border-t-0 border-r-0 border-l-0'}`}>
+          <header className={`flex items-center justify-between px-3 sm:px-4 py-2 sm:py-2.5 flex-shrink-0 z-30 h-12 sm:h-14 ${location.pathname.includes('/creative') ? 'bg-[#030303] naje-creative-studio' : location.pathname.includes('naje-cv') ? 'bg-[#0b1220] naje-cv-studio' : location.pathname.includes('naje-ident') ? 'bg-[#07090f] naje-motion-studio' : location.pathname.includes('naje-ad') ? 'bg-[#0b0c10] naje-ad-studio' : 'naje-glass-card-lg rounded-none border-t-0 border-r-0 border-l-0'}`}>
             <div className="flex items-center gap-2 sm:gap-3 shrink-0">
               {/* Hamburger Menu (Mobile only) */}
               <button 
@@ -1103,7 +1110,7 @@ export default function Dashboard() {
               {/* Top Bar "+ دردشة جديدة" Button */}
               <button 
                 onClick={() => setNewChatModalOpen(true)}
-                className={`p-2 rounded-xl transition cursor-pointer flex items-center justify-center shadow-lg active:scale-[0.98] ${location.pathname.includes('naje-cv') ? 'bg-[#c4a35a] hover:bg-[#e8c36a] text-[#1a140c] shadow-[0_8px_18px_-8px_rgba(196,163,90,0.55)]' : location.pathname.includes('naje-ad') || location.pathname.includes('naje-ident') ? 'bg-[#d4a574] hover:bg-[#e8b86d] text-[#1a140c] shadow-[0_8px_18px_-8px_rgba(212,165,116,0.55)]' : location.pathname.includes('/creative') ? 'bg-amber-600 hover:bg-amber-500 text-white shadow-amber-500/15' : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-500/15'}`}
+                className={`p-2 rounded-xl transition cursor-pointer flex items-center justify-center shadow-lg active:scale-[0.98] ${location.pathname.includes('naje-cv') ? 'bg-[#c4a35a] hover:bg-[#e8c36a] text-[#1a140c] shadow-[0_8px_18px_-8px_rgba(196,163,90,0.55)]' : location.pathname.includes('naje-ident') ? 'bg-[#8ec8ff] hover:bg-[#c5e4ff] text-[#071018] shadow-[0_8px_18px_-8px_rgba(142,200,255,0.55)]' : location.pathname.includes('naje-ad') ? 'bg-[#d4a574] hover:bg-[#e8b86d] text-[#1a140c] shadow-[0_8px_18px_-8px_rgba(212,165,116,0.55)]' : location.pathname.includes('/creative') ? 'bg-amber-600 hover:bg-amber-500 text-white shadow-amber-500/15' : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-500/15'}`}
                 title={t('nav.newChatSpace')}
               >
                 <Plus className="w-4 h-4" />
@@ -1143,7 +1150,7 @@ export default function Dashboard() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 100, scale: 0.95 }}
               transition={{ type: 'spring', damping: 25, stiffness: 220 }}
-              className="relative naje-glass-card-lg border-t sm:border shadow-2xl flex flex-col gap-5 text-right z-10 w-full sm:max-w-[560px] max-h-[92vh] overflow-y-auto p-5 sm:p-6"
+              className="relative naje-glass-card-lg border-t sm:border shadow-2xl flex flex-col gap-5 text-start z-10 w-full sm:max-w-[560px] max-h-[92vh] overflow-y-auto p-5 sm:p-6"
             >
               {/* Header */}
               <div className="flex items-center justify-between pb-3 border-b border-gray-200 dark:border-gray-900">
@@ -1153,9 +1160,9 @@ export default function Dashboard() {
                 >
                   <X className="w-4 h-4" />
                 </button>
-                <div className="text-right">
-                  <h2 className="text-base font-extrabold text-gray-900 dark:text-white">بدء مساحة إبداعية جديدة</h2>
-                  <p className="text-[10px] text-gray-800 dark:text-gray-400 mt-1">اختر نوع الإنتاج الذي تفضله للبدء.</p>
+                <div className="text-start">
+                  <h2 className="text-base font-extrabold text-gray-900 dark:text-white">{t('chat.newChatModalTitle')}</h2>
+                  <p className="text-[10px] text-gray-800 dark:text-gray-400 mt-1">{t('chat.newChatModalDesc')}</p>
                 </div>
               </div>
 
@@ -1171,11 +1178,11 @@ export default function Dashboard() {
                     <div className="w-10 h-10 rounded-full bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
                       {creatingChatType === 'text' ? <NajeSpinner className="w-5 h-5" /> : <MessageSquare className="w-5 h-5" />}
                     </div>
-                    <div className="flex flex-col text-right sm:text-center">
+                    <div className="flex flex-col text-start sm:text-center">
                       <span className="text-xs font-bold text-gray-900 dark:text-white group-hover:text-purple-600 dark:text-purple-400 transition-colors">
-                        {creatingChatType === 'text' ? 'جاري تحضير المساحة...' : 'دردشة نصية'}
+                        {creatingChatType === 'text' ? t('chat.preparingSpace') : t('chat.textChatTitle')}
                       </span>
-                      <span className="text-[10px] text-gray-800 dark:text-gray-400 mt-0.5">اكتب، اسأل، أو حلّل مستنداً</span>
+                      <span className="text-[10px] text-gray-800 dark:text-gray-400 mt-0.5">{t('chat.textChatDesc')}</span>
                     </div>
                   </div>
                   <ChevronLeft className="w-4 h-4 text-gray-900 dark:text-gray-300 group-hover:text-gray-500 dark:text-gray-400 transition sm:hidden flex-shrink-0" />
@@ -1191,11 +1198,11 @@ export default function Dashboard() {
                     <div className="w-10 h-10 rounded-full bg-pink-500/10 text-pink-600 dark:text-pink-400 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
                       {creatingChatType === 'image' ? <NajeSpinner className="w-5 h-5" /> : <ImageIcon className="w-5 h-5" />}
                     </div>
-                    <div className="flex flex-col text-right sm:text-center">
+                    <div className="flex flex-col text-start sm:text-center">
                       <span className="text-xs font-bold text-gray-900 dark:text-white group-hover:text-pink-600 dark:text-pink-400 transition-colors">
-                        {creatingChatType === 'image' ? 'جاري تحضير المساحة...' : 'دردشة إنشاء صور'}
+                        {creatingChatType === 'image' ? t('chat.preparingSpace') : t('shell.imageChatTitle')}
                       </span>
-                      <span className="text-[10px] text-gray-800 dark:text-gray-400 mt-0.5">صمّم صورة أو شعاراً بدقة عالية</span>
+                      <span className="text-[10px] text-gray-800 dark:text-gray-400 mt-0.5">{t('shell.imageChatDesc')}</span>
                     </div>
                   </div>
                   <ChevronLeft className="w-4 h-4 text-gray-900 dark:text-gray-300 group-hover:text-gray-500 dark:text-gray-400 transition sm:hidden flex-shrink-0" />
@@ -1211,11 +1218,11 @@ export default function Dashboard() {
                     <div className="w-10 h-10 rounded-full bg-sky-500/10 text-sky-400 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
                       {creatingChatType === 'video' ? <NajeSpinner className="w-5 h-5" /> : <Film className="w-5 h-5" />}
                     </div>
-                    <div className="flex flex-col text-right sm:text-center">
+                    <div className="flex flex-col text-start sm:text-center">
                       <span className="text-xs font-bold text-gray-900 dark:text-white group-hover:text-sky-400 transition-colors">
-                        {creatingChatType === 'video' ? 'جاري تحضير الاستوديو...' : 'دردشة إنشاء فيديوهات'}
+                        {creatingChatType === 'video' ? t('shell.preparingStudio') : t('shell.videoChatTitle')}
                       </span>
-                      <span className="text-[10px] text-gray-800 dark:text-gray-400 mt-0.5">حوّل فكرتك إلى فيديو سينمائي</span>
+                      <span className="text-[10px] text-gray-800 dark:text-gray-400 mt-0.5">{t('shell.videoChatDesc')}</span>
                     </div>
                   </div>
                   <ChevronLeft className="w-4 h-4 text-gray-900 dark:text-gray-300 group-hover:text-gray-500 dark:text-gray-400 transition sm:hidden flex-shrink-0" />
@@ -1231,11 +1238,11 @@ export default function Dashboard() {
                     <div className="w-10 h-10 rounded-full bg-amber-500/10 text-amber-500 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
                       {creatingChatType === 'ui' ? <NajeSpinner className="w-5 h-5" /> : <Layout className="w-5 h-5" />}
                     </div>
-                    <div className="flex flex-col text-right sm:text-center">
+                    <div className="flex flex-col text-start sm:text-center">
                       <span className="text-xs font-bold text-gray-900 dark:text-white group-hover:text-amber-500 transition-colors">
-                        {creatingChatType === 'ui' ? 'جاري تحضير المساحة...' : 'تصميم واجهات'}
+                        {creatingChatType === 'ui' ? t('chat.preparingSpace') : t('shell.uiChatTitle')}
                       </span>
-                      <span className="text-[10px] text-gray-800 dark:text-gray-400 mt-0.5">صمّم واجهة موقع أو تطبيق — وشوفها تتبنى أمامك</span>
+                      <span className="text-[10px] text-gray-800 dark:text-gray-400 mt-0.5">{t('shell.uiChatDesc')}</span>
                     </div>
                   </div>
                   <ChevronLeft className="w-4 h-4 text-gray-900 dark:text-gray-300 group-hover:text-gray-500 dark:text-gray-400 transition sm:hidden flex-shrink-0" />
@@ -1251,12 +1258,12 @@ export default function Dashboard() {
                     <div className="w-10 h-10 rounded-full bg-emerald-500/10 text-emerald-500 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
                       {creatingChatType === 'voice' ? <NajeSpinner className="w-5 h-5" /> : <Mic2 className="w-5 h-5" />}
                     </div>
-                    <div className="flex flex-col text-right sm:text-center">
+                    <div className="flex flex-col text-start sm:text-center">
                       <span className="text-xs font-bold text-gray-900 dark:text-white group-hover:text-emerald-500 transition-colors flex items-center gap-1.5 justify-start sm:justify-center">
-                        <span>{creatingChatType === 'voice' ? 'جاري تحضير الاستوديو...' : 'استوديو الصوتيات'}</span>
-                        <span className="text-[9px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-1.5 py-0.2 rounded border border-emerald-500/20 font-sans">جديد</span>
+                        <span>{creatingChatType === 'voice' ? t('shell.preparingStudio') : t('shell.voiceStudioTitle')}</span>
+                        <span className="text-[9px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-1.5 py-0.2 rounded border border-emerald-500/20 font-sans">{t('shell.badgeNew')}</span>
                       </span>
-                      <span className="text-[10px] text-gray-800 dark:text-gray-400 mt-0.5">تسجيلات صوتية احترافية بصوت أو حوار</span>
+                      <span className="text-[10px] text-gray-800 dark:text-gray-400 mt-0.5">{t('shell.voiceStudioDesc')}</span>
                     </div>
                   </div>
                   <ChevronLeft className="w-4 h-4 text-gray-900 dark:text-gray-300 group-hover:text-gray-500 dark:text-gray-400 transition sm:hidden flex-shrink-0" />
@@ -1272,12 +1279,12 @@ export default function Dashboard() {
                     <div className="w-10 h-10 rounded-full bg-sky-500/10 text-sky-500 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
                       {creatingChatType === 'najeDeveloper' ? <NajeSpinner className="w-5 h-5" /> : <Code2 className="w-5 h-5" />}
                     </div>
-                    <div className="flex flex-col text-right sm:text-center">
+                    <div className="flex flex-col text-start sm:text-center">
                       <span className="text-xs font-bold text-gray-900 dark:text-white group-hover:text-sky-500 transition-colors flex items-center gap-1.5 justify-start sm:justify-center">
-                        <span>{creatingChatType === 'najeDeveloper' ? 'جاري تحضير مساحة المطور...' : 'ناجي المطور'}</span>
-                        <span className="text-[9px] bg-sky-500/10 text-sky-600 dark:text-sky-400 px-1.5 py-0.2 rounded border border-sky-500/20 font-sans">باقة المُبتكر</span>
+                        <span>{creatingChatType === 'najeDeveloper' ? t('shell.preparingDeveloper') : t('nav.najeDeveloper')}</span>
+                        <span className="text-[9px] bg-sky-500/10 text-sky-600 dark:text-sky-400 px-1.5 py-0.2 rounded border border-sky-500/20 font-sans">{t('shell.badgeInnovator')}</span>
                       </span>
-                      <span className="text-[10px] text-gray-800 dark:text-gray-400 mt-0.5">فحص وتعديل أرشيف الموقع والبرمجيات وكتابة الأكواد</span>
+                      <span className="text-[10px] text-gray-800 dark:text-gray-400 mt-0.5">{t('shell.developerDesc')}</span>
                     </div>
                   </div>
                   <ChevronLeft className="w-4 h-4 text-gray-900 dark:text-gray-300 group-hover:text-gray-500 dark:text-gray-400 transition sm:hidden flex-shrink-0" />
@@ -1293,12 +1300,12 @@ export default function Dashboard() {
                     <div className="w-10 h-10 rounded-full bg-emerald-500/10 text-emerald-500 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
                       {creatingChatType === 'najeSource' ? <NajeSpinner className="w-5 h-5" /> : <BookOpen className="w-5 h-5" />}
                     </div>
-                    <div className="flex flex-col text-right sm:text-center">
+                    <div className="flex flex-col text-start sm:text-center">
                       <span className="text-xs font-bold text-gray-900 dark:text-white group-hover:text-emerald-500 transition-colors flex items-center gap-1.5 justify-start sm:justify-center">
-                        <span>{creatingChatType === 'najeSource' ? 'جاري تحضير مساحة المصادر...' : 'ناجي من مصادرك'}</span>
-                        <span className="text-[9px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-1.5 py-0.2 rounded border border-emerald-500/20 font-sans">باقة الشرارة</span>
+                        <span>{creatingChatType === 'najeSource' ? t('shell.preparingSource') : t('nav.najeSource')}</span>
+                        <span className="text-[9px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-1.5 py-0.2 rounded border border-emerald-500/20 font-sans">{t('shell.badgeSpark')}</span>
                       </span>
-                      <span className="text-[10px] text-gray-800 dark:text-gray-400 mt-0.5">حلّل ملفاتك ومستنداتك ومصادرك الخاصة واستخرج أدق الإجابات</span>
+                      <span className="text-[10px] text-gray-800 dark:text-gray-400 mt-0.5">{t('shell.sourceDesc')}</span>
                     </div>
                   </div>
                   <ChevronLeft className="w-4 h-4 text-gray-900 dark:text-gray-300 group-hover:text-gray-500 dark:text-gray-400 transition sm:hidden flex-shrink-0" />
@@ -1314,12 +1321,12 @@ export default function Dashboard() {
                     <div className="w-10 h-10 rounded-full bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
                       {creatingChatType === 'agent' ? <NajeSpinner className="w-5 h-5" /> : <Bot className="w-5 h-5" />}
                     </div>
-                    <div className="flex flex-col text-right sm:text-center">
+                    <div className="flex flex-col text-start sm:text-center">
                       <span className="text-xs font-bold text-gray-900 dark:text-white group-hover:text-purple-500 transition-colors flex items-center gap-1.5 justify-start sm:justify-center">
-                        <span>{creatingChatType === 'agent' ? 'جاري تحضير وكيل ناجي...' : 'وكيل ناجي (نظام وكلاء متعددين)'}</span>
-                        <span className="text-[9px] bg-purple-500/10 text-purple-600 dark:text-purple-400 px-1.5 py-0.2 rounded border border-purple-500/20 font-sans font-bold">الأقوى</span>
+                        <span>{creatingChatType === 'agent' ? t('shell.preparingAgent') : t('shell.agentTitle')}</span>
+                        <span className="text-[9px] bg-purple-500/10 text-purple-600 dark:text-purple-400 px-1.5 py-0.2 rounded border border-purple-500/20 font-sans font-bold">{t('shell.badgeStrongest')}</span>
                       </span>
-                      <span className="text-[10px] text-gray-800 dark:text-gray-400 mt-0.5">بناء الهوية البصرية وصياغة الإعلانات وحملات التسويق بالاعتماد على مصادر مشروعك</span>
+                      <span className="text-[10px] text-gray-800 dark:text-gray-400 mt-0.5">{t('shell.agentDesc')}</span>
                     </div>
                   </div>
                   <ChevronLeft className="w-4 h-4 text-gray-900 dark:text-gray-300 group-hover:text-gray-500 dark:text-gray-400 transition sm:hidden flex-shrink-0" />
@@ -1334,9 +1341,9 @@ export default function Dashboard() {
                     <div className="w-10 h-10 rounded-full bg-violet-500/10 text-violet-500 flex items-center justify-center flex-shrink-0">
                       <MessageSquare className="w-5 h-5" />
                     </div>
-                    <div className="flex flex-col text-right sm:text-center">
-                      <span className="text-xs font-bold text-gray-900 dark:text-white">ناجي برومبت</span>
-                      <span className="text-[10px] text-gray-800 dark:text-gray-400 mt-0.5">يفهم فكرتك ويسأل فقط إذا لزم — ثم يصيغ البرومبت</span>
+                    <div className="flex flex-col text-start sm:text-center">
+                      <span className="text-xs font-bold text-gray-900 dark:text-white">{t('nav.najePrompt')}</span>
+                      <span className="text-[10px] text-gray-800 dark:text-gray-400 mt-0.5">{t('shell.promptDesc')}</span>
                     </div>
                   </div>
                   <ChevronLeft className="w-4 h-4 text-gray-900 dark:text-gray-300 sm:hidden flex-shrink-0" />
@@ -1351,9 +1358,9 @@ export default function Dashboard() {
                     <div className="w-10 h-10 rounded-full bg-amber-500/10 text-amber-500 flex items-center justify-center flex-shrink-0">
                       <Clapperboard className="w-5 h-5" />
                     </div>
-                    <div className="flex flex-col text-right sm:text-center">
-                      <span className="text-xs font-bold text-gray-900 dark:text-white">استوديو الحركة</span>
-                      <span className="text-[10px] text-gray-800 dark:text-gray-400 mt-0.5">انترو وأوترو 5 أو 10 ثوانٍ لصنّاع المحتوى والشركات</span>
+                    <div className="flex flex-col text-start sm:text-center">
+                      <span className="text-xs font-bold text-gray-900 dark:text-white">{t('nav.najeMotion')}</span>
+                      <span className="text-[10px] text-gray-800 dark:text-gray-400 mt-0.5">{t('shell.motionDesc')}</span>
                     </div>
                   </div>
                   <ChevronLeft className="w-4 h-4 text-gray-900 dark:text-gray-300 sm:hidden flex-shrink-0" />
@@ -1368,9 +1375,9 @@ export default function Dashboard() {
                     <div className="w-10 h-10 rounded-full bg-amber-600/10 text-amber-700 dark:text-amber-400 flex items-center justify-center flex-shrink-0">
                       <FileText className="w-5 h-5" />
                     </div>
-                    <div className="flex flex-col text-right sm:text-center">
-                      <span className="text-xs font-bold text-gray-900 dark:text-white">سيرتك بواسطة ناجي</span>
-                      <span className="text-[10px] text-gray-800 dark:text-gray-400 mt-0.5">هوية مهنية، مدرب مسح HR، تصدير PDF وWord</span>
+                    <div className="flex flex-col text-start sm:text-center">
+                      <span className="text-xs font-bold text-gray-900 dark:text-white">{t('nav.najeCv')}</span>
+                      <span className="text-[10px] text-gray-800 dark:text-gray-400 mt-0.5">{t('shell.cvDesc')}</span>
                     </div>
                   </div>
                   <ChevronLeft className="w-4 h-4 text-gray-900 dark:text-gray-300 sm:hidden flex-shrink-0" />
@@ -1380,12 +1387,12 @@ export default function Dashboard() {
               {/* Project association dropdown if not currently viewing/scoping a project */}
               {!activeProjectId ? (
                 <div className="border-t border-gray-200 dark:border-gray-900/60 pt-4 mt-1 flex flex-col gap-1.5">
-                  <label className="text-[10px] text-gray-800 dark:text-gray-400 font-bold">إضافة إلى مشروع (اختياري)</label>
+                  <label className="text-[10px] text-gray-800 dark:text-gray-400 font-bold">{t('shell.addToProject')}</label>
                   <NajeSelect
                     value={selectedProjectForNewChat}
                     onChange={(val) => setSelectedProjectForNewChat(val)}
                     options={[
-                      { value: 'none', label: 'بدون مشروع (غير تصنيفي)' },
+                      { value: 'none', label: t('shell.noProject') },
                       ...projects.map(p => ({ value: p.id, label: p.name }))
                     ]}
                     className="w-full text-gray-900 dark:text-gray-300"
@@ -1394,7 +1401,7 @@ export default function Dashboard() {
               ) : (
                 <div className="text-[10px] text-indigo-600 dark:text-indigo-400 font-bold bg-indigo-500/5 border border-indigo-400 dark:border-indigo-500/10 rounded-xl p-2.5 text-center flex items-center justify-center gap-1.5">
                   <AlertCircle className="w-3.5 h-3.5" />
-                  <span>سيتم إرفاقها بالمشروع: "{projects.find(p => p.id === activeProjectId)?.name}" تلقائياً</span>
+                  <span>{t('shell.attachProject', { name: projects.find(p => p.id === activeProjectId)?.name || '' })}</span>
                 </div>
               )}
             </motion.div>
@@ -1414,20 +1421,19 @@ export default function Dashboard() {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="relative bg-white dark:bg-[#0d0f12] border border-gray-200 dark:border-gray-900 rounded-2xl p-6 w-full max-w-[400px] shadow-2xl flex flex-col gap-4 text-right z-10"
+              className="relative bg-white dark:bg-[#0d0f12] border border-gray-200 dark:border-gray-900 rounded-2xl p-6 w-full max-w-[400px] shadow-2xl flex flex-col gap-4 text-start z-10"
             >
               <div>
-                <h3 className="text-base font-extrabold text-gray-900 dark:text-white">تعديل اسم المحادثة</h3>
-                <p className="text-[10px] text-gray-800 dark:text-gray-400 mt-1">أدخل الاسم الجديد لهذه المساحة الإبداعية.</p>
+                <h3 className="text-base font-extrabold text-gray-900 dark:text-white">{t('chat.renameChat')}</h3>
+                <p className="text-[10px] text-gray-800 dark:text-gray-400 mt-1">{t('shell.renameChatDesc')}</p>
               </div>
               <input 
                 type="text"
                 required
                 value={renameChatTitle}
                 onChange={e => setRenameChatTitle(e.target.value)}
-                placeholder="اسم المحادثة الجديد..."
+                placeholder={t('shell.renamePlaceholder')}
                 className="w-full bg-gray-50 dark:bg-gray-950 border border-gray-200 dark:border-gray-900 rounded-xl px-3.5 py-2.5 text-xs text-gray-900 dark:text-gray-200 outline-none focus:border-indigo-500 transition"
-                dir="rtl"
               />
               <div className="flex items-center justify-end gap-2 mt-2">
                 <button 
@@ -1435,7 +1441,7 @@ export default function Dashboard() {
                   onClick={() => setRenameChatId(null)}
                   className="px-4 py-2 bg-white dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-900 dark:text-gray-300 rounded-xl text-xs font-bold transition cursor-pointer focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none"
                 >
-                  إلغاء
+                  {t('common.cancel')}
                 </button>
                 <button 
                   type="submit"
@@ -1443,7 +1449,7 @@ export default function Dashboard() {
                   className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1.5"
                 >
                   {isRenamingChat && <NajeSpinner className="w-3.5 h-3.5" />}
-                  <span>حفظ التعديل</span>
+                  <span>{t('shell.saveEdit')}</span>
                 </button>
               </div>
             </motion.form>
@@ -1462,15 +1468,15 @@ export default function Dashboard() {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="relative bg-white dark:bg-[#0d0f12] border border-gray-200 dark:border-gray-900 rounded-2xl p-6 w-full max-w-[400px] shadow-2xl flex flex-col gap-4 text-right z-10"
+              className="relative bg-white dark:bg-[#0d0f12] border border-gray-200 dark:border-gray-900 rounded-2xl p-6 w-full max-w-[400px] shadow-2xl flex flex-col gap-4 text-start z-10"
             >
               <div className="w-12 h-12 rounded-full bg-red-500/10 text-red-500 flex items-center justify-center mx-auto mb-1">
                 <Trash2 className="w-6 h-6" />
               </div>
               <div className="text-center">
-                <h3 className="text-base font-extrabold text-gray-900 dark:text-white">حذف المحادثة نهائياً؟</h3>
+                <h3 className="text-base font-extrabold text-gray-900 dark:text-white">{t('shell.deleteChatTitle')}</h3>
                 <p className="text-xs text-gray-800 dark:text-gray-400 mt-2 leading-relaxed">
-                  هل أنت متأكد من رغبتك في حذف هذه المحادثة؟ ستفقد جميع الرسائل والملفات المولدة داخلها ولا يمكن استعادتها أبداً.
+                  {t('shell.deleteChatDesc')}
                 </p>
               </div>
               <div className="flex items-center justify-center gap-2 mt-2">
@@ -1479,7 +1485,7 @@ export default function Dashboard() {
                   onClick={() => setDeleteChatId(null)}
                   className="w-1/2 py-2.5 bg-white dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-900 dark:text-gray-300 rounded-xl text-xs font-bold transition cursor-pointer text-center focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none"
                 >
-                  تراجع وإغلاق
+                  {t('shell.goBackClose')}
                 </button>
                 <button 
                   type="button"
@@ -1488,7 +1494,7 @@ export default function Dashboard() {
                   className="w-1/2 py-2.5 bg-red-600 hover:bg-red-500 disabled:opacity-50 text-white rounded-xl text-xs font-bold transition cursor-pointer text-center flex items-center justify-center gap-1.5"
                 >
                   {isDeletingChat && <NajeSpinner className="w-3.5 h-3.5" />}
-                  <span>نعم، احذف المساحة</span>
+                  <span>{t('shell.confirmDeleteSpace')}</span>
                 </button>
               </div>
             </motion.div>

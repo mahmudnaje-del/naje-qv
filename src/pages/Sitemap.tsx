@@ -9,25 +9,25 @@ export default function Sitemap() {
   const BackArrow = isRtl ? ArrowRight : ArrowLeft;
 
   const publicRoutes = [
-    { path: '/auth', name: t('auth.login') },
+    { path: '/auth', name: t('auth.tabLogin') },
     { path: '/Terms-of-Service', name: t('legal.termsTitle') },
     { path: '/Privacy-Policy', name: t('legal.privacyTitle') },
-    { path: '/delete-account-request', name: isRtl ? 'طلب حذف الحساب' : 'Delete Account Request' },
+    { path: '/delete-account-request', name: t('auth.deleteAccountRequest') },
     { path: '/Sitemap', name: t('legal.sitemapTitle') },
   ];
 
   const productRoutes = [
-    { path: '/', name: t('sidebar.dashboard') },
-    { path: '/projects', name: t('sidebar.projects') },
-    { path: '/settings', name: t('sidebar.settings') },
-    { path: '/favorites', name: t('sidebar.favorites') },
-    { path: '/store', name: t('sidebar.store') },
-    { path: '/creative-studio', name: t('sidebar.creativeStudio') },
-    { path: '/naje-agent-core', name: t('sidebar.najeAgent') },
-    { path: '/naje-ad', name: t('sidebar.najeAd') },
-    { path: '/naje-prompt', name: t('sidebar.najePrompt') },
+    { path: '/', name: t('nav.home') },
+    { path: '/projects', name: t('projects.pageTitle') },
+    { path: '/settings', name: t('nav.settings') },
+    { path: '/favorites', name: t('nav.favorites') },
+    { path: '/store', name: t('nav.store') },
+    { path: '/creative-studio', name: t('nav.creativeStudio') },
+    { path: '/naje-agent-core', name: t('nav.najeAgent') },
+    { path: '/naje-ad', name: t('nav.najeAd') },
+    { path: '/naje-prompt', name: t('nav.najePrompt') },
     { path: '/naje-ident', name: t('najeIdent.title') },
-    { path: '/naje-cv', name: t('sidebar.najeCv') },
+    { path: '/naje-cv', name: t('nav.najeCv') },
   ];
 
   const renderGroup = (title: string, routes: { path: string; name: string }[]) => (
@@ -64,12 +64,12 @@ export default function Sitemap() {
           </div>
           <div>
             <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white">{t('legal.sitemapTitle')}</h1>
-            <p className="text-gray-600 dark:text-gray-400 mt-2">{isRtl ? 'دليلك للوصول إلى كافة أقسام استوديو ناجي' : 'Quick navigation to all sections of NAJE Studio'}</p>
+            <p className="text-gray-600 dark:text-gray-400 mt-2">{t('tools.sitemap.subtitle')}</p>
           </div>
         </div>
 
-        {renderGroup(isRtl ? 'صفحات عامة' : 'Public Pages', publicRoutes)}
-        {renderGroup(isRtl ? 'أقسام المنصة' : 'Platform Studios', productRoutes)}
+        {renderGroup(t('tools.sitemap.publicPages'), publicRoutes)}
+        {renderGroup(t('tools.sitemap.platform'), productRoutes)}
 
         <div className="mt-12 flex justify-center border-t border-gray-200 dark:border-gray-900 pt-6">
           <Link

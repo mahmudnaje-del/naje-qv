@@ -57,7 +57,7 @@ export default function NajeDeveloper() {
   const [input, setInput] = useState('');
   const [attachedImages, setAttachedImages] = useState<string[]>([]);
   const [sending, setSending] = useState(false);
-  const [chatSessionTitle, setChatSessionTitle] = useState('مساحة ناجي المطور');
+  const [chatSessionTitle, setChatSessionTitle] = useState(() => t('tools.developer.sessionTitle'));
 
   const fileRef = useRef<HTMLInputElement>(null);
   const scrollerRef = useRef<HTMLDivElement>(null);
@@ -106,7 +106,7 @@ export default function NajeDeveloper() {
           await setDoc(newRef, {
             ownerId: user.uid,
             type: 'najeDeveloper',
-            title: 'مساحة ناجي المطور',
+            title: t('tools.developer.sessionTitle'),
             createdAt: Date.now()
           });
           if (!active) return;
@@ -201,7 +201,7 @@ export default function NajeDeveloper() {
       await setDoc(newRef, {
         ownerId: user.uid,
         type: 'najeDeveloper',
-        title: 'مساحة مطور جديدة',
+        title: t('tools.developer.newSpace'),
         createdAt: Date.now()
       });
       setSearchParams({ chatId: newRef.id });
@@ -211,28 +211,28 @@ export default function NajeDeveloper() {
       setWorkspaceId('');
       localStorage.removeItem(LS_WS);
       setTab('code');
-      toast.success('تم إنشاء مساحة مطور جديدة.');
+      toast.success(t('tools.developer.newSpaceOk'));
     } catch {
-      toast.error('تعذّر إنشاء مساحة جديدة.');
+      toast.error(t('tools.developer.newSpaceFail'));
     }
   };
 
   const handleZip = async (file: File) => {
     if (gated()) return;
     if (file.size > 8 * 1024 * 1024) {
-      toast.error('الأرشيف أكبر من 8MB. احذف node_modules وdist ثم أعد الضغط.');
+      toast.error(t('tools.developer.tooBig'));
       return;
     }
     setUnpacking(true);
-    setUnpackHint('جاري قراءة الأرشيف...');
+    setUnpackHint(t('tools.developer.reading'));
     try {
       const zipBase64 = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = () => resolve(String(reader.result || ''));
-        reader.onerror = () => reject(new Error('تعذّر قراءة الملف'));
+        reader.onerror = () => reject(new Error(t('tools.developer.readFail')));
         reader.readAsDataURL(file);
       });
-      setUnpackHint('جاري فك الملفات — الكود أولاً ثم الوثائق...');
+      setUnpackHint(t('tools.developer.unpacking'));
       const token = await auth.currentUser?.getIdToken();
       const res = await fetch('/api/developer/unpack', {
         method: 'POST',
@@ -240,7 +240,7 @@ export default function NajeDeveloper() {
         body: JSON.stringify({ zipBase64, fileName: file.name })
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'تعذّر فك الأرشيف');
+      if (!res.ok) throw new Error(data.error || t('tools.developer.unpackFail'));
       
       setWorkspaceId(data.workspaceId);
       localStorage.setItem(LS_WS, data.workspaceId);
@@ -250,7 +250,7 @@ export default function NajeDeveloper() {
 
       // Update Firestore chat doc with the new workspace & title
       if (chatId) {
-        const updatedTitle = file.name ? `مطور: ${file.name.replace(/\.zip$/i, '')}` : 'مساحة ناجي المطور';
+        const updatedTitle = file.name ? t('tools.developer.titlePrefix', { name: file.name.replace(/\.zip$/i, '') }) : t('tools.developer.sessionTitle');
         setChatSessionTitle(updatedTitle);
         await updateDoc(doc(db, 'chats', chatId), {
           workspaceId: data.workspaceId,
@@ -260,12 +260,14 @@ export default function NajeDeveloper() {
       }
 
       const extra = [
-        data.skipped ? `تم تخطي ${data.skipped} (صور/بناء/وثائق غير كود)` : '',
-        data.truncatedFiles ? `${data.truncatedFiles} ملف قُصّ لطوله` : ''
+        data.skipped ? t('tools.developer.skippedExtra', { count: data.skipped }) : '',
+        data.truncatedFiles ? t('tools.developer.truncatedExtra', { count: data.truncatedFiles }) : ''
       ].filter(Boolean).join(' · ');
 
-      // Add system message to Firestore chat
-      const welcomeContent = `تم فك الأرشيف بنجاح (**${data.fileCount}** ملف).${extra ? ` ${extra}.` : ''} يمكنك فحص الكود من تبويب «الكود»، أو التوجه للدردشة مع ناجي والضغط على «افحص المشروع» لتقرير شامل ورؤوس أقلام.`;
+      const welcomeContent = t('tools.developer.unpacked', {
+        count: data.fileCount,
+        extra: extra ? ` ${extra}.` : ''
+      });
 
       if (chatId && user) {
         await addDoc(collection(db, 'messages'), {
@@ -277,11 +279,11 @@ export default function NajeDeveloper() {
         }).catch(() => {});
       }
 
-      setUnpackHint('تم الفك بنجاح. جاهز للعمل.');
-      toast.success('تم فك الأرشيف بنجاح');
+      setUnpackHint(t('tools.developer.unpackDone'));
+      toast.success(t('tools.developer.unpackOk'));
       setTimeout(() => setTab('code'), 400);
     } catch (e: any) {
-      toast.error(e.message || 'تعذّر فك الأرشيف');
+      toast.error(e.message || t('tools.developer.unpackFail'));
     } finally {
       setUnpacking(false);
     }
@@ -300,7 +302,7 @@ export default function NajeDeveloper() {
       if (!res.ok) throw new Error(data.error);
       setFocusFile(data.file);
     } catch (e: any) {
-      toast.error(e.message || 'تعذّر فتح الملف');
+      toast.error(e.message || t('tools.developer.openFail'));
     } finally {
       setLoadingFile(false);
     }
@@ -315,7 +317,7 @@ export default function NajeDeveloper() {
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ workspaceId })
       });
-      if (!res.ok) throw new Error('تعذّر التصدير');
+      if (!res.ok) throw new Error(t('tools.developer.exportFail'));
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -324,7 +326,7 @@ export default function NajeDeveloper() {
       a.click();
       URL.revokeObjectURL(url);
     } catch {
-      toast.error('تعذّر تصدير الأرشيف');
+      toast.error(t('tools.developer.exportArchiveFail'));
     }
   };
 
@@ -333,7 +335,7 @@ export default function NajeDeveloper() {
     if (!files || files.length === 0) return;
     const remainingSlots = 4 - attachedImages.length;
     if (remainingSlots <= 0) {
-      toast.error('الحد الأقصى 4 صور مرفقة دفعة واحدة');
+      toast.error(t('tools.developer.maxImages'));
       return;
     }
     const selectedFiles = Array.from(files).slice(0, remainingSlots);
@@ -360,7 +362,7 @@ export default function NajeDeveloper() {
     const currentImages = [...attachedImages];
     if ((!prompt && currentImages.length === 0) || sending) return;
     if (!workspaceId) {
-      toast.error('ارفع أرشيف الموقع أولاً من تبويب الكود.');
+      toast.error(t('tools.developer.needZip'));
       setTab('code');
       return;
     }
@@ -416,11 +418,11 @@ export default function NajeDeveloper() {
 
       if (res.status === 402) {
         setShowPaywall(true);
-        throw new Error('الميزة تحتاج باقة المُبتكر');
+        throw new Error(t('tools.developer.needPlan'));
       }
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || 'تعذّر الرد');
+        throw new Error(err.error || t('tools.developer.replyFail'));
       }
 
       await readNajeSse(res, (chunk) => {
@@ -451,7 +453,7 @@ export default function NajeDeveloper() {
       }
 
     } catch (e: any) {
-      const errorMsg = e.message || 'حدث خطأ أثناء معالجة الطلب.';
+      const errorMsg = e.message || t('tools.developer.processError');
       setMessages(prev => prev.map(m => m.id === tempAsstId ? { ...m, content: m.content || errorMsg } : m));
       toast.error(errorMsg);
     } finally {
@@ -466,7 +468,7 @@ export default function NajeDeveloper() {
       <StudioHeader
         title={chatSessionTitle || 'Naje Developer'}
         badge={t('studio.codeSpace')}
-        subtitle={tree.length > 0 ? `الأرشيف: ${fileName} (${tree.length} ملف)` : 'فحص وتعديل وتطوير أرشيف الموقع والبرمجيات'}
+        subtitle={tree.length > 0 ? t('tools.developer.subtitleArchive', { name: fileName, count: tree.length }) : t('tools.developer.subtitleEmpty')}
         icon={Code2}
         iconColorClass="text-sky-600 dark:text-sky-400"
         iconBgClass="bg-sky-500/10 border-sky-500/20"
@@ -527,7 +529,7 @@ export default function NajeDeveloper() {
               className="w-full h-10 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-extrabold flex items-center justify-center gap-2 mb-2 shadow-xs transition cursor-pointer disabled:opacity-50"
             >
               {unpacking ? <NajeSpinner className="w-4 h-4" /> : <Upload className="w-4 h-4" />}
-              {tree.length > 0 ? 'استبدال ZIP الموقع' : 'رفع ZIP للموقع'}
+              {tree.length > 0 ? t('tools.developer.replaceZip') : t('tools.developer.uploadZip')}
             </button>
 
             {unpacking && (
@@ -539,36 +541,36 @@ export default function NajeDeveloper() {
                 onClick={exportZip} 
                 className="w-full h-9 rounded-xl border border-gray-200 dark:border-gray-800 text-[11px] font-bold flex items-center justify-center gap-1.5 mb-3 hover:bg-white dark:hover:bg-gray-900 transition cursor-pointer"
               >
-                <Download className="w-3.5 h-3.5 text-sky-500" /> تصدير ZIP المحدّث
+                <Download className="w-3.5 h-3.5 text-sky-500" /> {t('tools.developer.exportZip')}
               </button>
             )}
 
             <div className="flex items-center justify-between text-[11px] font-extrabold text-gray-500 mb-2 px-1">
               <span className="flex items-center gap-1.5">
-                <FolderTree className="w-3.5 h-3.5 text-sky-500" /> شجرة الملفات
+                <FolderTree className="w-3.5 h-3.5 text-sky-500" /> {t('tools.developer.fileTree')}
               </span>
-              <span>{tree.length} ملف</span>
+              <span>{t('tools.developer.fileCount', { count: tree.length })}</span>
             </div>
 
             {unpackStats && (unpackStats.skipped > 0 || unpackStats.truncatedFiles > 0) && (
               <p className="text-[10px] text-amber-600 font-bold mb-2 px-1">
-                {unpackStats.skipped ? `تخطي ${unpackStats.skipped}` : ''}
+                {unpackStats.skipped ? t('tools.developer.skippedStat', { count: unpackStats.skipped }) : ''}
                 {unpackStats.skipped && unpackStats.truncatedFiles ? ' · ' : ''}
-                {unpackStats.truncatedFiles ? `قصّ ${unpackStats.truncatedFiles}` : ''}
+                {unpackStats.truncatedFiles ? t('tools.developer.truncatedStat', { count: unpackStats.truncatedFiles }) : ''}
               </p>
             )}
 
             <div className="flex-1 overflow-y-auto space-y-0.5">
               {tree.length === 0 ? (
                 <div className="text-center py-10 px-2 text-gray-400 text-xs">
-                  لا توجد ملفات بعد. ارفع ملف ZIP للموقع لتبدأ الفحص.
+                  {t('tools.developer.noFiles')}
                 </div>
               ) : (
                 tree.map(f => (
                   <button
                     key={f.path}
                     onClick={() => openFile(f.path)}
-                    className={`w-full text-right px-2.5 py-1.5 rounded-lg text-[11px] truncate flex items-center gap-1.5 transition cursor-pointer ${
+                    className={`w-full text-start px-2.5 py-1.5 rounded-lg text-[11px] truncate flex items-center gap-1.5 transition cursor-pointer ${
                       focusPath === f.path 
                         ? 'bg-sky-50 dark:bg-sky-950/40 text-sky-600 dark:text-sky-400 font-bold border border-sky-200/60 dark:border-sky-800/60' 
                         : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-900'
@@ -605,15 +607,15 @@ export default function NajeDeveloper() {
                 <div className="w-16 h-16 rounded-2xl bg-sky-500/10 text-sky-500 flex items-center justify-center border border-sky-500/20">
                   <Upload className="w-8 h-8" />
                 </div>
-                <h2 className="text-base font-extrabold text-gray-900 dark:text-white">ارفع ملف الموقع المضغوط (ZIP)</h2>
+                <h2 className="text-base font-extrabold text-gray-900 dark:text-white">{t('tools.developer.uploadTitle')}</h2>
                 <p className="text-xs text-gray-500 max-w-sm leading-relaxed">
-                  ارفع أرشيف موقعك (HTML/JS/CSS/React). سيقوم ناجي بفك الملفات، استعراض الشجرة البرمجية، وفحص أقسام المشروع وتقديم تقارير دقيقة وحلول فورية.
+                  {t('tools.developer.uploadDesc')}
                 </p>
                 <button
                   onClick={() => fileRef.current?.click()}
                   className="mt-2 h-10 px-5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-extrabold flex items-center gap-2 shadow-xs transition cursor-pointer"
                 >
-                  <Upload className="w-4 h-4" /> اختر ملف ZIP
+                  <Upload className="w-4 h-4" /> {t('tools.developer.chooseZip')}
                 </button>
               </div>
             )}
@@ -627,25 +629,25 @@ export default function NajeDeveloper() {
                 <div className="w-14 h-14 rounded-2xl bg-sky-500/10 text-sky-500 flex items-center justify-center mx-auto border border-sky-500/20">
                   <MessageSquare className="w-7 h-7" />
                 </div>
-                <p className="text-sm font-extrabold text-gray-900 dark:text-white">دردشة وفحص ناجي المطور</p>
+                <p className="text-sm font-extrabold text-gray-900 dark:text-white">{t('tools.developer.chatTitle')}</p>
                 <p className="text-xs text-gray-500 leading-relaxed">
-                  افحص أي قسم في كود الموقع، اسأل عن الأخطاء البرمجية، أو اطلب تعديلاً شاملاً للملفات وحفظها.
+                  {t('tools.developer.chatDesc')}
                 </p>
                 {tree.length > 0 && (
                   <div className="flex flex-wrap gap-2 justify-center pt-2">
                     <button 
-                      onClick={() => send('افحص كل أقسام المشروع وأعطني تقرير رؤوس أقلام مع مواضع التحسين.', 'audit')} 
+                      onClick={() => send(t('tools.developer.auditPrompt'), 'audit')} 
                       disabled={sending} 
                       className="h-8 px-3 rounded-lg bg-sky-50 dark:bg-sky-950/40 text-sky-600 dark:text-sky-400 text-xs font-extrabold flex items-center gap-1.5 border border-sky-200/50 hover:bg-sky-100 transition cursor-pointer"
                     >
-                      <Search className="w-3.5 h-3.5" /> فحص شامل للمشروع
+                      <Search className="w-3.5 h-3.5" /> {t('tools.developer.auditFull')}
                     </button>
                     <button 
-                      onClick={() => send('اكتب بريف توجيه تفصيلي دقيق للمطور أو الوكيل لإكمال المشروع.', 'brief')} 
+                      onClick={() => send(t('tools.developer.briefPrompt'), 'brief')} 
                       disabled={sending} 
                       className="h-8 px-3 rounded-lg bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 text-xs font-extrabold flex items-center gap-1.5 border border-amber-200/50 hover:bg-amber-100 transition cursor-pointer"
                     >
-                      <FileText className="w-3.5 h-3.5" /> كتابة بريف التوجيه
+                      <FileText className="w-3.5 h-3.5" /> {t('tools.developer.briefFull')}
                     </button>
                   </div>
                 )}
@@ -662,7 +664,7 @@ export default function NajeDeveloper() {
                           <img
                             key={idx}
                             src={img}
-                            alt="مرفق"
+                            alt={t('tools.developer.attachmentAlt')}
                             className="max-h-48 max-w-[240px] rounded-xl border border-white/20 object-cover shadow-sm cursor-pointer hover:opacity-95"
                             onClick={() => window.open(img, '_blank')}
                           />
@@ -681,7 +683,7 @@ export default function NajeDeveloper() {
                       )}
                       {m.usage && (
                         <div className="mt-3 pt-2 border-t border-gray-100 dark:border-gray-800 text-[10px] font-bold text-amber-600 dark:text-amber-400">
-                          التكلفة: {Number(m.usage.charged || 0).toFixed(2)} نقطة
+                          {t('tools.developer.cost', { points: Number(m.usage.charged || 0).toFixed(2) })}
                         </div>
                       )}
                     </div>
@@ -695,22 +697,22 @@ export default function NajeDeveloper() {
             {tree.length > 0 && (
               <div className="flex items-center gap-2 mb-2">
                 <button 
-                  onClick={() => send('افحص كل أقسام المشروع وأعطني تقرير رؤوس أقلام.', 'audit')} 
+                  onClick={() => send(t('tools.developer.auditShortPrompt'), 'audit')} 
                   disabled={sending} 
                   className="h-7 px-2.5 rounded-lg bg-sky-50 dark:bg-sky-950/40 text-sky-600 dark:text-sky-400 text-[11px] font-extrabold flex items-center gap-1 border border-sky-200/40 hover:bg-sky-100 transition cursor-pointer"
                 >
-                  <Search className="w-3 h-3" /> فحص المشروع
+                  <Search className="w-3 h-3" /> {t('tools.developer.auditShort')}
                 </button>
                 <button 
-                  onClick={() => send('اكتب بريف توجيه تفصيلي للمطور.', 'brief')} 
+                  onClick={() => send(t('tools.developer.briefShortPrompt'), 'brief')} 
                   disabled={sending} 
                   className="h-7 px-2.5 rounded-lg bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 text-[11px] font-extrabold flex items-center gap-1 border border-amber-200/40 hover:bg-amber-100 transition cursor-pointer"
                 >
-                  <FileText className="w-3 h-3" /> بريف توجيه
+                  <FileText className="w-3 h-3" /> {t('tools.developer.briefShort')}
                 </button>
                 {focusPath && (
                   <span className="text-[10px] text-gray-500 font-mono truncate mr-auto dir-ltr">
-                    الملف المحدد: {focusPath}
+                    {t('tools.developer.focusFile', { path: focusPath })}
                   </span>
                 )}
               </div>
@@ -721,19 +723,19 @@ export default function NajeDeveloper() {
               <div className="flex flex-wrap items-center gap-2 mb-2 p-2 rounded-xl bg-gray-50 dark:bg-gray-900/60 border border-gray-200/80 dark:border-gray-800">
                 {attachedImages.map((img, idx) => (
                   <div key={idx} className="relative group w-14 h-14 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 shrink-0 shadow-xs">
-                    <img src={img} alt="مرفق" className="w-full h-full object-cover" />
+                    <img src={img} alt={t('tools.developer.attachmentAlt')} className="w-full h-full object-cover" />
                     <button
                       type="button"
                       onClick={() => handleRemoveImage(idx)}
                       className="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-black/70 hover:bg-red-600 text-white flex items-center justify-center transition cursor-pointer"
-                      title="حذف الصورة"
+                      title={t('tools.developer.removeImage')}
                     >
                       <X className="w-3 h-3" />
                     </button>
                   </div>
                 ))}
                 <span className="text-[11px] text-gray-400 mr-2">
-                  {attachedImages.length} من 4 صور مرفقة
+                  {t('tools.developer.imagesAttached', { count: attachedImages.length })}
                 </span>
               </div>
             )}
@@ -757,7 +759,7 @@ export default function NajeDeveloper() {
                 onClick={() => imageInputRef.current?.click()}
                 disabled={sending || tree.length === 0 || attachedImages.length >= 4} 
                 className="h-11 w-11 rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/80 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400 hover:text-sky-600 dark:hover:text-sky-400 flex items-center justify-center disabled:opacity-40 transition-all cursor-pointer shrink-0 shadow-xs"
-                title="إرفاق صورة"
+                title={t('tools.developer.attachImage')}
               >
                 <ImageIcon className="w-5 h-5" />
               </button>
@@ -767,7 +769,7 @@ export default function NajeDeveloper() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 rows={1}
-                placeholder={tree.length === 0 ? "ارفع ملف ZIP أولاً من تبويب الكود..." : "اسأل عن الكود أو اطلب تعديلاً (Enter لسطر جديد)..."}
+                placeholder={tree.length === 0 ? t('tools.developer.placeholderEmpty') : t('tools.developer.placeholderReady')}
                 disabled={sending || tree.length === 0}
                 className="flex-1 min-h-[44px] max-h-[130px] overflow-y-auto resize-none rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/30 disabled:opacity-50 transition-colors leading-relaxed"
                 onKeyDown={(e) => {
@@ -783,7 +785,7 @@ export default function NajeDeveloper() {
                 type="submit" 
                 disabled={sending || (!input.trim() && attachedImages.length === 0) || tree.length === 0} 
                 className="h-11 w-11 rounded-xl bg-gradient-to-tr from-sky-600 to-sky-500 hover:from-sky-500 hover:to-sky-400 text-white flex items-center justify-center disabled:opacity-40 shadow-sm shadow-sky-600/25 active:scale-95 transition-all cursor-pointer shrink-0"
-                title="إرسال"
+                title={t('tools.agent.send')}
               >
                 {sending ? <NajeSpinner className="w-4 h-4" /> : <ArrowUp className="w-5 h-5 stroke-[2.5]" />}
               </button>

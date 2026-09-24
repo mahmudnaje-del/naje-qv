@@ -1,4 +1,5 @@
 import { DICTIONARIES, SUPPORTED_LOCALES, SupportedLocale } from '../src/i18n';
+import { overlayParityGaps } from '../src/i18n/overlays';
 
 function collectKeys(obj: any, prefix = ''): string[] {
   let keys: string[] = [];
@@ -69,6 +70,13 @@ for (const loc of SUPPORTED_LOCALES) {
 if (hasErrors) {
   console.error('\n❌ i18n parity check FAILED.');
   process.exit(1);
-} else {
-  console.log('\n🎉 ALL LOCALES PASSED PARITY CHECK WITH ZERO MISSING KEYS!');
 }
+
+const overlayGaps = overlayParityGaps();
+if (overlayGaps.length) {
+  console.error(`\n❌ Overlay packs missing ${overlayGaps.length} translations.`);
+  console.error(overlayGaps.slice(0, 40).join('\n'));
+  process.exit(1);
+}
+
+console.log('\n🎉 ALL LOCALES PASSED PARITY CHECK WITH ZERO MISSING KEYS!');

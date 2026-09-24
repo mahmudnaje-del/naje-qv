@@ -60,7 +60,7 @@ export function ImageSettingsPanel({
       <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-900/60 pb-2">
         <div className="flex items-center gap-1.5 font-bold text-gray-900 dark:text-white">
           <ImageIcon className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-          <span>{isRtl ? 'إعدادات توليد الصورة الفنية' : 'Image Generation Settings'}</span>
+          <span>{t('chatui.imageSettings')}</span>
         </div>
         <button 
           type="button" 
@@ -73,7 +73,7 @@ export function ImageSettingsPanel({
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="flex flex-col gap-1.5">
-          <span className="text-xs text-gray-800 dark:text-gray-400 font-medium">{isRtl ? 'النموذج الفني' : 'Image Model'}</span>
+          <span className="text-xs text-gray-800 dark:text-gray-400 font-medium">{t('chatui.imageModel')}</span>
           <NajeSelect
             value={imageModel}
             onChange={(val) => {
@@ -88,7 +88,7 @@ export function ImageSettingsPanel({
           />
         </div>
         <div className="flex flex-col gap-1.5">
-          <span className="text-xs text-gray-800 dark:text-gray-400 font-medium">{isRtl ? 'جودة ودقة الصورة' : 'Image Quality'}</span>
+          <span className="text-xs text-gray-800 dark:text-gray-400 font-medium">{t('chatui.imageQuality')}</span>
           <NajeSelect
             value={imageQuality}
             onChange={(val) => setImageQuality(val as 'standard' | 'hd')}
@@ -103,7 +103,7 @@ export function ImageSettingsPanel({
           />
         </div>
         <div className="flex flex-col gap-1.5">
-          <span className="text-xs text-gray-800 dark:text-gray-400 font-medium">{isRtl ? 'أبعاد الصورة / المنصة والقالب' : 'Dimensions / Preset'}</span>
+          <span className="text-xs text-gray-800 dark:text-gray-400 font-medium">{t('chatui.imageDimensions')}</span>
           <NajeSelect
             value={imagePreset}
             onChange={(val) => {
@@ -113,7 +113,7 @@ export function ImageSettingsPanel({
               }
             }}
             options={[
-              { value: 'custom', label: isRtl ? 'مخصص (حسب الأبعاد اليدوية)' : 'Custom Aspect Ratio' },
+              { value: 'custom', label: t('chatui.customAspect') },
               { value: 'fb_cover', label: 'Facebook Cover (16:9)' },
               { value: 'fb_post', label: 'Facebook Post (1:1)' },
               { value: 'ig_square', label: 'Instagram Square (1:1)' },
@@ -132,7 +132,7 @@ export function ImageSettingsPanel({
         </div>
         {imagePreset === 'custom' && (
           <div className="flex flex-col gap-1.5">
-            <span className="text-xs text-gray-800 dark:text-gray-400 font-medium">{isRtl ? 'نسبة العرض للارتفاع' : 'Aspect Ratio'}</span>
+            <span className="text-xs text-gray-800 dark:text-gray-400 font-medium">{t('chatui.aspectRatio')}</span>
             <NajeSelect
                 value={aspectRatio}
                 onChange={(val) => setAspectRatio(val)}
@@ -154,9 +154,9 @@ export function ImageSettingsPanel({
         <div className="flex items-center gap-1.5 text-xs text-indigo-700 dark:text-indigo-300 font-medium">
           <AlertCircle className="w-4 h-4 text-indigo-600 dark:text-indigo-400 flex-shrink-0" />
           <span>
-            {isRtl ? 'التكلفة الإنشائية الفورية:' : 'Instant Cost:'} <strong className="text-indigo-600 dark:text-indigo-400 font-bold font-mono text-sm">
+            {t('shared.instantCost')} <strong className="text-indigo-600 dark:text-indigo-400 font-bold font-mono text-sm">
               {getCalculatedCost()}
-            </strong> {t('common.pointsShort') || 'pts'} {files.length > 0 && <span className="text-[11px] text-gray-500 dark:text-gray-400 font-normal">(+{files.length} {isRtl ? 'صور مدمجة' : 'source images'})</span>}
+            </strong> {t('common.pointsShort')} {files.length > 0 && <span className="text-[11px] text-gray-500 dark:text-gray-400 font-normal">{t('shared.sourceImages', { count: files.length })}</span>}
           </span>
         </div>
         <button 
@@ -164,7 +164,7 @@ export function ImageSettingsPanel({
           onClick={() => setShowImageSettings(false)}
           className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer"
         >
-          {isRtl ? 'تأكيد وإغلاق' : 'Confirm & Close'}
+          {t('shared.confirmAndClose')}
         </button>
       </div>
     </motion.div>

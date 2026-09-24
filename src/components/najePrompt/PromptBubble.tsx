@@ -5,6 +5,7 @@ import {
   type ImageIntent,
   type PromptAttachment,
 } from '../../lib/najePromptEngine';
+import { useI18n } from '../../i18n';
 
 interface PromptBubbleProps {
   text: string;
@@ -15,6 +16,7 @@ interface PromptBubbleProps {
 }
 
 export function PromptBubble({ text, files, imageIntent, editable, onEdit }: PromptBubbleProps) {
+  const { t, isRtl } = useI18n();
   const attachments = files || [];
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(text);
@@ -31,23 +33,24 @@ export function PromptBubble({ text, files, imageIntent, editable, onEdit }: Pro
   };
 
   return (
-    <div className="flex justify-start">
-      <div className="max-w-[85%] space-y-2 rounded-3xl rounded-tr-md bg-indigo-600 px-4 py-2.5 text-sm font-medium leading-relaxed text-white">
+    <div className="flex justify-start" dir={isRtl ? 'rtl' : 'ltr'}>
+      <div className="max-w-[85%] space-y-2 rounded-3xl rounded-ss-md bg-indigo-600 px-4 py-2.5 text-sm font-medium leading-relaxed text-white">
         {editing ? (
           <div className="space-y-2">
             <textarea
               value={draft}
+              dir={isRtl ? 'rtl' : 'ltr'}
               onChange={(e) => setDraft(e.target.value)}
               rows={3}
-              className="w-full rounded-xl bg-white/15 px-2 py-1.5 text-sm text-white placeholder:text-white/60 focus:outline-none"
+              className="min-h-11 w-full rounded-xl bg-white/15 px-2 py-1.5 text-start text-sm text-white placeholder:text-white/60 focus:outline-none"
             />
             <div className="flex gap-1.5">
               <button
                 type="button"
                 onClick={save}
-                className="rounded-lg bg-white px-2.5 py-1 text-[11px] font-black text-indigo-700"
+                className="min-h-11 rounded-lg bg-white px-3 py-1 text-[11px] font-black text-indigo-700"
               >
-                حدّث
+                {t('prompt.bubble.update')}
               </button>
               <button
                 type="button"
@@ -55,21 +58,21 @@ export function PromptBubble({ text, files, imageIntent, editable, onEdit }: Pro
                   setEditing(false);
                   setDraft(text);
                 }}
-                className="rounded-lg bg-white/15 px-2.5 py-1 text-[11px] font-black text-white"
+                className="min-h-11 rounded-lg bg-white/15 px-3 py-1 text-[11px] font-black text-white"
               >
-                إلغاء
+                {t('prompt.bubble.cancel')}
               </button>
             </div>
           </div>
         ) : text ? (
-          <p className="whitespace-pre-wrap">{text}</p>
+          <p className="whitespace-pre-wrap text-start" dir="auto">{text}</p>
         ) : null}
         {attachments.length > 0 && (
           <div className="flex flex-wrap gap-1.5">
             {attachments.map((file) => (
               <span
                 key={file.id}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-white/15 px-2 py-1 text-[11px] font-bold"
+                className="inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-white/15 px-2 py-1 text-[11px] font-bold"
               >
                 {file.kind === 'image' ? (
                   <img
@@ -88,8 +91,8 @@ export function PromptBubble({ text, files, imageIntent, editable, onEdit }: Pro
           </div>
         )}
         {attachments.some((f) => f.kind === 'image') && imageIntent ? (
-          <p className="text-[10px] font-bold text-white/80">
-            {imageIntent === 'rebuild' ? 'أعد بناء هذا' : 'استلهام'}
+          <p className="text-start text-[10px] font-bold text-white/80">
+            {t(imageIntent === 'rebuild' ? 'prompt.intent.rebuild' : 'prompt.intent.inspire')}
           </p>
         ) : null}
         {editable && onEdit && !editing && (
@@ -99,9 +102,9 @@ export function PromptBubble({ text, files, imageIntent, editable, onEdit }: Pro
               setDraft(text);
               setEditing(true);
             }}
-            className="text-[10px] font-black text-white/80 underline-offset-2 hover:underline"
+            className="min-h-11 text-start text-[10px] font-black text-white/80 underline-offset-2 hover:underline"
           >
-            تعديل الرسالة
+            {t('prompt.bubble.edit')}
           </button>
         )}
       </div>

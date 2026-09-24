@@ -21,39 +21,7 @@ import {
   VOICE_CASTS,
 } from '../../lib/omniAd';
 import { DIALECT_OPTIONS, LANGUAGE_OPTIONS } from '../../lib/adDnaEngine';
-
-const LANG_SHORT: Record<string, string> = {
-  ar: 'العربية',
-  en: 'English',
-  fr: 'Français',
-  es: 'Español',
-  tr: 'Türkçe',
-  de: 'Deutsch',
-};
-
-const DIALECT_SHORT: Record<string, string> = {
-  standard_modern: 'فصحى معاصرة',
-  gulf_saudi: 'خليجية',
-  gulf_emirati: 'إماراتية',
-  levantine_syrian_lebanese: 'شامية',
-  egyptian: 'مصرية',
-  maghrebi_moroccan: 'مغاربية',
-  iraqi: 'عراقية',
-  us_standard: 'American',
-  uk_rp: 'British',
-  global_neutral: 'International',
-  fr_standard: 'Français',
-  es_castilian: 'Español',
-  tr_istanbul: 'Türkçe',
-  de_standard: 'Deutsch',
-};
-
-const BEAT_LABEL: Record<BeatInterval, string> = {
-  5: 'كل 5 ثوانٍ',
-  10: 'كل 10 ثوانٍ',
-  20: 'كل 20 ثانية',
-  40: 'كل 40 ثانية',
-};
+import { useI18n } from '../../i18n';
 
 type ExtraChip = { id: string; label: string };
 
@@ -95,6 +63,7 @@ function Box({
   children: React.ReactNode;
   className?: string;
 }) {
+  const { t } = useI18n();
   return (
     <section className={`rounded-2xl border border-white/10 bg-white/[0.04] p-3 sm:p-4 ${className || ''}`}>
       <div className="mb-2.5 flex items-start justify-between gap-2">
@@ -108,7 +77,7 @@ function Box({
             onClick={onAdd}
             className="inline-flex shrink-0 items-center gap-1 rounded-xl border border-[var(--naje-accent)]/40 bg-[var(--naje-accent)]/10 px-2 py-1 text-[10px] font-black text-[var(--naje-accent-2)]"
           >
-            <Plus className="h-3 w-3" /> إضافة
+            <Plus className="h-3 w-3" /> {t('adui.add')}
           </button>
         )}
       </div>
@@ -162,6 +131,7 @@ export function ProControlGrid(props: {
   pointsRate: number;
   resolutionMultiplier?: Partial<Record<OmniResolution, number>>;
 }) {
+  const { t } = useI18n();
   const dialects = DIALECT_OPTIONS[props.language] || [];
   const [extras, setExtras] = useState<Record<string, ExtraChip[]>>({});
   const [addBox, setAddBox] = useState<{ key: string; title: string; apply: (id: string) => void } | null>(null);
@@ -193,8 +163,8 @@ export function ProControlGrid(props: {
     ));
 
   return (
-    <div className="grid grid-cols-1 gap-2.5 sm:gap-3 lg:grid-cols-2" dir="rtl">
-      <Box title="الجودة">
+    <div className="grid grid-cols-1 gap-2.5 sm:gap-3 lg:grid-cols-2">
+      <Box title={t('adui.quality')}>
         {OMNI_RESOLUTIONS.map((r) => (
           <Chip key={r.id} active={props.resolution === r.id} onClick={() => props.onResolution(r.id)}>
             {r.name}
@@ -203,7 +173,7 @@ export function ProControlGrid(props: {
       </Box>
 
       <section className="rounded-2xl border border-white/10 bg-white/[0.04] p-3 sm:p-4 lg:col-span-2">
-        <h4 className="mb-2 text-xs font-black text-white">الأبعاد</h4>
+        <h4 className="mb-2 text-xs font-black text-white">{t('adui.aspect')}</h4>
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           <button
             type="button"
@@ -211,17 +181,17 @@ export function ProControlGrid(props: {
               props.onAspect('9:16');
               props.onPlatform('tiktok');
             }}
-            className={`rounded-2xl border p-3 text-right transition ${
+            className={`rounded-2xl border p-3 text-start transition ${
               props.aspectRatio === '9:16'
                 ? 'border-[var(--naje-accent)] bg-[var(--naje-accent)]/15 shadow-[0_0_18px_rgba(212,165,116,0.18)]'
                 : 'border-white/10 bg-black/30 hover:border-white/25'
             }`}
           >
             <div className="flex items-center justify-between gap-2">
-              <span className="text-sm font-black text-white">طولي</span>
+              <span className="text-sm font-black text-white">{t('adui.portrait')}</span>
               <span className="font-mono text-[11px] font-bold text-[var(--naje-accent-2)]">9:16</span>
             </div>
-            <p className="mt-1.5 text-[10px] leading-relaxed text-white/50">تيك توك · ريلز · شورتس · سناب · ستوريز</p>
+            <p className="mt-1.5 text-[10px] leading-relaxed text-white/50">{t('adui.portraitPlatforms')}</p>
           </button>
           <button
             type="button"
@@ -229,118 +199,118 @@ export function ProControlGrid(props: {
               props.onAspect('16:9');
               props.onPlatform('youtube');
             }}
-            className={`rounded-2xl border p-3 text-right transition ${
+            className={`rounded-2xl border p-3 text-start transition ${
               props.aspectRatio === '16:9'
                 ? 'border-[var(--naje-accent)] bg-[var(--naje-accent)]/15 shadow-[0_0_18px_rgba(212,165,116,0.18)]'
                 : 'border-white/10 bg-black/30 hover:border-white/25'
             }`}
           >
             <div className="flex items-center justify-between gap-2">
-              <span className="text-sm font-black text-white">عرضي</span>
+              <span className="text-sm font-black text-white">{t('adui.landscape')}</span>
               <span className="font-mono text-[11px] font-bold text-[var(--naje-accent-2)]">16:9</span>
             </div>
-            <p className="mt-1.5 text-[10px] leading-relaxed text-white/50">يوتيوب · تلفزيون · شاشات رقمية</p>
+            <p className="mt-1.5 text-[10px] leading-relaxed text-white/50">{t('adui.landscapePlatforms')}</p>
           </button>
         </div>
       </section>
 
-      <Box title="هوك الثلاث ثوانٍ الأولى" onAdd={() => openAdd('hook', 'هوك الثلاث ثوانٍ الأولى', props.onHookStyle)}>
+      <Box title={t('adui.hookTitle')} onAdd={() => openAdd('hook', t('adui.hookTitle'), props.onHookStyle)}>
         {HOOK_STYLES.map((h) => (
           <Chip key={h.id} active={props.hookStyle === h.id} onClick={() => toggle(props.hookStyle, h.id, props.onHookStyle)}>
-            {h.label}
+            {t(`adui.hook.${h.id}`)}
           </Chip>
         ))}
         {extraChips('hook', props.hookStyle, props.onHookStyle)}
       </Box>
 
-      <Box title="حركة الكاميرا" onAdd={() => openAdd('camera', 'حركة الكاميرا', props.onCamera)}>
+      <Box title={t('adui.camera')} onAdd={() => openAdd('camera', t('adui.camera'), props.onCamera)}>
         {CAMERA_MOTIONS.map((c) => (
           <Chip key={c.id} active={props.cameraMotion === c.id} onClick={() => toggle(props.cameraMotion, c.id, props.onCamera)}>
-            {c.label}
+            {t(`adui.cam.${c.id}`)}
           </Chip>
         ))}
         {extraChips('camera', props.cameraMotion, props.onCamera)}
       </Box>
 
-      <Box title="الإضاءة" onAdd={() => openAdd('lighting', 'الإضاءة', props.onLighting)}>
+      <Box title={t('adui.lighting')} onAdd={() => openAdd('lighting', t('adui.lighting'), props.onLighting)}>
         {LIGHTING_LOOKS.map((l) => (
           <Chip key={l.id} active={props.lighting === l.id} onClick={() => toggle(props.lighting, l.id, props.onLighting)}>
-            {l.label}
+            {t(`adui.light.${l.id}`)}
           </Chip>
         ))}
         {extraChips('lighting', props.lighting, props.onLighting)}
       </Box>
 
-      <Box title="الإيقاع" onAdd={() => openAdd('pace', 'الإيقاع', props.onPace)}>
+      <Box title={t('adui.pace')} onAdd={() => openAdd('pace', t('adui.pace'), props.onPace)}>
         {PACE_OPTIONS.map((p) => (
           <Chip key={p.id} active={props.pace === p.id} onClick={() => toggle(props.pace, p.id, props.onPace)}>
-            {p.label}
+            {t(`adui.pace.${p.id}`)}
           </Chip>
         ))}
         {extraChips('pace', props.pace, props.onPace)}
       </Box>
 
-      <Box title="التدرج اللوني" onAdd={() => openAdd('grade', 'التدرج اللوني', props.onColorGrade)}>
+      <Box title={t('adui.grade')} onAdd={() => openAdd('grade', t('adui.grade'), props.onColorGrade)}>
         {COLOR_GRADES.map((g) => (
           <Chip key={g.id} active={props.colorGrade === g.id} onClick={() => toggle(props.colorGrade, g.id, props.onColorGrade)}>
-            {g.label}
+            {t(`adui.grade.${g.id}`)}
           </Chip>
         ))}
         {extraChips('grade', props.colorGrade, props.onColorGrade)}
       </Box>
 
-      <Box title="ظهور المنتج" onAdd={() => openAdd('place', 'ظهور المنتج', props.onProductPlacement)}>
+      <Box title={t('adui.placement')} onAdd={() => openAdd('place', t('adui.placement'), props.onProductPlacement)}>
         {PRODUCT_PLACEMENTS.map((p) => (
           <Chip key={p.id} active={props.productPlacement === p.id} onClick={() => toggle(props.productPlacement, p.id, props.onProductPlacement)}>
-            {p.label}
+            {t(`adui.placeopt.${p.id}`)}
           </Chip>
         ))}
         {extraChips('place', props.productPlacement, props.onProductPlacement)}
       </Box>
 
-      <Box title="هدف الإعلان" onAdd={() => openAdd('goal', 'هدف الإعلان', props.onGoal)}>
+      <Box title={t('adui.goal')} onAdd={() => openAdd('goal', t('adui.goal'), props.onGoal)}>
         {MARKETING_GOALS.map((g) => (
           <Chip key={g.id} active={props.marketingGoal === g.id} onClick={() => toggle(props.marketingGoal, g.id, props.onGoal)}>
-            {g.label}
+            {t(`adui.goal.${g.id}`)}
           </Chip>
         ))}
         {extraChips('goal', props.marketingGoal, props.onGoal)}
       </Box>
 
-      <Box title="الصوت" onAdd={() => openAdd('audio', 'الصوت', props.onAudio)}>
+      <Box title={t('adui.audio')} onAdd={() => openAdd('audio', t('adui.audio'), props.onAudio)}>
         {AUDIO_MODES.map((a) => (
           <Chip key={a.id} active={props.audioMode === a.id} onClick={() => toggle(props.audioMode, a.id, props.onAudio)}>
-            {a.label}
+            {t(`adui.audio.${a.id}`)}
           </Chip>
         ))}
         {extraChips('audio', props.audioMode, props.onAudio)}
       </Box>
 
-      <Box title="المعلق والموسيقى" onAdd={() => openAdd('voice', 'المعلق والموسيقى', props.onVoiceCast)}>
+      <Box title={t('adui.voiceMusic')} onAdd={() => openAdd('voice', t('adui.voiceMusic'), props.onVoiceCast)}>
         {VOICE_CASTS.map((v) => (
           <Chip key={v.id} active={props.voiceCast === v.id} onClick={() => toggle(props.voiceCast, v.id, props.onVoiceCast)}>
-            {v.label}
+            {t(`adui.voice.${v.id}`)}
           </Chip>
         ))}
         {MUSIC_ENERGY.map((m) => (
           <Chip key={m.id} active={props.musicEnergy === m.id} onClick={() => toggle(props.musicEnergy, m.id, props.onMusicEnergy)}>
-            {m.label}
+            {t(`adui.music.${m.id}`)}
           </Chip>
         ))}
         {extraChips('voice', props.voiceCast, props.onVoiceCast)}
       </Box>
 
-      <Box title="الإغلاق / CTA" onAdd={() => openAdd('cta', 'الإغلاق / CTA', props.onCta)}>
+      <Box title={t('adui.cta')} onAdd={() => openAdd('cta', t('adui.cta'), props.onCta)}>
         {CTA_MODES.map((c) => (
           <Chip key={c.id} active={props.cta === c.id} onClick={() => toggle(props.cta, c.id, props.onCta)}>
-            {c.label}
+            {t(`adui.cta.${c.id}`)}
           </Chip>
         ))}
         {extraChips('cta', props.cta, props.onCta)}
       </Box>
 
       <div className="space-y-2.5">
-        <Box title="لغة الحوار" onAdd={() => openAdd('language', 'لغة الحوار', props.onLanguage)}>
+        <Box title={t('adui.dialogueLang')} onAdd={() => openAdd('language', t('adui.dialogueLang'), props.onLanguage)}>
           {LANGUAGE_OPTIONS.map((l) => (
             <Chip
               key={l.id}
@@ -353,16 +323,16 @@ export function ProControlGrid(props: {
                 }
               }}
             >
-              {LANG_SHORT[l.id] || l.label}
+              {t(`adui.lang.${l.id}`)}
             </Chip>
           ))}
           {extraChips('language', props.language, props.onLanguage)}
         </Box>
         {props.language ? (
-          <Box title="اللهجة" hint="تظهر بعد اختيار اللغة" onAdd={() => openAdd('dialect', 'اللهجة', props.onDialect)}>
+          <Box title={t('adui.dialect')} hint={t('adui.dialectHint')} onAdd={() => openAdd('dialect', t('adui.dialect'), props.onDialect)}>
             {dialects.map((d) => (
               <Chip key={d.id} active={props.dialect === d.id} onClick={() => toggle(props.dialect, d.id, props.onDialect)}>
-                {DIALECT_SHORT[d.id] || d.label}
+                {t(`adui.dia.${d.id}`)}
               </Chip>
             ))}
             {extraChips('dialect', props.dialect, props.onDialect)}
@@ -370,22 +340,22 @@ export function ProControlGrid(props: {
         ) : null}
       </div>
 
-      <Box title="المدة">
+      <Box title={t('adui.duration')}>
         {OMNI_DURATIONS.map((d) => (
           <Chip key={d} active={props.duration === d} onClick={() => props.onDuration(d)}>
-            {d} ث
+            {t('adui.secUnit', { n: d })}
           </Chip>
         ))}
       </Box>
 
-      <Box title="توجيه النموذج" className="lg:col-span-2">
+      <Box title={t('adui.modelGuide')} className="lg:col-span-2">
         {BEAT_INTERVALS.map((iv) => (
           <Chip
             key={iv}
             active={props.beatInterval === iv}
             onClick={() => props.onBeatInterval(props.beatInterval === iv ? null : iv)}
           >
-            {BEAT_LABEL[iv]}
+            {t(`adui.beat.${iv}`)}
           </Chip>
         ))}
       </Box>
@@ -393,9 +363,9 @@ export function ProControlGrid(props: {
       {props.beatInterval && props.beatSlots.length > 0 && (
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:col-span-2">
           {props.beatSlots.map((slot, idx) => (
-            <label key={`${slot.from}-${slot.to}-${idx}`} className="rounded-2xl border border-white/10 bg-white/[0.04] p-3 text-right">
+            <label key={`${slot.from}-${slot.to}-${idx}`} className="rounded-2xl border border-white/10 bg-white/[0.04] p-3 text-start">
               <span className="mb-1.5 block text-[11px] font-black text-[var(--naje-accent-2)]">
-                من {slot.from} → {slot.to}
+                {t('adui.beatRange', { from: slot.from, to: slot.to })}
               </span>
               <textarea
                 rows={2}
@@ -404,7 +374,7 @@ export function ProControlGrid(props: {
                   const next = props.beatSlots.map((s, i) => (i === idx ? { ...s, text: e.target.value.slice(0, 400) } : s));
                   props.onBeatSlots(next);
                 }}
-                placeholder="ماذا يحدث في هذه الثواني؟"
+                placeholder={t('adui.beatPlaceholder')}
                 className="w-full resize-none rounded-xl border border-white/10 bg-black/40 p-2.5 text-[12px] text-white placeholder:text-white/30 focus:border-[var(--naje-accent)] focus:outline-none"
               />
             </label>
@@ -413,27 +383,27 @@ export function ProControlGrid(props: {
       )}
 
       {addBox && (
-        <div className="fixed inset-0 z-[80] flex items-end justify-center bg-black/70 p-0 sm:items-center sm:p-4" dir="rtl">
+        <div className="fixed inset-0 z-[80] flex items-end justify-center bg-black/70 p-0 sm:items-center sm:p-4">
           <div className="w-full max-w-md rounded-t-3xl border border-white/10 bg-[#12141c] p-4 shadow-2xl sm:rounded-3xl">
             <div className="mb-3 flex items-center justify-between">
-              <h3 className="text-sm font-black text-white">إضافة إلى {addBox.title}</h3>
+              <h3 className="text-sm font-black text-white">{t('adui.addTo', { title: addBox.title })}</h3>
               <button type="button" onClick={() => setAddBox(null)} className="rounded-full p-1.5 text-white/50 hover:text-white">
                 <X className="h-4 w-4" />
               </button>
             </div>
-            <label className="mb-2 block text-[11px] font-bold text-white/70">الاسم الظاهر</label>
+            <label className="mb-2 block text-[11px] font-bold text-white/70">{t('adui.visibleName')}</label>
             <input
               value={addLabel}
               onChange={(e) => setAddLabel(e.target.value.slice(0, 48))}
-              placeholder="مثال: إطلاق في رمضان"
+              placeholder={t('adui.visiblePlaceholder')}
               className="mb-3 w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-[var(--naje-accent)] focus:outline-none"
             />
-            <label className="mb-2 block text-[11px] font-bold text-white/70">ماذا سيفعل النموذج</label>
+            <label className="mb-2 block text-[11px] font-bold text-white/70">{t('adui.modelWillDo')}</label>
             <textarea
               rows={3}
               value={addPrompt}
               onChange={(e) => setAddPrompt(e.target.value.slice(0, 240))}
-              placeholder="وصف قصير يُضاف إلى التوجيه"
+              placeholder={t('adui.modelWillDoPlaceholder')}
               className="mb-4 w-full resize-none rounded-xl border border-white/10 bg-black/40 p-3 text-sm text-white placeholder:text-white/30 focus:border-[var(--naje-accent)] focus:outline-none"
             />
             <div className="flex gap-2">
@@ -443,10 +413,10 @@ export function ProControlGrid(props: {
                 disabled={!addLabel.trim()}
                 className="flex-1 rounded-xl bg-[var(--naje-accent)] py-2.5 text-sm font-black text-black disabled:opacity-40"
               >
-                حفظ
+                {t('common.save')}
               </button>
               <button type="button" onClick={() => setAddBox(null)} className="rounded-xl border border-white/15 px-4 py-2.5 text-sm font-bold text-white/70">
-                إلغاء
+                {t('common.cancel')}
               </button>
             </div>
           </div>

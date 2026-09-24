@@ -70,11 +70,11 @@ export default function Profile() {
     if (!auth.currentUser || !auth.currentUser.email) return;
 
     if (newPassword.length < 6) {
-      setMessage({ text: 'يجب ألا تقل كلمة المرور الجديدة عن 6 خانات.', type: 'error' });
+      setMessage({ text: t('shell.profile.passwordMin'), type: 'error' });
       return;
     }
     if (newPassword !== confirmPassword) {
-      setMessage({ text: 'كلمتا المرور غير متطابقتين.', type: 'error' });
+      setMessage({ text: t('auth.errPasswordsDontMatch'), type: 'error' });
       return;
     }
 
@@ -85,11 +85,11 @@ export default function Profile() {
         const cred = EmailAuthProvider.credential(auth.currentUser.email, currentPassword);
         await reauthenticateWithCredential(auth.currentUser, cred);
         await updatePassword(auth.currentUser, newPassword);
-        setMessage({ text: 'تم تغيير كلمة المرور بنجاح!', type: 'success' });
+        setMessage({ text: t('shell.profile.passwordChanged'), type: 'success' });
       } else {
         const cred = EmailAuthProvider.credential(auth.currentUser.email, newPassword);
         await linkWithCredential(auth.currentUser, cred);
-        setMessage({ text: 'تم ربط كلمة المرور بحسابك بنجاح!', type: 'success' });
+        setMessage({ text: t('shell.profile.passwordLinked'), type: 'success' });
       }
       setCurrentPassword('');
       setNewPassword('');
@@ -98,13 +98,13 @@ export default function Profile() {
     } catch (err: any) {
       console.error('Password change error:', err);
       if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
-        setMessage({ text: 'كلمة المرور الحالية غير صحيحة.', type: 'error' });
+        setMessage({ text: t('shell.profile.wrongCurrentPassword'), type: 'error' });
       } else if (err.code === 'auth/requires-recent-login') {
-        setMessage({ text: 'لأسباب أمنية، يرجى تسجيل الخروج والدخول مجدداً قبل تغيير كلمة المرور.', type: 'error' });
+        setMessage({ text: t('shell.profile.reloginPassword'), type: 'error' });
       } else if (err.code === 'auth/weak-password') {
-        setMessage({ text: 'كلمة المرور الجديدة ضعيفة جداً.', type: 'error' });
+        setMessage({ text: t('shell.profile.passwordWeak'), type: 'error' });
       } else {
-        setMessage({ text: err.message || 'حدث خطأ أثناء معالجة كلمة المرور.', type: 'error' });
+        setMessage({ text: err.message || t('shell.profile.passwordProcessError'), type: 'error' });
       }
     } finally {
       setPasswordLoading(false);
@@ -117,7 +117,7 @@ export default function Profile() {
 
     const targetNewEmail = newEmail.trim().toLowerCase();
     if (!targetNewEmail || targetNewEmail === auth.currentUser.email.toLowerCase()) {
-      setMessage({ text: 'يرجى إدخال بريد إلكتروني جديد ومختلف عن الحالي.', type: 'error' });
+      setMessage({ text: t('shell.profile.emailMustDiffer'), type: 'error' });
       return;
     }
 
@@ -126,7 +126,7 @@ export default function Profile() {
     try {
       if (hasPasswordProvider) {
         if (!emailCurrentPassword) {
-          setMessage({ text: 'يرجى إدخال كلمة المرور الحالية لتأكيد الهوية.', type: 'error' });
+          setMessage({ text: t('shell.profile.needCurrentPassword'), type: 'error' });
           setEmailLoading(false);
           return;
         }
@@ -134,9 +134,9 @@ export default function Profile() {
         await reauthenticateWithCredential(auth.currentUser, cred);
       }
       await safeVerifyBeforeUpdateEmail(auth.currentUser, targetNewEmail);
-      setMessage({ 
-        text: `تم إرسال رابط تأكيد إلى بريدك الجديد (${targetNewEmail}). لن يتغير بريدك الحالي حتى تؤكد الرابط عبر الرسالة.`, 
-        type: 'success' 
+      setMessage({
+        text: t('shell.profile.emailLinkSent', { email: targetNewEmail }),
+        type: 'success'
       });
       setNewEmail('');
       setEmailCurrentPassword('');
@@ -144,15 +144,15 @@ export default function Profile() {
     } catch (err: any) {
       console.error('Email change error:', err);
       if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
-        setMessage({ text: 'كلمة المرور الحالية غير صحيحة.', type: 'error' });
+        setMessage({ text: t('shell.profile.wrongCurrentPassword'), type: 'error' });
       } else if (err.code === 'auth/email-already-in-use') {
-        setMessage({ text: 'هذا البريد الإلكتروني مستخدم بالفعل من حساب آخر.', type: 'error' });
+        setMessage({ text: t('shell.profile.emailInUse'), type: 'error' });
       } else if (err.code === 'auth/requires-recent-login') {
-        setMessage({ text: 'لأسباب أمنية، يرجى تسجيل الخروج والدخول مجدداً قبل تغيير البريد.', type: 'error' });
+        setMessage({ text: t('shell.profile.reloginEmail'), type: 'error' });
       } else if (err.code === 'auth/invalid-email') {
-        setMessage({ text: 'صيغة البريد الإلكتروني غير صحيحة.', type: 'error' });
+        setMessage({ text: t('auth.errInvalidEmail'), type: 'error' });
       } else {
-        setMessage({ text: err.message || 'حدث خطأ أثناء إرسال طلب تغيير البريد.', type: 'error' });
+        setMessage({ text: err.message || t('shell.profile.emailChangeError'), type: 'error' });
       }
     } finally {
       setEmailLoading(false);
@@ -166,13 +166,13 @@ export default function Profile() {
       if (val) {
         const res = await registerForPushNotifications(user.uid);
         if (res.success) {
-          setMessage({ text: 'تم تفعيل إشعارات الجوال الفورية بنجاح!', type: 'success' });
+          setMessage({ text: t('shell.profile.pushOn'), type: 'success' });
         } else if (res.error) {
           setMessage({ text: res.error, type: 'error' });
         }
       } else {
         await disablePushNotifications(user.uid);
-        setMessage({ text: 'تم إيقاف إشعارات الجوال الفورية.', type: 'success' });
+        setMessage({ text: t('shell.profile.pushOff'), type: 'success' });
       }
     }
   };
@@ -220,14 +220,14 @@ export default function Profile() {
         data: jsonStr,
         mimeType: 'application/json',
         ext: 'json',
-        title: `نسخة_احتياطية_محادثات_ناجي_${user.displayName || user.uid.slice(0, 6)}`,
-        fallbackName: 'نسخة_احتياطية_ناجي',
+        title: t('shell.profile.backupTitle', { name: user.displayName || user.uid.slice(0, 6) }),
+        fallbackName: t('shell.profile.backupFallback'),
       });
       
-      setMessage({ text: 'تم تصدير ملف المحادثات والبيانات بنجاح!', type: 'success' });
+      setMessage({ text: t('shell.profile.exportOk'), type: 'success' });
     } catch (err) {
       console.error(err);
-      setMessage({ text: 'حدث خطأ أثناء محاولة تصدير البيانات.', type: 'error' });
+      setMessage({ text: t('shell.profile.exportFail'), type: 'error' });
     } finally {
       setExportingData(false);
     }
@@ -276,7 +276,9 @@ export default function Profile() {
 
       // 3. Messages with media
       // Setup last 7 days data for chart
-      const days = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+      const days = Array.from({ length: 7 }, (_, i) =>
+        new Intl.DateTimeFormat(locale === 'ar' ? 'ar' : locale, { weekday: 'long' }).format(new Date(2024, 0, 7 + i))
+      );
       const last7DaysMap = new Map();
       const now = new Date();
       now.setHours(23, 59, 59, 999); // End of today
@@ -328,7 +330,7 @@ export default function Profile() {
       });
     };
     fetchStats();
-  }, [user]);
+  }, [user, locale]);
 
   
   const handleUpdateName = async () => {
@@ -341,10 +343,10 @@ export default function Profile() {
       await updateDoc(doc(db, 'users', user.uid), { displayName: newName.trim() });
       setUser({ ...user, displayName: newName.trim() });
       setIsEditingName(false);
-      setMessage({ text: 'تم تحديث الاسم بنجاح!', type: 'success' });
+      setMessage({ text: t('shell.profile.nameUpdated'), type: 'success' });
     } catch (err) {
       console.error(err);
-      setMessage({ text: 'حدث خطأ أثناء تحديث الاسم.', type: 'error' });
+      setMessage({ text: t('shell.profile.nameUpdateError'), type: 'error' });
     } finally {
       setUpdatingName(false);
     }
@@ -368,11 +370,11 @@ export default function Profile() {
       });
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.error || 'حدث خطأ أثناء محاولة استرداد الكود');
+        throw new Error(data.error || t('shell.profile.redeemError'));
       }
       
       updateBalance(data.newBalance);
-      setMessage({ text: `تم شحن ${data.addedPoints} نقطة بنجاح!`, type: 'success' });
+      setMessage({ text: t('shell.profile.redeemOk', { points: data.addedPoints }), type: 'success' });
       setCode('');
     } catch (err: any) {
       setMessage({ text: err.message, type: 'error' });
@@ -398,13 +400,13 @@ export default function Profile() {
       });
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.error || 'حدث خطأ أثناء محاولة حذف الحساب');
+        throw new Error(data.error || t('shell.profile.deleteError'));
       }
       
       setShowDeleteModal(false);
       auth.signOut();
     } catch (err: any) {
-      setMessage({ text: err.message || 'حدث خطأ أثناء محاولة حذف الحساب', type: 'error' });
+      setMessage({ text: err.message || t('shell.profile.deleteError'), type: 'error' });
       setDeleteStep(1);
       setShowDeleteModal(false);
     } finally {
@@ -471,18 +473,18 @@ export default function Profile() {
                   <CreditCard className="w-6 h-6" />
                 </div>
                 <div>
-                  <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-0.5">رصيد الإبداع المتاح</h2>
-                  <p className="text-xs text-gray-800 dark:text-gray-400 ">اشحن نقاطك للمزيد من التصاميم والفيديوهات</p>
+                  <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-0.5">{t('shell.profile.balanceTitle')}</h2>
+                  <p className="text-xs text-gray-800 dark:text-gray-400 ">{t('shell.profile.balanceHint')}</p>
                 </div>
               </div>
               
               <div className="text-4xl sm:text-5xl font-extrabold text-gray-900 dark:text-white mb-8 flex items-baseline gap-2">
-                {Number((user?.balance || 0).toFixed(2))} <span className="text-lg text-indigo-600 dark:text-indigo-400 font-semibold">نقطة إبداع</span>
+                {Number((user?.balance || 0).toFixed(2))} <span className="text-lg text-indigo-600 dark:text-indigo-400 font-semibold">{t('recharge.pointsUnit')}</span>
               </div>
 
               <form onSubmit={handleRedeem} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-semibold text-gray-800 dark:text-gray-400 mb-2">رمز شحن الرصيد (16 خانة)</label>
+                  <label className="block text-xs font-semibold text-gray-800 dark:text-gray-400 mb-2">{t('shell.profile.codeLabel')}</label>
                   <input
                     value={code}
                     onChange={e => setCode(e.target.value.toUpperCase())}
@@ -495,7 +497,7 @@ export default function Profile() {
                   disabled={loading || !code} 
                   className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:bg-gray-50 dark:disabled:bg-gray-900 disabled:text-gray-700 dark:disabled:text-gray-500 text-white text-xs font-bold py-2.5 rounded-xl transition shadow-md flex justify-center items-center gap-2 cursor-pointer border border-transparent disabled:border-gray-900"
                 >
-                  {loading ? <NajeSpinner className="w-4 h-4" /> : 'شحن الكود'}
+                  {loading ? <NajeSpinner className="w-4 h-4" /> : t('shell.profile.redeemCode')}
                 </button>
                 {message.text && (
                   <p className={`text-xs text-center font-bold mt-2 ${message.type === 'success' ? 'text-green-400' : 'text-red-600 dark:text-red-400'}`}>
@@ -505,13 +507,13 @@ export default function Profile() {
               </form>
 
               <div className="mt-4 pt-4 border-t border-purple-200 dark:border-gray-800/80 flex items-center justify-between">
-                <span className="text-xs text-gray-700 dark:text-gray-400">أو شراء باقات إضافية:</span>
+                <span className="text-xs text-gray-700 dark:text-gray-400">{t('shell.profile.orBuy')}</span>
                 <Link
                   to="/store"
                   className="text-xs font-bold text-amber-500 hover:text-amber-400 dark:text-amber-400 dark:hover:text-amber-300 flex items-center gap-1.5 transition cursor-pointer"
                 >
                   <Sparkles className="w-3.5 h-3.5" />
-                  <span>زيارة متجر النقاط ←</span>
+                  <span>{t('shell.profile.visitStore')}</span>
                 </Link>
               </div>
             </div>
@@ -519,11 +521,11 @@ export default function Profile() {
             {/* Account Info Details Card */}
             <div className="bg-naje-card border border-purple-200 dark:border-gray-900 rounded-2xl p-6 sm:p-8 shadow-lg flex flex-col justify-between">
               <div>
-                <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-6">تفاصيل حساب الإبداع</h2>
+                <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-6">{t('shell.profile.accountDetails')}</h2>
                 <div className="space-y-5">
                   
                     <div className="border-b border-gray-950 pb-3">
-                      <p className="text-xs text-gray-800 dark:text-gray-400 mb-1">الاسم بالكامل</p>
+                      <p className="text-xs text-gray-800 dark:text-gray-400 mb-1">{t('shell.profile.fullName')}</p>
                       {isEditingName ? (
                         <div className="flex items-center gap-2 mt-1">
                           <input
@@ -531,26 +533,26 @@ export default function Profile() {
                             value={newName}
                             onChange={(e) => setNewName(e.target.value)}
                             className="bg-white dark:bg-gray-900 border border-gray-600 dark:border-gray-800 text-gray-900 dark:text-white text-sm rounded-lg px-3 py-1.5 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 outline-none w-full"
-                            placeholder="أدخل اسمك الجديد..."
+                            placeholder={t('shell.profile.namePlaceholder')}
                           />
                           <button
                             onClick={handleUpdateName}
                             disabled={updatingName}
                             className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition disabled:opacity-50 flex-shrink-0"
                           >
-                            {updatingName ? 'جاري الحفظ...' : 'حفظ'}
+                            {updatingName ? t('common.saving') : t('common.save')}
                           </button>
                           <button
                             onClick={() => setIsEditingName(false)}
                             disabled={updatingName}
                             className="bg-gray-100 dark:bg-gray-900 hover:bg-gray-200 dark:hover:bg-gray-800 text-gray-900 dark:text-gray-300 px-3 py-1.5 rounded-lg text-xs font-bold transition disabled:opacity-50 flex-shrink-0"
                           >
-                            إلغاء
+                            {t('common.cancel')}
                           </button>
                         </div>
                       ) : (
                         <div className="flex items-center justify-between">
-                          <p className="font-bold text-gray-900 dark:text-white text-[15px]">{user.displayName || 'مبدع ناجي'}</p>
+                          <p className="font-bold text-gray-900 dark:text-white text-[15px]">{user.displayName || t('shell.creatorFallback')}</p>
                           <button
                             onClick={() => {
                               setNewName(user.displayName || '');
@@ -558,21 +560,21 @@ export default function Profile() {
                             }}
                             className="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition font-bold"
                           >
-                            تعديل الاسم
+                            {t('shell.profile.editName')}
                           </button>
                         </div>
                       )}
                     </div>
                   
                   <div className="border-b border-gray-950 pb-3">
-                    <p className="text-xs text-gray-800 dark:text-gray-400 mb-1">البريد الإلكتروني للغرفة</p>
+                    <p className="text-xs text-gray-800 dark:text-gray-400 mb-1">{t('shell.profile.roomEmail')}</p>
                     <p className="font-bold text-gray-900 dark:text-gray-300 text-[15px]">{user.email}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-gray-800 dark:text-gray-400 mb-1">حالة نشاط المنصة</p>
+                    <p className="text-xs text-gray-800 dark:text-gray-400 mb-1">{t('shell.profile.activityStatus')}</p>
                     <div className="flex items-center gap-2 mt-1">
                       <span className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse"></span>
-                      <span className="font-bold text-xs text-green-400">متصل وآمن بنجاح</span>
+                      <span className="font-bold text-xs text-green-400">{t('shell.profile.onlineSecure')}</span>
                     </div>
                   </div>
                 </div>
@@ -580,7 +582,7 @@ export default function Profile() {
 
               {user.isAdmin && (
                 <div className="mt-6 bg-purple-500/10 text-purple-600 dark:text-purple-400 px-4 py-2.5 rounded-xl text-xs font-bold border border-purple-500/20 text-center w-full shadow-sm">
-                  حساب مدير المسؤول الأول (Full Administrator)
+                  {t('shell.profile.adminAccount')}
                 </div>
               )}
             </div>
@@ -612,8 +614,8 @@ export default function Profile() {
                 <ShieldCheck className="w-6 h-6" />
               </div>
               <div>
-                <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-0.5">الأمان وبيانات الدخول</h2>
-                <p className="text-xs text-gray-800 dark:text-gray-400">إدارة كلمة المرور والبريد الإلكتروني المرتبط بحسابك</p>
+                <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-0.5">{t('settings.credentialsTitle')}</h2>
+                <p className="text-xs text-gray-800 dark:text-gray-400">{t('shell.profile.credentialsHint')}</p>
               </div>
             </div>
 
@@ -625,13 +627,13 @@ export default function Profile() {
                     <div className="flex items-center gap-2">
                       <KeyRound className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
                       <span className="text-xs font-bold text-gray-900 dark:text-white">
-                        {hasPasswordProvider ? 'كلمة المرور' : 'ربط كلمة مرور بالحساب'}
+                        {hasPasswordProvider ? t('settings.passwordLabel') : t('settings.linkPasswordBtn')}
                       </span>
                     </div>
                     <p className="text-[11px] text-gray-800 dark:text-gray-400 mt-1 leading-relaxed">
                       {hasPasswordProvider 
-                        ? 'تحديث كلمة المرور الخاصة بحسابك لحماية إضافية.' 
-                        : 'حسابك مسجل حالياً عبر Google. يمكنك تعيين كلمة مرور لتسجيل الدخول بالبريد أيضاً.'}
+                        ? t('shell.profile.passwordUpdateHint')
+                        : t('shell.profile.passwordLinkHint')}
                     </p>
                   </div>
                   <button
@@ -642,7 +644,7 @@ export default function Profile() {
                     }}
                     className="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition bg-indigo-50 dark:bg-indigo-950/50 px-3 py-1.5 rounded-lg border border-indigo-200 dark:border-indigo-900/50 flex-shrink-0 cursor-pointer"
                   >
-                    {showPasswordForm ? 'إلغاء' : (hasPasswordProvider ? 'تغيير كلمة المرور' : 'ربط كلمة مرور')}
+                    {showPasswordForm ? t('common.cancel') : (hasPasswordProvider ? t('settings.changePasswordBtn') : t('shell.profile.linkPasswordShort'))}
                   </button>
                 </div>
 
@@ -650,7 +652,7 @@ export default function Profile() {
                   <form onSubmit={handleChangePassword} className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-900 space-y-3">
                     {hasPasswordProvider && (
                       <div>
-                        <label className="block text-xs font-semibold text-gray-800 dark:text-gray-400 mb-1">كلمة المرور الحالية</label>
+                        <label className="block text-xs font-semibold text-gray-800 dark:text-gray-400 mb-1">{t('settings.currentPassword')}</label>
                         <input
                           type="password"
                           required
@@ -662,7 +664,7 @@ export default function Profile() {
                       </div>
                     )}
                     <div>
-                      <label className="block text-xs font-semibold text-gray-800 dark:text-gray-400 mb-1">كلمة المرور الجديدة</label>
+                      <label className="block text-xs font-semibold text-gray-800 dark:text-gray-400 mb-1">{t('settings.newPassword')}</label>
                       <input
                         type="password"
                         required
@@ -674,7 +676,7 @@ export default function Profile() {
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-gray-800 dark:text-gray-400 mb-1">تأكيد كلمة المرور الجديدة</label>
+                      <label className="block text-xs font-semibold text-gray-800 dark:text-gray-400 mb-1">{t('settings.confirmNewPassword')}</label>
                       <input
                         type="password"
                         required
@@ -691,7 +693,7 @@ export default function Profile() {
                       className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-bold px-4 py-2 rounded-lg transition flex items-center justify-center gap-2 shadow-sm cursor-pointer"
                     >
                       {passwordLoading ? <NajeSpinner className="w-3.5 h-3.5" /> : null}
-                      <span>{passwordLoading ? 'جاري الحفظ...' : (hasPasswordProvider ? 'تأكيد تغيير كلمة المرور' : 'حفظ وربط كلمة المرور')}</span>
+                      <span>{passwordLoading ? t('common.saving') : (hasPasswordProvider ? t('shell.profile.confirmPasswordChange') : t('shell.profile.saveLinkPassword'))}</span>
                     </button>
                   </form>
                 )}
@@ -703,10 +705,10 @@ export default function Profile() {
                   <div>
                     <div className="flex items-center gap-2">
                       <Mail className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-                      <span className="text-xs font-bold text-gray-900 dark:text-white">البريد الإلكتروني للحساب</span>
+                      <span className="text-xs font-bold text-gray-900 dark:text-white">{t('shell.profile.accountEmail')}</span>
                     </div>
                     <p className="text-[11px] text-gray-800 dark:text-gray-400 mt-1 leading-relaxed">
-                      البريد الحالي: <span className="font-semibold text-gray-900 dark:text-white">{user.email}</span>
+                      {t('shell.profile.currentEmail')} <span className="font-semibold text-gray-900 dark:text-white">{user.email}</span>
                     </p>
                   </div>
                   <button
@@ -717,14 +719,14 @@ export default function Profile() {
                     }}
                     className="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition bg-indigo-50 dark:bg-indigo-950/50 px-3 py-1.5 rounded-lg border border-indigo-200 dark:border-indigo-900/50 flex-shrink-0 cursor-pointer"
                   >
-                    {showEmailForm ? 'إلغاء' : 'تغيير البريد الإلكتروني'}
+                    {showEmailForm ? t('common.cancel') : t('settings.changeEmailBtn')}
                   </button>
                 </div>
 
                 {showEmailForm && (
                   <form onSubmit={handleChangeEmail} className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-900 space-y-3">
                     <div>
-                      <label className="block text-xs font-semibold text-gray-800 dark:text-gray-400 mb-1">البريد الإلكتروني الجديد</label>
+                      <label className="block text-xs font-semibold text-gray-800 dark:text-gray-400 mb-1">{t('settings.newEmail')}</label>
                       <input
                         type="email"
                         required
@@ -736,7 +738,7 @@ export default function Profile() {
                     </div>
                     {hasPasswordProvider && (
                       <div>
-                        <label className="block text-xs font-semibold text-gray-800 dark:text-gray-400 mb-1">كلمة المرور الحالية (لتأكيد الهوية)</label>
+                        <label className="block text-xs font-semibold text-gray-800 dark:text-gray-400 mb-1">{t('shell.profile.currentPasswordConfirm')}</label>
                         <input
                           type="password"
                           required
@@ -748,7 +750,7 @@ export default function Profile() {
                       </div>
                     )}
                     <p className="text-[10px] text-gray-500 dark:text-gray-400">
-                      سنرسل رابط تحقق إلى البريد الجديد. لن يتم تغيير بريدك الحالي حتى تؤكد الرابط عبر رسالة البريد.
+                      {t('shell.profile.emailVerifyNote')}
                     </p>
                     <button
                       type="submit"
@@ -756,7 +758,7 @@ export default function Profile() {
                       className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-bold px-4 py-2 rounded-lg transition flex items-center justify-center gap-2 shadow-sm cursor-pointer"
                     >
                       {emailLoading ? <NajeSpinner className="w-3.5 h-3.5" /> : null}
-                      <span>{emailLoading ? 'جاري الإرسال...' : 'إرسال رابط تأكيد التغيير'}</span>
+                      <span>{emailLoading ? t('shell.profile.sending') : t('settings.sendEmailVerifyBtn')}</span>
                     </button>
                   </form>
                 )}
@@ -916,9 +918,9 @@ export default function Profile() {
 
             {/* Recharts Graphical Area */}
             <div className="bg-white dark:bg-gray-950/30 border border-purple-100 dark:border-gray-900 rounded-xl p-5 h-64 relative">
-               <div className="absolute top-4 right-4 z-10">
-                  <p className="text-[10px] text-gray-800 dark:text-gray-400 font-bold">الاستهلاك الكلي للأسبوع الحالي</p>
-                  <p className="text-xl font-bold text-gray-900 dark:text-white mt-0.5">{stats.pointsSpent} <span className="text-xs text-indigo-600 dark:text-indigo-400 font-medium">نقطة</span></p>
+               <div className="absolute top-4 end-4 z-10">
+                  <p className="text-[10px] text-gray-800 dark:text-gray-400 font-bold">{t('settings.statWeeklyPoints')}</p>
+                  <p className="text-xl font-bold text-gray-900 dark:text-white mt-0.5">{stats.pointsSpent} <span className="text-xs text-indigo-600 dark:text-indigo-400 font-medium">{t('store.pointsUnit')}</span></p>
                </div>
                <ResponsiveContainer width="100%" height="100%">
                  <AreaChart data={chartData} margin={{ top: 20, right: 10, left: -25, bottom: 0 }}>
@@ -936,7 +938,7 @@ export default function Profile() {
                      itemStyle={{ color: '#818cf8' }}
                      cursor={{stroke: '#1e293b', strokeWidth: 1, strokeDasharray: '3 3'}}
                    />
-                   <Area type="monotone" dataKey="points" name="استهلاك الرصيد" stroke="#6366f1" strokeWidth={2.5} fillOpacity={1} fill="url(#colorPoints)" />
+                   <Area type="monotone" dataKey="points" name={t('shell.profile.balanceSpend')} stroke="#6366f1" strokeWidth={2.5} fillOpacity={1} fill="url(#colorPoints)" />
                  </AreaChart>
                </ResponsiveContainer>
             </div>
@@ -950,10 +952,10 @@ export default function Profile() {
           <div className="flex flex-col items-center justify-center text-center py-10 bg-[#f2f0f5] dark:bg-[#0e1014] rounded-2xl border border-purple-200 dark:border-gray-900 relative overflow-hidden">
             <div className="absolute top-0 right-0 w-[200px] h-[200px] bg-indigo-600/5 rounded-full blur-3xl pointer-events-none" />
             <NajeLogo size="lg" className="mb-4" />
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-1">منصة ناجي الذكية</h2>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-1">{t('shell.profile.aboutTitle')}</h2>
             <p className="text-xs text-indigo-600 dark:text-indigo-400 font-semibold tracking-wide">Naje Creative AI Studio</p>
             <div className="mt-4 bg-white dark:bg-gray-950 border border-purple-200 dark:border-gray-900 rounded-full px-4 py-1.5 text-[10px] font-bold text-gray-800 dark:text-gray-400 ">
-               الإصدار المستقر v1.0.0
+               {t('shell.profile.version')}
             </div>
           </div>
 
@@ -962,9 +964,9 @@ export default function Profile() {
               <div className="w-10 h-10 bg-indigo-50 dark:bg-indigo-500/10 rounded-lg flex items-center justify-center text-indigo-600 dark:text-indigo-400 mb-4 ring-1 ring-indigo-500/20">
                 <Sparkles className="w-5 h-5" />
               </div>
-              <h3 className="text-[15px] font-bold mb-2 text-gray-900 dark:text-white">مساعد إبداعي متكامل</h3>
+              <h3 className="text-[15px] font-bold mb-2 text-gray-900 dark:text-white">{t('shell.profile.aboutCreativeTitle')}</h3>
               <p className="text-gray-800 dark:text-gray-400 text-xs leading-relaxed">
-                منصة واحدة تجمع أقوى قدرات الذكاء الاصطناعي التوليدي، مصممة لتقديم حلول إبداعية متطورة. نوفر لك قدرات المحادثة الذكية، توليد الصور الفنية، وإنتاج الفيديو المتقدم بأسلوب احترافي لخدمة الأفراد والشركات.
+                {t('shell.profile.aboutCreativeBody')}
               </p>
             </div>
             
@@ -972,9 +974,9 @@ export default function Profile() {
               <div className="w-10 h-10 bg-purple-500/10 rounded-lg flex items-center justify-center text-purple-600 dark:text-purple-400 mb-4 ring-1 ring-purple-500/20">
                 <Shield className="w-5 h-5" />
               </div>
-              <h3 className="text-[15px] font-bold mb-2 text-gray-900 dark:text-white">الملكية والأمان</h3>
+              <h3 className="text-[15px] font-bold mb-2 text-gray-900 dark:text-white">{t('shell.profile.ownershipTitle')}</h3>
               <p className="text-gray-800 dark:text-gray-400 text-xs leading-relaxed">
-                جميع أعمالك الفنية محفوظة ومؤمنة تماماً. المحتوى المولّد هو ملك لك لتستخدمه في أعمالك الشخصية أو التجارية بكل حرية، مع ضمان أعلى معايير حماية البيانات وسرية المعلومات الحساسة.
+                {t('shell.profile.ownershipBody')}
               </p>
             </div>
           </div>
@@ -985,9 +987,9 @@ export default function Profile() {
                   <div className="w-10 h-10 rounded-lg bg-white dark:bg-gray-900 flex items-center justify-center border border-purple-100 dark:border-gray-800/80 text-gray-800 dark:text-gray-400 group-hover:text-gray-900 dark:text-white transition-colors">
                     <Shield className="w-5 h-5" />
                   </div>
-                  <div className="text-right">
-                    <h4 className="text-sm font-bold text-gray-900 dark:text-gray-300 group-hover:text-gray-900 dark:text-white transition-colors">شروط الخدمة</h4>
-                    <span className="text-[10px] text-gray-800 dark:text-gray-400 ">سياسات وإرشادات الاستخدام</span>
+                  <div className="text-start">
+                    <h4 className="text-sm font-bold text-gray-900 dark:text-gray-300 group-hover:text-gray-900 dark:text-white transition-colors">{t('auth.termsOfService')}</h4>
+                    <span className="text-[10px] text-gray-800 dark:text-gray-400 ">{t('shell.profile.termsHint')}</span>
                   </div>
                 </div>
               </Link>
@@ -996,9 +998,9 @@ export default function Profile() {
                   <div className="w-10 h-10 rounded-lg bg-white dark:bg-gray-900 flex items-center justify-center border border-purple-100 dark:border-gray-800/80 text-gray-800 dark:text-gray-400 group-hover:text-gray-900 dark:text-white transition-colors">
                     <Shield className="w-5 h-5" />
                   </div>
-                  <div className="text-right">
-                    <h4 className="text-sm font-bold text-gray-900 dark:text-gray-300 group-hover:text-gray-900 dark:text-white transition-colors">سياسة الخصوصية</h4>
-                    <span className="text-[10px] text-gray-800 dark:text-gray-400 ">كيف نحمي بياناتك</span>
+                  <div className="text-start">
+                    <h4 className="text-sm font-bold text-gray-900 dark:text-gray-300 group-hover:text-gray-900 dark:text-white transition-colors">{t('auth.privacyPolicy')}</h4>
+                    <span className="text-[10px] text-gray-800 dark:text-gray-400 ">{t('shell.profile.privacyHint')}</span>
                   </div>
                 </div>
               </Link>
@@ -1007,9 +1009,9 @@ export default function Profile() {
                   <div className="w-10 h-10 rounded-lg bg-white dark:bg-gray-900 flex items-center justify-center border border-purple-100 dark:border-gray-800/80 text-gray-800 dark:text-gray-400 group-hover:text-gray-900 dark:text-white transition-colors">
                     <Trash2 className="w-5 h-5" />
                   </div>
-                  <div className="text-right">
-                    <div className="text-gray-900 dark:text-gray-300 group-hover:text-gray-900 dark:text-white text-xs font-bold transition-colors mb-0.5">طلب حذف الحساب</div>
-                    <div className="text-[10px] text-gray-800 dark:text-gray-400">سياسات وإرشادات إزالة البيانات</div>
+                  <div className="text-start">
+                    <div className="text-gray-900 dark:text-gray-300 group-hover:text-gray-900 dark:text-white text-xs font-bold transition-colors mb-0.5">{t('auth.deleteAccountRequest')}</div>
+                    <div className="text-[10px] text-gray-800 dark:text-gray-400">{t('shell.profile.deleteHint')}</div>
                   </div>
                 </div>
                 <ExternalLink className="w-4 h-4 text-gray-900 group-hover:text-gray-500 dark:text-gray-400 transition-colors" />
@@ -1020,9 +1022,9 @@ export default function Profile() {
                   <div className="w-10 h-10 rounded-lg bg-white dark:bg-gray-900 flex items-center justify-center border border-purple-100 dark:border-gray-800/80 text-gray-800 dark:text-gray-400 group-hover:text-gray-900 dark:text-white transition-colors">
                     <Mail className="w-5 h-5" />
                   </div>
-                  <div className="text-right">
-                    <div className="text-gray-900 dark:text-white text-xs font-semibold mb-0.5">الدعم الفني المباشر</div>
-                    <div className="text-[10px] text-gray-800 dark:text-gray-400 ">تواصل مع فريق التطوير والمساعدة</div>
+                  <div className="text-start">
+                    <div className="text-gray-900 dark:text-white text-xs font-semibold mb-0.5">{t('shell.profile.supportTitle')}</div>
+                    <div className="text-[10px] text-gray-800 dark:text-gray-400 ">{t('shell.profile.supportHint')}</div>
                   </div>
                 </div>
                 <ExternalLink className="w-4 h-4 text-gray-900 group-hover:text-gray-500 dark:text-gray-400 transition-colors" />
@@ -1062,13 +1064,13 @@ export default function Profile() {
             
             <div className="flex items-center gap-3 text-red-600 dark:text-red-400 mb-4">
               <Shield className="w-8 h-8" />
-              <h3 className="text-lg font-extrabold">حذف حساب الإبداع نهائياً</h3>
+              <h3 className="text-lg font-extrabold">{t('shell.profile.deleteModalTitle')}</h3>
             </div>
 
             {deleteStep === 1 ? (
               <>
                 <p className="text-gray-800 dark:text-gray-300 text-xs leading-relaxed mb-6">
-                  هل أنت متأكد تماماً من رغبتك في حذف حسابك؟ <strong className="text-red-500 font-bold">هذا الإجراء نهائي ولا يمكن التراجع عنه بأي شكل من الأشكال.</strong> سيتم مسح كافة بياناتك، محادثاتك، ملفاتك، ورصيد نقاطك المتبقي نهائياً من أنظمتنا.
+                  {t('shell.profile.deleteModalBody')} <strong className="text-red-500 font-bold">{t('shell.profile.deleteModalStrong')}</strong> {t('shell.profile.deleteModalRest')}
                 </p>
                 <div className="flex gap-3 justify-end">
                   <button
@@ -1077,20 +1079,20 @@ export default function Profile() {
                     }}
                     className="flex-1 bg-red-650 hover:bg-red-500 text-white text-xs font-bold py-2.5 px-4 rounded-xl transition cursor-pointer shadow-md text-center"
                   >
-                    نعم، تابع للخطوة التالية
+                    {t('shell.profile.deleteContinue')}
                   </button>
                   <button
                     onClick={() => setShowDeleteModal(false)}
                     className="flex-1 bg-gray-100 dark:bg-gray-900 hover:bg-gray-200 dark:hover:bg-gray-800 text-gray-900 dark:text-gray-300 text-xs font-bold py-2.5 px-4 rounded-xl transition cursor-pointer border border-gray-200 dark:border-gray-800"
                   >
-                    إلغاء وتراجع
+                    {t('shell.profile.deleteCancel')}
                   </button>
                 </div>
               </>
             ) : (
               <>
                 <p className="text-gray-800 dark:text-gray-300 text-xs leading-relaxed mb-6">
-                  <strong className="text-red-500 font-bold">التحذير الأخير والنهائي:</strong> بمجرد تأكيد هذه الخطوة، سيتم تدمير الحساب فوراً. يرجى تأكيد حذف الحساب permanently.
+                  <strong className="text-red-500 font-bold">{t('shell.profile.deleteFinalWarn')}</strong> {t('shell.profile.deleteFinalBody')}
                 </p>
                 <div className="flex gap-3 justify-end">
                   <button
@@ -1098,7 +1100,7 @@ export default function Profile() {
                     disabled={deleting}
                     className="flex-1 bg-red-650 hover:bg-red-500 text-white text-xs font-bold py-2.5 px-4 rounded-xl transition cursor-pointer shadow-md text-center flex justify-center items-center gap-2"
                   >
-                    {deleting ? <NajeSpinner className="w-4 h-4" /> : 'تأكيد الحذف النهائي والتدمير'}
+                    {deleting ? <NajeSpinner className="w-4 h-4" /> : t('shell.profile.deleteConfirmBtn')}
                   </button>
                   <button
                     onClick={() => {
@@ -1108,7 +1110,7 @@ export default function Profile() {
                     disabled={deleting}
                     className="flex-1 bg-gray-100 dark:bg-gray-900 hover:bg-gray-200 dark:hover:bg-gray-800 text-gray-900 dark:text-gray-300 text-xs font-bold py-2.5 px-4 rounded-xl transition cursor-pointer border border-gray-200 dark:border-gray-800"
                   >
-                    تراجع وإلغاء
+                    {t('shell.profile.deleteCancel')}
                   </button>
                 </div>
               </>

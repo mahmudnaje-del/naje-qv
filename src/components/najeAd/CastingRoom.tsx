@@ -4,20 +4,20 @@ import { AVATAR_REGISTRY, NajiAvatar, interleaveDiverseAvatars } from '../../dat
 import { getRegionLabelAr } from '../../data/avatars/avatarRegionLabels';
 import { CircularCardCarousel } from './CircularCardCarousel';
 import { AvatarPhoto } from './AvatarPhoto';
+import { useI18n } from '../../i18n';
+
+const REGION_KEYS: Record<string, string> = {
+  'MENA / West Asia': 'adui.region.mena',
+  'Sub-Saharan Africa': 'adui.region.africa',
+  'South Asia': 'adui.region.southasia',
+  'East / Southeast Asia': 'adui.region.eastasia',
+  Europe: 'adui.region.europe',
+  'North America': 'adui.region.northamerica',
+  'Latin America / Caribbean': 'adui.region.latam',
+  'Oceania / Global Mix': 'adui.region.oceania',
+};
 
 type Card = { type: 'upload'; id: '__upload__' } | { type: 'avatar'; id: string; avatar: NajiAvatar };
-
-const AGE_GROUP_LABELS: Record<string, string> = {
-  all: 'كل الأعمار',
-  child: 'أطفال',
-  teen: 'يافعين',
-  young_adult: 'شباب 20-25',
-  adult_26_35: '26-35',
-  adult_36_45: '36-45',
-  adult_46_55: '46-55',
-  senior_56_65: '56-65',
-  senior_66_plus: '66+',
-};
 
 export function CastingRoom({
   selectedAvatarId,
@@ -34,6 +34,18 @@ export function CastingRoom({
   showHint: boolean;
   onUserSwipe: () => void;
 }) {
+  const { t } = useI18n();
+  const ageLabels: Record<string, string> = {
+    all: t('adui.ageAll'),
+    child: t('adui.ageChild'),
+    teen: t('adui.ageTeen'),
+    young_adult: t('adui.ageYoung'),
+    adult_26_35: '26-35',
+    adult_36_45: '36-45',
+    adult_46_55: '46-55',
+    senior_56_65: '56-65',
+    senior_66_plus: '66+',
+  };
   const fileRef = useRef<HTMLInputElement>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedAgeGroup, setSelectedAgeGroup] = useState('all');
@@ -84,11 +96,11 @@ export function CastingRoom({
   };
 
   return (
-    <div className="space-y-2.5 text-right" dir="rtl">
+    <div className="space-y-2.5 text-start">
       <div className="flex items-center justify-between gap-2">
         <div className="min-w-0">
-          <h2 className="text-sm font-black text-white sm:text-base">الشخصية</h2>
-          <p className="text-[10px] text-white/45 sm:text-[11px]">أرفق وجهك أو اسحب مكتبة ناجي</p>
+          <h2 className="text-sm font-black text-white sm:text-base">{t('adui.character')}</h2>
+          <p className="text-[10px] text-white/45 sm:text-[11px]">{t('adui.characterHint')}</p>
         </div>
         <span
           className="shrink-0 rounded-lg border border-white/10 px-2 py-1 font-mono text-[11px] font-bold text-[var(--naje-accent-2)]"
@@ -101,15 +113,15 @@ export function CastingRoom({
 
       <div className="flex flex-col gap-2">
         <div className="relative">
-          <Search className="absolute right-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/35" />
+          <Search className="absolute start-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/35" />
           <input
             value={searchTerm}
             onChange={(e) => {
               setSearchTerm(e.target.value);
               setCenterIndex(0);
             }}
-            placeholder="ابحث بالاسم أو المهنة..."
-            className="w-full rounded-xl border border-white/10 bg-black/35 py-2 pr-9 pl-3 text-xs text-white placeholder:text-white/30 focus:border-[var(--naje-accent)] focus:outline-none"
+            placeholder={t('adui.searchTalent')}
+            className="w-full rounded-xl border border-white/10 bg-black/35 py-2 ps-9 pe-3 text-xs text-white placeholder:text-white/30 focus:border-[var(--naje-accent)] focus:outline-none"
           />
         </div>
         <div className="flex items-center gap-2 overflow-x-auto pb-0.5">
@@ -122,10 +134,10 @@ export function CastingRoom({
             }}
             className="min-w-0 flex-1 rounded-xl border border-white/10 bg-[#141824] px-2.5 py-1.5 text-[11px] text-white"
           >
-            <option value="all">كل المناطق</option>
+            <option value="all">{t('adui.allRegions')}</option>
             {regions.map((r) => (
               <option key={r} value={r}>
-                {getRegionLabelAr(r)}
+                {REGION_KEYS[r] ? t(REGION_KEYS[r]) : getRegionLabelAr(r)}
               </option>
             ))}
           </select>
@@ -137,7 +149,7 @@ export function CastingRoom({
             }}
             className="min-w-0 flex-1 rounded-xl border border-white/10 bg-[#141824] px-2.5 py-1.5 text-[11px] text-white"
           >
-            {Object.entries(AGE_GROUP_LABELS).map(([k, v]) => (
+            {Object.entries(ageLabels).map(([k, v]) => (
               <option key={k} value={k}>
                 {v}
               </option>
@@ -159,7 +171,7 @@ export function CastingRoom({
           onCenterIndexChange={setCenterIndex}
           onUserSwipe={onUserSwipe}
           showHand={showHint && centerIndex === 0}
-          handLabel="اسحب لمكتبة ناجي"
+          handLabel={t('adui.swipeLibrary')}
           frameClassName="h-[318px] sm:h-[358px]"
           renderCard={(c, isCenter) => {
             const shell = `flex h-[286px] w-[40vw] max-w-[10.75rem] flex-col overflow-hidden rounded-2xl border p-1.5 sm:h-[318px] sm:max-w-[12.5rem]`;
@@ -168,7 +180,7 @@ export function CastingRoom({
                 <div className={`${shell} ${isCenter ? 'border-[var(--naje-accent)] bg-[#1a140f]' : 'border-white/10 bg-[#12141c]'}`}>
                   <div className="mb-1.5 flex shrink-0 items-center justify-center gap-2 rounded-xl bg-black/25 py-1">
                     <span className="h-1 w-6 rounded-full bg-[var(--naje-accent)]/80" />
-                    <span className="text-[10px] font-black text-[var(--naje-accent-2)]">إرفاق · اسحب</span>
+                    <span className="text-[10px] font-black text-[var(--naje-accent-2)]">{t('adui.attachSwipe')}</span>
                     <span className="h-1 w-6 rounded-full bg-[var(--naje-accent)]/80" />
                   </div>
                   <div
@@ -181,11 +193,11 @@ export function CastingRoom({
                     className="relative flex min-h-0 flex-1 flex-col items-center justify-center overflow-hidden rounded-2xl border border-dashed border-[var(--naje-accent)]/50 bg-black/30"
                   >
                     {customPreview ? (
-                      <img src={customPreview} alt="مرفق" className="h-full w-full object-cover object-top" />
+                      <img src={customPreview} alt={t('adui.attachedAlt')} className="h-full w-full object-cover object-top" />
                     ) : (
                       <>
                         <Upload className="mb-2 h-8 w-8 text-[var(--naje-accent-2)]" />
-                        <span className="px-3 text-center text-[11px] font-bold text-white/70">ارفق صورتك أو ممثلك</span>
+                        <span className="px-3 text-center text-[11px] font-bold text-white/70">{t('adui.uploadTalent')}</span>
                       </>
                     )}
                   </div>
@@ -199,12 +211,12 @@ export function CastingRoom({
                 <div className="relative min-h-0 flex-1 overflow-hidden rounded-xl">
                   <AvatarPhoto id={av.id} name={av.name} gradient={av.placeholderGradient} className="h-full w-full" />
                   {selected && (
-                    <span className="absolute top-2 right-2 inline-flex items-center gap-1 rounded-full bg-[var(--naje-accent)] px-2 py-0.5 text-[9px] font-black text-[var(--naje-on-accent)]">
-                      <Check className="h-3 w-3" /> مختارة
+                    <span className="absolute top-2 start-2 inline-flex items-center gap-1 rounded-full bg-[var(--naje-accent)] px-2 py-0.5 text-[9px] font-black text-[var(--naje-on-accent)]">
+                      <Check className="h-3 w-3" /> {t('adui.selected')}
                     </span>
                   )}
                 </div>
-                <div className="mt-1.5 shrink-0 text-right">
+                <div className="mt-1.5 shrink-0 text-start">
                   <p className="truncate text-[13px] font-black leading-tight text-white">{av.name}</p>
                   <p className={`truncate text-[10px] leading-tight ${isCenter ? 'text-[#7dd3c7]' : 'text-transparent'}`}>
                     {av.profession}
@@ -217,7 +229,7 @@ export function CastingRoom({
                     }}
                     className="mt-1.5 w-full shrink-0 rounded-xl bg-[var(--naje-accent)] py-2 text-[12px] font-black leading-none text-[var(--naje-on-accent)]"
                   >
-                    اختيار
+                    {t('adui.choose')}
                   </button>
                 </div>
               </div>

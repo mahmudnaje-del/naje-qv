@@ -6,6 +6,7 @@ import { fr } from './locales/fr';
 import { de } from './locales/de';
 import { pt } from './locales/pt';
 import { useAppStore } from '../store';
+import { lookupOverlay } from './overlays';
 
 export * from './types';
 
@@ -86,7 +87,12 @@ export function translate(
     }
   }
 
-  // Fallback to Arabic if missing in target
+  if (typeof current !== 'string') {
+    const over = lookupOverlay(locale, keyPath);
+    if (over) current = over;
+  }
+
+  // Fallback to Arabic schema, then Arabic overlay, then the key path.
   if (typeof current !== 'string') {
     let fallback: any = DICTIONARIES.ar;
     for (const part of parts) {
@@ -97,8 +103,15 @@ export function translate(
         break;
       }
     }
-    current = typeof fallback === 'string' ? fallback : keyPath;
+    if (typeof fallback === 'string') current = fallback;
   }
+
+  if (typeof current !== 'string') {
+    const overAr = lookupOverlay('ar', keyPath);
+    if (overAr) current = overAr;
+  }
+
+  if (typeof current !== 'string') current = keyPath;
 
   let text: string = current;
   if (params && typeof text === 'string') {
@@ -177,4 +190,15 @@ export function useI18n() {
     locales: LOCALES_META,
     supportedLocales: SUPPORTED_LOCALES,
   };
+}
+
+/** Catalog labels that store ar/en (and optionally the other locales). Non-Arabic UI prefers English over leftover Arabic. */
+export function pickLocaleLabel(
+  locale: SupportedLocale,
+  labels: Partial<Record<SupportedLocale, string>> & { ar: string }
+): string {
+  const direct = labels[locale];
+  if (typeof direct === 'string' && direct.trim()) return direct;
+  if (locale !== 'ar' && labels.en?.trim()) return labels.en;
+  return labels.ar;
 }

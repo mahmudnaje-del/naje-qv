@@ -4,6 +4,26 @@ import { LOCATION_REGISTRY, NajiLocation } from '../../data/locations/locationRe
 import { getCategoryLabelAr } from '../../data/locations/locationCategoryLabels';
 import { CircularCardCarousel } from './CircularCardCarousel';
 import { LocationPhoto } from './LocationPhoto';
+import { useI18n } from '../../i18n';
+
+const CATEGORY_KEYS: Record<string, string> = {
+  Residential: 'adui.cat.residential',
+  'Corporate & Business': 'adui.cat.corporate',
+  'Retail & Shopping': 'adui.cat.retail',
+  'Food & Hospitality': 'adui.cat.food',
+  'Urban & City': 'adui.cat.urban',
+  Education: 'adui.cat.education',
+  Healthcare: 'adui.cat.healthcare',
+  'Fitness & Sports': 'adui.cat.fitness',
+  'Beauty & Fashion': 'adui.cat.beauty',
+  'Technology & AI': 'adui.cat.tech',
+  'Travel & Hotels': 'adui.cat.travel',
+  'Nature & Outdoors': 'adui.cat.nature',
+  'Automotive & Transportation': 'adui.cat.auto',
+  'Studio & Creative Production': 'adui.cat.studio',
+  'Community & Family': 'adui.cat.community',
+  'Additional Global Commercial': 'adui.cat.global',
+};
 
 type Card = { type: 'upload'; id: '__upload__' } | { type: 'location'; id: string; location: NajiLocation };
 
@@ -22,6 +42,8 @@ export function LocationScout({
   showHint: boolean;
   onUserSwipe: () => void;
 }) {
+  const { t } = useI18n();
+  const categoryLabel = (c: string) => (CATEGORY_KEYS[c] ? t(CATEGORY_KEYS[c]) : getCategoryLabelAr(c));
   const fileRef = useRef<HTMLInputElement>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -59,11 +81,11 @@ export function LocationScout({
   };
 
   return (
-    <div className="space-y-2.5 text-right" dir="rtl">
+    <div className="space-y-2.5 text-start">
       <div className="flex items-center justify-between gap-2">
         <div className="min-w-0">
-          <h2 className="text-sm font-black text-white sm:text-base">المكان</h2>
-          <p className="text-[10px] text-white/45 sm:text-[11px]">أرفق موقعك أو اسحب مواقع تصوير ناجي</p>
+          <h2 className="text-sm font-black text-white sm:text-base">{t('adui.place')}</h2>
+          <p className="text-[10px] text-white/45 sm:text-[11px]">{t('adui.placeHint')}</p>
         </div>
         <span
           className="shrink-0 rounded-lg border border-white/10 px-2 py-1 font-mono text-[11px] font-bold text-[var(--naje-accent)]"
@@ -76,15 +98,15 @@ export function LocationScout({
 
       <div className="flex flex-col gap-2">
         <div className="relative">
-          <Search className="absolute right-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/35" />
+          <Search className="absolute start-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/35" />
           <input
             value={searchTerm}
             onChange={(e) => {
               setSearchTerm(e.target.value);
               setCenterIndex(0);
             }}
-            placeholder="ابحث عن موقع..."
-            className="w-full rounded-xl border border-white/10 bg-black/35 py-2 pr-9 pl-3 text-xs text-white placeholder:text-white/30 focus:border-[var(--naje-accent)] focus:outline-none"
+            placeholder={t('adui.searchPlace')}
+            className="w-full rounded-xl border border-white/10 bg-black/35 py-2 ps-9 pe-3 text-xs text-white placeholder:text-white/30 focus:border-[var(--naje-accent)] focus:outline-none"
           />
         </div>
         <div className="flex items-center gap-2">
@@ -97,10 +119,10 @@ export function LocationScout({
             }}
             className="min-w-0 flex-1 rounded-xl border border-white/10 bg-[#141824] px-2.5 py-1.5 text-[11px] text-white"
           >
-            <option value="all">كل الفئات</option>
+            <option value="all">{t('adui.allCategories')}</option>
             {categories.map((c) => (
               <option key={c} value={c}>
-                {getCategoryLabelAr(c)}
+                {categoryLabel(c)}
               </option>
             ))}
           </select>
@@ -120,7 +142,7 @@ export function LocationScout({
           onCenterIndexChange={setCenterIndex}
           onUserSwipe={onUserSwipe}
           showHand={showHint && centerIndex === 0}
-          handLabel="اسحب لمواقع ناجي"
+          handLabel={t('adui.swipePlaces')}
           frameClassName="h-[300px] sm:h-[340px]"
           renderCard={(c, isCenter) => {
             const shell = `flex h-[268px] w-[40vw] max-w-[10.75rem] flex-col overflow-hidden rounded-2xl border p-1.5 sm:h-[300px] sm:max-w-[12.5rem]`;
@@ -129,7 +151,7 @@ export function LocationScout({
                 <div className={`${shell} ${isCenter ? 'border-[var(--naje-accent)] bg-[#10201c]' : 'border-white/10 bg-[#12141c]'}`}>
                   <div className="mb-1.5 flex shrink-0 items-center justify-center gap-2 rounded-xl bg-black/25 py-1">
                     <span className="h-1 w-6 rounded-full bg-[var(--naje-accent)]/80" />
-                    <span className="text-[10px] font-black text-[var(--naje-accent)]">إرفاق · اسحب</span>
+                    <span className="text-[10px] font-black text-[var(--naje-accent)]">{t('adui.attachSwipe')}</span>
                     <span className="h-1 w-6 rounded-full bg-[var(--naje-accent)]/80" />
                   </div>
                   <div
@@ -142,11 +164,11 @@ export function LocationScout({
                     className="relative flex min-h-0 flex-1 flex-col items-center justify-center overflow-hidden rounded-2xl border border-dashed border-[var(--naje-accent)]/50 bg-black/30"
                   >
                     {customPreview ? (
-                      <img src={customPreview} alt="مكان" className="h-full w-full object-cover" />
+                      <img src={customPreview} alt={t('adui.placeAlt')} className="h-full w-full object-cover" />
                     ) : (
                       <>
                         <Upload className="mb-1 h-7 w-7 text-[var(--naje-accent)]" />
-                        <span className="text-[11px] font-bold text-white/70">ارفق صورة الموقع</span>
+                        <span className="text-[11px] font-bold text-white/70">{t('adui.uploadPlace')}</span>
                       </>
                     )}
                   </div>
@@ -160,15 +182,15 @@ export function LocationScout({
                 <div className="relative min-h-0 flex-1 overflow-hidden rounded-xl">
                   <LocationPhoto id={loc.id} name={loc.name} gradient={loc.placeholderGradient} className="h-full w-full" />
                   {selected && (
-                    <span className="absolute top-2 right-2 inline-flex items-center gap-1 rounded-full bg-[var(--naje-accent)] px-2 py-0.5 text-[9px] font-black text-[var(--naje-on-accent)]">
-                      <Check className="h-3 w-3" /> معتمد
+                    <span className="absolute top-2 start-2 inline-flex items-center gap-1 rounded-full bg-[var(--naje-accent)] px-2 py-0.5 text-[9px] font-black text-[var(--naje-on-accent)]">
+                      <Check className="h-3 w-3" /> {t('adui.approved')}
                     </span>
                   )}
                 </div>
-                <div className="mt-1.5 shrink-0 text-right">
+                <div className="mt-1.5 shrink-0 text-start">
                   <p className="truncate text-[13px] font-black leading-tight text-white">{loc.name}</p>
                   <p className={`truncate text-[10px] leading-tight ${isCenter ? 'text-[#93c5fd]' : 'text-transparent'}`}>
-                    {getCategoryLabelAr(loc.category)}
+                    {categoryLabel(loc.category)}
                   </p>
                   <button
                     type="button"
@@ -178,7 +200,7 @@ export function LocationScout({
                     }}
                     className="mt-1.5 w-full shrink-0 rounded-xl bg-[var(--naje-accent)] py-2 text-[12px] font-black leading-none text-[var(--naje-on-accent)]"
                   >
-                    اختيار
+                    {t('adui.choose')}
                   </button>
                 </div>
               </div>

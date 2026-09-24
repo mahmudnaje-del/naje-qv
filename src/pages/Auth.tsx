@@ -38,15 +38,15 @@ export default function Auth() {
   const handleError = (err: any) => {
     let msg = err.message;
     if (err.code === 'auth/email-already-in-use') {
-      msg = 'البريد الإلكتروني مستخدم بالفعل. الرجاء تسجيل الدخول أو استخدام بريد آخر.';
+      msg = t('auth.errEmailInUse');
     } else if (err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
-      msg = 'بيانات الدخول غير صحيحة.';
+      msg = t('auth.errWrongPassword');
     } else if (err.code === 'auth/weak-password') {
-      msg = 'كلمة المرور ضعيفة جداً.';
+      msg = t('auth.errWeakPassword');
     } else if (err.code === 'auth/network-request-failed') {
-      msg = 'فشل الاتصال بالخادم. يرجى التحقق من اتصال الإنترنت، أو جرب فتح التطبيق في نافذة جديدة (قد تمنع المتصفحات تسجيل الدخول داخل الإطارات المضمنة).';
+      msg = t('auth.errNetwork');
     } else if (err.code === 'auth/popup-closed-by-user') {
-      msg = 'تم إغلاق نافذة تسجيل الدخول قبل اكتمال العملية.';
+      msg = t('auth.errPopupClosed');
     }
     setError(msg);
   };
@@ -60,12 +60,12 @@ export default function Auth() {
         const currentCount = Number(sysData.registeredUsersCount || 0);
 
         if (rawLimit === '00') {
-          return sysData.maxUsersMessage || 'عذراً، التسجيل مغلق حالياً ومتاح فقط للمستخدمين المسجلين سابقاً.';
+          return sysData.maxUsersMessage || t('auth.errRegistrationClosed');
         }
 
         const maxLimit = Number(rawLimit) || 0;
         if (maxLimit > 0 && currentCount >= maxLimit) {
-          return sysData.maxUsersMessage || 'نعتذر، وصل التطبيق إلى الحد الأقصى المسموح به لعدد المستخدمين حالياً. يرجى التواصل مع الإدارة.';
+          return sysData.maxUsersMessage || t('auth.errMaxUsersReached');
         }
       }
     } catch (e) {
@@ -77,7 +77,7 @@ export default function Auth() {
   const handleForgotPassword = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!email.trim()) {
-      setError('يرجى إدخال بريدك الإلكتروني أولاً.');
+      setError(t('auth.errEnterEmailFirst'));
       return;
     }
     if (resetCooldown > 0) return;
@@ -90,16 +90,16 @@ export default function Auth() {
     } catch (err: any) {
       console.error('Password reset request error:', err);
       if (err.code === 'auth/invalid-email') {
-        setError('صيغة البريد الإلكتروني غير صحيحة.');
+        setError(t('auth.errInvalidEmail'));
       } else if (err.code === 'auth/too-many-requests') {
-        setError('تم إرسال عدة طلبات مؤخراً. يرجى الانتظار قليلاً قبل المحاولة مجدداً.');
+        setError(t('auth.errWaitCooldown'));
       } else if (err.code === 'auth/network-request-failed') {
-        setError('فشل الاتصال بالإنترنت. يرجى التحقق من اتصالك والمحاولة مجدداً.');
+        setError(t('auth.errNetwork'));
       } else if (err.code === 'auth/user-not-found') {
         // Safe UX to prevent account enumeration while informing the user
         setForgotPasswordSent(true);
       } else {
-        setError(err.message || 'تعذر إرسال رابط إعادة التعيين حالياً.');
+        setError(err.message || t('tools.auth.resetSendFailed'));
       }
     } finally {
       setIsLoading(false);
@@ -229,7 +229,7 @@ export default function Auth() {
         {showForgotPassword ? (
           /* Forgot Password View */
           <div className="space-y-4">
-            <div className={isRtl ? 'text-right' : 'text-left'}>
+            <div className="text-start">
               <h2 className="text-lg font-bold text-gray-900 dark:text-white">{t('auth.resetPassword')}</h2>
               <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
                 {t('auth.descLogin')}

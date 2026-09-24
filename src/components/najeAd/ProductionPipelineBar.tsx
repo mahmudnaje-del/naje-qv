@@ -1,15 +1,16 @@
 import React from 'react';
-import { 
-  Sparkles, 
-  UserCheck, 
-  MapPin, 
-  FileText, 
-  Film, 
-  Layers, 
-  CheckCircle2, 
+import {
+  Sparkles,
+  UserCheck,
+  MapPin,
+  FileText,
+  Film,
+  Layers,
+  CheckCircle2,
   AlertTriangle,
   RefreshCw
 } from 'lucide-react';
+import { useI18n } from '../../i18n';
 
 export interface ProductionPipelineBarProps {
   status: string; // 'planning' | 'queued' | 'generating_shot_1' | 'extracting_continuity' | 'generating_shot_2' | 'quality_check' | 'concatenating' | 'finalizing' | 'completed' | 'failed'
@@ -20,19 +21,18 @@ export interface ProductionPipelineBarProps {
 
 interface StepDef {
   key: string;
-  label: string;
   labelEn: string;
   icon: React.ElementType;
 }
 
 const PIPELINE_STEPS: StepDef[] = [
-  { key: 'concept', label: 'المفهوم', labelEn: 'CONCEPT', icon: Sparkles },
-  { key: 'cast', label: 'الشخصية', labelEn: 'CAST', icon: UserCheck },
-  { key: 'location', label: 'الموقع', labelEn: 'LOCATION', icon: MapPin },
-  { key: 'script', label: 'السيناريو', labelEn: 'SCRIPT', icon: FileText },
-  { key: 'generation', label: 'التوليد', labelEn: 'GENERATION', icon: Film },
-  { key: 'edit', label: 'المونتاج والدمج', labelEn: 'EDIT', icon: Layers },
-  { key: 'export', label: 'التصدير', labelEn: 'EXPORT', icon: CheckCircle2 }
+  { key: 'concept', labelEn: 'CONCEPT', icon: Sparkles },
+  { key: 'cast', labelEn: 'CAST', icon: UserCheck },
+  { key: 'location', labelEn: 'LOCATION', icon: MapPin },
+  { key: 'script', labelEn: 'SCRIPT', icon: FileText },
+  { key: 'generation', labelEn: 'GENERATION', icon: Film },
+  { key: 'edit', labelEn: 'EDIT', icon: Layers },
+  { key: 'export', labelEn: 'EXPORT', icon: CheckCircle2 }
 ];
 
 export const ProductionPipelineBar: React.FC<ProductionPipelineBarProps> = ({
@@ -41,6 +41,7 @@ export const ProductionPipelineBar: React.FC<ProductionPipelineBarProps> = ({
   stepLabel,
   shotsCount = 1
 }) => {
+  const { t } = useI18n();
   // Map internal backend status to pipeline step index
   const getActiveStepIndex = (st: string): number => {
     switch (st) {
@@ -74,7 +75,7 @@ export const ProductionPipelineBar: React.FC<ProductionPipelineBarProps> = ({
   const isFailed = status === 'failed';
 
   return (
-    <div className="w-full bg-[#0d0f14]/90 border border-gray-800/80 rounded-2xl p-4 shadow-xl backdrop-blur-md text-right" dir="rtl">
+    <div className="w-full bg-[#0d0f14]/90 border border-gray-800/80 rounded-2xl p-4 shadow-xl backdrop-blur-md text-start">
       {/* Top Header Row */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3.5">
         <div className="flex items-center gap-2.5">
@@ -83,12 +84,12 @@ export const ProductionPipelineBar: React.FC<ProductionPipelineBarProps> = ({
               isCompleted ? 'bg-emerald-400' : isFailed ? 'bg-rose-400' : isBusy || isQueued ? 'bg-indigo-400 animate-pulse' : 'bg-gray-400'
             }`} />
             <span className="text-xs font-black text-white tracking-wide uppercase">
-              مسار الإنتاج السينمائي (Production Pipeline)
+              {t('adui.pipe.title')}
             </span>
           </div>
           {shotsCount > 1 && (
             <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-purple-500/10 text-purple-400 border border-purple-500/20">
-              متعدد اللقطات ({shotsCount} Shots)
+              {t('adui.pipe.multi', { count: shotsCount })}
             </span>
           )}
         </div>
@@ -103,7 +104,7 @@ export const ProductionPipelineBar: React.FC<ProductionPipelineBarProps> = ({
           {isQueued && (
             <span className="text-xs font-black text-amber-400 font-mono flex items-center gap-1">
               <RefreshCw className="w-3 h-3 animate-spin" />
-              في انتظار دور المعالجة...
+              {t('adui.pipe.waiting')}
             </span>
           )}
           {isBusy && (
@@ -115,13 +116,13 @@ export const ProductionPipelineBar: React.FC<ProductionPipelineBarProps> = ({
           {isCompleted && (
             <span className="text-xs font-black text-emerald-400 flex items-center gap-1">
               <CheckCircle2 className="w-3.5 h-3.5" />
-              جاهز للعرض
+              {t('adui.pipe.ready')}
             </span>
           )}
           {isFailed && (
             <span className="text-xs font-black text-rose-400 flex items-center gap-1">
               <AlertTriangle className="w-3.5 h-3.5" />
-              توقف مؤقت
+              {t('adui.pipe.paused')}
             </span>
           )}
         </div>
@@ -154,7 +155,7 @@ export const ProductionPipelineBar: React.FC<ProductionPipelineBarProps> = ({
                 )}
               </div>
               <span className="text-[11px] font-bold leading-tight block truncate w-full">
-                {step.label}
+                {t(`adui.pipe.${step.key}`)}
               </span>
               <span className="text-[8px] tracking-wider opacity-60 uppercase font-mono block">
                 {step.labelEn}

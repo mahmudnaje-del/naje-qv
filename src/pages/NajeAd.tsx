@@ -29,7 +29,7 @@ import { CastBoard } from '../components/najeAd/CastBoard';
 import { ProControlGrid } from '../components/najeAd/ProControlGrid';
 import NajeThinking from '../components/NajeThinking';
 import StudioBootSplash from '../components/StudioBootSplash';
-import { useI18n } from '../i18n';
+import { useI18n, translate } from '../i18n';
 
 function stripDataUrl(dataUrl: string | null | undefined): string | undefined {
   if (!dataUrl) return undefined;
@@ -120,7 +120,7 @@ export default function NajeAd() {
         setIsSubmitting(false);
       }
       if (data.status === 'failed') {
-        setErrorMessage(data.error || 'تعذر استكمال التوليد. أُعيدت نقاطك.');
+        setErrorMessage(data.error || translate('adui.generateFailed', undefined, useAppStore.getState().language || 'ar'));
       }
       if (['generating', 'editing', 'extending', 'queued', 'planning', 'finalizing'].includes(data.status)) {
         setIsSubmitting(true);
@@ -150,7 +150,7 @@ export default function NajeAd() {
       return null;
     }
     const token = await auth.currentUser?.getIdToken();
-    if (!token) throw new Error('يرجى تسجيل الدخول.');
+    if (!token) throw new Error(translate('adui.loginRequired', undefined, useAppStore.getState().language || 'ar'));
     const res = await fetch(path, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -162,7 +162,7 @@ export default function NajeAd() {
       setShowPaywall(true);
       return null;
     }
-    if (!res.ok) throw new Error(data?.error || 'فشل الطلب');
+    if (!res.ok) throw new Error(data?.error || translate('adui.requestFailed', undefined, useAppStore.getState().language || 'ar'));
     if (data?.newBalance !== undefined) updateBalance(data.newBalance);
     return data;
   };
@@ -172,7 +172,7 @@ export default function NajeAd() {
     const hasTalent = Boolean(avatar || customCharacter || sceneCards.some((c) => c.kind === 'character' || c.kind === 'character_extra'));
     const hasBeats = beatSlots.some((s) => s.text.trim());
     if (!prompt.trim() && !productCard?.name && !hasTalent && !hasBeats) {
-      setErrorMessage('أضف منتجاً أو شخصية أو اكتب فكرة الإعلان أو عبّئ توجيه الثواني.');
+      setErrorMessage(t('adui.needIdea'));
       return;
     }
     setErrorMessage(null);
@@ -234,7 +234,7 @@ export default function NajeAd() {
       else setIsSubmitting(false);
     } catch (err: any) {
       setIsSubmitting(false);
-      setErrorMessage(err.message || 'حدث خطأ أثناء التواصل مع الخادم.');
+      setErrorMessage(err.message || t('adui.serverError'));
     }
   };
 
@@ -248,7 +248,7 @@ export default function NajeAd() {
       setEditText('');
     } catch (err: any) {
       setIsSubmitting(false);
-      setErrorMessage(err.message || 'فشل التحرير');
+      setErrorMessage(err.message || t('adui.editFailed'));
     }
   };
 
@@ -261,15 +261,15 @@ export default function NajeAd() {
       if (data?.jobId) setActiveJobId(data.jobId);
     } catch (err: any) {
       setIsSubmitting(false);
-      setErrorMessage(err.message || 'فشل تمديد المشهد');
+      setErrorMessage(err.message || t('adui.extendFailed'));
     }
   };
 
   const videoUrl = activeJob?.videoUrl || activeJob?.mediaUrl;
   const progress = activeJob?.progress || 0;
   const stepLabel = activeJob?.status === 'queued'
-    ? `في الانتظار (المركز ${activeJob?.queuePosition || '…'})`
-    : activeJob?.stepLabel || (isSubmitting ? 'جاري التحضير…' : '');
+    ? t('najeIdent.queueStatus', { position: activeJob?.queuePosition || '…' })
+    : activeJob?.stepLabel || (isSubmitting ? t('adui.preparing') : '');
 
   return (
     <div className="naje-ad-studio relative h-full overflow-y-auto bg-[#0b0c10] px-2.5 pb-8 pt-2 text-[#f4efe6] sm:px-6 sm:py-5" dir={isRtl ? 'rtl' : 'ltr'}>
@@ -284,12 +284,12 @@ export default function NajeAd() {
               </div>
               <h1 className="pt-0.5 text-xl font-black leading-snug tracking-tight text-white sm:text-2xl">{t('studio.adStudio')}</h1>
               <p className="mt-1 hidden max-w-xl text-xs leading-relaxed text-white/50 sm:block">
-                {NAJE_VIDEO_PRO_LABEL} — إنتاج إعلان متحرك من المشهد والممثل والأسلوب.
+                {t('adui.subtitle', { label: NAJE_VIDEO_PRO_LABEL })}
               </p>
             </div>
-            <div className="rounded-2xl border border-white/10 bg-black/30 px-3 py-1.5 text-right sm:px-4 sm:py-2">
+            <div className="rounded-2xl border border-white/10 bg-black/30 px-3 py-1.5 text-start sm:px-4 sm:py-2">
               <div className="text-[10px] text-white/40">{t('studio.balance')}</div>
-              <div className="font-mono text-base font-black text-[var(--naje-accent-2)] sm:text-lg">{(user?.balance ?? 0).toLocaleString()} نقطة</div>
+              <div className="font-mono text-base font-black text-[var(--naje-accent-2)] sm:text-lg">{t('adui.pointsValue', { n: (user?.balance ?? 0).toLocaleString() })}</div>
             </div>
           </div>
         </header>
@@ -299,7 +299,7 @@ export default function NajeAd() {
             <span className="inline-flex items-center gap-2">
               <AlertCircle className="h-4 w-4" /> {errorMessage}
             </span>
-            <button type="button" onClick={() => setErrorMessage(null)} className="font-bold">إغلاق</button>
+            <button type="button" onClick={() => setErrorMessage(null)} className="font-bold">{t('common.close')}</button>
           </div>
         )}
 
@@ -323,7 +323,7 @@ export default function NajeAd() {
               setSceneCards((prev) => upsertKind(prev, 'character', {
                 avatarId: null,
                 preview: url,
-                name: 'شخصية مرفقة',
+                name: t('adui.attachedCharacter'),
               }));
             }}
             showHint={showCastHint}
@@ -351,7 +351,7 @@ export default function NajeAd() {
               setSceneCards((prev) => upsertKind(prev, 'location', {
                 locationId: null,
                 preview: url,
-                name: 'مكان مرفق',
+                name: t('adui.attachedPlace'),
               }));
             }}
             showHint={showLocHint}
@@ -426,12 +426,12 @@ export default function NajeAd() {
         />
 
         <form onSubmit={handleGenerate} className="space-y-3 rounded-2xl border border-white/8 bg-[#0e1016] p-3 sm:rounded-[28px] sm:p-5">
-          <label className="block text-xs font-black text-white">سيناريو الإعلان</label>
+          <label className="block text-xs font-black text-white">{t('adui.scriptLabel')}</label>
           <textarea
             rows={4}
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
-            placeholder="مثال: الكاميرا تدور حول الزجاجة ثم ترفعها اليد ببطء نحو الضوء، رذاذ ماء، ابتسامة واثقة..."
+            placeholder={t('adui.scriptPlaceholder')}
             className="w-full resize-none rounded-2xl border border-white/10 bg-black/40 p-4 text-sm text-white placeholder:text-white/30 focus:border-[var(--naje-accent)] focus:outline-none"
           />
           <button
@@ -440,7 +440,7 @@ export default function NajeAd() {
             className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-l from-[var(--naje-accent)] via-[var(--naje-accent-2)] to-[color-mix(in_srgb,var(--naje-s)_70%,white)] py-3.5 text-sm font-black text-[var(--naje-on-accent)] shadow-[0_12px_40px_-12px_var(--naje-glow)] disabled:opacity-50"
           >
             {isSubmitting ? <NajeThinking size={22} /> : <Sparkles className="h-4 w-4" />}
-            {isSubmitting ? stepLabel || 'جاري الإنتاج…' : `إنتاج الإعلان — ${points} نقطة`}
+            {isSubmitting ? stepLabel || t('adui.producing') : t('adui.produceCta', { points })}
           </button>
         </form>
 
@@ -448,7 +448,7 @@ export default function NajeAd() {
           <section className="space-y-3 rounded-2xl border border-white/8 bg-naje-elevated p-3 sm:rounded-[28px] sm:p-4">
             <div className="flex items-center justify-between">
               <h3 className="inline-flex items-center gap-2 text-sm font-black text-white">
-                <Film className="h-4 w-4 text-[var(--naje-accent)]" /> المونيتور
+                <Film className="h-4 w-4 text-[var(--naje-accent)]" /> {t('adui.monitor')}
               </h3>
               {isSubmitting && <span className="text-[11px] font-mono text-[var(--naje-accent-2)]">{progress}%</span>}
             </div>
@@ -460,7 +460,7 @@ export default function NajeAd() {
             {isSubmitting && !videoUrl && (
               <div className="flex flex-col items-center gap-2 py-8">
                 <NajeThinking size={52} />
-                <span className="text-xs font-bold text-[#e8b86d]">{stepLabel || 'ناجي يبني الإعلان…'}</span>
+                <span className="text-xs font-bold text-[#e8b86d]">{stepLabel || t('adui.building')}</span>
               </div>
             )}
             {videoUrl && (
@@ -470,12 +470,12 @@ export default function NajeAd() {
               <div className="space-y-2">
                 <div className="flex flex-wrap gap-2">
                   <a href={videoUrl} download className="inline-flex items-center gap-1 rounded-xl border border-white/10 px-3 py-2 text-[11px] font-bold">
-                    <Download className="h-3.5 w-3.5" /> تحميل
+                    <Download className="h-3.5 w-3.5" /> {t('common.download')}
                   </a>
                   {(activeJob?.totalDurationSec || duration) < 40 && (
                     <button type="button" onClick={handleExtend} className="inline-flex items-center gap-1 rounded-xl border border-[#7dd3c7]/40 px-3 py-2 text-[11px] font-bold text-[#7dd3c7]">
-                      تمديد المشهد +10ث
-                      <span className="text-white/40">({activeJob?.totalDurationSec || duration}→{Math.min(40, (activeJob?.totalDurationSec || duration) + 10)}ث)</span>
+                      {t('adui.extendScene')}
+                      <span className="text-white/40">{t('adui.secondsSpan', { from: activeJob?.totalDurationSec || duration, to: Math.min(40, (activeJob?.totalDurationSec || duration) + 10) })}</span>
                     </button>
                   )}
                 </div>
@@ -483,11 +483,11 @@ export default function NajeAd() {
                   <input
                     value={editText}
                     onChange={(e) => setEditText(e.target.value)}
-                    placeholder="تحرير طبيعي: اجعل الإضاءة أدفأ، أخفِ الحوار، قرّب المنتج..."
+                    placeholder={t('adui.editPlaceholder')}
                     className="flex-1 rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-xs text-white placeholder:text-white/30 focus:border-[var(--naje-accent)] focus:outline-none"
                   />
                   <button type="button" onClick={handleEdit} className="inline-flex items-center gap-1 rounded-xl bg-[var(--naje-accent)] px-3 py-2 text-[11px] font-black text-black">
-                    <Wand2 className="h-3.5 w-3.5" /> طبّق
+                    <Wand2 className="h-3.5 w-3.5" /> {t('adui.apply')}
                   </button>
                 </div>
               </div>
@@ -497,7 +497,7 @@ export default function NajeAd() {
 
         {recentVideos.length > 0 && (
           <section className="rounded-2xl border border-white/8 bg-[#0e1016] p-3 sm:rounded-[28px] sm:p-4">
-            <h3 className="mb-3 text-sm font-black text-white">آخر الإعلانات</h3>
+            <h3 className="mb-3 text-sm font-black text-white">{t('adui.recentAds')}</h3>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               {recentVideos.map((vid) => (
                 <div key={vid.id} className="overflow-hidden rounded-2xl border border-white/8 bg-black/30">

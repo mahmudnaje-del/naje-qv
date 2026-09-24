@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { auth } from '../../firebase';
 import { getEpisodes, Frame } from './LoadingEpisodes';
+import { useI18n } from '../../i18n';
 
 // ----------------- CHARACTERS -----------------
 const SleekCharacter = ({ color, glowColor, flip, pose }: { color: string, glowColor: string, flip: boolean, pose: string }) => {
@@ -370,6 +371,7 @@ const Props = ({ type }: { type: string }) => {
 };
 
 const SpeechBubble = ({ text, isRtl, speaker }: { text: string, isRtl: boolean, speaker: 'omar' | 'arthur' }) => {
+  const { t } = useI18n();
   const isOmar = speaker === 'omar';
   
   return (
@@ -388,7 +390,7 @@ const SpeechBubble = ({ text, isRtl, speaker }: { text: string, isRtl: boolean, 
     >
       <div className={`font-bold mb-2 ${isOmar ? 'text-sky-400' : 'text-red-400'} text-[10px] uppercase tracking-widest flex items-center gap-2`}>
         <div className={`w-1.5 h-1.5 rounded-full ${isOmar ? 'bg-sky-400' : 'bg-red-400'} animate-pulse shadow-[0_0_8px_currentColor]`} />
-        {isOmar ? (isRtl ? 'عمر (المهندس)' : 'Omar') : (isRtl ? 'الذكاء آرثر' : 'Arthur AI')}
+        {isOmar ? t('creative.omar') : t('creative.arthur')}
       </div>
       <p className="leading-relaxed drop-shadow-md whitespace-pre-wrap">{text}</p>
       
@@ -405,11 +407,13 @@ const SpeechBubble = ({ text, isRtl, speaker }: { text: string, isRtl: boolean, 
   );
 };
 
-export function InteractiveLoadingPlaceholder({ lang, forceEpIndex, userPrompt }: { lang: 'ar' | 'en', forceEpIndex?: number, userPrompt?: string }) {
+export function InteractiveLoadingPlaceholder({
+ lang, forceEpIndex, userPrompt }: { lang: 'ar' | 'en', forceEpIndex?: number, userPrompt?: string }) {
+  const { t, locale, isRtl } = useI18n();
   const [epIndex, setEpIndex] = useState(0);
   const [frameData, setFrameData] = useState<Frame>({ d: 0 });
   const [showTitle, setShowTitle] = useState(true);
-  const [introTitle, setIntroTitle] = useState({ ar: '', en: '' });
+  const [introKey, setIntroKey] = useState(0);
 
   const [dynamicSequence, setDynamicSequence] = useState<Frame[] | null>(null);
   const [isFetchingDynamic, setIsFetchingDynamic] = useState(!!userPrompt);
@@ -463,17 +467,7 @@ export function InteractiveLoadingPlaceholder({ lang, forceEpIndex, userPrompt }
     }
     setEpIndex(selectedIndex % allEps.length);
 
-    const smartTitles = [
-      { ar: "تهيئة المحرك الإبداعي...", en: "Initializing Creative Engine..." },
-      { ar: "حقن الإلهام في السيرفر...", en: "Injecting Inspiration into Server..." },
-      { ar: "تجهيز بكسلات عالية الجودة...", en: "Preparing High-Quality Pixels..." },
-      { ar: "استدعاء خوارزميات الفن...", en: "Summoning Art Algorithms..." },
-      { ar: "صناعة المستحيل مؤقتاً...", en: "Crafting the Impossible Temporarily..." },
-      { ar: "تجميع أفكار من المستقبل...", en: "Gathering Ideas from the Future..." },
-      { ar: "إيقاظ آرثر من النوم...", en: "Waking Arthur Up..." },
-      { ar: "نقل البيانات عبر الأبعاد...", en: "Transferring Data Across Dimensions..." }
-    ];
-    setIntroTitle(smartTitles[Math.floor(Math.random() * smartTitles.length)]);
+    setIntroKey(Math.floor(Math.random() * 8));
   }, [forceEpIndex]);
 
   useEffect(() => {
@@ -578,10 +572,10 @@ export function InteractiveLoadingPlaceholder({ lang, forceEpIndex, userPrompt }
               className="text-center px-4"
             >
               <div className="text-amber-500 font-mono text-[10px] tracking-[0.3em] uppercase mb-2">
-                {lang === 'ar' ? 'نظام Creative AI' : 'Creative AI System'}
+                {t('creative.m305')}
               </div>
               <h3 className="text-xl sm:text-2xl font-black text-white tracking-wide">
-                {lang === 'ar' ? introTitle.ar : introTitle.en}
+                {t(`creative.load.${introKey}`)}
               </h3>
             </motion.div>
           </motion.div>

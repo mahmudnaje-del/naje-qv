@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { ArrowUp, FileText, Paperclip, Square, X } from 'lucide-react';
 import { toast } from '../../toastStore';
 import { cn } from '../../lib/utils';
+import { useI18n } from '../../i18n';
 import {
   IMAGE_INTENT_OPTIONS,
   MAX_ATTACH_FILES,
@@ -13,6 +14,7 @@ import {
   type ImageIntent,
   type PromptAttachment,
 } from '../../lib/najePromptEngine';
+import { engineMessageKey } from './promptLabels';
 
 interface PromptComposerProps {
   value: string;
@@ -32,7 +34,7 @@ function readAsDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve(String(reader.result || ''));
-    reader.onerror = () => reject(reader.error || new Error('تعذر قراءة الملف'));
+    reader.onerror = () => reject(reader.error || new Error('read'));
     reader.readAsDataURL(file);
   });
 }
@@ -41,7 +43,7 @@ function readAsText(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve(String(reader.result || ''));
-    reader.onerror = () => reject(reader.error || new Error('تعذر قراءة الملف'));
+    reader.onerror = () => reject(reader.error || new Error('read'));
     reader.readAsText(file);
   });
 }
@@ -50,7 +52,7 @@ async function extractDocxText(file: File): Promise<string> {
   const mod = await import('mammoth');
   const mammoth = (mod as { default?: unknown } & Record<string, unknown>).default || mod;
   const extract = (mammoth as { extractRawText?: (input: { arrayBuffer: ArrayBuffer }) => Promise<{ value: string }> }).extractRawText;
-  if (!extract) throw new Error('تعذر تحميل قارئ Word');
+  if (!extract) throw new Error('docx');
   const result = await extract({ arrayBuffer: await file.arrayBuffer() });
   return String(result?.value || '').trim();
 }
@@ -79,14 +81,16 @@ export function PromptComposer({
   onStop,
   disabled,
   busy,
-  placeholder = 'احكيلي شو بدك تعمل...',
+  placeholder,
   attachments,
   onAttachmentsChange,
   imageIntent,
   onImageIntentChange,
 }: PromptComposerProps) {
+  const { t, isRtl } = useI18n();
   const ref = useRef<HTMLTextAreaElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const hint = placeholder || t('prompt.composer.placeholder');
 
   useEffect(() => {
     const el = ref.current;
@@ -103,23 +107,24 @@ export function PromptComposer({
     if (!incoming.length) return;
     const room = MAX_ATTACH_FILES - attachments.length;
     if (room <= 0) {
-      toast.error('الحد 3 ملفات.');
+      toast.error(t('prompt.composer.fileLimit'));
       return;
     }
     const next: PromptAttachment[] = [...attachments];
     for (const file of incoming.slice(0, room)) {
       const reason = attachmentRejectReason(file);
       if (reason) {
-        toast.error(reason);
+        const key = engineMessageKey(reason);
+        toast.error(key ? t(key) : reason);
         continue;
       }
       try {
         next.push(await toAttachment(file));
       } catch {
-        toast.error('تعذر قراءة الملف.');
+        toast.error(t('prompt.composer.fileRead'));
       }
     }
-    if (incoming.length > room) toast.error('الحد 3 ملفات.');
+    if (incoming.length > room) toast.error(t('prompt.composer.fileLimit'));
     onAttachmentsChange(next);
     if (fileRef.current) fileRef.current.value = '';
   };
@@ -129,13 +134,16 @@ export function PromptComposer({
   };
 
   return (
-    <div className="rounded-3xl border border-zinc-200 bg-white p-2 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+    <div
+      className="rounded-3xl border border-zinc-200 bg-white p-2 shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
+      dir={isRtl ? 'rtl' : 'ltr'}
+    >
       {attachments.length > 0 && (
         <div className="flex flex-wrap gap-1.5 px-2 pt-1.5">
           {attachments.map((file) => (
             <span
               key={file.id}
-              className="relative inline-flex items-center gap-1.5 rounded-2xl border border-zinc-200 bg-zinc-50 py-1 pl-7 pr-2 text-[11px] font-bold text-naje-ink dark:border-zinc-700 dark:bg-zinc-950"
+              className="relative inline-flex min-h-11 items-center gap-1.5 rounded-2xl border border-zinc-200 bg-zinc-50 py-1 ps-2 pe-12 text-[11px] font-bold text-naje-ink dark:border-zinc-700 dark:bg-zinc-950"
             >
               {file.kind === 'image' ? (
                 <img
@@ -152,10 +160,10 @@ export function PromptComposer({
               <button
                 type="button"
                 onClick={() => removeFile(file.id)}
-                aria-label={`إزالة ${file.name}`}
-                className="absolute left-1 top-1 flex h-6 w-6 items-center justify-center rounded-full text-naje-muted hover:text-rose-600"
+                aria-label={t('prompt.composer.removeFile', { name: file.name })}
+                className="absolute end-0 top-0 flex h-11 w-11 items-center justify-center rounded-full text-naje-muted hover:text-rose-600"
               >
-                <X className="h-3 w-3" />
+                <X className="h-3.5 w-3.5" />
               </button>
             </span>
           ))}
@@ -170,13 +178,13 @@ export function PromptComposer({
               type="button"
               onClick={() => onImageIntentChange(opt.id)}
               className={cn(
-                'min-h-8 rounded-full px-3 py-1 text-[11px] font-black transition',
+                'min-h-11 rounded-full px-3 py-1 text-[11px] font-black transition',
                 imageIntent === opt.id
                   ? 'bg-indigo-600 text-white'
                   : 'border border-zinc-200 text-naje-muted hover:text-naje-ink dark:border-zinc-700',
               )}
             >
-              {opt.label}
+              {t(opt.id === 'rebuild' ? 'prompt.intent.rebuild' : 'prompt.intent.inspire')}
             </button>
           ))}
         </div>
@@ -185,12 +193,12 @@ export function PromptComposer({
       <div className="flex items-end gap-1.5">
         <textarea
           ref={ref}
-          dir="rtl"
+          dir={isRtl ? 'rtl' : 'ltr'}
           rows={1}
           value={value}
           disabled={disabled || busy}
-          placeholder={placeholder}
-          aria-label="فكرتك"
+          placeholder={hint}
+          aria-label={t('prompt.composer.ideaAria')}
           onChange={(e) => onChange(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
@@ -198,7 +206,7 @@ export function PromptComposer({
               if (canSend) onSend();
             }
           }}
-          className="max-h-40 min-h-[44px] flex-1 resize-none bg-transparent px-3 py-2.5 text-sm leading-relaxed text-naje-ink placeholder:text-zinc-400 focus:outline-none disabled:opacity-60"
+          className="max-h-40 min-h-11 flex-1 resize-none bg-transparent px-3 py-2.5 text-start text-sm leading-relaxed text-naje-ink placeholder:text-zinc-400 focus:outline-none disabled:opacity-60"
         />
         <input
           ref={fileRef}
@@ -214,7 +222,7 @@ export function PromptComposer({
           type="button"
           disabled={disabled || busy}
           onClick={() => fileRef.current?.click()}
-          aria-label="إرفاق ملف"
+          aria-label={t('prompt.composer.attach')}
           className={cn(
             'mb-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-zinc-200 text-naje-muted transition',
             'hover:border-indigo-400 hover:text-indigo-600 disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-700',
@@ -226,7 +234,7 @@ export function PromptComposer({
           <button
             type="button"
             onClick={onStop}
-            aria-label="إيقاف"
+            aria-label={t('prompt.composer.stop')}
             className="mb-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-rose-600 text-white transition hover:bg-rose-500"
           >
             <Square className="h-3.5 w-3.5" fill="currentColor" strokeWidth={2.6} />
@@ -236,7 +244,7 @@ export function PromptComposer({
             type="button"
             disabled={!canSend}
             onClick={onSend}
-            aria-label="إرسال"
+            aria-label={t('prompt.composer.send')}
             className={cn(
               'mb-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-indigo-600 text-white transition',
               'hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-40',

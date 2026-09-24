@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { AlertTriangle, ChevronDown, ChevronUp, Copy, Check, X, MessageCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAppStore } from '../store';
+import { useI18n } from '../i18n';
 import najeWarning from '../assets/icons/naje-warning.svg';
 import najeShieldCheck from '../assets/icons/naje-shield-check.svg';
 import najeQuotaLimit from '../assets/icons/naje-quota-limit.svg';
@@ -33,17 +34,17 @@ interface NajeErrorCardProps {
 
 export default function NajeErrorCard({ jsonContent, onClose }: NajeErrorCardProps) {
   const { user } = useAppStore();
+  const { t, isRtl } = useI18n();
   const [isOpen, setIsOpen] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  // Parse the JSON content
   let data = {
-    title: 'حدث خطأ غير متوقع',
+    title: t('chatui.errCard.title'),
     emoji: 'warning',
     icon: 'warning',
-    intro: 'نعتذر منك، واجه النظام صعوبة فنية أثناء تنفيذ طلبك.',
-    explanation: 'لم نتمكن من تحديد تفاصيل الخطأ بدقة، يرجى المحاولة لاحقاً.',
-    solutions: ['تحديث الصفحة وإعادة المحاولة.', 'التأكد من اتصال الإنترنت الخاص بك.'],
+    intro: t('chatui.errCard.intro'),
+    explanation: t('chatui.errCard.explanation'),
+    solutions: [t('chatui.errCard.s1'), t('chatui.errCard.s2')],
     errorStr: ''
   };
 
@@ -72,14 +73,19 @@ export default function NajeErrorCard({ jsonContent, onClose }: NajeErrorCardPro
   // Build WhatsApp Support URL with formatted message
   const rawPhoneNumber = '+970567929170'; // +970 567 929 170
   const cleanPhone = '970567929170';
-  const whatsappMsg = `مرحباً فريق دعم ناجي\nأواجه خطأ فني أثناء استخدام التطبيق:\n\n*عنوان الخطأ:* ${data.title}\n*البيان:* ${data.intro}\n*التشخيص:* ${data.explanation}\n*اسم المستخدم:* ${user?.displayName || 'غير معروف'}\n*البريد الإلكتروني:* ${user?.email || 'غير معروف'}\n\nيرجى المساعدة في حل المشكلة.`;
+  const whatsappMsg = t('chatui.errCard.whatsappBody', {
+    title: data.title,
+    intro: data.intro,
+    explanation: data.explanation,
+    name: user?.displayName || t('shared.unknownPerson'),
+    email: user?.email || t('shared.unknownPerson'),
+  });
   const whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(whatsappMsg)}`;
 
   return (
-    <div className="w-full bg-gradient-to-b from-red-950/15 to-red-950/5 border border-red-500/15 rounded-2xl p-5 text-right leading-relaxed shadow-lg shadow-red-950/10 flex flex-col gap-4">
-      {/* Header */}
-      <div className="flex items-center gap-3 border-b border-red-500/10 pb-3 flex-row-reverse justify-between">
-        <div className="flex items-center gap-2 flex-row-reverse">
+    <div className="w-full bg-gradient-to-b from-red-950/15 to-red-950/5 border border-red-500/15 rounded-2xl p-5 text-start leading-relaxed shadow-lg shadow-red-950/10 flex flex-col gap-4" dir={isRtl ? 'rtl' : 'ltr'}>
+      <div className="flex items-center gap-3 border-b border-red-500/10 pb-3 justify-between">
+        <div className="flex items-center gap-2">
           <img src={headerIconSrc} alt="" className="w-5 h-5 object-contain" />
           <h4 className="font-bold text-sm text-red-600 dark:text-red-400 font-sans tracking-tight">
             {data.title}
@@ -90,7 +96,7 @@ export default function NajeErrorCard({ jsonContent, onClose }: NajeErrorCardPro
             <button
               onClick={onClose}
               className="p-1 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 transition cursor-pointer"
-              title="إغلاق بطاقة الصيانة"
+              title={t('shared.closeCard')}
             >
               <X className="w-4 h-4" />
             </button>
@@ -104,7 +110,7 @@ export default function NajeErrorCard({ jsonContent, onClose }: NajeErrorCardPro
       {/* Official Statement */}
       <div className="space-y-1.5">
         <span className="text-[11px] font-bold text-red-500/80 uppercase tracking-wider block">
-          ● تفاصيل الحالة:
+          {t('chatui.errCard.status')}
         </span>
         <p className="text-sm text-gray-900 dark:text-gray-200 leading-relaxed font-sans">
           {data.intro}
@@ -113,9 +119,9 @@ export default function NajeErrorCard({ jsonContent, onClose }: NajeErrorCardPro
 
       {/* Technical Diagnosis */}
       <div className="space-y-1.5 bg-red-950/10 border border-red-500/5 rounded-xl p-3">
-        <span className="text-[11px] font-bold text-red-600 dark:text-red-400/80 uppercase tracking-wider flex items-center gap-1.5 justify-end">
-          <span>السبب المتوقع:</span>
+        <span className="text-[11px] font-bold text-red-600 dark:text-red-400/80 uppercase tracking-wider flex items-center gap-1.5">
           <img src={najeToolkit} alt="" className="w-3.5 h-3.5 object-contain" />
+          <span>{t('chatui.errCard.cause')}</span>
         </span>
         <p className="text-xs text-gray-800 dark:text-gray-400 leading-relaxed font-sans">
           {data.explanation}
@@ -125,15 +131,15 @@ export default function NajeErrorCard({ jsonContent, onClose }: NajeErrorCardPro
       {/* Proposed Solutions */}
       {data.solutions && data.solutions.length > 0 && (
         <div className="space-y-2">
-          <span className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400/80 uppercase tracking-wider flex items-center gap-1.5 justify-end">
-            <span>خطوات الحل المقترحة والمباشرة:</span>
+          <span className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400/80 uppercase tracking-wider flex items-center gap-1.5">
             <img src={najeLightbulb} alt="" className="w-3.5 h-3.5 object-contain" />
+            <span>{t('chatui.errCard.steps')}</span>
           </span>
-          <ul className="space-y-1.5 mr-1">
+          <ul className="space-y-1.5 ms-1">
             {data.solutions.map((sol, index) => (
-              <li key={index} className="text-xs text-gray-900 dark:text-gray-300 flex items-start gap-2 flex-row-reverse">
-                <span className="text-indigo-600 dark:text-indigo-400 font-bold flex-shrink-0 mt-0.5">◀</span>
-                <span className="font-sans leading-relaxed text-right">{sol}</span>
+              <li key={index} className="text-xs text-gray-900 dark:text-gray-300 flex items-start gap-2">
+                <span className="text-indigo-600 dark:text-indigo-400 font-bold flex-shrink-0 mt-0.5">{isRtl ? '◀' : '▶'}</span>
+                <span className="font-sans leading-relaxed text-start">{sol}</span>
               </li>
             ))}
           </ul>
@@ -150,7 +156,7 @@ export default function NajeErrorCard({ jsonContent, onClose }: NajeErrorCardPro
             className="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 shadow-sm cursor-pointer active:scale-95 text-center"
           >
             <MessageCircle className="w-4 h-4 fill-current" />
-            <span>التواصل مع دعم ناجي على واتس آب للإبلاغ عن خطأ فني</span>
+            <span>{t('chatui.errCard.whatsappCta')}</span>
             <span className="text-[11px] font-mono dir-ltr opacity-90">({rawPhoneNumber})</span>
           </a>
         </div>
@@ -161,11 +167,11 @@ export default function NajeErrorCard({ jsonContent, onClose }: NajeErrorCardPro
         <div className="border-t border-red-500/10 pt-3">
           <button
             onClick={() => setIsOpen(!isOpen)}
-            className="w-full flex items-center justify-between text-xs text-indigo-600 dark:text-indigo-400 font-semibold hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors cursor-pointer flex-row-reverse"
+            className="w-full flex items-center justify-between text-xs text-indigo-600 dark:text-indigo-400 font-semibold hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors cursor-pointer"
           >
-            <div className="flex items-center gap-1.5 flex-row-reverse">
+            <div className="flex items-center gap-1.5">
               <img src={najeMagnifier} alt="" className="w-3.5 h-3.5 object-contain" />
-              <span>عرض تفاصيل الخطأ الفنية للدعم ومطوري النظام (خاص بالمطورين)</span>
+              <span>{t('chatui.errCard.devLog')}</span>
             </div>
             {isOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
           </button>
@@ -183,7 +189,7 @@ export default function NajeErrorCard({ jsonContent, onClose }: NajeErrorCardPro
                   <button
                     onClick={handleCopy}
                     className="absolute top-2 right-2 p-1.5 rounded-lg bg-white dark:bg-gray-900/80 border border-gray-600 dark:border-gray-800 text-gray-800 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors cursor-pointer z-10"
-                    title="نسخ تفاصيل الخطأ"
+                    title={t('shared.copyError')}
                   >
                     {copied ? <img src={najeCheckmark} alt="" className="w-3 h-3 object-contain" /> : <Copy className="w-3 h-3" />}
                   </button>

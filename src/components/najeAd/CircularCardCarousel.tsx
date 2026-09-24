@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { motion, PanInfo, useDragControls } from 'motion/react';
 import { SwipeHintHand } from './SwipeHintHand';
+import { useI18n } from '../../i18n';
 
 export interface CircularCarouselProps<T> {
   items: T[];
@@ -44,8 +45,10 @@ export function CircularCardCarousel<T>({
   frameClassName = 'h-[320px] sm:h-[360px]',
   onUserSwipe,
   showHand = false,
-  handLabel = 'اسحب',
+  handLabel,
 }: CircularCarouselProps<T>) {
+  const { t } = useI18n();
+  const resolvedHand = handLabel ?? t('adui.swipe');
   const total = items.length;
   const draggingRef = useRef(false);
   const lockedRef = useRef(false);
@@ -208,7 +211,7 @@ export function CircularCardCarousel<T>({
 
       {total > 1 && (
         <div className="mt-1 flex flex-col items-center justify-center gap-0.5">
-          {showHand ? <SwipeHintHand label={handLabel} /> : null}
+          {showHand ? <SwipeHintHand label={resolvedHand} /> : null}
           <LtrCount current={centerIndex + 1} total={total} />
         </div>
       )}

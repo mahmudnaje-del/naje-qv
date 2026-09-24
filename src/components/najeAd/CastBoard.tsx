@@ -15,8 +15,11 @@ import {
 import { CircularCardCarousel } from './CircularCardCarousel';
 import { AvatarPhoto } from './AvatarPhoto';
 import { LocationPhoto } from './LocationPhoto';
+import { useI18n } from '../../i18n';
 
 type DeckItem = { type: 'add'; id: '__add__' } | { type: 'card'; id: string; card: SceneBoardCard };
+
+const GROUP_KEYS = ['adui.group.base', 'adui.group.timed', 'adui.group.identity', 'adui.group.story', 'adui.group.world'];
 
 function readFile(file: File, cb: (url: string) => void) {
   const reader = new FileReader();
@@ -41,6 +44,7 @@ export function CastBoard({
   libraryAvatar: NajiAvatar | null;
   libraryLocation: NajiLocation | null;
 }) {
+  const { t } = useI18n();
   const fileRef = useRef<HTMLInputElement>(null);
   const [centerIndex, setCenterIndex] = useState(1);
   const [hint, setHint] = useState(true);
@@ -93,12 +97,12 @@ export function CastBoard({
   };
 
   return (
-    <div className="space-y-2.5 text-right" dir="rtl">
+    <div className="space-y-2.5 text-start">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <h2 className="text-sm font-black text-white sm:text-base">لوحة المشهد</h2>
+          <h2 className="text-sm font-black text-white sm:text-base">{t('adui.boardTitle')}</h2>
           <p className="text-[10px] leading-snug text-white/45 sm:text-[11px]">
-            اسحب البطاقات. الإضافة دائماً موجودة — شخصية أو مكان يظهر عند الثانية التي تختارها.
+            {t('adui.boardHint')}
           </p>
         </div>
         <span
@@ -136,7 +140,7 @@ export function CastBoard({
           onCenterIndexChange={setCenterIndex}
           onUserSwipe={() => setHint(false)}
           showHand={hint}
-          handLabel="اسحب لتقليب المشهد"
+          handLabel={t('adui.swipeBoard')}
           frameClassName="h-[318px] sm:h-[370px]"
           renderCard={(item, isCenter) => {
             if (item.type === 'add') {
@@ -147,15 +151,15 @@ export function CastBoard({
                   <div className="mb-2 flex items-center justify-center gap-2 rounded-xl bg-black/25 py-1.5">
                     <span className="h-1 w-7 rounded-full bg-[var(--naje-accent)]/80" />
                     <span className="inline-flex items-center gap-1 text-[10px] font-black text-[var(--naje-accent-2)]">
-                      <Plus className="h-3.5 w-3.5" /> أضف · اسحب
+                      <Plus className="h-3.5 w-3.5" /> {t('adui.addSwipe')}
                     </span>
                     <span className="h-1 w-7 rounded-full bg-[var(--naje-accent)]/80" />
                   </div>
                   {isCenter ? (
-                    <div data-no-drag className="max-h-[230px] space-y-2 overflow-y-auto overscroll-contain touch-pan-y pr-0.5">
-                      {SCENE_ADD_GROUPS.map((group) => (
+                    <div data-no-drag className="max-h-[230px] space-y-2 overflow-y-auto overscroll-contain touch-pan-y pe-0.5">
+                      {SCENE_ADD_GROUPS.map((group, gi) => (
                         <div key={group.title}>
-                          <p className="mb-1 text-[9px] font-black tracking-wide text-white/35">{group.title}</p>
+                          <p className="mb-1 text-[9px] font-black tracking-wide text-white/35">{t(GROUP_KEYS[gi] || group.title)}</p>
                           <div className="grid grid-cols-2 gap-1">
                             {group.ids.map((id) => {
                               const opt = optionMeta(id);
@@ -168,10 +172,10 @@ export function CastBoard({
                                     e.stopPropagation();
                                     addCard(id);
                                   }}
-                                  className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-black/35 px-1.5 py-1.5 text-right hover:border-[var(--naje-accent)]/45"
+                                  className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-black/35 px-1.5 py-1.5 text-start hover:border-[var(--naje-accent)]/45"
                                 >
                                   <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: opt.accent }} />
-                                  <span className="min-w-0 truncate text-[10px] font-black text-white">{opt.label}</span>
+                                  <span className="min-w-0 truncate text-[10px] font-black text-white">{t(`adui.kind.${id}`)}</span>
                                 </button>
                               );
                             })}
@@ -182,7 +186,7 @@ export function CastBoard({
                   ) : (
                     <div className="flex aspect-[3/4] flex-col items-center justify-center text-[var(--naje-accent-2)]/85">
                       <Plus className="mb-2 h-8 w-8" />
-                      <span className="text-[11px] font-bold">إضافة عنصر</span>
+                      <span className="text-[11px] font-bold">{t('adui.addItem')}</span>
                     </div>
                   )}
                 </div>
@@ -196,12 +200,12 @@ export function CastBoard({
             const primary = PRIMARY_SCENE_KINDS.includes(card.kind);
             const emptyLabel =
               card.kind === 'product'
-                ? 'ارفق صورة المنتج'
+                ? t('adui.uploadProduct')
                 : card.kind === 'character' || card.kind === 'character_extra'
-                ? 'ارفق شخصية أو استخدم مكتبة ناجي'
+                ? t('adui.uploadCharacter')
                 : card.kind === 'location' || card.kind === 'location_extra'
-                ? 'ارفق مكاناً أو استخدم مواقع ناجي'
-                : 'ارفق صورة المرجع';
+                ? t('adui.uploadLocation')
+                : t('adui.uploadRef');
 
             return (
               <div
@@ -210,7 +214,7 @@ export function CastBoard({
               >
                 <div className="mb-1.5 flex items-center justify-between gap-2">
                   <span className="text-[11px] font-black" style={{ color: accent }}>
-                    {meta?.label || card.kind}
+                    {t(`adui.kind.${card.kind}`)}
                   </span>
                   <button
                     type="button"
@@ -261,7 +265,7 @@ export function CastBoard({
                     <input
                       value={card.name || ''}
                       onChange={(e) => patch(card.id, { name: e.target.value })}
-                      placeholder={card.kind === 'onscreen_text' ? 'النص الظاهر حرفياً' : primary ? (card.kind === 'product' ? 'اسم المنتج أو الخدمة' : 'اسم') : 'اسم أو ملاحظة'}
+                      placeholder={card.kind === 'onscreen_text' ? t('adui.literalText') : primary ? (card.kind === 'product' ? t('adui.productName') : t('adui.nameOnly')) : t('adui.nameNote')}
                       className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-1.5 text-[11px] text-white placeholder:text-white/30 focus:border-[var(--naje-accent)] focus:outline-none"
                     />
                     {(card.kind === 'character' || card.kind === 'character_extra') && libraryAvatar && (
@@ -273,7 +277,7 @@ export function CastBoard({
                         }}
                         className="w-full rounded-xl border border-[#7dd3c7]/30 py-1.5 text-[10px] font-bold text-[#7dd3c7]"
                       >
-                        استخدم الشخصية المختارة من المكتبة
+                        {t('adui.useLibraryTalent')}
                       </button>
                     )}
                     {(card.kind === 'location' || card.kind === 'location_extra') && libraryLocation && (
@@ -285,13 +289,13 @@ export function CastBoard({
                         }}
                         className="w-full rounded-xl border border-[#93c5fd]/30 py-1.5 text-[10px] font-bold text-[#93c5fd]"
                       >
-                        استخدم المكان المختار من المكتبة
+                        {t('adui.useLibraryPlace')}
                       </button>
                     )}
                     {timed && (
                       <div data-no-drag className="rounded-xl border border-white/10 bg-black/30 p-2 touch-pan-y">
                         <label className="mb-1 block text-[10px] font-black text-[var(--naje-accent-2)]">
-                          انتقال عند الثانية {card.appearAtSec ?? 0} / {duration}
+                          {t('adui.transitionAt', { sec: card.appearAtSec ?? 0, duration })}
                         </label>
                         <input
                           type="range"
@@ -316,7 +320,7 @@ export function CastBoard({
                                   : 'border-white/10 text-white/50'
                               }`}
                             >
-                              {tr.label}
+                              {t(`adui.tr.${tr.id}`)}
                             </button>
                           ))}
                         </div>
@@ -326,8 +330,8 @@ export function CastBoard({
                 )}
                 {!isCenter && (
                   <p className="truncate text-[11px] font-bold text-white">
-                    {card.name || meta?.label}
-                    {timed && card.appearAtSec ? ` · ث${card.appearAtSec}` : ''}
+                    {card.name || t(`adui.kind.${card.kind}`)}
+                    {timed && card.appearAtSec ? ` · ${t('adui.secMark', { sec: card.appearAtSec })}` : ''}
                   </p>
                 )}
               </div>

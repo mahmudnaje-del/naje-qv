@@ -1,4 +1,5 @@
 import React from 'react';
+import { useI18n } from '../../i18n';
 import { 
   BarChart3, Users, MessageSquare, Key, DollarSign, Cpu, AlertTriangle, 
   ThumbsUp, Sparkles, Bell, Power, ShieldCheck, ToggleLeft, Menu, X, ChevronLeft,
@@ -43,6 +44,7 @@ export default function AdminSidebar({
   mobileOpen,
   setMobileOpen
 }: AdminSidebarProps) {
+  const { t } = useI18n();
 
   const groups: Array<{
     title: string;
@@ -55,46 +57,46 @@ export default function AdminSidebar({
     }>;
   }> = [
     {
-      title: 'الرئيسية',
+      title: t('tools.admin.navHome'),
       items: [
-        { id: 'overview' as AdminTab, label: 'نظرة عامة', icon: BarChart3, badge: null },
+        { id: 'overview' as AdminTab, label: t('tools.admin.overview'), icon: BarChart3, badge: null },
       ]
     },
     {
-      title: 'إدارة المستخدمين والمحتوى',
+      title: t('tools.admin.groupUsers'),
       items: [
-        { id: 'users' as AdminTab, label: 'قائمة المستخدمين', icon: Users, badge: counts.usersCount > 0 ? counts.usersCount : null },
-        { id: 'user_chats' as AdminTab, label: 'استعراض محادثات المستخدمين', icon: MessageSquare, badge: 'جديد' },
-        { id: 'codes' as AdminTab, label: 'أكواد الشحن والتفعيل', icon: Key, badge: counts.codesCount > 0 ? counts.codesCount : null },
+        { id: 'users' as AdminTab, label: t('tools.admin.users'), icon: Users, badge: counts.usersCount > 0 ? counts.usersCount : null },
+        { id: 'user_chats' as AdminTab, label: t('tools.admin.userChats'), icon: MessageSquare, badge: t('tools.admin.badgeNew') },
+        { id: 'codes' as AdminTab, label: t('tools.admin.codes'), icon: Key, badge: counts.codesCount > 0 ? counts.codesCount : null },
       ]
     },
     {
-      title: 'الاقتصاد والتكاليف',
+      title: t('tools.admin.groupEconomy'),
       items: [
-        { id: 'model_pricing' as AdminTab, label: 'النماذج والأسعار', icon: Cpu, badge: 'موحّد' },
-        { id: 'naje_ad' as AdminTab, label: 'إدارة Naje Ad (فيديو)', icon: Film, badge: 'جديد' },
+        { id: 'model_pricing' as AdminTab, label: t('tools.admin.pricing'), icon: Cpu, badge: t('tools.admin.badgeUnified') },
+        { id: 'naje_ad' as AdminTab, label: t('tools.admin.najeAd'), icon: Film, badge: t('tools.admin.badgeNew') },
       ]
     },
     {
-      title: 'الأمان والجودة',
+      title: t('tools.admin.groupSafety'),
       items: [
-        { id: 'flagged' as AdminTab, label: 'المحتوى والطلبات المرفوضة', icon: AlertTriangle, badge: counts.flaggedCount > 0 ? counts.flaggedCount : null, color: 'text-amber-400' },
-        { id: 'feedback' as AdminTab, label: 'تقييمات وآراء المستخدمين', icon: ThumbsUp, badge: counts.feedbackCount > 0 ? counts.feedbackCount : null },
+        { id: 'flagged' as AdminTab, label: t('tools.admin.flagged'), icon: AlertTriangle, badge: counts.flaggedCount > 0 ? counts.flaggedCount : null, color: 'text-amber-400' },
+        { id: 'feedback' as AdminTab, label: t('tools.admin.feedback'), icon: ThumbsUp, badge: counts.feedbackCount > 0 ? counts.feedbackCount : null },
       ]
     },
     {
-      title: 'الإعدادات والمنصة',
+      title: t('tools.admin.groupPlatform'),
       items: [
-        { id: 'skills' as AdminTab, label: 'مكتبة المهارات الذكية', icon: Sparkles, badge: counts.skillsCount > 0 ? counts.skillsCount : null },
-        { id: 'notifications' as AdminTab, label: 'بث الإشعارات الجماعية', icon: Bell, badge: null },
-        { id: 'status' as AdminTab, label: 'حالة النظام والسعة', icon: Power, badge: counts.isSystemAlert ? 'تنبيه' : null, color: counts.isSystemAlert ? 'text-red-400' : '' },
+        { id: 'skills' as AdminTab, label: t('tools.admin.skills'), icon: Sparkles, badge: counts.skillsCount > 0 ? counts.skillsCount : null },
+        { id: 'notifications' as AdminTab, label: t('tools.admin.notifications'), icon: Bell, badge: null },
+        { id: 'status' as AdminTab, label: t('tools.admin.status'), icon: Power, badge: counts.isSystemAlert ? t('tools.admin.badgeAlert') : null, color: counts.isSystemAlert ? 'text-red-400' : '' },
       ]
     },
     {
-      title: 'الرقابة والتحكم',
+      title: t('tools.admin.groupControl'),
       items: [
-        { id: 'audit_log' as AdminTab, label: 'سجل النشاط الإداري', icon: ShieldCheck, badge: null },
-        { id: 'feature_flags' as AdminTab, label: 'مفاتيح التحكم بالميزات', icon: ToggleLeft, badge: null },
+        { id: 'audit_log' as AdminTab, label: t('tools.admin.audit'), icon: ShieldCheck, badge: null },
+        { id: 'feature_flags' as AdminTab, label: t('tools.admin.flags'), icon: ToggleLeft, badge: null },
       ]
     }
   ];
@@ -113,7 +115,7 @@ export default function AdminSidebar({
             <ShieldCheck className="w-5 h-5" />
           </div>
           <div>
-            <h2 className="text-sm font-black text-white tracking-wide">لوحة التحكم العليا</h2>
+            <h2 className="text-sm font-black text-white tracking-wide">{t('tools.admin.consoleTitle')}</h2>
             <p className="text-[11px] text-amber-400/80 font-medium">Naje AI Executive Console</p>
           </div>
         </div>
@@ -139,7 +141,7 @@ export default function AdminSidebar({
                 <button
                   key={item.id}
                   onClick={() => handleSelect(item.id)}
-                  className={`w-full text-right flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 group cursor-pointer ${
+                  className={`w-full text-start flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 group cursor-pointer ${
                     isActive 
                       ? 'bg-gradient-to-r from-amber-500/20 via-purple-500/20 to-pink-500/10 text-white border border-amber-500/30 shadow-lg shadow-amber-500/5' 
                       : 'text-gray-400 hover:text-white hover:bg-gray-800/60 border border-transparent'
@@ -156,7 +158,7 @@ export default function AdminSidebar({
                     <span className={`px-2 py-0.5 text-[10px] font-black rounded-full shrink-0 ${
                       isActive 
                         ? 'bg-amber-400/20 text-amber-300 border border-amber-400/30' 
-                        : item.badge === 'جديد' || item.badge === 'تنبيه'
+                        : item.badge === t('tools.admin.badgeNew') || item.badge === t('tools.admin.badgeAlert')
                           ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30 animate-pulse'
                           : 'bg-gray-800 text-gray-300 border border-gray-700'
                     }`}>
@@ -174,7 +176,7 @@ export default function AdminSidebar({
       <div className="pt-4 mt-4 border-t border-gray-800/80 text-[11px] text-gray-400 flex items-center justify-between">
         <span className="flex items-center gap-1.5">
           <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
-          الأنظمة متصلة ومحصّنة
+          {t('tools.admin.systemsOk')}
         </span>
         <span className="font-mono text-[10px] text-gray-400">v3.8.0</span>
       </div>
@@ -192,14 +194,14 @@ export default function AdminSidebar({
       <div className="md:hidden flex items-center justify-between p-3 bg-[#0d0f14] border border-gray-800 rounded-2xl mb-4 text-white">
         <div className="flex items-center gap-2">
           <ShieldCheck className="w-5 h-5 text-amber-400" />
-          <span className="text-xs font-bold">لوحة التحكم العليا</span>
+          <span className="text-xs font-bold">{t('tools.admin.consoleTitle')}</span>
         </div>
         <button
           onClick={() => setMobileOpen(true)}
           className="flex items-center gap-2 px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-white rounded-xl text-xs font-bold transition"
         >
           <Menu className="w-4 h-4 text-amber-400" />
-          <span>القائمة</span>
+          <span>{t('tools.admin.menu')}</span>
         </button>
       </div>
 

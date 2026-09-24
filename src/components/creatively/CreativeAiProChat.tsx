@@ -48,6 +48,7 @@ import NajeErrorCard from '../NajeErrorCard';
 import { useAppStore } from '../../store';
 import { waitForGenerationJob } from '../../lib/waitForGenerationJob';
 import { fetchWithRetry } from '../../lib/fetchWithRetry';
+import { useI18n } from '../../i18n';
 
 interface Message {
   id: string;
@@ -159,20 +160,20 @@ interface CreativeAiProChatProps {
   autoNewChatTrigger?: number;
 }
 
-export function CreativeAiProChat({ activationCode = 'naje_authenticated', setActivationCode = () => {}, codeStatus, hasBalance = true, lang = 'ar', onUsePoint, onClose, autoNewChatTrigger }: CreativeAiProChatProps) {
+export function CreativeAiProChat({
+ activationCode = 'naje_authenticated', setActivationCode = () => {}, codeStatus, hasBalance = true, lang = 'ar', onUsePoint, onClose, autoNewChatTrigger }: CreativeAiProChatProps) {
+  const { t, locale, isRtl } = useI18n();
   // Chat sessions state
   const getInitialNewSession = () => {
     const newId = `session-${Date.now()}-${Math.random().toString(36).substring(7)}`;
     return {
       id: newId,
-      title: lang === 'ar' ? 'محادثة ذكية جديدة' : 'New Intelligent Chat',
+      title: t('creative.m290'),
       messages: [
         {
           id: 'init',
           role: 'model' as const as 'user' | 'model',
-          text: lang === 'ar' 
-            ? 'مرحباً بك في **Creative AI Pro** \n\nأنا مستشارك الفني ومساعدك الذكي المتقدم. هنا، نحول الأفكار إلى واقع بصري متكامل بأعلى جودة. إليك نظرة سريعة على ما يمكننا إنجازه معاً:\n\n*   ** إنتاج الفيديو السينمائي:** تصميم فيديوهات احترافية بأبعاد متعددة (16:9، 9:16) بواسطة محرك creative video المتقدم، وبطول يصل إلى 10 ثوانٍ.\n**تكلفة الفيديوهات:**\n(4 ثوانٍ = 2 نقطة، 5 ثوانٍ = 2.5 نقطة، 6 ثوانٍ = 3 نقاط، 8 ثوانٍ = 4 نقاط، 10 ثوانٍ = 5 نقاط).\n*   ** التصميم والصور الذكية:** توليد صور دقيقة وواقعية باستخدام أحدث محركات الذكاء الاصطناعي، بأبعاد تناسب جميع المنصات الاجتماعية والمطبوعات.\n*   ** بناء الهويات البصرية:** تصميم شعارات متكاملة، وبناء حزمة هوية العلامة التجارية (Brand Kit) من الصفر.\n*   ** محرك Creative Imagen Pro:** مخصص للتصاميم المعقدة التي تحتوي على نصوص دقيقة (تايبوجرافي) وتفاصيل إعلانية دقيقة.\n\nأنا هنا لأجيب على أي استفسار حول تكلفة التصاميم، أفضل المحركات لاحتياجك، أو البدء فوراً في إبداع مشروعك. ماذا يدور في ذهنك اليوم؟' 
-            : 'Welcome to **Creative AI Pro** \n\nI am your advanced AI assistant and creative consultant. Here, we turn ideas into stunning visual realities. Here is a quick look at what we can achieve together:\n\n*   ** Cinematic Video Production:** Professional videos in dimensions (16:9, 9:16) using the advanced creative video engine, up to 10 seconds per clip.\n**Video Costs:**\n(4s = 2 pts, 5s = 2.5 pts, 6s = 3 pts, 8s = 4 pts, 10s = 5 pts).\n*   ** Smart Design & Imagery:** Highly detailed and realistic image generation using the latest AI engines, perfectly sized for any platform.\n*   ** Brand Identity Creation:** Full logo design and comprehensive Brand Kit generation from scratch.\n*   ** Creative Imagen Pro Engine:** Specialized for complex designs featuring precise typography and advertising details.\n\nI am here to answer any questions about design costs, the best engines for your needs, or to start creating right away. What is on your mind today?'
+          text: t('creative.m289')
         }
       ],
       proMode: 'standard' as const,
@@ -307,9 +308,7 @@ export function CreativeAiProChat({ activationCode = 'naje_authenticated', setAc
     // Show temporary beautiful notification
     const matchedMode = AVAILABLE_MODES.find(m => m.id === mode);
     if (matchedMode) {
-      const msg = lang === 'ar' 
-        ? `تم تفعيل: ${matchedMode.nameAr} بنجاح` 
-        : `Activated: ${matchedMode.nameEn} successfully`;
+      const msg = t('creative.m304', { p0: t(`creative.pro.mode.${matchedMode.id}.name`) });
       setModeNotification(msg);
       setTimeout(() => setModeNotification(null), 3000);
     }
@@ -328,14 +327,12 @@ export function CreativeAiProChat({ activationCode = 'naje_authenticated', setAc
     const newId = `session-${Date.now()}-${Math.random().toString(36).substring(7)}`;
     const newSess: ChatSession = {
       id: newId,
-      title: lang === 'ar' ? `محادثة ذكية ${sessions.length + 1}` : `Intelligent Chat ${sessions.length + 1}`,
+      title: t('creative.m303', { p0: sessions.length + 1 }),
       messages: [
         {
           id: 'init',
           role: 'model' as const,
-          text: lang === 'ar' 
-            ? 'أهلاً بك في جلسة **Creative AI Pro** الجديدة\nكيف يمكنني مساعدتك في الإبداع اليوم؟ يمكنك تفعيل ميزات التفكير العميق أو البحث أو التوليد الفني من الأسفل.' 
-            : 'Welcome to your new **Creative AI Pro** session\nHow can I help you create today? You can activate deep thinking, search, or artistic generation from below.'
+          text: t('creative.m302')
         }
       ],
       proMode: 'standard' as const,
@@ -363,14 +360,12 @@ export function CreativeAiProChat({ activationCode = 'naje_authenticated', setAc
       setSessions([
         {
           id: 'session-default',
-          title: lang === 'ar' ? 'محادثة ذكية جديدة' : 'New Intelligent Chat',
+          title: t('creative.m290'),
           messages: [
             {
               id: 'init',
               role: 'model' as const as 'user' | 'model',
-              text: lang === 'ar' 
-                ? 'أهلاً بك في **Creative AI Pro**\nأنا مساعدك الذكي المتقدم، مدعوم بأحدث وأقوى نماذج Gemini المتعددة. بفضل اشتراكك، سأقوم بضمان خلو طلباتك من أي أخطاء إملائية أو لغوية قبل تحويلها إلى تصميم أو فيديو بأعلى جودة ممكنة. كيف يمكنني إبهارك اليوم؟' 
-                : 'Welcome to **Creative AI Pro**\nI am your advanced AI assistant, powered by the latest and most powerful multimodal Gemini models. Thanks to your Pro subscription, I will ensure your requests are perfectly translated and free of errors before generating the highest quality images or videos. How can I amaze you today?'
+              text: t('creative.m301')
             }
           ],
           proMode: 'standard' as const,
@@ -462,7 +457,7 @@ export function CreativeAiProChat({ activationCode = 'naje_authenticated', setAc
     
     let textToDisplay = textToSend;
     if (selectedFiles.length > 0) {
-      textToDisplay += `\n\n[مرفق: ${selectedFiles.length} ملفات]`;
+      textToDisplay += `\n\n${t('creative.filesAttached', { n: selectedFiles.length })}`;
     }
     setSelectedImageModal(null);
 
@@ -534,7 +529,7 @@ export function CreativeAiProChat({ activationCode = 'naje_authenticated', setAc
           const aiMessage: Message = { 
                id: aiMessageId,
                role: "model",
-               text: data.text || data.error || (lang === "ar" ? "حدث خطأ" : "An error occurred"),
+               text: data.text || data.error || (t('creative.m300')),
                thought: data.thought || undefined,
                isGeneratingImage: data.functionCall?.name === "generate_image",
                isGeneratingVideo: data.functionCall?.name === "generate_video",
@@ -707,7 +702,7 @@ export function CreativeAiProChat({ activationCode = 'naje_authenticated', setAc
                   ...s,
                   messages: s.messages.map(m => m.id === messageId ? {
                     ...m,
-                    text: stepLabel || (type === 'video' ? `جاري معالجة الفيديو (${progress}%)...` : `جاري التوليد (${progress}%)...`)
+                    text: stepLabel || (type === 'video' ? t('creative.videoProcessing', { progress }) : t('creative.generatingProgress', { progress }))
                   } : m)
                 };
               }
@@ -797,7 +792,7 @@ export function CreativeAiProChat({ activationCode = 'naje_authenticated', setAc
                    ...m,
                    isGeneratingVideo: true,
                    videoStatus: 'processing',
-                   text: lang === 'ar' ? 'الفيديو قيد المعالجة (قد يستغرق بضع دقائق)...' : 'Video is processing (might take a few minutes)...'
+                   text: t('creative.m299')
                  } : m)
                };
              }
@@ -818,7 +813,7 @@ export function CreativeAiProChat({ activationCode = 'naje_authenticated', setAc
                    ...m,
                    isGeneratingVideo: false,
                    videoStatus: 'failed',
-                   text: lang === 'ar' ? 'استغرق توليد الفيديو وقتاً أطول من المتوقع. يرجى المحاولة مجدداً.' : 'Video generation timed out. Please try again.'
+                   text: t('creative.m298')
                  } : m)
                } : s));
                return;
@@ -838,7 +833,7 @@ export function CreativeAiProChat({ activationCode = 'naje_authenticated', setAc
                try {
                  statusData = await statusRes.json();
                } catch (e) {
-                 setSessions(prev => prev.map(s => s.id === currentSessionId ? { ...s, messages: s.messages.map(m => m.id === messageId ? { ...m, videoStatus: 'failed', text: 'تعذر الحصول على حالة الفيديو' } : m) } : s));
+                 setSessions(prev => prev.map(s => s.id === currentSessionId ? { ...s, messages: s.messages.map(m => m.id === messageId ? { ...m, videoStatus: 'failed', text: t('creative.videoStatusFail') } : m) } : s));
                  return;
                }
                if (statusData.done || statusData.state === 'SUCCEEDED' || statusData.state === 'COMPLETED') {
@@ -858,7 +853,7 @@ export function CreativeAiProChat({ activationCode = 'naje_authenticated', setAc
                   }
 
                   if (!finalVideoUrl) {
-                    setSessions(prev => prev.map(s => s.id === currentSessionId ? { ...s, messages: s.messages.map(m => m.id === messageId ? { ...m, videoStatus: 'failed', text: 'تعذر تحميل الفيديو' } : m) } : s));
+                    setSessions(prev => prev.map(s => s.id === currentSessionId ? { ...s, messages: s.messages.map(m => m.id === messageId ? { ...m, videoStatus: 'failed', text: t('creative.videoLoadFail') } : m) } : s));
                     return;
                   }
 
@@ -888,7 +883,7 @@ export function CreativeAiProChat({ activationCode = 'naje_authenticated', setAc
                             }
                             return finalVideoUrl;
                           })(),
-                          text: lang === 'ar' ? 'تم إنشاء الفيديو بنجاح!' : 'Video generated successfully!'
+                          text: t('creative.m297')
                         } : m)
                       };
                     }
@@ -903,7 +898,7 @@ export function CreativeAiProChat({ activationCode = 'naje_authenticated', setAc
                           ...m,
                           isGeneratingVideo: false,
                           videoStatus: 'failed',
-                          text: statusData.error || (lang === 'ar' ? 'فشل إنشاء الفيديو.' : 'Failed to generate video.')
+                          text: statusData.error || (t('creative.m296'))
                         } : m)
                       };
                     }
@@ -991,7 +986,7 @@ export function CreativeAiProChat({ activationCode = 'naje_authenticated', setAc
   if (!isStorageLoaded) return (
     <div className="naje-creative-studio min-h-screen bg-[#030303] flex flex-col items-center justify-center gap-3 text-white">
       <NajeThinking size={56} />
-      <span className="text-xs font-black text-purple-300">ناجي يفكّر…</span>
+      <span className="text-xs font-black text-purple-300">{t('creative.thinking')}</span>
     </div>
   );
 
@@ -1048,12 +1043,12 @@ export function CreativeAiProChat({ activationCode = 'naje_authenticated', setAc
             <div className="p-4 border-b border-white/5 flex items-center justify-between">
               <span className="font-semibold text-white tracking-wide text-base flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-amber-400" />
-                {lang === 'ar' ? 'مكتبة برو' : 'PRO LIBRARY'}
+                {t('creative.m295')}
               </span>
               <button 
                 onClick={() => setIsSidebarOpen(false)}
                 className="p-1.5 rounded-lg hover:bg-white/10 text-amber-500 transition-colors"
-                title={lang === 'ar' ? 'إغلاق القائمة' : 'Close Sidebar'}
+                title={t('creative.m294')}
               >
                 <PanelLeftClose className="w-4 h-4" />
               </button>
@@ -1066,29 +1061,27 @@ export function CreativeAiProChat({ activationCode = 'naje_authenticated', setAc
                 className="w-full py-3 px-4 rounded-[20px] bg-white/[0.05] hover:bg-white/[0.08] border border-white/5 flex items-center justify-center gap-2 text-sm font-medium text-white transition-all"
               >
                 <Plus className="w-4 h-4" />
-                {lang === 'ar' ? 'دردشة ذكية جديدة' : 'New Intelligent Chat'}
+                {t('creative.m293')}
               </button>
             </div>
 
             {/* Sessions List */}
             <div className="flex-1 overflow-y-auto px-2 py-2 space-y-1">
               <div className="px-3 py-1.5 flex justify-between items-center text-[10px] uppercase tracking-widest text-amber-500/60 font-semibold">
-                <span>{lang === 'ar' ? 'المحادثات السابقة' : 'PREVIOUS CONVERSATIONS'}</span>
+                <span>{t('creative.m292')}</span>
                 {sessions.length > 0 && (
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      if (window.confirm(lang === 'ar' ? 'هل أنت متأكد من حذف جميع المحادثات؟' : 'Are you sure you want to delete all chats?')) {
+                      if (window.confirm(t('creative.m291'))) {
                         const defaultSession = {
                           id: 'session-default',
-                          title: lang === 'ar' ? 'محادثة ذكية جديدة' : 'New Intelligent Chat',
+                          title: t('creative.m290'),
                           messages: [
                             {
                               id: 'init',
                               role: 'model' as const,
-                              text: lang === 'ar'
-                                 ? 'مرحباً بك في **Creative AI Pro** \n\nأنا مستشارك الفني ومساعدك الذكي المتقدم. هنا، نحول الأفكار إلى واقع بصري متكامل بأعلى جودة. إليك نظرة سريعة على ما يمكننا إنجازه معاً:\n\n*   ** إنتاج الفيديو السينمائي:** تصميم فيديوهات احترافية بأبعاد متعددة (16:9، 9:16) بواسطة محرك creative video المتقدم، وبطول يصل إلى 10 ثوانٍ.\n**تكلفة الفيديوهات:**\n(4 ثوانٍ = 2 نقطة، 5 ثوانٍ = 2.5 نقطة، 6 ثوانٍ = 3 نقاط، 8 ثوانٍ = 4 نقاط، 10 ثوانٍ = 5 نقاط).\n*   ** التصميم والصور الذكية:** توليد صور دقيقة وواقعية باستخدام أحدث محركات الذكاء الاصطناعي، بأبعاد تناسب جميع المنصات الاجتماعية والمطبوعات.\n*   ** بناء الهويات البصرية:** تصميم شعارات متكاملة، وبناء حزمة هوية العلامة التجارية (Brand Kit) من الصفر.\n*   ** محرك Creative Imagen Pro:** مخصص للتصاميم المعقدة التي تحتوي على نصوص دقيقة (تايبوجرافي) وتفاصيل إعلانية دقيقة.\n\nأنا هنا لأجيب على أي استفسار حول تكلفة التصاميم، أفضل المحركات لاحتياجك، أو البدء فوراً في إبداع مشروعك. ماذا يدور في ذهنك اليوم؟'
-                                 : 'Welcome to **Creative AI Pro** \n\nI am your advanced AI assistant and creative consultant. Here, we turn ideas into stunning visual realities. Here is a quick look at what we can achieve together:\n\n*   ** Cinematic Video Production:** Professional videos in dimensions (16:9, 9:16) using the advanced creative video engine, up to 10 seconds per clip.\n**Video Costs:**\n(4s = 2 pts, 5s = 2.5 pts, 6s = 3 pts, 8s = 4 pts, 10s = 5 pts).\n*   ** Smart Design & Imagery:** Highly detailed and realistic image generation using the latest AI engines, perfectly sized for any platform.\n*   ** Brand Identity Creation:** Full logo design and comprehensive Brand Kit generation from scratch.\n*   ** Creative Imagen Pro Engine:** Specialized for complex designs featuring precise typography and advertising details.\n\nI am here to answer any questions about design costs, the best engines for your needs, or to start creating right away. What is on your mind today?'
+                              text: t('creative.m289')
                             }
                           ],
                           proMode: 'standard' as const,
@@ -1099,7 +1092,7 @@ export function CreativeAiProChat({ activationCode = 'naje_authenticated', setAc
                       }
                     }}
                     className="p-1 hover:bg-red-500/20 text-slate-400 hover:text-red-400 rounded transition-colors"
-                    title={lang === 'ar' ? 'حذف جميع المحادثات' : 'Clear All Chats'}
+                    title={t('creative.m288')}
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
@@ -1168,7 +1161,7 @@ export function CreativeAiProChat({ activationCode = 'naje_authenticated', setAc
                         <button
                           onClick={(e) => startEditingSession(sess.id, sess.title, e)}
                           className="p-1 hover:bg-white/10 rounded text-slate-400 hover:text-white"
-                          title={lang === 'ar' ? 'تعديل الاسم' : 'Rename'}
+                          title={t('creative.m287')}
                         >
                           <Edit2 className="w-3 h-3" />
                         </button>
@@ -1176,7 +1169,7 @@ export function CreativeAiProChat({ activationCode = 'naje_authenticated', setAc
                       <button
                         onClick={(e) => handleDeleteSession(sess.id, e)}
                         className="p-1 hover:bg-white/10 rounded text-slate-400 hover:text-red-400"
-                        title={lang === 'ar' ? 'حذف المحادثة' : 'Delete'}
+                        title={t('creative.m286')}
                       >
                         <Trash2 className="w-3 h-3" />
                       </button>
@@ -1193,13 +1186,13 @@ export function CreativeAiProChat({ activationCode = 'naje_authenticated', setAc
                   AK
                 </div>
               </div>
-              <div className="flex-1 text-right min-w-0">
+              <div className="flex-1 text-start min-w-0">
                 <div className="text-xs font-black text-white truncate">
-                  {lang === 'ar' ? 'أحمد خالد' : 'Ahmad Khaled'}
+                  {t('creative.m285')}
                 </div>
                 <div className="text-[10px] text-amber-400 font-bold flex items-center gap-1 justify-start">
                   <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse animate-duration-1000" />
-                  <span>{lang === 'ar' ? 'اشتراك Pro' : 'Pro Active'}</span>
+                  <span>{t('creative.m284')}</span>
                 </div>
               </div>
             </div>
@@ -1208,7 +1201,7 @@ export function CreativeAiProChat({ activationCode = 'naje_authenticated', setAc
             <div className="p-4 border-t border-white/5 bg-black/40 text-center flex flex-col gap-2">
                <div className="text-xs font-bold text-white mb-1 flex items-center justify-center gap-2">
                  <span className="w-5 h-5 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center"></span>
-                 {userName || (lang === 'ar' ? 'مستخدم جديد' : 'New User')}
+                 {userName || (t('creative.m283'))}
                </div>
                <div className="text-[10px] text-slate-500 flex items-center justify-center gap-1">
                  <Info className="w-3 h-3 text-amber-500/50" />
@@ -1220,10 +1213,10 @@ export function CreativeAiProChat({ activationCode = 'naje_authenticated', setAc
                  <button 
                    onClick={() => setIsSettingsOpen(true)}
                    className="flex items-center gap-1 text-[10px] text-sky-400/80 hover:text-sky-300 bg-white/5 hover:bg-white/10 px-2 py-1 rounded border border-white/5 transition-all"
-                   title={lang === 'ar' ? 'الإعدادات وتفاصيل الأوضاع' : 'Settings & Modes Info'}
+                   title={t('creative.m282')}
                  >
                    <Settings className="w-3 h-3" />
-                   <span>{lang === 'ar' ? 'الإعدادات' : 'Settings'}</span>
+                   <span>{t('creative.m192')}</span>
                  </button>
 
                  <button 
@@ -1237,19 +1230,19 @@ export function CreativeAiProChat({ activationCode = 'naje_authenticated', setAc
                      downloadAnchor.remove();
                    }}
                    className="flex items-center gap-1 text-[10px] text-amber-400/80 hover:text-amber-300 bg-white/5 hover:bg-white/10 px-2 py-1 rounded border border-white/5 transition-all"
-                   title={lang === 'ar' ? 'تصدير نسخة احتياطية' : 'Export Chats Backup'}
+                   title={t('creative.m281')}
                  >
                    <Download className="w-3 h-3" />
-                   <span>{lang === 'ar' ? 'تصدير' : 'Backup'}</span>
+                   <span>{t('creative.m280')}</span>
                  </button>
                  
                  <button 
                    onClick={() => fileImportRef.current?.click()}
                    className="flex items-center gap-1 text-[10px] text-emerald-400/80 hover:text-emerald-300 bg-white/5 hover:bg-white/10 px-2 py-1 rounded border border-white/5 transition-all"
-                   title={lang === 'ar' ? 'استيراد نسخة احتياطية' : 'Import Chats Backup'}
+                   title={t('creative.m279')}
                  >
                    <Upload className="w-3 h-3" />
-                   <span>{lang === 'ar' ? 'استيراد' : 'Restore'}</span>
+                   <span>{t('creative.m278')}</span>
                  </button>
                  
                  <input 
@@ -1267,10 +1260,10 @@ export function CreativeAiProChat({ activationCode = 'naje_authenticated', setAc
                              if (parsed[0]?.id) {
                                setCurrentSessionId(parsed[0].id);
                              }
-                             alert(lang === 'ar' ? 'تم استعادة المحادثات بنجاح!' : 'Chats restored successfully!');
+                             alert(t('creative.m277'));
                            }
                          } catch (err) {
-                           alert(lang === 'ar' ? 'فشل استيراد الملف. تأكد من صحة التنسيق.' : 'Failed to import backup file.');
+                           alert(t('creative.m276'));
                          }
                        };
                        reader.readAsText(file);
@@ -1299,7 +1292,7 @@ export function CreativeAiProChat({ activationCode = 'naje_authenticated', setAc
               <button 
                 onClick={() => setIsSidebarOpen(true)}
                 className="p-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-amber-400 transition-colors"
-                title={lang === 'ar' ? 'فتح المحادثات' : 'Open Sidebar'}
+                title={t('creative.m275')}
               >
                 <PanelLeft className="w-5 h-5" />
               </button>
@@ -1321,7 +1314,7 @@ export function CreativeAiProChat({ activationCode = 'naje_authenticated', setAc
                 </span>
               </div>
               <p className="text-[11px] text-slate-400 font-medium">
-                {lang === 'ar' ? 'مساعدك الذكي للتصميم والتحليل الاحترافي' : 'Your smart assistant for pro design & analysis'}
+                {t('creative.m274')}
               </p>
             </div>
           </div>
@@ -1331,10 +1324,10 @@ export function CreativeAiProChat({ activationCode = 'naje_authenticated', setAc
             <button 
               onClick={() => setIsGalleryOpen(true)}
               className="p-2.5 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 hover:border-amber-500/40 text-amber-400 hover:text-amber-300 rounded-xl transition-all flex items-center justify-center gap-1.5 text-xs font-bold shadow-lg active:scale-95"
-              title={lang === 'ar' ? 'المكتبة الشخصية' : 'Creations Library'}
+              title={t('creative.m273')}
             >
               <History className="w-4 h-4" />
-              <span className="hidden xs:inline">{lang === 'ar' ? 'مكتبتي الفنية' : 'My Library'}</span>
+              <span className="hidden xs:inline">{t('creative.m272')}</span>
               {gallery.length > 0 && (
                 <span className="bg-amber-500 text-black text-[9px] font-black px-1.5 py-0.5 rounded-full">
                   {gallery.length}
@@ -1345,7 +1338,7 @@ export function CreativeAiProChat({ activationCode = 'naje_authenticated', setAc
             <div className="hidden sm:flex items-center gap-1.5 bg-white/5 border border-white/5 px-3 py-1.5 rounded-full text-xs">
               <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
               <span className="text-slate-400">
-                {lang === 'ar' ? 'المحرك النشط:' : 'Active Engine:'}
+                {t('creative.m271')}
               </span>
               <span className="text-amber-300 font-semibold font-mono">
                 Creative AI Core
@@ -1356,10 +1349,10 @@ export function CreativeAiProChat({ activationCode = 'naje_authenticated', setAc
               <button 
                 onClick={onClose}
                 className="p-2.5 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 hover:border-red-500/40 text-red-400 hover:text-red-300 rounded-xl transition-all flex items-center justify-center gap-1.5 text-xs font-bold shadow-lg"
-                title={lang === 'ar' ? 'خروج' : 'Exit Pro'}
+                title={t('creative.m270')}
               >
                 <X className="w-4 h-4" />
-                <span className="hidden xs:inline">{lang === 'ar' ? 'خروج' : 'Exit'}</span>
+                <span className="hidden xs:inline">{t('creative.m269')}</span>
               </button>
             )}
           </div>
@@ -1382,10 +1375,10 @@ export function CreativeAiProChat({ activationCode = 'naje_authenticated', setAc
                   <div className="space-y-4 relative">
                     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 bg-amber-500/20 blur-[60px] rounded-full pointer-events-none" />
                     <h2 className="text-3xl md:text-5xl font-black tracking-tighter bg-gradient-to-r from-amber-100 via-white to-amber-200 bg-clip-text text-transparent drop-shadow-[0_0_20px_rgba(251,191,36,0.3)]">
-                      {lang === 'ar' ? 'ماذا نُبدع اليوم؟' : 'What shall we create today?'}
+                      {t('creative.m268')}
                     </h2>
                     <p className="text-slate-400 text-sm md:text-base font-medium max-w-md mx-auto drop-shadow-md">
-                      {lang === 'ar' ? 'ابدأ الدردشة الآن بكتابة ما تفكر فيه بالأسفل...' : 'Start chatting now by describing what you want below...'}
+                      {t('creative.m267')}
                     </p>
                   </div>
 
@@ -1423,15 +1416,15 @@ export function CreativeAiProChat({ activationCode = 'naje_authenticated', setAc
                             <div className="flex items-center gap-2">
                               <Bot className="w-4 h-4" />
                               <span className="text-xs font-black uppercase tracking-widest text-amber-300">
-                                {lang === 'ar' ? 'مساعد PRO الذكي' : 'INTELLIGENT PRO'}
+                                {t('creative.m266')}
                               </span>
                             </div>
                             {proMode !== 'standard' && (
                               <span className="text-[10px] bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full capitalize">
-                                {proMode === 'thinking' && (lang === 'ar' ? 'التفكير العميق' : 'Thinking')}
-                                {proMode === 'search' && (lang === 'ar' ? 'البحث الذكي' : 'Search')}
-                                {proMode === 'image' && (lang === 'ar' ? 'المصمم الفني' : 'Designer')}
-                                {proMode === 'study' && (lang === 'ar' ? 'المذاكرة والمعرفة' : 'Study Assist')}
+                                {proMode === 'thinking' && (t('creative.m265'))}
+                                {proMode === 'search' && (t('creative.m264'))}
+                                {proMode === 'image' && (t('creative.m263'))}
+                                {proMode === 'study' && (t('creative.m262'))}
                               </span>
                             )}
                           </div>
@@ -1442,12 +1435,12 @@ export function CreativeAiProChat({ activationCode = 'naje_authenticated', setAc
                           <div className="mb-4 bg-purple-500/5 rounded-xl border border-purple-500/10 overflow-hidden">
                             <button
                               onClick={() => toggleThought(msg.id)}
-                              className="w-full px-3 py-2.5 flex items-center justify-between text-xs font-bold text-purple-400 hover:bg-purple-500/10 transition-colors text-right"
+                              className="w-full px-3 py-2.5 flex items-center justify-between text-xs font-bold text-purple-400 hover:bg-purple-500/10 transition-colors text-start"
                             >
                               <div className="flex items-center gap-1.5">
                                 <Brain className="w-4 h-4 animate-pulse" />
                                 <span>
-                                  {lang === 'ar' ? 'عملية التفكير والتحليل المنطقي المتكاملة' : 'Detailed Logic & Thinking Process'}
+                                  {t('creative.m261')}
                                 </span>
                               </div>
                               {isThoughtExpanded ? <X className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
@@ -1490,7 +1483,7 @@ export function CreativeAiProChat({ activationCode = 'naje_authenticated', setAc
                         {msg.isGeneratingVideo && msg.videoStatus === 'processing' && (
                           <div className="mt-4 flex items-center gap-3 text-fuchsia-400/80 bg-fuchsia-500/5 p-3.5 rounded-xl border border-fuchsia-500/20">
                             <NajeSpinner className="w-4 h-4" />
-                            <span className="text-xs font-semibold">{lang === 'ar' ? 'جاري إعداد وصياغة الفيديو السينمائي...' : 'Drafting cinematic scene...'}</span>
+                            <span className="text-xs font-semibold">{t('creative.m260')}</span>
                           </div>
                         )}
 
@@ -1506,7 +1499,7 @@ export function CreativeAiProChat({ activationCode = 'naje_authenticated', setAc
                                  <span className="text-[10px] bg-slate-700 text-slate-300 px-2 py-0.5 rounded-md">{concept.synthesisPrincipleUsed}</span>
                                </div>
                                <p className="text-xs text-slate-400 mb-2">{concept.whyItWorks}</p>
-                               <button className="text-xs bg-amber-500/20 text-amber-300 py-1 rounded w-full border border-amber-500/30 hover:bg-amber-500/40">توليد هذا التصميم</button>
+                               <button className="text-xs bg-amber-500/20 text-amber-300 py-1 rounded w-full border border-amber-500/30 hover:bg-amber-500/40">{t('creative.generateThisDesign')}</button>
                             </div>
                           ))}
                         </div>
@@ -1522,7 +1515,7 @@ export function CreativeAiProChat({ activationCode = 'naje_authenticated', setAc
                             <img src={msg.generatedImageUrl} alt="Generated" className="w-full h-auto object-cover max-h-[400px]" />
                             <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
                               <span className="px-6 py-3 bg-white/20 backdrop-blur-md rounded-xl text-white font-semibold transition-all transform hover:scale-105 shadow-lg">
-                                {lang === 'ar' ? 'عرض الخيارات' : 'View Options'}
+                                {t('creative.m259')}
                               </span>
                             </div>
                           </motion.div>
@@ -1569,9 +1562,7 @@ export function CreativeAiProChat({ activationCode = 'naje_authenticated', setAc
                      <>
                        <NajeSpinner className="w-5 h-5" />
                        <span className="text-xs font-bold text-amber-400 leading-relaxed">
-                         {lang === 'ar' 
-                           ? 'قد يستغرق إنشاء التصميم من دقيقة إلى ثلاث دقائق نبدع لك في كل بكسل' 
-                           : 'Design generation may take 1 to 3 minutes, crafting every pixel for you...'}
+                         {t('creative.m258')}
                        </span>
                      </>
                    ) : (
@@ -1599,10 +1590,10 @@ export function CreativeAiProChat({ activationCode = 'naje_authenticated', setAc
                 exit={{ opacity: 0, scale: 0.9 }}
                 className="bg-[#0c0c0c] border border-amber-500/30 rounded-3xl overflow-hidden max-w-md w-full relative shadow-2xl text-center"
               >
-                <div className="p-4 bg-black/40 border-b border-white/5 flex items-center justify-between text-right" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
+                <div className="p-4 bg-black/40 border-b border-white/5 flex items-center justify-between text-start" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
                   <span className="text-sm font-bold text-amber-300 flex items-center gap-1.5">
                     <Camera className="w-4 h-4 text-amber-400" />
-                    {lang === 'ar' ? 'التقاط فوري بالكاميرا' : 'Instant Camera Stream'}
+                    {t('creative.m257')}
                   </span>
                   <button onClick={stopCamera} className="p-1 rounded-full bg-white/5 hover:bg-white/10">
                     <X className="w-4 h-4 text-white" />
@@ -1623,13 +1614,13 @@ export function CreativeAiProChat({ activationCode = 'naje_authenticated', setAc
                     onClick={capturePhoto}
                     className="px-6 py-3 bg-gradient-to-r from-amber-500 to-yellow-400 text-black font-black text-sm rounded-full shadow-lg shadow-amber-500/20 hover:scale-105 active:scale-95 transition-transform"
                   >
-                    {lang === 'ar' ? 'التقاط الصورة' : 'Capture Photo'}
+                    {t('creative.m256')}
                   </button>
                   <button 
                     onClick={stopCamera}
                     className="px-5 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full text-xs"
                   >
-                    {lang === 'ar' ? 'إلغاء' : 'Cancel'}
+                    {t('common.cancel')}
                   </button>
                 </div>
               </motion.div>
@@ -1655,7 +1646,7 @@ export function CreativeAiProChat({ activationCode = 'naje_authenticated', setAc
                 >
                   <div className="flex items-center justify-between mb-4 pb-2 border-b border-white/5">
                     <span className="text-xs font-black text-amber-400 tracking-wider uppercase">
-                      {lang === 'ar' ? 'إرفاق محتوى أو وسائط مخصصة' : 'ATTACH PRO CONTENT'}
+                      {t('creative.m255')}
                     </span>
                     <button 
                       onClick={() => setShowAttachmentMenu(false)}
@@ -1678,7 +1669,7 @@ export function CreativeAiProChat({ activationCode = 'naje_authenticated', setAc
                         <ImageIcon className="w-7 h-7" />
                       </div>
                       <span className="text-xs font-bold text-slate-300 group-hover:text-white transition-colors">
-                        {lang === 'ar' ? 'الصور' : 'Photos'}
+                        {t('creative.m254')}
                       </span>
                     </button>
 
@@ -1691,7 +1682,7 @@ export function CreativeAiProChat({ activationCode = 'naje_authenticated', setAc
                         <Camera className="w-7 h-7" />
                       </div>
                       <span className="text-xs font-bold text-slate-300 group-hover:text-white transition-colors">
-                        {lang === 'ar' ? 'الكاميرا' : 'Camera'}
+                        {t('creative.m253')}
                       </span>
                     </button>
 
@@ -1706,7 +1697,7 @@ export function CreativeAiProChat({ activationCode = 'naje_authenticated', setAc
                         <Paperclip className="w-7 h-7" />
                       </div>
                       <span className="text-xs font-bold text-slate-300 group-hover:text-white transition-colors">
-                        {lang === 'ar' ? 'الملفات' : 'Files'}
+                        {t('creative.m252')}
                       </span>
                     </button>
                   </div>
@@ -1803,7 +1794,7 @@ export function CreativeAiProChat({ activationCode = 'naje_authenticated', setAc
                              </div>
                              <div className="text-start">
                                <div className={`text-sm font-bold ${!useCreativePro ? 'text-white' : 'text-slate-300'}`}>Creative Imagen</div>
-                               <div className="text-[10px] text-slate-500">{lang === 'ar' ? 'النموذج الافتراضي السريع' : 'Fast default model'}</div>
+                               <div className="text-[10px] text-slate-500">{t('creative.m156')}</div>
                              </div>
                            </div>
                            {!useCreativePro && <CheckCircle2 className="w-4 h-4 text-amber-400" />}
@@ -1822,7 +1813,7 @@ export function CreativeAiProChat({ activationCode = 'naje_authenticated', setAc
                                <div className={`text-sm font-bold flex items-center gap-1.5 ${useCreativePro ? 'text-white' : 'text-slate-300'}`}>
                                   Creative Imagen Pro <span className="bg-amber-500 text-white text-[8px] px-1 py-0.5 rounded font-black uppercase">Pro</span>
                                </div>
-                               <div className="text-[10px] text-slate-500">{lang === 'ar' ? 'جودة فائقة وواقعية سينمائية' : 'Ultra quality & cinematic'}</div>
+                               <div className="text-[10px] text-slate-500">{t('creative.m155')}</div>
                              </div>
                            </div>
                            {useCreativePro && <CheckCircle2 className="w-4 h-4 text-amber-400" />}
@@ -1833,7 +1824,7 @@ export function CreativeAiProChat({ activationCode = 'naje_authenticated', setAc
                </div>
                
                <span className="text-[10px] text-slate-500 px-2">
-                  {useCreativePro ? (lang === 'ar' ? '1.6 نقطة / تصميم' : '1.6 pts / design') : (lang === 'ar' ? '1.1 نقطة / تصميم' : '1.1 pts / design')}
+                  {useCreativePro ? (t('creative.m251')) : (t('creative.m250'))}
                </span>
             </div>
 
@@ -1855,14 +1846,14 @@ export function CreativeAiProChat({ activationCode = 'naje_authenticated', setAc
                 }}
                 placeholder={
                   proMode === 'thinking' 
-                    ? (lang === 'ar' ? 'اكتب مسألتك أو سؤالك المعقد ليتفكر فيه النموذج عميقاً...' : 'Ask your complex problem to let Pro analyze deeply...')
+                    ? (t('creative.m249'))
                     : proMode === 'search'
-                    ? (lang === 'ar' ? 'اسأل عما تريد وسيتصفح المساعد الويب لك...' : 'Ask anything, and we will search the web...')
+                    ? (t('creative.m248'))
                     : proMode === 'image'
-                    ? (lang === 'ar' ? 'صف ملامح الصورة التي تتخيلها وتود تصميمها...' : 'Describe the traits of the image you want designed...')
+                    ? (t('creative.m247'))
                     : proMode === 'study'
-                    ? (lang === 'ar' ? 'اطلب شرحاً، تلخيصاً، أو خطة مذاكرة تفاعلية لدرسك...' : 'Ask for interactive explanation, summary, or study plan...')
-                    : (lang === 'ar' ? 'صف خيالك هنا أو أرفق صورة/فيديو...' : 'Describe your imagination or attach a media file...')
+                    ? (t('creative.m246'))
+                    : (t('creative.m245'))
                 }
                 className="w-full bg-transparent py-4 px-5 text-white placeholder-slate-500 focus:outline-none resize-none min-h-[56px] max-h-[120px] transition-all text-sm leading-relaxed custom-scrollbar"
                 rows={1}
@@ -1879,7 +1870,7 @@ export function CreativeAiProChat({ activationCode = 'naje_authenticated', setAc
                         ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' 
                         : 'hover:bg-white/5 border border-transparent hover:border-white/5'
                     }`}
-                    title={lang === 'ar' ? 'إرفاق محتوى / وسائط مخصصة' : 'Attach File / Media'}
+                    title={t('creative.m244')}
                   >
                     <Paperclip className="w-5 h-5" />
                   </button>
@@ -1898,15 +1889,15 @@ export function CreativeAiProChat({ activationCode = 'naje_authenticated', setAc
           {/* Activation Required warning */}
           {(!activationCode || activationCode.length < 8) && (
             <p className="text-red-400 text-xs text-center mt-2 font-semibold">
-              {lang === 'ar' ? 'يرجى تفعيل حسابك أولاً باستخدام كود صحيح لاستخدام ميزات Pro.' : 'Please activate your account with a valid code to use Pro features.'}
+              {t('creative.m243')}
             </p>
           )}
 
           {/* Pro Badges Footer */}
           <div className="flex items-center justify-center gap-4 mt-3.5 text-[10px] text-slate-500">
-             <span className="flex items-center gap-1"><Sparkles className="w-3.5 h-3.5 text-amber-500/50"/> {lang === 'ar' ? 'التصحيح النحوي الفوري' : 'AI Grammar Correction'}</span>
-             <span className="flex items-center gap-1"><ImageIcon className="w-3.5 h-3.5 text-amber-500/50"/> {lang === 'ar' ? 'صور فائقة الدقة 4K' : 'Ultra HD Images'}</span>
-             <span className="flex items-center gap-1"><Video className="w-3.5 h-3.5 text-amber-500/50"/> {lang === 'ar' ? 'مقاطع فيديو سينمائية' : 'Pro Videos'}</span>
+             <span className="flex items-center gap-1"><Sparkles className="w-3.5 h-3.5 text-amber-500/50"/> {t('creative.m242')}</span>
+             <span className="flex items-center gap-1"><ImageIcon className="w-3.5 h-3.5 text-amber-500/50"/> {t('creative.m241')}</span>
+             <span className="flex items-center gap-1"><Video className="w-3.5 h-3.5 text-amber-500/50"/> {t('creative.m240')}</span>
           </div>
          </div>
        </div>
@@ -1945,7 +1936,7 @@ export function CreativeAiProChat({ activationCode = 'naje_authenticated', setAc
              >
                <div className="flex justify-between items-center p-4 border-b border-white/5 bg-black/20">
                  <h3 className="font-bold text-white">
-                   {lang === 'ar' ? 'خيارات التصميم' : 'Design Options'}
+                   {t('creative.m239')}
                  </h3>
                  <button onClick={() => setSelectedImageModal(null)} className="p-2 text-slate-400 hover:text-white rounded-xl hover:bg-white/10 transition-all">
                    <X className="w-5 h-5" />
@@ -1963,7 +1954,7 @@ export function CreativeAiProChat({ activationCode = 'naje_authenticated', setAc
                    className="flex items-center gap-2 px-5 py-2.5 bg-amber-500 hover:bg-amber-600 rounded-xl text-black font-bold transition-all shadow-lg hover:shadow-amber-500/20 active:scale-95"
                  >
                    <Download className="w-4 h-4" />
-                   {lang === 'ar' ? 'تنزيل وحفظ' : 'Download'}
+                   {t('creative.m238')}
                  </a>
                  <button
                    onClick={() => {
@@ -1972,7 +1963,7 @@ export function CreativeAiProChat({ activationCode = 'naje_authenticated', setAc
                    className="flex items-center gap-2 px-5 py-2.5 bg-white/10 hover:bg-white/20 rounded-xl text-white font-bold transition-all active:scale-95 border border-white/10"
                  >
                    <Edit2 className="w-4 h-4" />
-                   {lang === 'ar' ? 'تعديل التصميم' : 'Edit Design'}
+                   {t('creative.m237')}
                  </button>
                  <button
                    onClick={() => {
@@ -1981,7 +1972,7 @@ export function CreativeAiProChat({ activationCode = 'naje_authenticated', setAc
                    className="flex items-center gap-2 px-5 py-2.5 bg-fuchsia-500/20 hover:bg-fuchsia-500/30 text-fuchsia-300 rounded-xl font-bold transition-all active:scale-95 border border-fuchsia-500/30"
                  >
                    <RefreshCw className="w-4 h-4" />
-                   {lang === 'ar' ? 'إعادة تصميم' : 'Redesign'}
+                   {t('creative.m236')}
                  </button>
                </div>
              </motion.div>
@@ -2005,7 +1996,7 @@ export function CreativeAiProChat({ activationCode = 'naje_authenticated', setAc
                  <div className="flex items-center gap-2">
                    <Settings className="w-5 h-5 text-amber-400" />
                    <h2 className="text-md sm:text-lg font-black text-white">
-                     {lang === 'ar' ? 'الإعدادات وتفاصيل الأوضاع' : 'Settings & Mode Details'}
+                     {t('creative.m235')}
                    </h2>
                  </div>
                  <button 
@@ -2017,7 +2008,7 @@ export function CreativeAiProChat({ activationCode = 'naje_authenticated', setAc
                </div>
 
                {/* Settings Content */}
-               <div className="p-6 overflow-y-auto flex-1 space-y-6 text-right" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
+               <div className="p-6 overflow-y-auto flex-1 space-y-6 text-start" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
                  <div className="space-y-6">
                    {/* User Profile Settings */}
                    <div className="bg-black/20 border border-white/10 rounded-2xl p-4 sm:p-6 mb-6">
@@ -2026,12 +2017,12 @@ export function CreativeAiProChat({ activationCode = 'naje_authenticated', setAc
                           <span className="text-xl"></span>
                         </div>
                         <div>
-                          <h4 className="font-bold text-white text-sm sm:text-base">{lang === 'ar' ? 'الملف الشخصي' : 'User Profile'}</h4>
-                          <p className="text-xs text-slate-400">{lang === 'ar' ? 'أدخل اسمك ليقوم النموذج بمعرفته' : 'Enter your name so the model recognizes you'}</p>
+                          <h4 className="font-bold text-white text-sm sm:text-base">{t('creative.m234')}</h4>
+                          <p className="text-xs text-slate-400">{t('creative.m233')}</p>
                         </div>
                       </div>
                       <div className="flex flex-col gap-2">
-                        <label className="block text-xs font-semibold text-slate-300 mb-1">{lang === 'ar' ? 'الاسم الشخصي' : 'Your Name'}</label>
+                        <label className="block text-xs font-semibold text-slate-300 mb-1">{t('creative.m232')}</label>
                         <div className="flex gap-2">
                           <input 
                             type="text" 
@@ -2044,14 +2035,14 @@ export function CreativeAiProChat({ activationCode = 'naje_authenticated', setAc
                               const lowerVal = val.toLowerCase();
                               const forbidden = ['admin', 'system', 'root', 'fake', 'test', 'مسيء', 'كلب', 'حمار', 'غبي', 'fuck', 'shit', 'bitch'];
                               if (forbidden.some(w => lowerVal.includes(w))) {
-                                  setUserNameError(lang === 'ar' ? 'عذراً، هذا الاسم غير مسموح به (اسم مسيء أو مستعار).' : 'Sorry, this name is not allowed (offensive or reserved fake name).');
+                                  setUserNameError(t('creative.m231'));
                               } else if (val.length > 0 && val.length < 2) {
-                                  setUserNameError(lang === 'ar' ? 'الاسم قصير جداً' : 'Name is too short');
+                                  setUserNameError(t('creative.m230'));
                               } else {
                                   setUserNameError(null);
                               }
                             }}
-                            placeholder={lang === 'ar' ? 'أدخل اسمك هنا...' : 'Enter your name here...'}
+                            placeholder={t('creative.m229')}
                             className={`flex-1 bg-black/40 border ${userNameError ? 'border-red-500/50 focus:border-red-500' : 'border-white/10 focus:border-blue-500/50'} rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:bg-black/60 transition-all text-sm`}
                           />
                           <button 
@@ -2065,14 +2056,14 @@ export function CreativeAiProChat({ activationCode = 'naje_authenticated', setAc
                             disabled={!!userNameError || userName.length < 2}
                             className="bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 disabled:cursor-not-allowed text-white px-4 py-2 rounded-xl font-bold transition-colors text-sm"
                           >
-                            {lang === 'ar' ? 'حفظ' : 'Save'}
+                            {t('common.save')}
                           </button>
                         </div>
                         {userNameError && (
                           <p className="text-xs text-red-400 mt-1">{userNameError}</p>
                         )}
                         {userNameSuccess && (
-                          <p className="text-xs text-green-400 mt-1">{lang === 'ar' ? 'تم حفظ الاسم بنجاح وسيتعرف عليك النموذج الآن!' : 'Name saved successfully! The model will recognize you now.'}</p>
+                          <p className="text-xs text-green-400 mt-1">{t('creative.m228')}</p>
                         )}
                       </div>
                    </div>
@@ -2084,14 +2075,14 @@ export function CreativeAiProChat({ activationCode = 'naje_authenticated', setAc
                           <KeyRound className="w-5 h-5 text-amber-400" />
                         </div>
                         <div>
-                          <h4 className="font-bold text-white text-sm sm:text-base">{lang === 'ar' ? 'معلومات الاشتراك' : 'Subscription Details'}</h4>
-                          <p className="text-xs text-slate-400">{lang === 'ar' ? 'قم بتحديث الكود الخاص بك وتتبع استهلاكك' : 'Update your code and track usage'}</p>
+                          <h4 className="font-bold text-white text-sm sm:text-base">{t('creative.m227')}</h4>
+                          <p className="text-xs text-slate-400">{t('creative.m226')}</p>
                         </div>
                       </div>
 
                       <div className="flex flex-col gap-4">
                         <div>
-                          <label className="block text-xs font-semibold text-slate-300 mb-2">{lang === 'ar' ? 'كود التفعيل' : 'Activation Code'}</label>
+                          <label className="block text-xs font-semibold text-slate-300 mb-2">{t('creative.m225')}</label>
                           <input 
                             type="text" 
                             value={activationCode}
@@ -2100,7 +2091,7 @@ export function CreativeAiProChat({ activationCode = 'naje_authenticated', setAc
                                 setActivationCode(e.target.value.toUpperCase());
                               }
                             }}
-                            placeholder={lang === 'ar' ? 'أدخل كود التفعيل...' : 'Enter activation code...'}
+                            placeholder={t('creative.m170')}
                             className="w-full bg-black/40 border border-white/10 focus:border-amber-500/50 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:bg-black/60 transition-all font-mono tracking-widest text-sm uppercase"
                           />
                         </div>
@@ -2108,9 +2099,9 @@ export function CreativeAiProChat({ activationCode = 'naje_authenticated', setAc
                         {codeStatus && (
                           <div className="bg-white/5 border border-white/10 rounded-xl p-4">
                             <div className="flex justify-between items-center mb-2">
-                              <span className="text-xs text-slate-400">{lang === 'ar' ? 'الرصيد المتاح' : 'Available Balance'}</span>
+                              <span className="text-xs text-slate-400">{t('creative.m224')}</span>
                               <span className={`text-sm font-bold ${hasBalance ? 'text-green-400' : 'text-red-400'}`}>
-                                {Math.max(0, codeStatus.limit - codeStatus.usage)} {lang === 'ar' ? 'تصميم' : 'designs'}
+                                {Math.max(0, codeStatus.limit - codeStatus.usage)} {t('creative.m223')}
                               </span>
                             </div>
                             <div className="w-full bg-black/50 rounded-full h-2 mb-2 overflow-hidden border border-white/5">
@@ -2120,21 +2111,21 @@ export function CreativeAiProChat({ activationCode = 'naje_authenticated', setAc
                               ></div>
                             </div>
                             <div className="flex justify-between items-center text-[10px] text-slate-500">
-                              <span>{lang === 'ar' ? 'الاستهلاك:' : 'Usage:'} {codeStatus.usage}</span>
-                              <span>{lang === 'ar' ? 'الحد الكلي:' : 'Limit:'} {codeStatus.limit}</span>
+                              <span>{t('creative.m222')} {codeStatus.usage}</span>
+                              <span>{t('creative.m221')} {codeStatus.limit}</span>
                             </div>
                           </div>
                         )}
                         {!codeStatus && activationCode && (
                           <div className="text-xs text-amber-400 bg-amber-500/10 p-3 rounded-lg border border-amber-500/20 text-center">
-                            {lang === 'ar' ? 'جاري التحقق من الكود...' : 'Checking code status...'}
+                            {t('creative.m220')}
                           </div>
                         )}
                       </div>
                    </div>
 
                    <h3 className="text-sm font-bold text-amber-400 border-b border-white/10 pb-2">
-                     {lang === 'ar' ? 'إعدادات وضع الذكاء الاصطناعي (Creative AI Pro)' : 'AI Mode Settings (Creative AI Pro)'}
+                     {t('creative.m219')}
                    </h3>
                    <div className="grid gap-4">
                      {AVAILABLE_MODES.map(mode => {
@@ -2158,7 +2149,7 @@ export function CreativeAiProChat({ activationCode = 'naje_authenticated', setAc
                            </div>
                            <div>
                              <h4 className={`font-bold text-sm ${isSelected ? 'text-amber-400' : 'text-white'}`}>
-                               {lang === 'ar' ? mode.nameAr : mode.nameEn}
+                               {t(`creative.pro.mode.${mode.id}.name`)}
                              </h4>
                              {mode.badge && (
                                <span className="text-[10px] bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded font-mono mt-1 inline-block">
@@ -2168,7 +2159,7 @@ export function CreativeAiProChat({ activationCode = 'naje_authenticated', setAc
                            </div>
                          </div>
                          <p className="text-xs text-slate-400 leading-relaxed">
-                           {lang === 'ar' ? mode.descAr : mode.descEn}
+                           {t(`creative.pro.mode.${mode.id}.desc`)}
                          </p>
                        </div>
                      )})}
@@ -2196,10 +2187,10 @@ export function CreativeAiProChat({ activationCode = 'naje_authenticated', setAc
                  <div className="flex items-center gap-2">
                    <History className="w-5 h-5 text-amber-400" />
                    <h2 className="text-md sm:text-lg font-black text-white">
-                     {lang === 'ar' ? 'مكتبتي الفنية الشخصية للوسائط' : 'My Personal Media Library'}
+                     {t('creative.m218')}
                    </h2>
                    <span className="bg-amber-500/10 text-amber-400 text-[10px] px-2 py-0.5 rounded-full font-bold">
-                     {gallery.length} {lang === 'ar' ? 'عنصر' : 'items'}
+                     {gallery.length} {t('creative.m217')}
                    </span>
                  </div>
                  <button 
@@ -2218,12 +2209,10 @@ export function CreativeAiProChat({ activationCode = 'naje_authenticated', setAc
                        <Sparkles className="w-6 h-6" />
                      </div>
                      <p className="text-sm text-slate-400 font-bold">
-                       {lang === 'ar' ? 'لا توجد وسائط تم إنشاؤها بعد.' : 'No media generated yet.'}
+                       {t('creative.m216')}
                      </p>
                      <p className="text-xs text-slate-500 max-w-xs mx-auto">
-                       {lang === 'ar' 
-                         ? 'استخدم أوضاع "مصمم الصور" أو "صانع الفيديو" لتوليد إبداعاتك وحفظها تلقائياً هنا!' 
-                         : 'Use "Image Designer" or "AI Video Creator" to automatically save your creations here!'}
+                       {t('creative.m215')}
                      </p>
                    </div>
                  ) : (
@@ -2262,7 +2251,7 @@ export function CreativeAiProChat({ activationCode = 'naje_authenticated', setAc
                              target="_blank"
                              download={`creative_ai_${item?.id}.${item?.type === 'image' ? 'png' : 'mp4'}`}
                              className="absolute bottom-2 right-2 p-2 bg-black/70 backdrop-blur-md rounded-xl text-amber-400 hover:text-white hover:bg-amber-500 transition-all opacity-0 group-hover:opacity-100 shadow-lg"
-                             title={lang === 'ar' ? 'تنزيل وحفظ' : 'Download File'}
+                             title={t('creative.m214')}
                            >
                              <Download className="w-4 h-4" />
                            </a>
@@ -2280,12 +2269,12 @@ export function CreativeAiProChat({ activationCode = 'naje_authenticated', setAc
                              </span>
                              <button 
                                onClick={() => {
-                                 if (confirm(lang === 'ar' ? 'هل تود حذف هذا التصميم من مكتبتك؟' : 'Delete this item?')) {
+                                 if (confirm(t('creative.m213'))) {
                                    setGallery(prev => prev.filter(g => g.id !== item?.id));
                                  }
                                }}
                                className="text-red-400 hover:text-red-300 p-1 hover:bg-red-500/10 rounded-lg transition-all"
-                               title={lang === 'ar' ? 'حذف' : 'Delete'}
+                               title={t('common.delete')}
                              >
                                <Trash2 className="w-3.5 h-3.5" />
                              </button>
@@ -2299,9 +2288,7 @@ export function CreativeAiProChat({ activationCode = 'naje_authenticated', setAc
 
                {/* Modal Footer */}
                <div className="p-4 border-t border-white/5 bg-black/40 text-center text-xs text-slate-500">
-                 {lang === 'ar' 
-                   ? 'تم تخزين هذه الملفات محلياً في ذاكرة متصفحك الشخصي الآمنة لخصوصية تامة .' 
-                   : 'All creations are saved locally in your browser storage for maximum privacy .'}
+                 {t('creative.m212')}
                </div>
              </motion.div>
            </div>

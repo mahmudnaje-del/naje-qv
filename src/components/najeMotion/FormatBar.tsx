@@ -1,6 +1,14 @@
 import React from 'react';
 import type { MotionAspect, MotionDuration, MotionRes } from '../../lib/motionStudio';
+import { useMotionI18n } from './i18n';
 import { Chip, ChipRow, StudioCard } from './StudioUi';
+
+const ASPECTS: { id: MotionAspect; key: string }[] = [
+  { id: '16:9', key: 'wide' },
+  { id: '9:16', key: 'tall' },
+  { id: '1:1', key: 'square' },
+  { id: '4:5', key: 'fourFive' },
+];
 
 export function FormatBar({
   duration,
@@ -17,46 +25,34 @@ export function FormatBar({
   onAspect: (v: MotionAspect) => void;
   onResolution: (v: MotionRes) => void;
 }) {
+  const { t, formatNumber } = useMotionI18n();
+  const clock = { full: formatNumber(10), sting: formatNumber(5) };
   return (
-    <StudioCard title="المقاس والمدة" hint="المحرك يولّد دائماً نافذة 10 ثوانٍ. الخمس ثوانٍ وخزة داخلها.">
+    <StudioCard title={t('motion.format.title')} hint={t('motion.format.hint', clock)}>
       <div className="space-y-3">
-        <ChipRow title="المدة">
+        <ChipRow title={t('motion.format.duration')}>
           {([5, 10] as const).map((d) => (
             <Chip key={d} active={duration === d} onClick={() => onDuration(d)}>
-              {d} ث
+              {formatNumber(d)}
+              {t('motion.format.unit')}
             </Chip>
           ))}
         </ChipRow>
         {duration === 5 && (
-          <p className="rounded-xl border border-[#d4a574]/20 bg-[#d4a574]/8 px-3 py-2 text-[10px] leading-relaxed text-[#e8b86d]">
-            المحرك يولّد مقطعاً من 10ث؛ نوجّهه ليكون وخزة 5 ثوانٍ ثم ثبات الشعار.
+          <p className="rounded-xl border border-[#ffb020]/30 bg-[#ffb020]/10 px-3 py-2 text-[10px] leading-relaxed text-[#ffb020]">
+            {t('motion.format.sting', clock)}
           </p>
         )}
-        <ChipRow title="الإطار">
-          <Chip active={aspect === '16:9'} onClick={() => onAspect('16:9')}>
-            16:9 يوتيوب
-          </Chip>
-          <Chip active={aspect === '9:16'} onClick={() => onAspect('9:16')}>
-            9:16 شورتس/تيك توك
-          </Chip>
-          <Chip active={aspect === '1:1'} onClick={() => onAspect('1:1')}>
-            1:1 مربع
-          </Chip>
-          <Chip active={aspect === '4:5'} onClick={() => onAspect('4:5')}>
-            4:5 إنستغرام
-          </Chip>
+        <ChipRow title={t('motion.format.frame')}>
+          {ASPECTS.map((a) => (
+            <Chip key={a.id} active={aspect === a.id} onClick={() => onAspect(a.id)}>
+              {t(`motion.aspect.${a.key}`)}
+            </Chip>
+          ))}
         </ChipRow>
-        {aspect === '1:1' && (
-          <p className="text-[10px] leading-relaxed text-white/40">
-            1:1 يُصاغ كتكوين مربع داخل إطار 9:16 — المحرك لا يصدّر 1:1 أصلي.
-          </p>
-        )}
-        {aspect === '4:5' && (
-          <p className="text-[10px] leading-relaxed text-white/40">
-            4:5 يُصاغ كتكوين إنستغرام داخل إطار 9:16 — المحرك لا يصدّر 4:5 أصلي.
-          </p>
-        )}
-        <ChipRow title="الدقة">
+        {aspect === '1:1' && <p className="text-[10px] leading-relaxed text-[#93a0b5]">{t('motion.format.square')}</p>}
+        {aspect === '4:5' && <p className="text-[10px] leading-relaxed text-[#93a0b5]">{t('motion.format.fourFive')}</p>}
+        <ChipRow title={t('motion.format.res')}>
           <Chip active={resolution === '720p'} onClick={() => onResolution('720p')}>
             720p
           </Chip>

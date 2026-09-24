@@ -118,18 +118,23 @@ export default function UiChatPanel({
       )}>
         <div className="flex-1 overflow-y-auto p-4 space-y-4 max-w-4xl mx-auto w-full">
           {messages.length === 0 ? (
-            <div className="space-y-3 py-2 text-right">
+            <div className="space-y-3 py-2 text-start">
               <div>
                 <h3 className="text-gray-800 dark:text-gray-200 text-xs font-bold mb-0.5 flex items-center gap-1.5">
                   <Sparkles className="w-3.5 h-3.5 text-indigo-500 inline" />
-                  <span>نماذج أولية وقوالب بدء سريعة:</span>
+                  <span>{t('studio.quickStarters')}</span>
                 </h3>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                  اختر قالبًا للبدء وتخصيصه فورًا عبر الذكاء الاصطناعي
+                  {t('studio.quickStartersDesc')}
                 </p>
               </div>
               <div className="grid grid-cols-1 gap-2">
-                {UI_STARTER_TEMPLATES.map((tmpl, idx) => (
+                {UI_STARTER_TEMPLATES.map((tmpl, idx) => {
+                  const titleKey = `chatui.starter.${idx}.title`;
+                  const descKey = `chatui.starter.${idx}.desc`;
+                  const title = t(titleKey);
+                  const desc = t(descKey);
+                  return (
                   <button
                     key={idx}
                     type="button"
@@ -137,16 +142,17 @@ export default function UiChatPanel({
                       setInput(tmpl.prompt);
                       executeSubmission(tmpl.prompt);
                     }}
-                    className="p-3 rounded-xl text-right transition border bg-white/80 dark:bg-gray-900/50 border-gray-200/70 dark:border-gray-800/60 hover:border-indigo-400 dark:hover:border-indigo-500/50 hover:bg-indigo-50/20 dark:hover:bg-indigo-500/10 flex flex-col gap-0.5 cursor-pointer group w-full text-right"
+                    className="p-3 rounded-xl text-start transition border bg-white/80 dark:bg-gray-900/50 border-gray-200/70 dark:border-gray-800/60 hover:border-indigo-400 dark:hover:border-indigo-500/50 hover:bg-indigo-50/20 dark:hover:bg-indigo-500/10 flex flex-col gap-0.5 cursor-pointer group w-full"
                   >
                     <div className="font-bold text-xs text-gray-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
-                      {tmpl.title}
+                      {title === titleKey ? tmpl.title : title}
                     </div>
                     <div className="text-[11px] text-gray-600 dark:text-gray-400 leading-snug">
-                      {tmpl.desc}
+                      {desc === descKey ? tmpl.desc : desc}
                     </div>
                   </button>
-                ))}
+                  );
+                })}
               </div>
             </div>
           ) : (
@@ -169,7 +175,7 @@ export default function UiChatPanel({
                                 <div className="flex items-center justify-between gap-1.5 min-w-0">
                                   <div className="flex items-center gap-1.5 min-w-0">
                                     <Check className="w-4 h-4 text-emerald-500 shrink-0" />
-                                    <span className="font-bold text-gray-900 dark:text-white truncate">تم تحديث واجهة المستخدم</span>
+                                    <span className="font-bold text-gray-900 dark:text-white truncate">{t('studio.uiUpdated')}</span>
                                   </div>
                                   <NajeThinking size={18} className="shrink-0 animate-pulse" />
                                 </div>
@@ -180,7 +186,7 @@ export default function UiChatPanel({
                                     className="flex-1 px-2.5 py-1 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl text-[11px] flex items-center justify-center gap-1 cursor-pointer transition active:scale-95 shadow-sm"
                                   >
                                     <Eye className="w-3.5 h-3.5" />
-                                    <span>المعاينة</span>
+                                    <span>{t('studio.previewTab')}</span>
                                   </button>
                                   <button
                                     type="button"
@@ -188,7 +194,7 @@ export default function UiChatPanel({
                                     className="flex-1 px-2.5 py-1 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-gray-800 dark:text-gray-200 font-bold rounded-xl text-[11px] flex items-center justify-center gap-1 cursor-pointer transition active:scale-95"
                                   >
                                     <Code2 className="w-3.5 h-3.5" />
-                                    <span>الكود</span>
+                                    <span>{t('studio.codeTab')}</span>
                                   </button>
                                 </div>
                               </div>
@@ -243,7 +249,7 @@ export default function UiChatPanel({
                     )}
                   >
                     <Layout className="w-3 h-3" />
-                    <span>تخطيط</span>
+                    <span>{t('studio.planMode')}</span>
                   </button>
                   <button
                     type="button"
@@ -256,7 +262,7 @@ export default function UiChatPanel({
                     )}
                   >
                     <Zap className="w-3 h-3" />
-                    <span>بناء</span>
+                    <span>{t('studio.buildMode')}</span>
                   </button>
                 </div>
 
@@ -270,11 +276,11 @@ export default function UiChatPanel({
 
               {uiMode === 'plan' ? (
                 <span className="text-[10px] font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded-md border border-amber-200/60 dark:border-amber-900/40">
-                  استشارة وتخطيط (مجاني)
+                  {t('studio.freePlanConsult')}
                 </span>
               ) : (
                 <span className="text-[10px] font-medium text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 px-2 py-0.5 rounded-md border border-indigo-200/60 dark:border-indigo-900/40">
-                  توليد واجهة كود حقيقية ({uiModelTier === 'lite' ? '0.6x' : uiModelTier === 'max' ? '2.0x' : '1.0x'})
+                  {t('chatui.realCodeWithRate', { rate: uiModelTier === 'lite' ? '0.6x' : uiModelTier === 'max' ? '2.0x' : '1.0x' })}
                 </span>
               )}
             </div>
@@ -289,8 +295,8 @@ export default function UiChatPanel({
                     <Lightbulb className="w-3.5 h-3.5 text-amber-500 inline shrink-0" />
                     <span>
                       {mismatch === 'plan'
-                        ? 'يبدو إنك بتفكر بالفكرة مش جاهز للبناء بعد — بدك أحوّلك لوضع التخطيط؟'
-                        : 'حسّيت إنك جاهز تبني! بدك أحوّلك لوضع البناء؟'}
+                        ? t('chatui.switchToPlan')
+                        : t('chatui.switchToBuild')}
                     </span>
                   </span>
                   <button
@@ -298,7 +304,7 @@ export default function UiChatPanel({
                     onClick={() => setUiMode(mismatch)}
                     className="px-2.5 py-1 bg-amber-500 hover:bg-amber-600 text-white font-bold text-[10px] rounded-lg transition cursor-pointer shrink-0"
                   >
-                    {mismatch === 'plan' ? 'التبديل للتخطيط' : 'التبديل للبناء'}
+                    {mismatch === 'plan' ? t('chatui.switchPlanBtn') : t('chatui.switchBuildBtn')}
                   </button>
                 </div>
               );
@@ -308,7 +314,7 @@ export default function UiChatPanel({
               <div className="p-2 bg-indigo-50 dark:bg-indigo-950/50 border border-indigo-200 dark:border-indigo-900/50 rounded-xl flex items-center justify-between text-xs">
                 <span className="truncate text-indigo-700 dark:text-indigo-300 font-medium flex items-center gap-1.5">
                   <Target className="w-3.5 h-3.5 text-indigo-500 shrink-0 inline" />
-                  <span>تعديل عنصر: {selectedUiElement.desc}</span>
+                  <span>{t('chatui.editElementPrefix', { desc: selectedUiElement.desc })}</span>
                 </span>
                 <button type="button" onClick={() => setSelectedUiElement(null)} className="text-gray-400 hover:text-red-500">
                   <X className="w-3.5 h-3.5" />
@@ -327,7 +333,7 @@ export default function UiChatPanel({
                     handleSend(e); 
                   } 
                 }}
-                placeholder={selectedUiElement ? "اكتب طلب التعديل على هذا العنصر..." : t('chat.inputPlaceholder')}
+                placeholder={selectedUiElement ? t('chatui.editElementPlaceholder') : t('chat.inputPlaceholder')}
                 className="flex-1 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl px-3 py-2 text-xs focus:border-indigo-500 outline-none resize-none min-h-[38px] max-h-[100px] text-gray-900 dark:text-white"
                 rows={1}
               />
@@ -380,7 +386,7 @@ export default function UiChatPanel({
             }
             if (autoRepairCountRef.current >= 3) {
               console.warn('[auto-repair] attempt cap reached — stopping.');
-              toast.error('تعذّر الإصلاح التلقائي بعد عدة محاولات. جرّب تعديل الطلب يدوياً.');
+              toast.error(t('studio.autoRepairFailed'));
               return;
             }
             lastRepairSigRef.current = sig;
@@ -423,7 +429,7 @@ export default function UiChatPanel({
                     createdAt: Date.now()
                   };
                   setMessages(prev => [...prev, newAssistantMsg]);
-                  toast.success('تم إكمال الإصلاح التلقائي بنجاح!');
+                  toast.success(t('studio.autoRepairSuccess'));
                 }
               }
             } catch (e) {
@@ -439,10 +445,10 @@ export default function UiChatPanel({
               projectId: project.id,
               chatId,
               kind: 'ui',
-              title: `واجهة UI - ${new Date().toLocaleDateString('ar-SA')}`,
+              title: t('chatui.uiTitleDated', { date: new Date().toLocaleDateString(isRtl ? 'ar-SA' : undefined) }),
               content: latestUiHtml,
               createdAt: Date.now()
-            }).then(() => toast.success('تم حفظ الواجهة في المشروع بنجاح')).catch(() => toast.error('خطأ أثناء حفظ الواجهة'));
+            }).then(() => toast.success(t('chatui.uiSaved'))).catch(() => toast.error(t('chatui.uiSaveFail')));
           } : undefined}
           onOpenHistory={() => {
             if (!latestUiMsg) return;

@@ -6,6 +6,7 @@ import {
   DEGREE_LABELS,
   LANG_LEVELS,
   bulletsOf,
+  employmentLabel,
   isGenericSummaryLine,
   paperAccentVars,
   rangeLabel,
@@ -316,7 +317,7 @@ export function ExperienceBlock({ cv, tone }: { cv: CvData; tone: Tone }) {
             <p className={`font-black text-slate-900 ${tone === 'gold' ? 'text-[11.5px]' : 'text-[10.5px]'}`}>
               {e.title}
               {e.company ? <span className="font-semibold text-slate-600"> — {e.company}</span> : null}
-              {e.employmentType ? <span className="font-normal text-slate-500"> · {e.employmentType}</span> : null}
+              {e.employmentType ? <span className="font-normal text-slate-500"> · {employmentLabel(e.employmentType, cv.lang)}</span> : null}
             </p>
             <Ltr
               className="shrink-0 text-[8px] text-slate-500"

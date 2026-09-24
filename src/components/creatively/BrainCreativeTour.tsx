@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useI18n } from '../../i18n';
 import { 
   Brain, Cpu, Layers, Compass, Sliders, Play, 
   Sparkles, Check, Lightbulb, Eye, ChevronLeft, 
@@ -89,11 +90,12 @@ const SAMPLE_PROJECTS = [
   }
 ];
 
-export default function BrainCreativeTour({ lang, onBack }: BrainCreativeTourProps) {
+export default function BrainCreativeTour({
+ lang, onBack }: BrainCreativeTourProps) {
+  const { t, locale, isRtl } = useI18n();
   const [selectedProj, setSelectedProj] = useState(SAMPLE_PROJECTS[0]);
   const [simulationStep, setSimulationStep] = useState(0);
   const [isSimulating, setIsSimulating] = useState(false);
-  const [currentProgressText, setCurrentProgressText] = useState('');
   const [simNightView, setSimNightView] = useState(true);
 
   // Auto-step simulation handler
@@ -101,21 +103,6 @@ export default function BrainCreativeTour({ lang, onBack }: BrainCreativeTourPro
     let timer: any;
     if (isSimulating) {
       if (simulationStep < 4) {
-        const stepTextsAr = [
-          'جاري تفكيك النص واستنباط سمات ومجال العمل والمشاعر المناسبة للهوية...',
-          'جاري تطبيق نظرية الألوان وتحديد الأشكال الهندسية ونوعية الخطوط المعتمدة...',
-          'جاري بناء وهندسة صياغة الموجه الذكي وصقل الكلمات المفتاحية للبصريات...',
-          'جاري دمج النتائج وتجهيز واجهات محاكاة البيئة الواقعية للهوية واللوحات الإعلانية...'
-        ];
-        const stepTextsEn = [
-          'Analyzing brand keywords, extracting target traits and emotional psychology indicators...',
-          'Applying color theories, matching geometric systems, and picking ideal typography pairings...',
-          'Formulating backend prompt directives and optimizing lighting & materials keys...',
-          'Synthesizing final output packages and readying real-world environment simulator...'
-        ];
-        
-        setCurrentProgressText(lang === 'ar' ? stepTextsAr[simulationStep] : stepTextsEn[simulationStep]);
-        
         timer = setTimeout(() => {
           setSimulationStep(prev => prev + 1);
         }, 2200);
@@ -124,7 +111,7 @@ export default function BrainCreativeTour({ lang, onBack }: BrainCreativeTourPro
       }
     }
     return () => clearTimeout(timer);
-  }, [isSimulating, simulationStep, lang]);
+  }, [isSimulating, simulationStep]);
 
   const startSimulation = () => {
     setSimulationStep(0);
@@ -151,7 +138,7 @@ export default function BrainCreativeTour({ lang, onBack }: BrainCreativeTourPro
             <button 
               onClick={onBack}
               className="p-2.5 bg-white/5 hover:bg-white/15 border border-white/10 hover:border-white/20 rounded-xl transition-all flex items-center justify-center text-slate-300 hover:text-white"
-              title={lang === 'ar' ? 'رجوع للرئيسية' : 'Back to Home'}
+              title={t('creative.m142')}
             >
               <ChevronLeft className={`w-5 h-5 ${lang === 'ar' ? '' : 'rotate-180'}`} />
             </button>
@@ -159,11 +146,11 @@ export default function BrainCreativeTour({ lang, onBack }: BrainCreativeTourPro
               <div className="flex items-center gap-2">
                 <Brain className="w-7 h-7 text-fuchsia-400 animate-pulse" />
                 <h1 className="text-2xl md:text-3xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-fuchsia-400 via-indigo-400 to-teal-400">
-                  {lang === 'ar' ? 'مختبر عقل خوارزمية الذكاء الاصطناعي' : 'AI Algorithm Core Brain Lab'}
+                  {t('creative.m141')}
                 </h1>
               </div>
               <p className="text-slate-400 text-xs md:text-sm mt-1">
-                {lang === 'ar' ? 'محاكاة تفاعلية حية لطريقة تفكير وابتكار الهويات البصرية واللوحات الإعلانية في الخلفية' : 'Live interactive simulation of back-end creative thoughts, branding theories, & billboard rendering'}
+                {t('creative.m140')}
               </p>
             </div>
           </div>
@@ -185,12 +172,10 @@ export default function BrainCreativeTour({ lang, onBack }: BrainCreativeTourPro
           <div className="text-start space-y-1.5 grow">
             <h3 className="text-lg font-bold text-white flex items-center gap-1.5">
               <Sparkles className="w-4 h-4 text-amber-400" />
-              {lang === 'ar' ? 'كيف تصنع الخوارزمية الفخامة والإبداع؟' : 'How does the algorithm craft luxury and creativity?'}
+              {t('creative.m139')}
             </h3>
             <p className="text-slate-300 text-xs md:text-sm leading-relaxed">
-              {lang === 'ar' 
-                ? 'خلافاً للمولدات العشوائية، تتبع خوارزميتنا قواعد ثابتة في هندسة التصميم. تبدأ بفك دلالات الكلمات، وتحليل علم النفس اللوني والرموز الهندسية، ثم تركيب موجه فائق الدقة ومطابقة أبعاد اللوحات مع الواقع لضمان أعلى مستويات الفخامة.'
-                : 'Unlike random generators, our algorithm implements strict engineering principles. It analyzes semantics, utilizes color psychology, chooses geometric frameworks, designs prompts, and calculates precise environmental aspect ratios for the finest aesthetics.'}
+              {t('creative.m138')}
             </p>
           </div>
         </div>
@@ -205,7 +190,7 @@ export default function BrainCreativeTour({ lang, onBack }: BrainCreativeTourPro
             <div className="bg-slate-900/60 border border-white/10 rounded-3xl p-5 md:p-6 backdrop-blur-xl text-start">
               <h3 className="text-base font-extrabold text-white mb-4 flex items-center gap-2">
                 <span className="w-6 h-6 rounded-full bg-fuchsia-500/20 text-fuchsia-300 border border-fuchsia-500/30 flex items-center justify-center text-xs font-bold">1</span>
-                {lang === 'ar' ? 'اختر فكرة النشاط للتجربة' : 'Select a Brand Scenario'}
+                {t('creative.m137')}
               </h3>
               
               <div className="flex flex-col gap-3">
@@ -223,12 +208,12 @@ export default function BrainCreativeTour({ lang, onBack }: BrainCreativeTourPro
                     >
                       <div className="flex items-center justify-between">
                         <span className={`text-sm font-bold ${isSelected ? 'text-white' : 'text-slate-300'}`}>
-                          {lang === 'ar' ? proj.titleAr : proj.titleEn}
+                          {t(`creative.tour.${proj.id}.title`)}
                         </span>
                         {isSelected && <Check className="w-4 h-4 text-fuchsia-400 shrink-0" />}
                       </div>
                       <p className="text-slate-400 text-xs mt-1.5 leading-relaxed">
-                        {lang === 'ar' ? proj.descAr : proj.descEn}
+                        {t(`creative.tour.${proj.id}.desc`)}
                       </p>
                     </button>
                   );
@@ -240,13 +225,11 @@ export default function BrainCreativeTour({ lang, onBack }: BrainCreativeTourPro
             <div className="bg-slate-900/60 border border-white/10 rounded-3xl p-5 md:p-6 backdrop-blur-xl text-start flex flex-col gap-4">
               <h3 className="text-base font-extrabold text-white flex items-center gap-2">
                 <span className="w-6 h-6 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 flex items-center justify-center text-xs font-bold">2</span>
-                {lang === 'ar' ? 'لوحة التحكم والتشغيل' : 'Simulation Control Console'}
+                {t('creative.m136')}
               </h3>
 
               <p className="text-slate-400 text-xs leading-relaxed">
-                {lang === 'ar' 
-                  ? 'انقر لبدء المحاكاة ومشاهدة كيف تتلقى عقول الخوارزمية مدخلاتك وتقسمها وتخرج التصميم النهائي.'
-                  : 'Click to boot up the generator’s brain and watch how it processes inputs to synthesize files.'}
+                {t('creative.m135')}
               </p>
 
               <button
@@ -262,12 +245,12 @@ export default function BrainCreativeTour({ lang, onBack }: BrainCreativeTourPro
                 {isSimulating ? (
                   <>
                     <RefreshCw className="w-5 h-5 animate-spin text-fuchsia-400" />
-                    <span>{lang === 'ar' ? 'العقل الإبداعي يفكر حالياً...' : 'Thinking Process Active...'}</span>
+                    <span>{t('creative.m134')}</span>
                   </>
                 ) : (
                   <>
                     <Play className="w-5 h-5 fill-current" />
-                    <span>{lang === 'ar' ? 'تشغيل محاكاة التفكير' : 'Start Thought Simulation'}</span>
+                    <span>{t('creative.m133')}</span>
                   </>
                 )}
               </button>
@@ -276,7 +259,7 @@ export default function BrainCreativeTour({ lang, onBack }: BrainCreativeTourPro
                 <div className="p-3 bg-black/40 border border-white/10 rounded-xl flex items-center gap-3 mt-2 animate-fade-in">
                   <div className="w-2 h-2 rounded-full bg-fuchsia-500 animate-ping shrink-0" />
                   <p className="text-slate-300 text-xs font-medium leading-normal text-start">
-                    {currentProgressText}
+                    {t(`creative.tour.step.${Math.min(simulationStep, 3)}`)}
                   </p>
                 </div>
               )}
@@ -320,10 +303,10 @@ export default function BrainCreativeTour({ lang, onBack }: BrainCreativeTourPro
                     <div className="absolute top-0 inset-x-0 w-20 h-20 rounded-full border-4 border-t-fuchsia-500 border-r-transparent border-l-transparent border-b-transparent animate-spin" />
                   </div>
                   <h4 className="text-white text-lg font-bold">
-                    {lang === 'ar' ? 'جاري محاكاة مراحل الإبداع والتفكير...' : 'Simulating Thinking Logic Steps...'}
+                    {t('creative.m132')}
                   </h4>
                   <p className="text-slate-400 text-xs max-w-sm mt-2 leading-relaxed">
-                    {currentProgressText}
+                    {t(`creative.tour.step.${Math.min(simulationStep, 3)}`)}
                   </p>
 
                   {/* Animated step ticks */}
@@ -345,28 +328,28 @@ export default function BrainCreativeTour({ lang, onBack }: BrainCreativeTourPro
                 <div className="flex items-center justify-between">
                   <h4 className="text-sm font-bold text-slate-200 flex items-center gap-2">
                     <span className="w-5 h-5 rounded-md bg-fuchsia-500/10 text-fuchsia-400 flex items-center justify-center text-[10px] font-bold">Step 1</span>
-                    {lang === 'ar' ? 'الخطوة 1: تفكيك المفاهيم والتأثير السيكولوجي' : 'Stage 1: Semantic Parsing & Psychology'}
+                    {t('creative.m131')}
                   </h4>
                   {simulationStep >= 1 && <span className="text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full font-mono font-bold">COMPILED</span>}
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-black/30 border border-white/5 p-4 rounded-2xl">
                   <div>
-                    <span className="text-slate-400 text-[10px] block font-mono uppercase tracking-wider">{lang === 'ar' ? 'السمات المستنبطة (Traits)' : 'Extracted Traits'}</span>
+                    <span className="text-slate-400 text-[10px] block font-mono uppercase tracking-wider">{t('creative.m130')}</span>
                     <div className="flex flex-wrap gap-1.5 mt-2">
-                      {(lang === 'ar' ? selectedProj.traits : selectedProj.traitsEn).map((t, idx) => (
+                      {(lang === 'ar' ? selectedProj.traits : selectedProj.traitsEn).map((_trait, idx) => (
                         <span key={idx} className="px-2 py-1 bg-white/5 border border-white/10 rounded-md text-[11px] text-slate-300 font-medium">
-                          {t}
+                          {t(`creative.tour.${selectedProj.id}.trait.${idx}`)}
                         </span>
                       ))}
                     </div>
                   </div>
                   <div>
-                    <span className="text-slate-400 text-[10px] block font-mono uppercase tracking-wider">{lang === 'ar' ? 'المشاعر المستهدفة (Emotions)' : 'Targeted Emotions'}</span>
+                    <span className="text-slate-400 text-[10px] block font-mono uppercase tracking-wider">{t('creative.m129')}</span>
                     <div className="flex flex-wrap gap-1.5 mt-2">
-                      {(lang === 'ar' ? selectedProj.emotions : selectedProj.emotionsEn).map((em, idx) => (
+                      {(lang === 'ar' ? selectedProj.emotions : selectedProj.emotionsEn).map((_em, idx) => (
                         <span key={idx} className="px-2 py-1 bg-fuchsia-500/10 border border-fuchsia-500/20 text-fuchsia-300 rounded-md text-[11px] font-medium">
-                          {em}
+                          {t(`creative.tour.${selectedProj.id}.emo.${idx}`)}
                         </span>
                       ))}
                     </div>
@@ -378,20 +361,20 @@ export default function BrainCreativeTour({ lang, onBack }: BrainCreativeTourPro
               <div className={`space-y-3 transition-all duration-500 ${simulationStep >= 2 ? 'opacity-100 scale-100' : 'opacity-40 scale-95 pointer-events-none'}`}>
                 <h4 className="text-sm font-bold text-slate-200 flex items-center gap-2">
                   <span className="w-5 h-5 rounded-md bg-indigo-500/10 text-indigo-400 flex items-center justify-center text-[10px] font-bold">Step 2</span>
-                  {lang === 'ar' ? 'الخطوة 2: صياغة المخطط الهندسي والبصري' : 'Stage 2: Geometrical & Visual Design System'}
+                  {t('creative.m128')}
                 </h4>
 
                 <div className="space-y-3 bg-black/30 border border-white/5 p-4 rounded-2xl">
                   {/* Colors psychology */}
                   <div>
-                    <span className="text-slate-400 text-[10px] block font-mono uppercase tracking-wider mb-2">{lang === 'ar' ? 'سيكولوجية الألوان المختارة' : 'Color Theory & Palette'}</span>
+                    <span className="text-slate-400 text-[10px] block font-mono uppercase tracking-wider mb-2">{t('creative.m127')}</span>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {selectedProj.colors.map((c, i) => (
                         <div key={i} className="flex items-center gap-2.5 bg-white/5 p-2 rounded-xl border border-white/10">
                           <div className="w-7 h-7 rounded-lg shrink-0 border border-white/20 shadow-inner" style={{ backgroundColor: c.hex }} />
                           <div className="text-xs">
-                            <span className="font-bold text-white block">{lang === 'ar' ? c.nameAr : c.nameEn}</span>
-                            <span className="text-[10px] text-slate-400 block mt-0.5 leading-snug">{lang === 'ar' ? c.descAr : c.descEn}</span>
+                            <span className="font-bold text-white block">{t(`creative.tour.${selectedProj.id}.color.${i}.name`)}</span>
+                            <span className="text-[10px] text-slate-400 block mt-0.5 leading-snug">{t(`creative.tour.${selectedProj.id}.color.${i}.desc`)}</span>
                           </div>
                         </div>
                       ))}
@@ -401,15 +384,15 @@ export default function BrainCreativeTour({ lang, onBack }: BrainCreativeTourPro
                   {/* Font & Geometry */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-2 border-t border-white/5 text-xs">
                     <div>
-                      <span className="text-slate-400 text-[10px] block font-mono uppercase tracking-wider mb-1.5">{lang === 'ar' ? 'النمط الهندسي والرموز' : 'Geometry & Symbolism'}</span>
+                      <span className="text-slate-400 text-[10px] block font-mono uppercase tracking-wider mb-1.5">{t('creative.m126')}</span>
                       <p className="text-slate-300 leading-normal text-[11px]">
-                        {lang === 'ar' ? selectedProj.geometryAr : selectedProj.geometryEn}
+                        {t(`creative.tour.${selectedProj.id}.geometry`)}
                       </p>
                     </div>
                     <div>
-                      <span className="text-slate-400 text-[10px] block font-mono uppercase tracking-wider mb-1.5">{lang === 'ar' ? 'الخطوط والطباعة' : 'Typography Hierarchy'}</span>
+                      <span className="text-slate-400 text-[10px] block font-mono uppercase tracking-wider mb-1.5">{t('creative.m125')}</span>
                       <p className="text-slate-300 font-bold font-mono">
-                        {selectedProj.typography}
+                        {t(`creative.tour.${selectedProj.id}.typo`)}
                       </p>
                     </div>
                   </div>
@@ -420,7 +403,7 @@ export default function BrainCreativeTour({ lang, onBack }: BrainCreativeTourPro
               <div className={`space-y-3 transition-all duration-500 ${simulationStep >= 3 ? 'opacity-100 scale-100' : 'opacity-40 scale-95 pointer-events-none'}`}>
                 <h4 className="text-sm font-bold text-slate-200 flex items-center gap-2">
                   <span className="w-5 h-5 rounded-md bg-purple-500/10 text-purple-400 flex items-center justify-center text-[10px] font-bold">Step 3</span>
-                  {lang === 'ar' ? 'الخطوة 3: تركيب الموجه الذكي وصقل المعالم' : 'Stage 3: Advanced AI Prompt Orchestration'}
+                  {t('creative.m124')}
                 </h4>
 
                 <div className="bg-slate-950/90 border border-white/10 p-4 rounded-2xl relative group font-mono text-xs text-slate-300 leading-relaxed overflow-x-auto text-start">
@@ -437,15 +420,15 @@ export default function BrainCreativeTour({ lang, onBack }: BrainCreativeTourPro
               <div className={`space-y-4 transition-all duration-500 ${simulationStep >= 4 ? 'opacity-100 scale-100' : 'opacity-40 scale-95 pointer-events-none'}`}>
                 <h4 className="text-sm font-bold text-slate-200 flex items-center gap-2">
                   <span className="w-5 h-5 rounded-md bg-teal-500/10 text-teal-400 flex items-center justify-center text-[10px] font-bold">Step 4</span>
-                  {lang === 'ar' ? 'الخطوة 4: مخرجات الهوية والسيناريوهات الناتجة' : 'Stage 4: Synthesized Visual Output & Scenarios'}
+                  {t('creative.m123')}
                 </h4>
 
                 {/* Slogan & Copywriting block */}
                 <div className="bg-black/30 border border-white/5 p-4 rounded-2xl space-y-2">
-                  <span className="text-slate-400 text-[10px] block font-mono uppercase tracking-wider">{lang === 'ar' ? 'صياغة شعار تسويقي (Slogan / Copywriting)' : 'Marketing Slogan Draft'}</span>
+                  <span className="text-slate-400 text-[10px] block font-mono uppercase tracking-wider">{t('creative.m122')}</span>
                   <p className="text-white text-base font-extrabold flex items-center gap-2">
                     <span className="text-lg text-fuchsia-400">“</span>
-                    {lang === 'ar' ? selectedProj.sloganAr : selectedProj.sloganEn}
+                    {t(`creative.tour.${selectedProj.id}.slogan`)}
                     <span className="text-lg text-fuchsia-400">”</span>
                   </p>
                 </div>
@@ -456,7 +439,7 @@ export default function BrainCreativeTour({ lang, onBack }: BrainCreativeTourPro
                     <div className="flex items-center gap-2">
                       <Eye className="w-4 h-4 text-fuchsia-400" />
                       <span className="text-xs font-bold text-white">
-                        {lang === 'ar' ? 'معاين اللوحة والبيئة التفاعلي' : 'Interactive Storefront Billboard Simulator'}
+                        {t('creative.m121')}
                       </span>
                     </div>
 
@@ -470,8 +453,8 @@ export default function BrainCreativeTour({ lang, onBack }: BrainCreativeTourPro
                       }`}
                     >
                       {simNightView 
-                        ? (lang === 'ar' ? 'الوضع المسائي' : 'Night View') 
-                        : (lang === 'ar' ? 'الوضع النهاري' : 'Day View')}
+                        ? (t('creative.m120')) 
+                        : (t('creative.m119'))}
                     </button>
                   </div>
 
@@ -505,10 +488,10 @@ export default function BrainCreativeTour({ lang, onBack }: BrainCreativeTourPro
                              'text-orange-400 drop-shadow-[0_0_8px_rgba(249,115,22,0.8)]')
                           : 'text-slate-900'
                       }`}>
-                        {lang === 'ar' ? selectedProj.titleAr : selectedProj.titleEn}
+                        {t(`creative.tour.${selectedProj.id}.title`)}
                       </span>
                       <span className={`text-[8px] truncate max-w-full opacity-80 mt-1 ${simNightView ? 'text-slate-300' : 'text-slate-500'}`}>
-                        {lang === 'ar' ? selectedProj.sloganAr : selectedProj.sloganEn}
+                        {t(`creative.tour.${selectedProj.id}.slogan`)}
                       </span>
                     </div>
                   </div>
@@ -516,9 +499,9 @@ export default function BrainCreativeTour({ lang, onBack }: BrainCreativeTourPro
 
                 {/* Promotional Video Ad Scenario */}
                 <div className="bg-black/30 border border-white/5 p-4 rounded-2xl space-y-2">
-                  <span className="text-slate-400 text-[10px] block font-mono uppercase tracking-wider">{lang === 'ar' ? 'سيناريو الفيديو الإعلاني المولد (Video Script & Audio)' : 'Generated Video Ad Scenario & Script'}</span>
+                  <span className="text-slate-400 text-[10px] block font-mono uppercase tracking-wider">{t('creative.m118')}</span>
                   <p className="text-slate-300 text-xs leading-relaxed">
-                    {lang === 'ar' ? selectedProj.videoScenarioAr : selectedProj.videoScenarioEn}
+                    {t(`creative.tour.${selectedProj.id}.video`)}
                   </p>
                 </div>
 
@@ -531,12 +514,10 @@ export default function BrainCreativeTour({ lang, onBack }: BrainCreativeTourPro
                     <Sliders className="w-8 h-8 text-indigo-400 animate-pulse" />
                   </div>
                   <h4 className="text-white text-base font-bold">
-                    {lang === 'ar' ? 'جاهز لبدء جولة محاكاة التفكير' : 'Ready to Start Thought Tour'}
+                    {t('creative.m117')}
                   </h4>
                   <p className="text-slate-400 text-xs max-w-sm mt-2 leading-relaxed">
-                    {lang === 'ar' 
-                      ? 'يرجى اختيار نشاط من القائمة الجانبية ثم الضغط على "تشغيل محاكاة التفكير" لمتابعة مراحل هندسة الأفكار والذكاء.'
-                      : 'Please choose an activity from the panel and click "Start Thought Simulation" to watch creative algorithms map your brand.'}
+                    {t('creative.m116')}
                   </p>
                 </div>
               )}
@@ -551,29 +532,23 @@ export default function BrainCreativeTour({ lang, onBack }: BrainCreativeTourPro
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-start mt-4">
           <div className="bg-slate-900/40 border border-white/10 p-5 rounded-2xl flex flex-col gap-2">
             <Palette className="w-5 h-5 text-fuchsia-400" />
-            <h4 className="text-sm font-bold text-white">{lang === 'ar' ? 'علم نفس الألوان (Color Psychology)' : 'Color Psychology'}</h4>
+            <h4 className="text-sm font-bold text-white">{t('creative.m115')}</h4>
             <p className="text-slate-400 text-xs leading-relaxed">
-              {lang === 'ar' 
-                ? 'لا نعتمد على ألوان عشوائية بل ندرس الانطباع العصبي للعميل. فالذهب يعطي شعوراً بالأصالة والرفاهية، بينما يرمز السيان إلى الدقة والذكاء التقني السحابي.'
-                : 'Colors are never chosen at random. We study neural impressions. Amber represents heritage and authenticity, whereas cyan portrays precise cloud intelligence and care.'}
+              {t('creative.m114')}
             </p>
           </div>
           <div className="bg-slate-900/40 border border-white/10 p-5 rounded-2xl flex flex-col gap-2">
             <Compass className="w-5 h-5 text-indigo-400" />
-            <h4 className="text-sm font-bold text-white">{lang === 'ar' ? 'الهندسة والنسبة الذهبية (Aspect Golden Ratio)' : 'Geometric Architecture'}</h4>
+            <h4 className="text-sm font-bold text-white">{t('creative.m113')}</h4>
             <p className="text-slate-400 text-xs leading-relaxed">
-              {lang === 'ar' 
-                ? 'ندمج نسب العرض بالارتفاع للوحات الإعلانية (مثل 2:1 و3:1) لنضمن أن تظهر النصوص بجمالية مطلقة تتماشى مع زوايا الرؤية ومسافات مرور المشاة بالواقع.'
-                : 'We merge billboard aspect ratios (such as 2:1 and 3:1) to guarantee typography displays with absolute aesthetics corresponding to real pedestrian distance angles.'}
+              {t('creative.m112')}
             </p>
           </div>
           <div className="bg-slate-900/40 border border-white/10 p-5 rounded-2xl flex flex-col gap-2">
             <Zap className="w-5 h-5 text-amber-400" />
-            <h4 className="text-sm font-bold text-white">{lang === 'ar' ? 'صياغة الموجه المحكم (Prompt Engineering)' : 'Prompt Engineering'}</h4>
+            <h4 className="text-sm font-bold text-white">{t('creative.m111')}</h4>
             <p className="text-slate-400 text-xs leading-relaxed">
-              {lang === 'ar' 
-                ? 'نقوم بصناعة الموجه الخلفي تلقائياً بإضافة لمسات فوتوغرافية ومواد تشطيب كالمطفي اللامع والبرونز العتيق، لتحفيز محرك التوليد بأعلى دقة.'
-                : 'Our backend constructs rich context automatically by injecting photographic cues like matte finishes and antique bronze, prompting generative engines to highest standards.'}
+              {t('creative.m110')}
             </p>
           </div>
         </div>

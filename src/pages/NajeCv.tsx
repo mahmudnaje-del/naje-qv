@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Award,
   Briefcase,
@@ -9,8 +9,10 @@ import {
   Languages,
   MessageCircle,
   Plus,
+  Redo2,
   Sparkles,
   Target,
+  Undo2,
   Upload,
   User,
 } from 'lucide-react';
@@ -71,7 +73,7 @@ import {
   SUMMARY_LENGTHS,
   SUMMARY_STYLES,
   TEMPLATES,
-  TIP_JUMP,
+  tipDestination,
   usesPaperAccent,
 } from '../lib/cvStudio';
 
@@ -84,8 +86,8 @@ function initialGate(cv: CvData): Gate {
 }
 
 export default function NajeCv() {
-  const { isRtl, t } = useI18n();
-  const [cv, setCv] = useState<CvData>(() => {
+  const { isRtl, t, formatNumber } = useI18n();
+  const [cv, setCvState] = useState<CvData>(() => {
     try {
       const raw = localStorage.getItem(CV_STORAGE_KEY);
       if (raw) return hydrateCv(JSON.parse(raw));
@@ -107,12 +109,69 @@ export default function NajeCv() {
       cv.publications.some((p) => p.title.trim()) ||
       cv.customSections.some((s) => s.title.trim()) ||
       cv.achievements.some((a) => a.title.trim()) ||
-      Boolean(cv.military.trim() || cv.volunteer.trim() || cv.coverLetter.trim())
+      Boolean(cv.military.trim() || cv.volunteer.trim() || cv.coverLetter.trim() || (cv.linkedinAbout || '').trim() || (cv.shortBio || '').trim())
   );
   const [dismissed, setDismissed] = useState<string[]>([]);
   const [courseHints, setCourseHints] = useState<Record<string, string>>({});
   const [activeSection, setActiveSection] = useState('cv-sec-identity');
   const [scanMode, setScanMode] = useState(false);
+  const [templateQuery, setTemplateQuery] = useState('');
+  const pastRef = useRef<string[]>([]);
+  const futureRef = useRef<string[]>([]);
+  const historyLock = useRef(false);
+  const cvRef = useRef(cv);
+  cvRef.current = cv;
+  const [hist, setHist] = useState({ undo: 0, redo: 0 });
+
+  const setCv = (updater: React.SetStateAction<CvData>) => {
+    const prev = cvRef.current;
+    const next = typeof updater === 'function' ? (updater as (c: CvData) => CvData)(prev) : updater;
+    if (!historyLock.current) {
+      const before = JSON.stringify(prev);
+      const after = JSON.stringify(next);
+      if (before !== after) {
+        pastRef.current.push(before);
+        if (pastRef.current.length > 20) pastRef.current.shift();
+        futureRef.current = [];
+        setHist({ undo: pastRef.current.length, redo: 0 });
+      }
+    }
+    cvRef.current = next;
+    setCvState(next);
+  };
+
+  const undoCv = () => {
+    const snap = pastRef.current.pop();
+    if (!snap) return;
+    futureRef.current.push(JSON.stringify(cvRef.current));
+    if (futureRef.current.length > 20) futureRef.current.shift();
+    historyLock.current = true;
+    const next = hydrateCv(JSON.parse(snap));
+    cvRef.current = next;
+    setCvState(next);
+    historyLock.current = false;
+    setHist({ undo: pastRef.current.length, redo: futureRef.current.length });
+  };
+
+  const redoCv = () => {
+    const snap = futureRef.current.pop();
+    if (!snap) return;
+    pastRef.current.push(JSON.stringify(cvRef.current));
+    if (pastRef.current.length > 20) pastRef.current.shift();
+    historyLock.current = true;
+    const next = hydrateCv(JSON.parse(snap));
+    cvRef.current = next;
+    setCvState(next);
+    historyLock.current = false;
+    setHist({ undo: pastRef.current.length, redo: futureRef.current.length });
+  };
+
+  const docLangLine =
+    cv.lang === 'en'
+      ? 'OUTPUT LANGUAGE: English only. Ignore any earlier instruction to answer in Arabic. Return only the requested text. Never invent employers, metrics, GPA, or certificates.'
+      : 'لغة المخرجات: العربية فقط. أرجع النص المطلوب فقط. لا تخترع جهات عمل أو أرقاماً أو معدلات أو شهادات.';
+
+  const cleanAi = (raw: string) => raw.replace(/^["«]|["»]$/g, '').trim();
 
   useEffect(() => {
     const t = window.setTimeout(() => {
@@ -144,7 +203,7 @@ export default function NajeCv() {
         };
       });
       setGate('studio');
-      toast.info('فُهمت الوظيفة المستهدفة من ناجي برومبت — أكمل السيرة هنا. لا نلصق برومبت الإنتاج داخل الملف.');
+      toast.info(t('cv.toast.handoff'));
     } catch {
       /* ignore */
     }
@@ -196,6 +255,16 @@ export default function NajeCv() {
     (cv.market === 'gulf' || cv.market === 'creative' || cv.template === 'gulf' || cv.template === 'gold' || cv.template === 'modern');
   const gaps = useMemo(() => careerGaps(cv), [cv]);
   const fold = (id: string) => activeSection !== id;
+  const templateShown = useMemo(() => {
+    const q = templateQuery.trim().toLowerCase();
+    const pool = cv.atsMode ? TEMPLATES.filter((row) => row.id === 'naje' || row.id === 'jadarat') : TEMPLATES;
+    if (!q) return pool;
+    return pool.filter((row) => {
+      const name = t(`cv.template.${row.id}`).toLowerCase();
+      const hint = t(`cv.template.${row.id}Hint`).toLowerCase();
+      return name.includes(q) || hint.includes(q) || row.id.includes(q);
+    });
+  }, [cv.atsMode, templateQuery, t]);
 
   const enterStudio = (next?: Partial<CvData> | ((c: CvData) => CvData)) => {
     setCv((p) => {
@@ -205,49 +274,78 @@ export default function NajeCv() {
     setGate('studio');
   };
 
-  const polish = async (kind: 'summary' | 'exp' | 'headline' | 'cover' | 'course', id?: string) => {
+  const polish = async (kind: 'summary' | 'exp' | 'headline' | 'cover' | 'course' | 'linkedin' | 'bio', id?: string) => {
     setAiBusy(kind + (id || ''));
     try {
+      const facts = cvFactsForPrompt(cv);
       if (kind === 'summary') {
         const raw = await askNaje(
-          `${NAJE_CV_TRUTH}\n${summaryPolishInstruction(cv)}\n${cvFactsForPrompt(cv)}\nالملخص الحالي:\n${cv.summary || 'لا يوجد'}`
+          `${NAJE_CV_TRUTH}\n${summaryPolishInstruction(cv)}\n${facts}\nالملخص الحالي:\n${cv.summary || 'لا يوجد'}\n${docLangLine}`
         );
-        patch({ summary: raw.replace(/^["«]|["»]$/g, '').trim() });
-        toast.success('ناجي صاغ الملخص');
+        const summary = cleanAi(raw);
+        if (!summary) throw new Error('empty');
+        patch({ summary });
+        toast.success(t('cv.toast.summary'));
       } else if (kind === 'headline') {
         const raw = await askNaje(
-          `${NAJE_CV_TRUTH}\nحسّن المسمّى الوظيفي ليكون تصنيف مهني واضح في 3–7 كلمات. لا ترفع الرتبة إن لم تُذكر. أرجع المسمّى فقط.\nالحالي: ${cv.headline || 'لا يوجد'}\n${cvFactsForPrompt(cv)}`
+          `${NAJE_CV_TRUTH}\nحسّن المسمّى الوظيفي ليكون تصنيف مهني واضح في 3–7 كلمات. لا ترفع الرتبة إن لم تُذكر. أرجع المسمّى فقط.\nالحالي: ${cv.headline || 'لا يوجد'}\n${facts}\n${docLangLine}`
         );
-        patch({ headline: raw.replace(/^["«]|["»]$/g, '').trim().split('\n')[0].slice(0, 80) });
-        toast.success('ناجي حسّن المسمّى');
+        const headline = cleanAi(raw).split('\n')[0].slice(0, 80);
+        if (!headline) throw new Error('empty');
+        patch({ headline });
+        toast.success(t('cv.toast.headline'));
       } else if (kind === 'cover') {
         const raw = await askNaje(
-          `${NAJE_CV_TRUTH}\nاكتب خطاب تغطية عربي مهني قصير (120–180 كلمة) من الحقائق التالية فقط. لا تخترع أرقاماً أو جهات. أرجع النص فقط.\n${cvFactsForPrompt(cv)}\nإعلان الوظيفة:\n${cv.jobPosting || 'غير مرفق'}\nخطاب حالي:\n${cv.coverLetter || 'لا يوجد'}`
+          `${NAJE_CV_TRUTH}\nاكتب خطاب تغطية مهني قصير (120–180 كلمة) من الحقائق التالية فقط. لا تخترع أرقاماً أو جهات أو معدلات أو شهادات. أرجع النص فقط.\n${facts}\nإعلان الوظيفة:\n${cv.jobPosting || 'غير مرفق'}\nخطاب حالي:\n${cv.coverLetter || 'لا يوجد'}\n${docLangLine}`
         );
-        patch({ coverLetter: raw.replace(/^["«]|["»]$/g, '').trim() });
+        const coverLetter = cleanAi(raw);
+        if (!coverLetter) throw new Error('empty');
+        patch({ coverLetter });
         setExtraOpen(true);
-        toast.success('خطاب جاهز للمراجعة');
+        toast.success(t('cv.toast.cover'));
+      } else if (kind === 'linkedin') {
+        const raw = await askNaje(
+          `${NAJE_CV_TRUTH}\nWrite a LinkedIn About section in the first person, 80–140 words, using ONLY the facts below. Do not invent employers, metrics, GPA, or certificates. Return only the text.\n${facts}\nCurrent draft:\n${cv.linkedinAbout || 'none'}\n${docLangLine}`
+        );
+        const linkedinAbout = cleanAi(raw);
+        if (!linkedinAbout) throw new Error('empty');
+        patch({ linkedinAbout });
+        setExtraOpen(true);
+        toast.success(t('cv.toast.linkedin'));
+      } else if (kind === 'bio') {
+        const raw = await askNaje(
+          `${NAJE_CV_TRUTH}\nWrite a short professional bio in two sentences, under 60 words, using ONLY the facts below. Do not invent employers, metrics, GPA, or certificates. Return only the text.\n${facts}\nCurrent draft:\n${cv.shortBio || 'none'}\n${docLangLine}`
+        );
+        const shortBio = cleanAi(raw);
+        if (!shortBio) throw new Error('empty');
+        patch({ shortBio });
+        setExtraOpen(true);
+        toast.success(t('cv.toast.bio'));
       } else if (kind === 'course' && id) {
         const course = cv.courses.find((c) => c.id === id);
         if (!course) return;
         const raw = await askNaje(
-          `${NAJE_CV_TRUTH}\nأجب بجملتين فقط: ما فائدة وضع هذه الدورة في السيرة لهذه الوظيفة؟ نصيحة موضع لا ادّعاء. لا تخترع اعتماداً أو مهارة.\nالدورة: ${course.name}\nالجهة: ${course.issuer}\nالمكتسب المكتوب: ${course.gained || 'غير مذكور'}\nالوظيفة المستهدفة: ${cv.targetRole || cv.headline}\nأرجع الجملتين فقط.`
+          `${NAJE_CV_TRUTH}\nأجب بجملتين فقط: ما فائدة وضع هذه الدورة في السيرة لهذه الوظيفة؟ نصيحة موضع لا ادّعاء. لا تخترع اعتماداً أو مهارة.\nالدورة: ${course.name}\nالجهة: ${course.issuer}\nالمكتسب المكتوب: ${course.gained || 'غير مذكور'}\nالوظيفة المستهدفة: ${cv.targetRole || cv.headline}\nأرجع الجملتين فقط.\n${docLangLine}`
         );
-        setCourseHints((h) => ({ ...h, [id]: raw.trim() }));
+        const hint = raw.trim();
+        if (!hint) throw new Error('empty');
+        setCourseHints((h) => ({ ...h, [id]: hint }));
       } else if (kind === 'exp' && id) {
         const exp = cv.experiences.find((e) => e.id === id);
         if (!exp) return;
         const raw = await askNaje(
-          `${NAJE_CV_TRUTH}\nحوّل مهام هذه الوظيفة إلى 3–5 نقاط سيرة عربية: فعل قوي + ماذا. إن لم يوجد رقم في النص لا تخترع رقماً. سطر لكل نقطة. بدون مقدمات.\nالمسمّى: ${exp.title}\nالجهة: ${exp.company}\nالنص:\n${exp.bullets || exp.title}`
+          `${NAJE_CV_TRUTH}\nحوّل مهام هذه الوظيفة إلى 3–5 نقاط سيرة: فعل قوي + ماذا. إن لم يوجد رقم في النص لا تخترع رقماً. سطر لكل نقطة. بدون مقدمات.\nالمسمّى: ${exp.title}\nالجهة: ${exp.company}\nالنص:\n${exp.bullets || exp.title}\n${docLangLine}`
         );
+        const bullets = raw.trim();
+        if (!bullets) throw new Error('empty');
         setCv((p) => ({
           ...p,
-          experiences: p.experiences.map((e) => (e.id === id ? { ...e, bullets: raw.trim() } : e)),
+          experiences: p.experiences.map((e) => (e.id === id ? { ...e, bullets } : e)),
         }));
-        toast.success('ناجي صاغ النقاط');
+        toast.success(t('cv.toast.bullets'));
       }
     } catch (e: any) {
-      toast.error(e?.message || 'تعذر الصياغة');
+      toast.error(e?.message === 'empty' ? t('cv.toast.fail') : e?.message || t('cv.toast.fail'));
     } finally {
       setAiBusy(null);
     }
@@ -255,7 +353,7 @@ export default function NajeCv() {
 
   const doExport = async (kind: 'pdf' | 'docx') => {
     if (!cv.fullName.trim()) {
-      toast.error('اكتب اسمك أولاً — هذا أول سطر يراه الـHR');
+      toast.error(t('cv.toast.needName'));
       return;
     }
     setExporting(kind);
@@ -263,7 +361,7 @@ export default function NajeCv() {
       const base = fileBase(cv);
       if (kind === 'pdf') {
         const sheet = document.getElementById('naje-cv-sheet');
-        if (!sheet) throw new Error('المعاينة غير جاهزة');
+        if (!sheet) throw new Error('preview');
         const blob = await exportCvPdf(sheet as HTMLElement, cv);
         useSmartDownloadStore.getState().triggerDownload({
           data: blob,
@@ -285,14 +383,14 @@ export default function NajeCv() {
         });
       }
     } catch (e: any) {
-      toast.error(e?.message || 'فشل التصدير');
+      toast.error(e?.message === 'preview' ? t('cv.toast.preview') : e?.message || t('cv.toast.exportFail'));
     } finally {
       setExporting(null);
     }
   };
 
   const jump = (tipId: string) => {
-    const dest = TIP_JUMP[tipId] || { tab: 'build' as const, anchor: 'cv-sec-identity' };
+    const dest = tipDestination(tipId);
     if (dest.tab === 'coach' || dest.anchor === 'cv-sec-courses' || dest.anchor === 'cv-sec-certs') {
       if (dest.anchor === 'cv-sec-courses' || dest.anchor === 'cv-sec-certs') setExtraOpen(true);
     }
@@ -327,7 +425,7 @@ export default function NajeCv() {
   const importFromProfile = async () => {
     const user = useAppStore.getState().user;
     if (!user) {
-      toast.error('سجّل الدخول لاستخدام ملفك في ناجي');
+      toast.error(t('cv.toast.login'));
       return;
     }
     const next: Partial<CvData> = {};
@@ -343,22 +441,27 @@ export default function NajeCv() {
         next.photo = url;
         next.showPhoto = true;
       } else {
-        toast.info('تعذر تحميل صورة الملف — أكمل الباقي من الاستوديو');
+        toast.info(t('cv.toast.photo'));
       }
     }
     enterStudio(next);
-    toast.success('مُلئت الحقول من ملفك — راجع وعدّل في الاستوديو. لا شيء نهائي قبل مراجعتك.');
+    toast.success(t('cv.toast.profile'));
   };
 
   const mergeIncoming = (incoming: Record<string, unknown>) => {
     setCv((p) => mergeCvPatch({ ...p, wizardDone: true }, incoming));
     setGate('studio');
     setExtraOpen(true);
-    toast.success('أُضيف بعد تأكيدك');
+    toast.success(t('cv.toast.merged'));
   };
 
   const resetDraft = () => {
+    historyLock.current = true;
+    pastRef.current = [];
+    futureRef.current = [];
+    setHist({ undo: 0, redo: 0 });
     setCv(emptyCv());
+    historyLock.current = false;
     setGate('hero');
     setTab('build');
     setDismissed([]);
@@ -402,93 +505,104 @@ export default function NajeCv() {
 
       {gate === 'studio' && (
         <div className="mx-auto max-w-7xl space-y-3">
-          <header className="sticky top-0 z-20 rounded-2xl border border-[#c4a35a]/20 bg-[radial-gradient(900px_circle_at_100%_-30%,rgba(196,163,90,0.18),transparent_50%),linear-gradient(180deg,#121a2b,#0b1220)] p-4 sm:p-5">
+          <header className="sticky top-0 z-20 overflow-hidden rounded-2xl border border-[#c4a35a]/35 bg-[#101826] shadow-[inset_0_1px_0_rgba(232,195,106,0.35)]">
+            <div className="flex">
+              <div className="cv-spine shrink-0" aria-hidden />
+              <div className="min-w-0 flex-1 p-3 sm:p-4">
             <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <div className="mb-1.5 inline-flex items-center gap-2 rounded-full border border-[#c4a35a]/35 bg-[#c4a35a]/10 px-2.5 py-0.5 text-[10px] font-black tracking-[0.16em] text-[#e8c36a]">
-                  <FileText className="h-3.5 w-3.5" /> CV BY NAJE
-                </div>
-                <h1 className="text-xl font-black leading-snug text-white sm:text-2xl">سيرتك الذاتية بواسطة ناجي</h1>
-                <p className="mt-1 max-w-xl text-[11px] leading-relaxed text-white/50 sm:text-xs">
-                  الـHR يعطيك 6 ثوانٍ. 80٪ منها تذهب للاسم والمسمّى والتواريخ والتعليم. نبني أول سطرين كي لا تُرمى السيرة قبل أن تُقرأ.
-                </p>
+              <div className="min-w-0">
+                <p className="text-[10px] font-black tracking-[0.22em] text-[#e8c36a]">{t('cv.brand')}</p>
+                <h1 className="mt-1 text-xl font-black leading-snug text-white sm:text-2xl">{t('cv.studio.title')}</h1>
+                <p className="mt-1 max-w-xl text-[11px] leading-relaxed text-white/50 sm:text-xs">{t('cv.studio.lead')}</p>
               </div>
-              <div className="flex flex-col items-end gap-2">
-                <div className="rounded-2xl border border-white/10 bg-black/30 px-4 py-2 text-center">
-                  <div className="text-[10px] text-white/40">جاهزية المسح</div>
-                  <div className={`font-mono text-2xl font-black ${scoreColor}`}>{score}</div>
+              <div className="flex flex-col items-stretch gap-2 sm:items-end">
+                <div className="rounded-2xl border border-[#c4a35a]/40 bg-black/40 px-4 py-2 text-center">
+                  <div className="text-[10px] tracking-[0.14em] text-[#e8c36a]/80">{t('cv.studio.scan')}</div>
+                  <div className={`font-mono text-2xl font-black ${scoreColor}`}>{formatNumber(score)}</div>
                 </div>
                 <div className="flex flex-wrap justify-end gap-1.5">
+                  <button type="button" onClick={undoCv} disabled={!hist.undo} className={ghostGoldBtn} aria-label={t('cv.studio.undo')}>
+                    <Undo2 className="h-3.5 w-3.5" />
+                    {t('cv.studio.undo')}
+                  </button>
+                  <button type="button" onClick={redoCv} disabled={!hist.redo} className={ghostGoldBtn} aria-label={t('cv.studio.redo')}>
+                    <Redo2 className="h-3.5 w-3.5" />
+                    {t('cv.studio.redo')}
+                  </button>
                   <button
                     type="button"
                     onClick={() => setCv((p) => applyAtsMode(p, true))}
                     className={cv.atsMode ? goldBtn : ghostGoldBtn}
                   >
-                    ATS
+                    {t('cv.studio.modeAts')}
                   </button>
                   <button
                     type="button"
                     onClick={() => setCv((p) => applyAtsMode(p, false))}
                     className={!cv.atsMode ? goldBtn : ghostGoldBtn}
                   >
-                    بصري
+                    {t('cv.studio.modeVisual')}
                   </button>
                   <button type="button" onClick={() => setInterviewOpen(true)} className={ghostGoldBtn}>
-                    <MessageCircle className="h-3.5 w-3.5" /> ناجي
+                    <MessageCircle className="h-3.5 w-3.5" /> {t('cv.studio.talk')}
                   </button>
                   <button type="button" onClick={() => setImportOpen(true)} className={ghostGoldBtn}>
-                    <Upload className="h-3.5 w-3.5" /> استيراد
+                    <Upload className="h-3.5 w-3.5" /> {t('cv.studio.import')}
                   </button>
                   <button type="button" onClick={() => doExport('pdf')} disabled={!!exporting} className={goldBtn}>
                     {exporting === 'pdf' ? <NajeThinking size={16} /> : <Download className="h-3.5 w-3.5" />}
-                    PDF
+                    {t('cv.studio.pdf')}
                   </button>
                   <button type="button" onClick={() => doExport('docx')} disabled={!!exporting} className={ghostGoldBtn}>
                     {exporting === 'docx' ? <NajeThinking size={16} /> : <FileText className="h-3.5 w-3.5" />}
-                    Word
+                    {t('cv.studio.word')}
                   </button>
                 </div>
               </div>
             </div>
             <div className="mt-3 flex gap-1 overflow-x-auto pb-0.5">
-              {ticks.map((t) => (
+              {ticks.map((tick) => (
                 <button
-                  key={t.id}
+                  key={tick.id}
                   type="button"
                   onClick={() =>
                     jumpAnchor(
-                      t.id === 'name' || t.id === 'title' || t.id === 'summary'
+                      tick.id === 'name' || tick.id === 'title' || tick.id === 'summary'
                         ? 'cv-sec-identity'
-                        : t.id === 'contact'
+                        : tick.id === 'contact'
                           ? 'cv-sec-contact'
-                          : t.id === 'exp'
+                          : tick.id === 'exp'
                             ? 'cv-sec-experience'
-                            : t.id === 'edu'
+                            : tick.id === 'edu'
                               ? 'cv-sec-education'
-                              : t.id === 'skills'
+                              : tick.id === 'skills'
                                 ? 'cv-sec-skills'
-                                : t.id === 'certs'
+                                : tick.id === 'certs'
                                   ? 'cv-sec-certs'
-                                  : t.id === 'courses'
+                                  : tick.id === 'courses'
                                     ? 'cv-sec-courses'
-                                    : 'cv-sec-identity'
+                                    : tick.id === 'projects'
+                                      ? 'cv-sec-projects'
+                                      : 'cv-sec-identity'
                     )
                   }
-                  className={`shrink-0 rounded-full border px-2 py-0.5 text-[9px] font-black ${
-                    t.ok ? 'border-emerald-400/30 text-emerald-200' : t.optional ? 'border-white/10 text-white/35' : 'border-rose-400/25 text-rose-200'
+                  className={`min-h-[44px] shrink-0 rounded-full border px-2.5 text-[9px] font-black ${
+                    tick.ok ? 'border-emerald-400/30 text-emerald-200' : tick.optional ? 'border-white/10 text-white/35' : 'border-rose-400/25 text-rose-200'
                   }`}
                 >
-                  {t.ar}
+                  {t(`cv.tick.${tick.id}`)}
                 </button>
               ))}
+            </div>
+              </div>
             </div>
           </header>
 
           {demo && (
             <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-amber-400/35 bg-amber-500/10 px-3 py-2">
-              <p className="text-[11px] font-black text-amber-100">بيانات تجريبية — ليست سيرتك</p>
-              <button type="button" onClick={resetDraft} className="text-[11px] font-black text-[#e8c36a]">
-                ابدأ بسيرتي
+              <p className="text-[11px] font-black text-amber-100">{t('cv.studio.demoBanner')}</p>
+              <button type="button" onClick={resetDraft} className="min-h-[44px] text-[11px] font-black text-[#e8c36a]">
+                {t('cv.studio.useMine')}
               </button>
             </div>
           )}
@@ -505,7 +619,7 @@ export default function NajeCv() {
                 key={id}
                 type="button"
                 onClick={() => setTab(id)}
-                className={`rounded-xl py-2 text-[11px] font-black ${tab === id ? 'bg-[#c4a35a] text-[#1a140c]' : 'text-white/60'} ${
+                className={`min-h-[44px] rounded-xl py-2 text-[11px] font-black ${tab === id ? 'bg-[#c4a35a] text-[#1a140c]' : 'text-white/60'} ${
                   id === 'coach' ? 'col-span-2' : ''
                 }`}
               >
@@ -525,7 +639,7 @@ export default function NajeCv() {
                 key={id}
                 type="button"
                 onClick={() => setTab(id)}
-                className={`flex-1 rounded-xl py-2 text-[12px] font-black ${tab === id ? 'bg-[#c4a35a] text-[#1a140c]' : 'text-white/60'}`}
+                className={`min-h-[44px] flex-1 rounded-xl py-2 text-[12px] font-black ${tab === id ? 'bg-[#c4a35a] text-[#1a140c]' : 'text-white/60'}`}
               >
                 {label}
               </button>
@@ -538,7 +652,7 @@ export default function NajeCv() {
               <Box
                 id="cv-sec-identity"
                 icon={<User className="h-4 w-4 text-[#c4a35a]" />}
-                title="الهوية — أول سطرين"
+                title={t('cv.sec.identity')}
                 collapsed={fold('cv-sec-identity')}
                 active={activeSection === 'cv-sec-identity'}
                 onToggle={() => jumpAnchor('cv-sec-identity')}
@@ -554,29 +668,29 @@ export default function NajeCv() {
                     />
                   )}
                   <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                    <Field label="الاسم الكامل" hint="كما في الهوية. هذا أول ما يثبّت العين.">
-                      <input className={inputCls} value={cv.fullName} onChange={(e) => patch({ fullName: e.target.value })} placeholder="مثال: ميسرة ناجي" />
+                    <Field label={t('cv.field.name')} hint={t('cv.field.nameHint')}>
+                      <input className={inputCls} value={cv.fullName} onChange={(e) => patch({ fullName: e.target.value })} placeholder={t('cv.field.namePh')} />
                     </Field>
-                    <Field label="المسمّى الذي تريد أن تُصنَّف تحته" hint="لا تكتب «باحث عن عمل». اكتب الدور.">
-                      <input className={inputCls} value={cv.headline} onChange={(e) => patch({ headline: e.target.value })} placeholder="مثال: أخصائي موارد بشرية" />
+                    <Field label={t('cv.field.headline')} hint={t('cv.field.headlineHint')}>
+                      <input className={inputCls} value={cv.headline} onChange={(e) => patch({ headline: e.target.value })} placeholder={t('cv.field.headlinePh')} />
                     </Field>
                   </div>
                   <button type="button" disabled={!!aiBusy} onClick={() => polish('headline')} className={ghostGoldBtn}>
                     {aiBusy === 'headline' ? <NajeThinking size={16} /> : <Sparkles className="h-3.5 w-3.5" />}
-                    حسّن المسمّى
+                    {t('cv.field.improveHeadline')}
                   </button>
-                  <Field label="ملخص مهني — يوقف المسح" hint="رقم واحد إن وُجد فعلاً. بلا «شغوف / محترف / ديناميكي».">
+                  <Field label={t('cv.field.summary')} hint={t('cv.field.summaryHint')}>
                     <div className="mb-1.5 flex flex-wrap gap-1">
                       {SUMMARY_STYLES.map((s) => (
                         <button
                           key={s.id}
                           type="button"
                           onClick={() => patch({ summaryStyle: s.id })}
-                          className={`rounded-lg border px-2 py-0.5 text-[9px] font-black ${
+                          className={`min-h-[44px] rounded-lg border px-2 py-0.5 text-[9px] font-black ${
                             cv.summaryStyle === s.id ? 'border-[#c4a35a] bg-[#c4a35a]/15 text-white' : 'border-white/10 text-white/55'
                           }`}
                         >
-                          {s.ar}
+                          {t(`cv.style.${s.id}`)}
                         </button>
                       ))}
                     </div>
@@ -586,11 +700,11 @@ export default function NajeCv() {
                           key={s.id}
                           type="button"
                           onClick={() => patch({ summaryLength: s.id })}
-                          className={`rounded-lg border px-2 py-0.5 text-[9px] font-black ${
+                          className={`min-h-[44px] rounded-lg border px-2 py-0.5 text-[9px] font-black ${
                             cv.summaryLength === s.id ? 'border-[#c4a35a] bg-[#c4a35a]/15 text-white' : 'border-white/10 text-white/55'
                           }`}
                         >
-                          {s.ar}
+                          {t(`cv.length.${s.id}`)}
                         </button>
                       ))}
                     </div>
@@ -599,12 +713,12 @@ export default function NajeCv() {
                       className={inputCls}
                       value={cv.summary}
                       onChange={(e) => patch({ summary: e.target.value })}
-                      placeholder="مثال: محاسب تكاليف بخبرة 6 سنوات، خفّض هدر المواد 14٪..."
+                      placeholder={t('cv.field.summaryPh')}
                     />
                   </Field>
                   <button type="button" disabled={!!aiBusy} onClick={() => polish('summary')} className={ghostGoldBtn}>
                     {aiBusy === 'summary' ? <NajeThinking size={16} /> : <Sparkles className="h-3.5 w-3.5" />}
-                    ناجي يصوغ الملخص
+                    {t('cv.field.polishSummary')}
                   </button>
                 </div>
               </Box>
@@ -612,34 +726,34 @@ export default function NajeCv() {
               <Box
                 id="cv-sec-contact"
                 icon={<User className="h-4 w-4 text-[#c4a35a]" />}
-                title="التواصل"
+                title={t('cv.sec.contact')}
                 collapsed={fold('cv-sec-contact')}
                 active={activeSection === 'cv-sec-contact'}
                 onToggle={() => jumpAnchor('cv-sec-contact')}
               >
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                  <Field label="البريد">
+                  <Field label={t('cv.field.email')}>
                     <input className={inputCls} value={cv.email} onChange={(e) => patch({ email: e.target.value })} placeholder="name@email.com" dir="ltr" />
                   </Field>
-                  <Field label="الهاتف مع مفتاح الدولة">
+                  <Field label={t('cv.field.phone')}>
                     <input className={inputCls} value={cv.phone} onChange={(e) => patch({ phone: e.target.value })} placeholder="+970..." dir="ltr" />
                   </Field>
-                  <Field label="المدينة">
+                  <Field label={t('cv.field.city')}>
                     <input className={inputCls} value={cv.city} onChange={(e) => patch({ city: e.target.value })} />
                   </Field>
-                  <Field label="الدولة">
+                  <Field label={t('cv.field.country')}>
                     <input className={inputCls} value={cv.country} onChange={(e) => patch({ country: e.target.value })} />
                   </Field>
-                  <Field label="LinkedIn">
+                  <Field label={t('cv.field.linkedin')}>
                     <input className={inputCls} value={cv.linkedin} onChange={(e) => patch({ linkedin: e.target.value })} dir="ltr" />
                   </Field>
-                  <Field label="معرض أعمال / موقع">
+                  <Field label={t('cv.field.portfolio')}>
                     <input className={inputCls} value={cv.portfolio} onChange={(e) => patch({ portfolio: e.target.value })} dir="ltr" />
                   </Field>
-                  <Field label="GitHub">
+                  <Field label={t('cv.field.github')}>
                     <input className={inputCls} value={cv.github || ''} onChange={(e) => patch({ github: e.target.value })} dir="ltr" />
                   </Field>
-                  <Field label="الوظيفة المستهدفة">
+                  <Field label={t('cv.field.targetRole')}>
                     <input className={inputCls} value={cv.targetRole} onChange={(e) => patch({ targetRole: e.target.value })} />
                   </Field>
                 </div>
@@ -648,7 +762,7 @@ export default function NajeCv() {
               <Box
                 id="cv-sec-market"
                 icon={<Target className="h-4 w-4 text-[#c4a35a]" />}
-                title="سوق التقديم والشخصية"
+                title={t('cv.sec.market')}
                 collapsed={fold('cv-sec-market')}
                 active={activeSection === 'cv-sec-market'}
                 onToggle={() => jumpAnchor('cv-sec-market')}
@@ -659,22 +773,22 @@ export default function NajeCv() {
                       key={m.id}
                       type="button"
                       onClick={() => setCv((p) => applyMarketDefaults(p, m.id))}
-                      className={`rounded-xl border px-2 py-2 text-right ${cv.market === m.id ? 'border-[#c4a35a] bg-[#c4a35a]/15' : 'border-white/10 bg-black/25'}`}
+                      className={`min-h-[44px] rounded-xl border px-2 py-2 text-start ${cv.market === m.id ? 'border-[#c4a35a] bg-[#c4a35a]/15' : 'border-white/10 bg-black/25'}`}
                     >
-                      <span className="block text-[11px] font-black text-white">{m.ar}</span>
+                      <span className="block text-[11px] font-black text-white">{t(`cv.market.${m.id}`)}</span>
                     </button>
                   ))}
                 </div>
-                <p className="mt-2 text-[10px] text-white/40">{MARKETS.find((m) => m.id === cv.market)?.hint}</p>
+                <p className="mt-2 text-[10px] text-white/40">{t(`cv.market.${cv.market}Hint`)}</p>
                 <div className="mt-3 grid grid-cols-2 gap-1.5 sm:grid-cols-4">
                   {PERSONAS.map((p) => (
                     <button
                       key={p.id}
                       type="button"
                       onClick={() => setCv((c) => applyPersonaDefaults(c, p.id))}
-                      className={`rounded-lg border px-2 py-1.5 text-[10px] font-black ${cv.persona === p.id ? 'border-[#c4a35a] bg-[#c4a35a]/15 text-white' : 'border-white/10 text-white/55'}`}
+                      className={`min-h-[44px] rounded-lg border px-2 py-1.5 text-[10px] font-black ${cv.persona === p.id ? 'border-[#c4a35a] bg-[#c4a35a]/15 text-white' : 'border-white/10 text-white/55'}`}
                     >
-                      {p.ar}
+                      {t(`cv.persona.${p.id}`)}
                     </button>
                   ))}
                 </div>
@@ -684,9 +798,9 @@ export default function NajeCv() {
                       key={l}
                       type="button"
                       onClick={() => patch({ lang: l })}
-                      className={`rounded-lg px-3 py-1.5 text-[11px] font-black ${cv.lang === l ? 'bg-[#c4a35a] text-[#1a140c]' : 'border border-white/10 text-white/60'}`}
+                      className={`min-h-[44px] rounded-lg px-3 py-1.5 text-[11px] font-black ${cv.lang === l ? 'bg-[#c4a35a] text-[#1a140c]' : 'border border-white/10 text-white/60'}`}
                     >
-                      {l === 'ar' ? 'العربية' : 'English'}
+                      {t(l === 'ar' ? 'cv.doc.ar' : 'cv.doc.en')}
                     </button>
                   ))}
                 </div>
@@ -695,56 +809,56 @@ export default function NajeCv() {
               <Box
                 id="cv-sec-personal"
                 icon={<User className="h-4 w-4 text-[#c4a35a]" />}
-                title="بيانات السوق المحلي"
-                hint="في الخليج تُطلب. في الشركات العالمية وجدارات احذف العمر والصورة والحالة الاجتماعية."
+                title={t('cv.sec.personal')}
+                hint={t('cv.sec.personalHint')}
                 collapsed={fold('cv-sec-market')}
                 active={activeSection === 'cv-sec-market'}
                 onToggle={() => jumpAnchor('cv-sec-market')}
                 action={
                   <button type="button" onClick={() => patch({ showPersonal: !cv.showPersonal })} className="text-[10px] font-black text-[#e8c36a]">
-                    {cv.showPersonal ? 'إخفاء من السيرة' : 'إظهار في السيرة'}
+                    {cv.showPersonal ? t('cv.sec.hidePersonal') : t('cv.sec.showPersonal')}
                   </button>
                 }
               >
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                  <Field label="العمر" hint="اختياري. كثير من المسؤلين يتجاوزونه إن وُجد المسمّى.">
+                  <Field label={t('cv.field.age')} hint={t('cv.field.ageHint')}>
                     <input className={inputCls} value={cv.age} onChange={(e) => patch({ age: e.target.value })} placeholder="28" />
                   </Field>
-                  <Field label="تاريخ الميلاد">
+                  <Field label={t('cv.field.dob')}>
                     <input className={inputCls} value={cv.dob} onChange={(e) => patch({ dob: e.target.value })} placeholder="1998-04-12" />
                   </Field>
-                  <Field label="الجنس" hint="غالباً يكفي الاسم.">
+                  <Field label={t('cv.field.gender')} hint={t('cv.field.genderHint')}>
                     <select className={inputCls} value={cv.gender} onChange={(e) => patch({ gender: e.target.value })}>
                       {GENDER_OPTS.map((o) => (
-                        <option key={o.id} value={o.id}>
-                          {o.ar}
+                        <option key={o.id || 'omit'} value={o.id}>
+                          {t(o.id ? `cv.gender.${o.id}` : 'cv.gender.omit')}
                         </option>
                       ))}
                     </select>
                   </Field>
-                  <Field label="الحالة الاجتماعية">
+                  <Field label={t('cv.field.marital')}>
                     <select className={inputCls} value={cv.marital} onChange={(e) => patch({ marital: e.target.value })}>
                       {MARITAL_OPTS.map((o) => (
-                        <option key={o.id} value={o.id}>
-                          {o.ar}
+                        <option key={o.id || 'omit'} value={o.id}>
+                          {t(o.id ? `cv.marital.${o.id}` : 'cv.marital.omit')}
                         </option>
                       ))}
                     </select>
                   </Field>
-                  <Field label="الجنسية">
+                  <Field label={t('cv.field.nationality')}>
                     <input className={inputCls} value={cv.nationality} onChange={(e) => patch({ nationality: e.target.value })} />
                   </Field>
-                  <Field label="حالة الإقامة / التأشيرة" hint="سارية وقابلة للتحويل؟ زيارة؟ خارج الدولة؟">
-                    <input className={inputCls} value={cv.visa} onChange={(e) => patch({ visa: e.target.value })} placeholder="إقامة عمل قابلة للتحويل" />
+                  <Field label={t('cv.field.visa')} hint={t('cv.field.visaHint')}>
+                    <input className={inputCls} value={cv.visa} onChange={(e) => patch({ visa: e.target.value })} placeholder={t('cv.field.visaPh')} />
                   </Field>
-                  <Field label="فترة الإشعار">
-                    <input className={inputCls} value={cv.notice} onChange={(e) => patch({ notice: e.target.value })} placeholder="فوري / 30 يوماً" />
+                  <Field label={t('cv.field.notice')}>
+                    <input className={inputCls} value={cv.notice} onChange={(e) => patch({ notice: e.target.value })} placeholder={t('cv.field.noticePh')} />
                   </Field>
-                  <Field label="رخصة القيادة">
+                  <Field label={t('cv.field.license')}>
                     <input className={inputCls} value={cv.license} onChange={(e) => patch({ license: e.target.value })} />
                   </Field>
-                  <Field label="التوفر">
-                    <input className={inputCls} value={cv.availability} onChange={(e) => patch({ availability: e.target.value })} placeholder="فوري / بعد شهر" />
+                  <Field label={t('cv.field.availability')}>
+                    <input className={inputCls} value={cv.availability} onChange={(e) => patch({ availability: e.target.value })} placeholder={t('cv.field.availabilityPh')} />
                   </Field>
                 </div>
               </Box>
@@ -752,14 +866,14 @@ export default function NajeCv() {
               <Box
                 id="cv-sec-experience"
                 icon={<Briefcase className="h-4 w-4 text-[#c4a35a]" />}
-                title="الخبرات — الأحدث أولاً"
-                hint="كل نقطة: فعل + ماذا فعلت + رقم إن وُجد فعلاً."
+                title={t('cv.sec.experience')}
+                hint={t('cv.sec.experienceHint')}
                 collapsed={fold('cv-sec-experience')}
                 active={activeSection === 'cv-sec-experience'}
                 onToggle={() => jumpAnchor('cv-sec-experience')}
                 action={
-                  <button type="button" onClick={() => patch({ experiences: [...cv.experiences, emptyExperience()] })} className="inline-flex items-center gap-1 rounded-xl border border-[#c4a35a]/40 px-2 py-1 text-[10px] font-black text-[#e8c36a]">
-                    <Plus className="h-3 w-3" /> إضافة خبرة
+                  <button type="button" onClick={() => patch({ experiences: [...cv.experiences, emptyExperience()] })} className="inline-flex min-h-[44px] items-center gap-1 rounded-xl border border-[#c4a35a]/40 px-2 py-1 text-[10px] font-black text-[#e8c36a]">
+                    <Plus className="h-3 w-3" /> {t('cv.sec.addExp')}
                   </button>
                 }
               >
@@ -783,14 +897,14 @@ export default function NajeCv() {
               <Box
                 id="cv-sec-education"
                 icon={<GraduationCap className="h-4 w-4 text-[#c4a35a]" />}
-                title="الشهادات الأكاديمية"
-                hint="المستوى الجامعي، التخصص، الجهة، سنة التخرج، المعدل."
+                title={t('cv.sec.education')}
+                hint={t('cv.sec.educationHint')}
                 collapsed={fold('cv-sec-education')}
                 active={activeSection === 'cv-sec-education'}
                 onToggle={() => jumpAnchor('cv-sec-education')}
                 action={
-                  <button type="button" onClick={() => patch({ education: [...cv.education, emptyEducation()] })} className="inline-flex items-center gap-1 rounded-xl border border-[#c4a35a]/40 px-2 py-1 text-[10px] font-black text-[#e8c36a]">
-                    <Plus className="h-3 w-3" /> إضافة مؤهل
+                  <button type="button" onClick={() => patch({ education: [...cv.education, emptyEducation()] })} className="inline-flex min-h-[44px] items-center gap-1 rounded-xl border border-[#c4a35a]/40 px-2 py-1 text-[10px] font-black text-[#e8c36a]">
+                    <Plus className="h-3 w-3" /> {t('cv.sec.addEdu')}
                   </button>
                 }
               >
@@ -809,7 +923,7 @@ export default function NajeCv() {
               <Box
                 id="cv-sec-skills"
                 icon={<Sparkles className="h-4 w-4 text-[#c4a35a]" />}
-                title="المهارات"
+                title={t('cv.sec.skills')}
                 collapsed={fold('cv-sec-skills')}
                 active={activeSection === 'cv-sec-skills'}
                 onToggle={() => jumpAnchor('cv-sec-skills')}
@@ -824,24 +938,24 @@ export default function NajeCv() {
               <Box
                 id="cv-sec-languages"
                 icon={<Languages className="h-4 w-4 text-[#c4a35a]" />}
-                title="اللغات"
+                title={t('cv.sec.languages')}
                 collapsed={fold('cv-sec-languages')}
                 active={activeSection === 'cv-sec-languages'}
                 onToggle={() => jumpAnchor('cv-sec-languages')}
                 action={
                   <button type="button" onClick={() => patch({ languages: [...cv.languages, emptyLanguage()] })} className="text-[10px] font-black text-[#e8c36a]">
-                    + لغة
+                    {t('cv.sec.addLang')}
                   </button>
                 }
               >
                 <div className="space-y-2">
                   {cv.languages.map((l) => (
                     <div key={l.id} className="flex gap-2">
-                      <input className={inputCls} placeholder="اللغة" value={l.name} onChange={(e) => setCv((p) => ({ ...p, languages: p.languages.map((x) => (x.id === l.id ? { ...x, name: e.target.value } : x)) }))} />
+                      <input className={inputCls} placeholder={t('cv.field.langPh')} value={l.name} onChange={(e) => setCv((p) => ({ ...p, languages: p.languages.map((x) => (x.id === l.id ? { ...x, name: e.target.value } : x)) }))} />
                       <select className={inputCls} value={l.level} onChange={(e) => setCv((p) => ({ ...p, languages: p.languages.map((x) => (x.id === l.id ? { ...x, level: e.target.value } : x)) }))}>
                         {LANG_LEVELS.map((o) => (
                           <option key={o.id} value={o.id}>
-                            {o.ar}
+                            {t(`cv.cefr.${o.id}`)}
                           </option>
                         ))}
                       </select>
@@ -853,26 +967,26 @@ export default function NajeCv() {
               <Box
                 id="cv-sec-projects"
                 icon={<Briefcase className="h-4 w-4 text-[#c4a35a]" />}
-                title="مشاريع"
+                title={t('cv.sec.projects')}
                 collapsed={fold('cv-sec-projects')}
                 active={activeSection === 'cv-sec-projects'}
                 onToggle={() => jumpAnchor('cv-sec-projects')}
                 action={
                   <button type="button" onClick={() => patch({ projects: [...cv.projects, emptyProject()] })} className="text-[10px] font-black text-[#e8c36a]">
-                    + مشروع
+                    {t('cv.sec.addProject')}
                   </button>
                 }
               >
-                  {cv.projects.length === 0 && <p className="text-[11px] text-white/35">للطالب والخرّيج: مشروع واحد بوصف مشكلة ودورك يكفي أكثر من وظيفة فارغة.</p>}
+                  {cv.projects.length === 0 && <p className="text-[11px] text-white/35">{t('cv.sec.projectsEmpty')}</p>}
                   {cv.projects.map((p) => (
                     <div key={p.id} className="mb-2 grid grid-cols-2 gap-2">
-                      <input className={inputCls} placeholder="اسم المشروع" value={p.name} onChange={(e) => setCv((c) => ({ ...c, projects: c.projects.map((x) => (x.id === p.id ? { ...x, name: e.target.value } : x)) }))} />
-                      <input className={inputCls} placeholder="دورك" value={p.role} onChange={(e) => setCv((c) => ({ ...c, projects: c.projects.map((x) => (x.id === p.id ? { ...x, role: e.target.value } : x)) }))} />
-                      <input className={inputCls} placeholder="السنة" value={p.year} onChange={(e) => setCv((c) => ({ ...c, projects: c.projects.map((x) => (x.id === p.id ? { ...x, year: e.target.value } : x)) }))} />
-                      <input className={inputCls} placeholder="رابط" value={p.link || ''} onChange={(e) => setCv((c) => ({ ...c, projects: c.projects.map((x) => (x.id === p.id ? { ...x, link: e.target.value } : x)) }))} dir="ltr" />
-                      <input className={`${inputCls} col-span-2`} placeholder="ماذا أنجزت" value={p.detail} onChange={(e) => setCv((c) => ({ ...c, projects: c.projects.map((x) => (x.id === p.id ? { ...x, detail: e.target.value } : x)) }))} />
-                      <button type="button" onClick={() => setCv((c) => ({ ...c, projects: c.projects.filter((x) => x.id !== p.id) }))} className="col-span-2 text-[10px] text-rose-300">
-                        حذف
+                      <input className={inputCls} placeholder={t('cv.field.projectName')} value={p.name} onChange={(e) => setCv((c) => ({ ...c, projects: c.projects.map((x) => (x.id === p.id ? { ...x, name: e.target.value } : x)) }))} />
+                      <input className={inputCls} placeholder={t('cv.field.role')} value={p.role} onChange={(e) => setCv((c) => ({ ...c, projects: c.projects.map((x) => (x.id === p.id ? { ...x, role: e.target.value } : x)) }))} />
+                      <input className={inputCls} placeholder={t('cv.field.year')} value={p.year} onChange={(e) => setCv((c) => ({ ...c, projects: c.projects.map((x) => (x.id === p.id ? { ...x, year: e.target.value } : x)) }))} />
+                      <input className={inputCls} placeholder={t('cv.field.link')} value={p.link || ''} onChange={(e) => setCv((c) => ({ ...c, projects: c.projects.map((x) => (x.id === p.id ? { ...x, link: e.target.value } : x)) }))} dir="ltr" />
+                      <input className={`${inputCls} col-span-2`} placeholder={t('cv.field.did')} value={p.detail} onChange={(e) => setCv((c) => ({ ...c, projects: c.projects.map((x) => (x.id === p.id ? { ...x, detail: e.target.value } : x)) }))} />
+                      <button type="button" onClick={() => setCv((c) => ({ ...c, projects: c.projects.filter((x) => x.id !== p.id) }))} className="col-span-2 min-h-[44px] text-start text-[10px] text-rose-300">
+                        {t('cv.field.delete')}
                       </button>
                     </div>
                   ))}
@@ -885,11 +999,11 @@ export default function NajeCv() {
                   setExtraOpen((v) => !v);
                   setActiveSection('cv-sec-extra');
                 }}
-                className={`flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-[12px] font-black text-[#e8c36a] ${
+                className={`flex min-h-[44px] w-full items-center justify-between rounded-2xl border px-4 py-3 text-[12px] font-black text-[#e8c36a] ${
                   activeSection === 'cv-sec-extra' ? 'border-[#c4a35a]/45 bg-white/[0.05]' : 'border-white/10 bg-white/[0.03]'
                 }`}
               >
-                أقسام إضافية
+                {t('cv.sec.extra')}
                 <ChevronDown className={`h-4 w-4 transition ${extraOpen ? 'rotate-180' : ''}`} />
               </button>
 
@@ -898,15 +1012,15 @@ export default function NajeCv() {
                   <Box
                     id="cv-sec-courses"
                     icon={<Award className="h-4 w-4 text-[#c4a35a]" />}
-                    title="الدورات التدريبية"
-                    hint="هل معتمدة؟ من الجهة؟ ماذا صرت تُتقن بعدها؟"
+                    title={t('cv.sec.courses')}
+                    hint={t('cv.sec.coursesHint')}
                     action={
-                      <button type="button" onClick={() => patch({ courses: [...cv.courses, emptyCourse()] })} className="inline-flex items-center gap-1 rounded-xl border border-[#c4a35a]/40 px-2 py-1 text-[10px] font-black text-[#e8c36a]">
-                        <Plus className="h-3 w-3" /> إضافة دورة
+                      <button type="button" onClick={() => patch({ courses: [...cv.courses, emptyCourse()] })} className="inline-flex min-h-[44px] items-center gap-1 rounded-xl border border-[#c4a35a]/40 px-2 py-1 text-[10px] font-black text-[#e8c36a]">
+                        <Plus className="h-3 w-3" /> {t('cv.sec.addCourse')}
                       </button>
                     }
                   >
-                    {cv.courses.length === 0 && <p className="text-[11px] text-white/35">لا دورات بعد — أضف ما يخدم الوظيفة المستهدفة فقط.</p>}
+                    {cv.courses.length === 0 && <p className="text-[11px] text-white/35">{t('cv.sec.coursesEmpty')}</p>}
                     <div className="space-y-3">
                       {cv.courses.map((c) => (
                         <CourseEditor
@@ -925,25 +1039,25 @@ export default function NajeCv() {
                   <Box
                     id="cv-sec-certs"
                     icon={<Award className="h-4 w-4 text-[#c4a35a]" />}
-                    title="شهادات مهنية / رخص"
+                    title={t('cv.sec.certs')}
                     action={
-                      <button type="button" onClick={() => patch({ certificates: [...cv.certificates, emptyCertificate()] })} className="inline-flex items-center gap-1 rounded-xl border border-[#c4a35a]/40 px-2 py-1 text-[10px] font-black text-[#e8c36a]">
-                        <Plus className="h-3 w-3" /> إضافة شهادة
+                      <button type="button" onClick={() => patch({ certificates: [...cv.certificates, emptyCertificate()] })} className="inline-flex min-h-[44px] items-center gap-1 rounded-xl border border-[#c4a35a]/40 px-2 py-1 text-[10px] font-black text-[#e8c36a]">
+                        <Plus className="h-3 w-3" /> {t('cv.sec.addCert')}
                       </button>
                     }
                   >
                     <div className="space-y-2">
                       {cv.certificates.map((c) => (
                         <div key={c.id} className="grid grid-cols-2 gap-2 rounded-xl border border-white/10 p-2">
-                          <input className={inputCls} placeholder="اسم الشهادة" value={c.name} onChange={(e) => setCv((p) => ({ ...p, certificates: p.certificates.map((x) => (x.id === c.id ? { ...x, name: e.target.value } : x)) }))} />
-                          <input className={inputCls} placeholder="الجهة المانحة" value={c.issuer} onChange={(e) => setCv((p) => ({ ...p, certificates: p.certificates.map((x) => (x.id === c.id ? { ...x, issuer: e.target.value } : x)) }))} />
-                          <input className={inputCls} placeholder="السنة" value={c.year} onChange={(e) => setCv((p) => ({ ...p, certificates: p.certificates.map((x) => (x.id === c.id ? { ...x, year: e.target.value } : x)) }))} />
-                          <input className={inputCls} placeholder="رقم الشهادة" value={c.idNumber} onChange={(e) => setCv((p) => ({ ...p, certificates: p.certificates.map((x) => (x.id === c.id ? { ...x, idNumber: e.target.value } : x)) }))} />
-                          <input className={inputCls} placeholder="تاريخ الانتهاء" value={c.expires} onChange={(e) => setCv((p) => ({ ...p, certificates: p.certificates.map((x) => (x.id === c.id ? { ...x, expires: e.target.value } : x)) }))} />
-                          <input className={inputCls} placeholder="الحالة" value={c.status || ''} onChange={(e) => setCv((p) => ({ ...p, certificates: p.certificates.map((x) => (x.id === c.id ? { ...x, status: e.target.value } : x)) }))} />
-                          <input className={`${inputCls} col-span-2`} placeholder="رابط التحقق" value={c.url || ''} onChange={(e) => setCv((p) => ({ ...p, certificates: p.certificates.map((x) => (x.id === c.id ? { ...x, url: e.target.value } : x)) }))} dir="ltr" />
-                          <button type="button" onClick={() => setCv((p) => ({ ...p, certificates: p.certificates.filter((x) => x.id !== c.id) }))} className="col-span-2 text-[10px] text-rose-300">
-                            حذف
+                          <input className={inputCls} placeholder={t('cv.field.certName')} value={c.name} onChange={(e) => setCv((p) => ({ ...p, certificates: p.certificates.map((x) => (x.id === c.id ? { ...x, name: e.target.value } : x)) }))} />
+                          <input className={inputCls} placeholder={t('cv.field.issuer')} value={c.issuer} onChange={(e) => setCv((p) => ({ ...p, certificates: p.certificates.map((x) => (x.id === c.id ? { ...x, issuer: e.target.value } : x)) }))} />
+                          <input className={inputCls} placeholder={t('cv.field.year')} value={c.year} onChange={(e) => setCv((p) => ({ ...p, certificates: p.certificates.map((x) => (x.id === c.id ? { ...x, year: e.target.value } : x)) }))} />
+                          <input className={inputCls} placeholder={t('cv.field.certId')} value={c.idNumber} onChange={(e) => setCv((p) => ({ ...p, certificates: p.certificates.map((x) => (x.id === c.id ? { ...x, idNumber: e.target.value } : x)) }))} />
+                          <input className={inputCls} placeholder={t('cv.field.expires')} value={c.expires} onChange={(e) => setCv((p) => ({ ...p, certificates: p.certificates.map((x) => (x.id === c.id ? { ...x, expires: e.target.value } : x)) }))} />
+                          <input className={inputCls} placeholder={t('cv.field.status')} value={c.status || ''} onChange={(e) => setCv((p) => ({ ...p, certificates: p.certificates.map((x) => (x.id === c.id ? { ...x, status: e.target.value } : x)) }))} />
+                          <input className={`${inputCls} col-span-2`} placeholder={t('cv.field.verifyUrl')} value={c.url || ''} onChange={(e) => setCv((p) => ({ ...p, certificates: p.certificates.map((x) => (x.id === c.id ? { ...x, url: e.target.value } : x)) }))} dir="ltr" />
+                          <button type="button" onClick={() => setCv((p) => ({ ...p, certificates: p.certificates.filter((x) => x.id !== c.id) }))} className="col-span-2 min-h-[44px] text-start text-[10px] text-rose-300">
+                            {t('cv.field.delete')}
                           </button>
                         </div>
                       ))}
@@ -952,21 +1066,21 @@ export default function NajeCv() {
 
                   <Box
                     icon={<Award className="h-4 w-4 text-[#c4a35a]" />}
-                    title="إنجازات"
+                    title={t('cv.sec.achievements')}
                     action={
-                      <button type="button" onClick={() => patch({ achievements: [...cv.achievements, emptyAchievement()] })} className="text-[10px] font-black text-[#e8c36a]">
-                        + إنجاز
+                      <button type="button" onClick={() => patch({ achievements: [...cv.achievements, emptyAchievement()] })} className="min-h-[44px] text-[10px] font-black text-[#e8c36a]">
+                        {t('cv.sec.addAchievement')}
                       </button>
                     }
                   >
                     {cv.achievements.map((a) => (
                       <div key={a.id} className="mb-2 grid grid-cols-2 gap-2">
-                        <input className={inputCls} placeholder="العنوان" value={a.title} onChange={(e) => setCv((c) => ({ ...c, achievements: c.achievements.map((x) => (x.id === a.id ? { ...x, title: e.target.value } : x)) }))} />
-                        <input className={inputCls} placeholder="الجهة" value={a.org} onChange={(e) => setCv((c) => ({ ...c, achievements: c.achievements.map((x) => (x.id === a.id ? { ...x, org: e.target.value } : x)) }))} />
-                        <input className={inputCls} placeholder="السنة" value={a.year} onChange={(e) => setCv((c) => ({ ...c, achievements: c.achievements.map((x) => (x.id === a.id ? { ...x, year: e.target.value } : x)) }))} />
-                        <input className={inputCls} placeholder="التفصيل" value={a.detail} onChange={(e) => setCv((c) => ({ ...c, achievements: c.achievements.map((x) => (x.id === a.id ? { ...x, detail: e.target.value } : x)) }))} />
-                        <button type="button" onClick={() => setCv((c) => ({ ...c, achievements: c.achievements.filter((x) => x.id !== a.id) }))} className="col-span-2 text-[10px] text-rose-300">
-                          حذف
+                        <input className={inputCls} placeholder={t('cv.field.title')} value={a.title} onChange={(e) => setCv((c) => ({ ...c, achievements: c.achievements.map((x) => (x.id === a.id ? { ...x, title: e.target.value } : x)) }))} />
+                        <input className={inputCls} placeholder={t('cv.field.org')} value={a.org} onChange={(e) => setCv((c) => ({ ...c, achievements: c.achievements.map((x) => (x.id === a.id ? { ...x, org: e.target.value } : x)) }))} />
+                        <input className={inputCls} placeholder={t('cv.field.year')} value={a.year} onChange={(e) => setCv((c) => ({ ...c, achievements: c.achievements.map((x) => (x.id === a.id ? { ...x, year: e.target.value } : x)) }))} />
+                        <input className={inputCls} placeholder={t('cv.field.detail')} value={a.detail} onChange={(e) => setCv((c) => ({ ...c, achievements: c.achievements.map((x) => (x.id === a.id ? { ...x, detail: e.target.value } : x)) }))} />
+                        <button type="button" onClick={() => setCv((c) => ({ ...c, achievements: c.achievements.filter((x) => x.id !== a.id) }))} className="col-span-2 min-h-[44px] text-start text-[10px] text-rose-300">
+                          {t('cv.field.delete')}
                         </button>
                       </div>
                     ))}
@@ -974,21 +1088,21 @@ export default function NajeCv() {
 
                   <Box
                     icon={<FileText className="h-4 w-4 text-[#c4a35a]" />}
-                    title="إصدارات / أبحاث"
+                    title={t('cv.sec.publications')}
                     action={
-                      <button type="button" onClick={() => patch({ publications: [...cv.publications, emptyPublication()] })} className="text-[10px] font-black text-[#e8c36a]">
-                        + إصدار
+                      <button type="button" onClick={() => patch({ publications: [...cv.publications, emptyPublication()] })} className="min-h-[44px] text-[10px] font-black text-[#e8c36a]">
+                        {t('cv.sec.addPublication')}
                       </button>
                     }
                   >
-                    {cv.publications.map((p) => (
-                      <div key={p.id} className="mb-2 grid grid-cols-2 gap-2">
-                        <input className={`${inputCls} col-span-2`} placeholder="العنوان" value={p.title} onChange={(e) => setCv((c) => ({ ...c, publications: c.publications.map((x) => (x.id === p.id ? { ...x, title: e.target.value } : x)) }))} />
-                        <input className={inputCls} placeholder="الجهة / المجلة" value={p.venue} onChange={(e) => setCv((c) => ({ ...c, publications: c.publications.map((x) => (x.id === p.id ? { ...x, venue: e.target.value } : x)) }))} />
-                        <input className={inputCls} placeholder="السنة" value={p.year} onChange={(e) => setCv((c) => ({ ...c, publications: c.publications.map((x) => (x.id === p.id ? { ...x, year: e.target.value } : x)) }))} />
-                        <input className={`${inputCls} col-span-2`} placeholder="DOI" value={p.doi} onChange={(e) => setCv((c) => ({ ...c, publications: c.publications.map((x) => (x.id === p.id ? { ...x, doi: e.target.value } : x)) }))} dir="ltr" />
-                        <button type="button" onClick={() => setCv((c) => ({ ...c, publications: c.publications.filter((x) => x.id !== p.id) }))} className="col-span-2 text-[10px] text-rose-300">
-                          حذف
+                    {cv.publications.map((pub) => (
+                      <div key={pub.id} className="mb-2 grid grid-cols-2 gap-2">
+                        <input className={`${inputCls} col-span-2`} placeholder={t('cv.field.title')} value={pub.title} onChange={(e) => setCv((c) => ({ ...c, publications: c.publications.map((x) => (x.id === pub.id ? { ...x, title: e.target.value } : x)) }))} />
+                        <input className={inputCls} placeholder={t('cv.field.venue')} value={pub.venue} onChange={(e) => setCv((c) => ({ ...c, publications: c.publications.map((x) => (x.id === pub.id ? { ...x, venue: e.target.value } : x)) }))} />
+                        <input className={inputCls} placeholder={t('cv.field.year')} value={pub.year} onChange={(e) => setCv((c) => ({ ...c, publications: c.publications.map((x) => (x.id === pub.id ? { ...x, year: e.target.value } : x)) }))} />
+                        <input className={`${inputCls} col-span-2`} placeholder="DOI" value={pub.doi} onChange={(e) => setCv((c) => ({ ...c, publications: c.publications.map((x) => (x.id === pub.id ? { ...x, doi: e.target.value } : x)) }))} dir="ltr" />
+                        <button type="button" onClick={() => setCv((c) => ({ ...c, publications: c.publications.filter((x) => x.id !== pub.id) }))} className="col-span-2 min-h-[44px] text-start text-[10px] text-rose-300">
+                          {t('cv.field.delete')}
                         </button>
                       </div>
                     ))}
@@ -996,34 +1110,34 @@ export default function NajeCv() {
 
                   <Box
                     icon={<FileText className="h-4 w-4 text-[#c4a35a]" />}
-                    title="قسم مخصص"
+                    title={t('cv.sec.custom')}
                     action={
-                      <button type="button" onClick={() => patch({ customSections: [...cv.customSections, emptyCustomSection()] })} className="text-[10px] font-black text-[#e8c36a]">
-                        + قسم
+                      <button type="button" onClick={() => patch({ customSections: [...cv.customSections, emptyCustomSection()] })} className="min-h-[44px] text-[10px] font-black text-[#e8c36a]">
+                        {t('cv.sec.addSection')}
                       </button>
                     }
                   >
                     {cv.customSections.map((s) => (
                       <div key={s.id} className="mb-2 space-y-2">
-                        <input className={inputCls} placeholder="عنوان القسم" value={s.title} onChange={(e) => setCv((c) => ({ ...c, customSections: c.customSections.map((x) => (x.id === s.id ? { ...x, title: e.target.value } : x)) }))} />
-                        <textarea rows={2} className={inputCls} placeholder="المحتوى" value={s.body} onChange={(e) => setCv((c) => ({ ...c, customSections: c.customSections.map((x) => (x.id === s.id ? { ...x, body: e.target.value } : x)) }))} />
-                        <button type="button" onClick={() => setCv((c) => ({ ...c, customSections: c.customSections.filter((x) => x.id !== s.id) }))} className="text-[10px] text-rose-300">
-                          حذف
+                        <input className={inputCls} placeholder={t('cv.field.sectionTitle')} value={s.title} onChange={(e) => setCv((c) => ({ ...c, customSections: c.customSections.map((x) => (x.id === s.id ? { ...x, title: e.target.value } : x)) }))} />
+                        <textarea rows={2} className={inputCls} placeholder={t('cv.field.content')} value={s.body} onChange={(e) => setCv((c) => ({ ...c, customSections: c.customSections.map((x) => (x.id === s.id ? { ...x, body: e.target.value } : x)) }))} />
+                        <button type="button" onClick={() => setCv((c) => ({ ...c, customSections: c.customSections.filter((x) => x.id !== s.id) }))} className="min-h-[44px] text-[10px] text-rose-300">
+                          {t('cv.field.delete')}
                         </button>
                       </div>
                     ))}
                   </Box>
 
-                  <Box icon={<FileText className="h-4 w-4 text-[#c4a35a]" />} title="صناديق إضافية">
+                  <Box icon={<FileText className="h-4 w-4 text-[#c4a35a]" />} title={t('cv.sec.boxes')}>
                     <div className="space-y-2">
-                      <Field label="الخدمة الوطنية / العسكرية">
+                      <Field label={t('cv.field.military')}>
                         <input className={inputCls} value={cv.military} onChange={(e) => patch({ military: e.target.value })} />
                       </Field>
-                      <Field label="التطوع">
+                      <Field label={t('cv.field.volunteer')}>
                         <textarea rows={2} className={inputCls} value={cv.volunteer} onChange={(e) => patch({ volunteer: e.target.value })} />
                       </Field>
-                      <Field label="المراجع" hint="«متوفرة عند الطلب» تكفي ما لم يُطلب غير ذلك.">
-                        <input className={inputCls} value={cv.references} onChange={(e) => patch({ references: e.target.value })} placeholder="متوفرة عند الطلب" />
+                      <Field label={t('cv.field.references')} hint={t('cv.field.referencesHint')}>
+                        <input className={inputCls} value={cv.references} onChange={(e) => patch({ references: e.target.value })} placeholder={t('cv.field.referencesPh')} />
                       </Field>
                     </div>
                   </Box>
@@ -1031,16 +1145,32 @@ export default function NajeCv() {
                   <Box
                     id="cv-sec-cover"
                     icon={<FileText className="h-4 w-4 text-[#c4a35a]" />}
-                    title="خطاب التغطية"
-                    hint="اختياري. يُصاغ من حقائق سيرتك وإعلان الوظيفة فقط. حرّره قبل الإرسال."
-                    action={
+                    title={t('cv.pack.title')}
+                    hint={t('cv.pack.hint')}
+                  >
+                    <div className="space-y-3">
+                      <Field label={t('cv.pack.cover')}>
+                        <textarea rows={6} className={inputCls} value={cv.coverLetter} onChange={(e) => patch({ coverLetter: e.target.value })} placeholder={t('cv.field.coverPh')} />
+                      </Field>
                       <button type="button" disabled={!!aiBusy} onClick={() => polish('cover')} className={ghostGoldBtn}>
                         {aiBusy === 'cover' ? <NajeThinking size={16} /> : <Sparkles className="h-3.5 w-3.5" />}
-                        صياغة خطاب
+                        {t('cv.pack.genCover')}
                       </button>
-                    }
-                  >
-                    <textarea rows={6} className={inputCls} value={cv.coverLetter} onChange={(e) => patch({ coverLetter: e.target.value })} placeholder="سيظهر هنا خطاب يمكنك تعديله. لن يُرسل تلقائياً." />
+                      <Field label={t('cv.pack.linkedin')}>
+                        <textarea rows={5} className={inputCls} value={cv.linkedinAbout || ''} onChange={(e) => patch({ linkedinAbout: e.target.value })} placeholder={t('cv.pack.linkedinPh')} />
+                      </Field>
+                      <button type="button" disabled={!!aiBusy} onClick={() => polish('linkedin')} className={ghostGoldBtn}>
+                        {aiBusy === 'linkedin' ? <NajeThinking size={16} /> : <Sparkles className="h-3.5 w-3.5" />}
+                        {t('cv.pack.genLinkedin')}
+                      </button>
+                      <Field label={t('cv.pack.bio')}>
+                        <textarea rows={3} className={inputCls} value={cv.shortBio || ''} onChange={(e) => patch({ shortBio: e.target.value })} placeholder={t('cv.pack.bioPh')} />
+                      </Field>
+                      <button type="button" disabled={!!aiBusy} onClick={() => polish('bio')} className={ghostGoldBtn}>
+                        {aiBusy === 'bio' ? <NajeThinking size={16} /> : <Sparkles className="h-3.5 w-3.5" />}
+                        {t('cv.pack.genBio')}
+                      </button>
+                    </div>
                   </Box>
                 </div>
               )}
@@ -1049,59 +1179,65 @@ export default function NajeCv() {
               <Box
                 id="cv-sec-template"
                 icon={<Sparkles className="h-4 w-4 text-[#c4a35a]" />}
-                title="تصميم الورقة"
-                hint={cv.atsMode ? 'وضع ATS يقدّم البنية المقروءة على الزخرفة.' : 'وضع بصري يسمح بالخليج والذهبي والحديث والصورة.'}
+                title={t('cv.sec.design')}
+                hint={cv.atsMode ? t('cv.studio.atsOn') : t('cv.studio.visualOn')}
                 collapsed={fold('cv-sec-template')}
                 active={activeSection === 'cv-sec-template'}
                 onToggle={() => jumpAnchor('cv-sec-template')}
               >
                 <div className="mb-3 flex gap-1.5">
                   <button type="button" onClick={() => setCv((p) => applyAtsMode(p, true))} className={cv.atsMode ? goldBtn : ghostGoldBtn}>
-                    وضع ATS
+                    {t('cv.studio.modeAts')}
                   </button>
                   <button type="button" onClick={() => setCv((p) => applyAtsMode(p, false))} className={!cv.atsMode ? goldBtn : ghostGoldBtn}>
-                    وضع بصري
+                    {t('cv.studio.modeVisual')}
                   </button>
                 </div>
                 <p className="mb-3 text-[10px] leading-relaxed text-white/45">
-                  {cv.atsMode
-                    ? 'وضع ATS يقدّم البنية المقروءة على الزخرفة. الصورة والبيانات الشخصية تُخفى، والقالب نواة ناجي أو جدارات.'
-                    : 'الوضع البصري يسمح بقوالب الخليج والذهبي والحديث وبالصورة — للتسليم أمام إنسان.'}
+                  {cv.atsMode ? t('cv.studio.atsNote') : t('cv.studio.visualNote')}
                 </p>
+                <input
+                  className={`${inputCls} mb-3`}
+                  value={templateQuery}
+                  onChange={(e) => setTemplateQuery(e.target.value)}
+                  placeholder={t('cv.field.templateSearchPh')}
+                  aria-label={t('cv.field.templateSearch')}
+                />
+                {templateShown.length === 0 && <p className="mb-2 text-[11px] text-white/40">{t('cv.field.noTemplates')}</p>}
                 <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
-                  {(cv.atsMode ? TEMPLATES.filter((t) => t.id === 'naje' || t.id === 'jadarat') : TEMPLATES).map((t) => (
+                  {templateShown.map((row) => (
                     <button
-                      key={t.id}
+                      key={row.id}
                       type="button"
                       onClick={() =>
                         patch({
-                          template: t.id,
-                          showPhoto: t.id === 'naje' || t.id === 'jadarat' ? false : cv.showPhoto,
-                          atsMode: t.ats ? cv.atsMode : false,
+                          template: row.id,
+                          showPhoto: row.id === 'naje' || row.id === 'jadarat' ? false : cv.showPhoto,
+                          atsMode: row.ats ? cv.atsMode : false,
                         })
                       }
-                      className={`rounded-xl border p-2 text-right ${cv.template === t.id ? 'border-[#c4a35a] bg-[#c4a35a]/15' : 'border-white/10'}`}
+                      className={`min-h-[44px] rounded-xl border p-2 text-start ${cv.template === row.id ? 'border-[#c4a35a] bg-[#c4a35a]/15' : 'border-white/10'}`}
                     >
-                      <span className="block text-[11px] font-black text-white">{t.ar}</span>
-                      <span className="mt-0.5 block text-[9px] text-white/40">{t.hint}</span>
+                      <span className="block text-[11px] font-black text-white">{t(`cv.template.${row.id}`)}</span>
+                      <span className="mt-0.5 block text-[9px] text-white/40">{t(`cv.template.${row.id}Hint`)}</span>
                     </button>
                   ))}
                 </div>
                 {usesPaperAccent(cv.template) && (
                   <div className="mt-3">
-                    <p className="mb-1.5 text-[11px] font-black text-[#e8c36a]">لون الخط الرفيع</p>
+                    <p className="mb-1.5 text-[11px] font-black text-[#e8c36a]">{t('cv.studio.accent')}</p>
                     <div className="flex flex-wrap gap-1.5">
                       {ACCENT_PRESETS.map((a) => (
                         <button
                           key={a.id}
                           type="button"
                           onClick={() => patch({ accentColor: a.hex })}
-                          className={`inline-flex items-center gap-1.5 rounded-lg border px-2 py-1 text-[10px] font-black ${
+                          className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-lg border px-2 py-1 text-[10px] font-black ${
                             (cv.accentColor || '#c4a35a') === a.hex ? 'border-[#c4a35a] text-white' : 'border-white/10 text-white/60'
                           }`}
                         >
                           <span className="h-3 w-3 rounded-full" style={{ backgroundColor: a.hex }} />
-                          {a.ar}
+                          {t(`cv.accent.${a.id}`)}
                         </button>
                       ))}
                     </div>
@@ -1110,7 +1246,7 @@ export default function NajeCv() {
               </Box>
 
               <button type="button" onClick={resetDraft} className="w-full text-center text-[10px] font-black text-white/30">
-                بداية جديدة
+                {t('cv.studio.newStart')}
               </button>
             </div>
 
@@ -1139,24 +1275,25 @@ export default function NajeCv() {
                         ? list
                         : [...list, { ...emptySkill(), name: k, level: 'intermediate' as const }];
                       patch({ skills, skillsList });
-                      toast.info(`أُضيفت «${k}» إلى المهارات — احذفها إن لم تكن لديك`);
+                      toast.info(t('cv.toast.skill', { name: k }));
                     }}
                   />
                   <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-3 xl:col-span-2">
                     <div className="mb-2 flex items-center justify-between">
-                      <h3 className="text-sm font-black text-white">خطاب التغطية</h3>
+                      <h3 className="text-sm font-black text-white">{t('cv.pack.cover')}</h3>
                       <button type="button" disabled={!!aiBusy} onClick={() => polish('cover')} className={ghostGoldBtn}>
                         {aiBusy === 'cover' ? <NajeThinking size={16} /> : <Sparkles className="h-3.5 w-3.5" />}
-                        صياغة خطاب
+                        {t('cv.pack.genCover')}
                       </button>
                     </div>
-                    <textarea rows={5} className={inputCls} value={cv.coverLetter} onChange={(e) => patch({ coverLetter: e.target.value })} placeholder="اختياري — من حقائق السيرة والإعلان فقط." />
+                    <textarea rows={5} className={inputCls} value={cv.coverLetter} onChange={(e) => patch({ coverLetter: e.target.value })} placeholder={t('cv.field.coverCoachPh')} />
                   </div>
                 </div>
               )}
 
               {(tab === 'preview' || tab === 'build') && (
-                <div className="overflow-hidden rounded-2xl border border-white/10 bg-[#070b14] p-2">
+                <div className="cv-desk overflow-hidden rounded-2xl p-2 sm:p-3">
+                  <div className="cv-paper-well rounded-xl p-1.5 sm:p-2">
                   <CvScanOverlay cv={cv} active={scanMode} onToggle={() => setScanMode((s) => !s)}>
                     <div className="mx-auto overflow-x-auto overflow-y-hidden" style={{ maxWidth: 794 }}>
                       <div
@@ -1172,6 +1309,7 @@ export default function NajeCv() {
                       </div>
                     </div>
                   </CvScanOverlay>
+                  </div>
                 </div>
               )}
             </div>

@@ -5,6 +5,7 @@ import {
   Flame, Film, Image as ImageIcon, FileText, Mic, Layers
 } from 'lucide-react';
 import { UserData, RedeemCode } from '../../types';
+import { useI18n } from '../../i18n';
 
 interface AdminOverviewProps {
   users: UserData[];
@@ -23,6 +24,7 @@ export default function AdminOverview({
   isLimitReached,
   onNavigate
 }: AdminOverviewProps) {
+  const { t } = useI18n();
   // Compute user metrics
   const totalUsers = users.length;
   const now = Date.now();
@@ -39,12 +41,12 @@ export default function AdminOverview({
   const recentFlagged = flaggedRequests.slice(0, 5);
 
   const generationCategories = [
-    { name: 'محادثات نصوص', type: 'text', count: 1420, icon: MessageSquare, color: 'text-indigo-400 bg-indigo-500/10 border-indigo-500/20' },
-    { name: 'تصاميم وصور', type: 'image', count: 860, icon: ImageIcon, color: 'text-pink-400 bg-pink-500/10 border-pink-500/20' },
-    { name: 'استوديو الواجهات UI', type: 'ui', count: 410, icon: Layers, color: 'text-purple-400 bg-purple-500/10 border-purple-500/20' },
-    { name: 'مقاطع فيديو سينمائية', type: 'video', count: 230, icon: Film, color: 'text-amber-400 bg-amber-500/10 border-amber-500/20' },
-    { name: 'مستندات وعروض PDF', type: 'document', count: 320, icon: FileText, color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' },
-    { name: 'محادثات صوتية', type: 'voice', count: 190, icon: Mic, color: 'text-cyan-400 bg-cyan-500/10 border-cyan-500/20' },
+    { name: t('tools.admin.catText'), type: 'text', count: 1420, icon: MessageSquare, color: 'text-indigo-400 bg-indigo-500/10 border-indigo-500/20' },
+    { name: t('tools.admin.catImage'), type: 'image', count: 860, icon: ImageIcon, color: 'text-pink-400 bg-pink-500/10 border-pink-500/20' },
+    { name: t('tools.admin.catUi'), type: 'ui', count: 410, icon: Layers, color: 'text-purple-400 bg-purple-500/10 border-purple-500/20' },
+    { name: t('tools.admin.catVideo'), type: 'video', count: 230, icon: Film, color: 'text-amber-400 bg-amber-500/10 border-amber-500/20' },
+    { name: t('tools.admin.catDoc'), type: 'document', count: 320, icon: FileText, color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' },
+    { name: t('tools.admin.catVoice'), type: 'voice', count: 190, icon: Mic, color: 'text-cyan-400 bg-cyan-500/10 border-cyan-500/20' },
   ];
 
   const maxGenCount = Math.max(...generationCategories.map(c => c.count), 1);
@@ -58,13 +60,13 @@ export default function AdminOverview({
           <div>
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-black mb-3">
               <Sparkles className="w-3.5 h-3.5" />
-              <span>مرحباً بك في لوحة تحكم ناجي AI</span>
+              <span>{t('tools.admin.welcome')}</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
-              نظرة عامة على أداء المنصة
+              {t('tools.admin.overviewTitle')}
             </h1>
             <p className="text-gray-400 text-sm mt-1 max-w-2xl">
-              استعراض فوري وشامل لإحصائيات المستخدمين، الاستهلاك، الطلبات المرفوضة، وحالة النظام التشغيلية.
+              {t('tools.admin.overviewDesc')}
             </p>
           </div>
 
@@ -74,14 +76,14 @@ export default function AdminOverview({
               className="px-4 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-gray-950 font-black text-xs rounded-xl shadow-lg shadow-amber-500/20 transition flex items-center gap-2 cursor-pointer"
             >
               <MessageSquare className="w-4 h-4" />
-              <span>تصفح المحادثات</span>
+              <span>{t('tools.admin.browseChats')}</span>
             </button>
             <button
               onClick={() => onNavigate('feature_flags')}
               className="px-4 py-2.5 bg-gray-800 hover:bg-gray-700 text-white font-bold text-xs rounded-xl border border-gray-700 transition flex items-center gap-2 cursor-pointer"
             >
               <Power className="w-4 h-4 text-emerald-400" />
-              <span>مفاتيح الميزات</span>
+              <span>{t('tools.admin.featureKeys')}</span>
             </button>
           </div>
         </div>
@@ -92,13 +94,13 @@ export default function AdminOverview({
             {maintIsActive && (
               <div className="flex items-center gap-2 text-xs font-bold px-3 py-1.5 bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl">
                 <span className="w-2 h-2 rounded-full bg-red-400 animate-ping"></span>
-                <span>وضع الصيانة مفعّل حالياً في المنصة</span>
+                <span>{t('tools.admin.maintOn')}</span>
               </div>
             )}
             {isLimitReached && (
               <div className="flex items-center gap-2 text-xs font-bold px-3 py-1.5 bg-amber-500/10 border border-amber-500/30 text-amber-400 rounded-xl">
                 <ShieldAlert className="w-4 h-4" />
-                <span>تم الوصول إلى الحد الأقصى للمستخدمين المسموح بهم</span>
+                <span>{t('tools.admin.limitHit')}</span>
               </div>
             )}
           </div>
@@ -109,51 +111,51 @@ export default function AdminOverview({
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
         <div className="bg-[#0e1015] border border-gray-800/80 rounded-2xl p-5 shadow-xl hover:border-gray-700 transition">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-gray-400">إجمالي المستخدمين المسجلين</span>
+            <span className="text-xs font-bold text-gray-400">{t('tools.admin.totalUsers')}</span>
             <div className="p-2.5 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
               <Users className="w-5 h-5" />
             </div>
           </div>
           <div className="mt-4">
             <span className="text-3xl font-black text-white">{totalUsers}</span>
-            <span className="text-xs text-gray-400 mr-2">مستخدم</span>
+            <span className="text-xs text-gray-400 ms-2">{t('tools.admin.userUnit')}</span>
           </div>
           <div className="mt-3 text-[11px] text-gray-400 flex items-center justify-between border-t border-gray-800/60 pt-2.5">
-            <span>نشطوا هذا الأسبوع: <strong className="text-indigo-400">{activeThisWeek}</strong></span>
-            <span>اليوم: <strong className="text-emerald-400">{activeToday}</strong></span>
+            <span>{t('tools.admin.activeWeek', { count: activeThisWeek })}</span>
+            <span>{t('tools.admin.activeToday', { count: activeToday })}</span>
           </div>
         </div>
 
         <div className="bg-[#0e1015] border border-gray-800/80 rounded-2xl p-5 shadow-xl hover:border-gray-700 transition">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-gray-400">إجمالي النقاط المتاحة بالحسابات</span>
+            <span className="text-xs font-bold text-gray-400">{t('tools.admin.pointsPool')}</span>
             <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
               <Flame className="w-5 h-5" />
             </div>
           </div>
           <div className="mt-4">
             <span className="text-3xl font-black text-amber-400">{totalPointsBalance.toLocaleString()}</span>
-            <span className="text-xs text-gray-400 mr-2">نقطة</span>
+            <span className="text-xs text-gray-400 ms-2">{t('common.points')}</span>
           </div>
           <div className="mt-3 text-[11px] text-gray-400 flex items-center justify-between border-t border-gray-800/60 pt-2.5">
-            <span>تم شحنها كلياً:</span>
-            <span className="text-amber-300 font-bold">{totalPointsFromCodes.toLocaleString()} نقطة</span>
+            <span>{t('tools.admin.chargedAll')}</span>
+            <span className="text-amber-300 font-bold">{t('tools.agent.pointsBadge', { count: totalPointsFromCodes.toLocaleString() })}</span>
           </div>
         </div>
 
         <div className="bg-[#0e1015] border border-gray-800/80 rounded-2xl p-5 shadow-xl hover:border-gray-700 transition">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-gray-400">الأكواد المستعملة</span>
+            <span className="text-xs font-bold text-gray-400">{t('tools.admin.codesUsed')}</span>
             <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
               <Key className="w-5 h-5" />
             </div>
           </div>
           <div className="mt-4">
             <span className="text-3xl font-black text-white">{totalRedeemedCodes}</span>
-            <span className="text-xs text-gray-400 mr-2">من أصل {codes.length} كود</span>
+            <span className="text-xs text-gray-400 ms-2">{t('tools.admin.ofCodes', { count: codes.length })}</span>
           </div>
           <div className="mt-3 text-[11px] text-gray-400 flex items-center justify-between border-t border-gray-800/60 pt-2.5">
-            <span>معدل الشحن الناجح:</span>
+            <span>{t('tools.admin.successRate')}</span>
             <span className="text-emerald-400 font-bold">
               {codes.length > 0 ? Math.round((totalRedeemedCodes / codes.length) * 100) : 0}%
             </span>
@@ -162,20 +164,20 @@ export default function AdminOverview({
 
         <div className="bg-[#0e1015] border border-gray-800/80 rounded-2xl p-5 shadow-xl hover:border-gray-700 transition">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-gray-400">الطلبات المرفوضة أمنياً</span>
+            <span className="text-xs font-bold text-gray-400">{t('tools.admin.flaggedCount')}</span>
             <div className="p-2.5 rounded-xl bg-rose-500/10 text-rose-400 border border-rose-500/20">
               <AlertTriangle className="w-5 h-5" />
             </div>
           </div>
           <div className="mt-4">
             <span className="text-3xl font-black text-rose-400">{flaggedRequests.length}</span>
-            <span className="text-xs text-gray-400 mr-2">محاولة مرفوضة</span>
+            <span className="text-xs text-gray-400 ms-2">{t('tools.admin.rejectedTry')}</span>
           </div>
           <div className="mt-3 text-[11px] text-gray-400 flex items-center justify-between border-t border-gray-800/60 pt-2.5">
-            <span>أنظمة الحماية:</span>
+            <span>{t('tools.admin.protection')}</span>
             <span className="text-emerald-400 font-bold flex items-center gap-1">
               <CheckCircle2 className="w-3.5 h-3.5" />
-              نشطة ومحمية
+              {t('tools.admin.protected')}
             </span>
           </div>
         </div>
@@ -189,15 +191,15 @@ export default function AdminOverview({
             <div>
               <h3 className="text-base font-black text-white flex items-center gap-2">
                 <TrendingUp className="w-5 h-5 text-amber-400" />
-                <span>توزيع التوليد حسب نوع الخدمة (آخر 7 أيام)</span>
+                <span>{t('tools.admin.genDist')}</span>
               </h3>
-              <p className="text-xs text-gray-400 mt-0.5">استهلاك النماذج والتوليدات عبر شتى المسارات الذكية</p>
+              <p className="text-xs text-gray-400 mt-0.5">{t('tools.admin.genDistDesc')}</p>
             </div>
             <button
               onClick={() => onNavigate('pricing')}
               className="text-xs font-bold text-amber-400 hover:text-amber-300 flex items-center gap-1"
             >
-              <span>تفاصيل التسعير</span>
+              <span>{t('tools.admin.pricingDetails')}</span>
               <ArrowUpRight className="w-3.5 h-3.5" />
             </button>
           </div>
@@ -215,7 +217,7 @@ export default function AdminOverview({
                       </span>
                       {cat.name}
                     </span>
-                    <span className="text-gray-400">{cat.count.toLocaleString()} عمليات</span>
+                    <span className="text-gray-400">{t('tools.admin.opsCount', { count: cat.count.toLocaleString() })}</span>
                   </div>
                   <div className="h-2.5 w-full bg-gray-800/70 rounded-full overflow-hidden p-0.5">
                     <div 
@@ -235,20 +237,20 @@ export default function AdminOverview({
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-base font-black text-white flex items-center gap-2">
                 <AlertTriangle className="w-5 h-5 text-rose-400" />
-                <span>أحدث الطلبات المرفوضة</span>
+                <span>{t('tools.admin.recentFlagged')}</span>
               </h3>
               <button
                 onClick={() => onNavigate('flagged')}
                 className="text-xs font-bold text-amber-400 hover:text-amber-300"
               >
-                عرض الكل ({flaggedRequests.length})
+                {t('tools.admin.viewAll', { count: flaggedRequests.length })}
               </button>
             </div>
 
             {recentFlagged.length === 0 ? (
               <div className="text-center py-10 text-gray-500 text-xs">
                 <CheckCircle2 className="w-8 h-8 text-emerald-400 mx-auto mb-2 opacity-60" />
-                لا توجد طلبات مرفوضة مؤخراً.
+                {t('tools.admin.noFlagged')}
               </div>
             ) : (
               <div className="space-y-3">
@@ -256,12 +258,12 @@ export default function AdminOverview({
                   <div key={idx} className="p-3 bg-gray-900/60 border border-gray-800 rounded-xl text-xs space-y-1">
                     <div className="flex items-center justify-between text-[11px] text-gray-400">
                       <span className="font-mono text-amber-400 truncate max-w-[140px]">
-                        {item.uid ? item.uid.slice(0, 10) + '...' : 'زائر'}
+                        {item.uid ? item.uid.slice(0, 10) + '...' : t('tools.admin.guest')}
                       </span>
-                      <span>{item.createdAt ? new Date(item.createdAt).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' }) : 'الآن'}</span>
+                      <span>{item.createdAt ? new Date(item.createdAt).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' }) : t('tools.admin.now')}</span>
                     </div>
                     <p className="text-gray-300 font-medium line-clamp-2 dir-rtl">
-                      "{item.prompt || item.reason || 'محتوى مرفوض من فلتر الأمان'}"
+                      {item.prompt || item.reason || t('tools.admin.flaggedFallback')}
                     </p>
                   </div>
                 ))}
@@ -275,7 +277,7 @@ export default function AdminOverview({
               className="w-full py-2.5 bg-gray-800 hover:bg-gray-750 text-gray-200 font-bold text-xs rounded-xl transition flex items-center justify-center gap-2"
             >
               <ShieldAlert className="w-4 h-4 text-amber-400" />
-              <span>استعراض سجل النشاط الإداري</span>
+              <span>{t('tools.admin.openAudit')}</span>
             </button>
           </div>
         </div>

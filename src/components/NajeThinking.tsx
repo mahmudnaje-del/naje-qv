@@ -1,8 +1,10 @@
 import React, { useId } from 'react';
+import { useI18n } from '../i18n';
 
 // مؤشر تفكير Naje AI — يستعرض تفكير حرف الـ N النابض لـ Naje
 export function NajeThinking({ size = 40, className = '' }: { size?: number; className?: string }) {
   const uid = useId().replace(/[^a-zA-Z0-9_-]/g, '');
+  const { t } = useI18n();
   const violetGradId = `najeThinkingV_${uid}`;
   const goldGradId = `najeThinkingG_${uid}`;
 
@@ -13,7 +15,7 @@ export function NajeThinking({ size = 40, className = '' }: { size?: number; cla
       width={size}
       height={size}
       role="img"
-      aria-label="ناجي يفكّر"
+      aria-label={t('shared.thinking')}
       className={className}
       style={{ display: 'block' }}
     >

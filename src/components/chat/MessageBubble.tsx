@@ -15,6 +15,7 @@ import LocalMediaRenderer from '../LocalMediaRenderer';
 import ImageZoomModal from '../ImageZoomModal';
 import { Message, Chat } from '../../types';
 import { toast } from '../../toastStore';
+import { useI18n } from '../../i18n';
 
 function formatNajePoints(n: number): string {
   if (!Number.isFinite(n)) return '0';
@@ -26,6 +27,7 @@ function formatNajePoints(n: number): string {
 function MessageCostButton({ msg }: { msg: Message }) {
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
+  const { t, isRtl } = useI18n();
   const usage = (msg as any).usage as Message['usage'] | undefined;
   const cost = typeof (msg as any).costInPoints === 'number'
     ? (msg as any).costInPoints
@@ -54,20 +56,20 @@ function MessageCostButton({ msg }: { msg: Message }) {
           "p-1 sm:p-1.5 rounded-lg sm:rounded-xl transition cursor-pointer active:scale-95",
           open ? "text-amber-600 bg-amber-500/10" : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
         )}
-        title="تكلفة الرسالة بالنقاط"
+        title={t('chatui.msgCostTitle')}
       >
         <img src={najeWalletCoins} alt="" className="w-3.5 h-3.5" />
       </button>
       {open && (
-        <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 z-40 w-52 rounded-xl border border-amber-500/20 bg-white dark:bg-gray-900 shadow-xl p-3 text-right" dir="rtl">
-          <div className="text-[11px] font-extrabold text-gray-900 dark:text-white mb-1">تكلفة الرسالة</div>
-          <div className="text-sm font-black text-amber-600">{cost == null ? '—' : `${formatNajePoints(cost)} نقطة`}</div>
+        <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 z-40 w-52 rounded-xl border border-amber-500/20 bg-white dark:bg-gray-900 shadow-xl p-3 text-start" dir={isRtl ? 'rtl' : 'ltr'}>
+          <div className="text-[11px] font-extrabold text-gray-900 dark:text-white mb-1">{t('chatui.msgCost')}</div>
+          <div className="text-sm font-black text-amber-600">{cost == null ? '—' : t('chatui.pointsWithCount', { count: formatNajePoints(cost) })}</div>
           {usage && (
             <div className="mt-2 space-y-0.5 text-[10px] text-gray-500 font-bold">
-              <div>مدخلات: {usage.inputTokens || 0}</div>
-              <div>مخرجات: {usage.outputTokens || 0}</div>
-              {(usage.cachedTokens || 0) > 0 && <div>كاش: {usage.cachedTokens}</div>}
-              {(usage.thoughtsTokens || 0) > 0 && <div>تفكير: {usage.thoughtsTokens}</div>}
+              <div>{t('chatui.inputs', { count: usage.inputTokens || 0 })}</div>
+              <div>{t('chatui.outputs', { count: usage.outputTokens || 0 })}</div>
+              {(usage.cachedTokens || 0) > 0 && <div>{t('chatui.cacheTokens', { count: usage.cachedTokens || 0 })}</div>}
+              {(usage.thoughtsTokens || 0) > 0 && <div>{t('chatui.thoughtTokens', { count: usage.thoughtsTokens || 0 })}</div>}
             </div>
           )}
         </div>
@@ -132,12 +134,13 @@ export default function MessageBubble({
   const [copied, setCopied] = useState(false);
   const [previewModalSrc, setPreviewModalSrc] = useState<string | null>(null);
   const [previewModalOpen, setPreviewModalOpen] = useState(false);
+  const { t } = useI18n();
 
   const handleCopyMessage = async () => {
     try {
       await navigator.clipboard.writeText(msg.content);
       setCopied(true);
-      toast.success('تم نسخ النص بنجاح');
+      toast.success(t('chatui.copySuccess'));
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
       console.error('Failed to copy: ', err);
@@ -162,7 +165,7 @@ export default function MessageBubble({
                     <div className="p-3 bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-200/60 dark:border-indigo-900/50 rounded-2xl flex flex-wrap items-center justify-between gap-3 text-xs shadow-sm relative overflow-hidden">
                       <div className="flex items-center gap-2 min-w-0">
                         <Check className="w-4 h-4 text-emerald-500 shrink-0" />
-                        <span className="font-bold text-gray-900 dark:text-white truncate">تم تحديث واجهة المستخدم بنجاح</span>
+                        <span className="font-bold text-gray-900 dark:text-white truncate">{t('chatui.uiUpdatedSuccess')}</span>
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
                         <NajeThinking size={18} className="shrink-0 animate-pulse" />
@@ -172,7 +175,7 @@ export default function MessageBubble({
                           className="px-3 py-1 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl text-[11px] flex items-center gap-1 cursor-pointer transition active:scale-95 shadow-sm"
                         >
                           <Eye className="w-3.5 h-3.5" />
-                          <span>المعاينة</span>
+                          <span>{t('studio.previewTab')}</span>
                         </button>
                         <button
                           type="button"
@@ -180,7 +183,7 @@ export default function MessageBubble({
                           className="px-3 py-1 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-gray-800 dark:text-gray-200 font-bold rounded-xl text-[11px] flex items-center gap-1 cursor-pointer transition active:scale-95"
                         >
                           <Code2 className="w-3.5 h-3.5" />
-                          <span>الكود</span>
+                          <span>{t('studio.codeTab')}</span>
                         </button>
                       </div>
                     </div>
@@ -201,7 +204,7 @@ export default function MessageBubble({
           <div className="whitespace-pre-wrap leading-relaxed text-[15px]">
             {(msg as any).templateName && (
               <div className="inline-flex items-center gap-1 bg-indigo-500/10 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 text-[10px] px-2.5 py-0.5 rounded-full font-bold mb-1.5 border border-indigo-500/20">
-                القالب: {(msg as any).templateName}
+                {t('chatui.templateChip', { name: (msg as any).templateName })}
               </div>
             )}
             {msg.content && <div>{msg.content}</div>}
@@ -222,7 +225,7 @@ export default function MessageBubble({
                         "flex flex-col items-center justify-center gap-1 w-20 h-20 shrink-0 rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/40 p-2 select-none",
                         fileSrc ? "cursor-pointer hover:border-indigo-500/50 hover:bg-indigo-50/50 dark:hover:bg-indigo-950/20 transition active:scale-95" : ""
                       )}
-                      title={f.name || 'ملف'}
+                      title={f.name || t('chatui.fileFallback')}
                     >
                       {f.mimeType?.startsWith('video/') ? (
                         <Video className="w-6 h-6 text-indigo-500" />
@@ -232,7 +235,7 @@ export default function MessageBubble({
                         <FileText className="w-6 h-6 text-blue-500" />
                       )}
                       <span className="text-[10px] text-gray-600 dark:text-gray-400 truncate w-full text-center">
-                        {f.name || 'ملف'}
+                        {f.name || t('chatui.fileFallback')}
                       </span>
                       <span className="text-[9px] uppercase font-mono text-gray-400">
                         {f.mimeType?.split('/')[1] || ''}
@@ -251,12 +254,12 @@ export default function MessageBubble({
               <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center flex-shrink-0">
                 <FileText className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
               </div>
-              <div className="min-w-0 flex-1 pr-1">
+              <div className="min-w-0 flex-1 ps-1">
                 <div className="font-semibold text-sm text-gray-900 dark:text-white truncate" dir="ltr">
-                  {(msg as any).documentData.title || (msg as any).documentData.filename || (msg as any).documentData.name || "إنفوجرافيك بيانات"}
+                  {(msg as any).documentData.title || (msg as any).documentData.filename || (msg as any).documentData.name || t('chatui.infographicData')}
                 </div>
                 <div className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">
-                  {(msg as any).documentData.spec ? 'إنفوجرافيك المصمم عالي الدقة' : `${((msg as any).documentData.extension || (msg as any).documentData.type || "DOC").toUpperCase()} Format`}
+                  {(msg as any).documentData.spec ? t('chatui.infographicHiRes') : t('chatui.formatLabel', { ext: ((msg as any).documentData.extension || (msg as any).documentData.type || 'DOC').toUpperCase() })}
                 </div>
               </div>
             </div>
@@ -267,14 +270,14 @@ export default function MessageBubble({
                   onClick={() => {
                     downloadBase64File(
                       (msg as any).documentData.pdfBase64,
-                      `${(msg as any).documentData.title || 'إنفوجرافيك'}.pdf`,
+                      `${(msg as any).documentData.title || t('chatui.infographicData')}.pdf`,
                       'application/pdf',
                       { prompt: (msg as any).documentData.title }
                     );
                   }}
                   className="text-amber-600 dark:text-amber-400 hover:text-white bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-500 dark:hover:bg-amber-600 px-3 py-1.5 rounded-xl text-xs font-semibold transition flex-shrink-0 cursor-pointer whitespace-nowrap"
                 >
-                  تحميل PDF
+                  {t('chatui.downloadPdf')}
                 </button>
               )}
               <button 
@@ -303,7 +306,7 @@ export default function MessageBubble({
                     catch(e) { console.error('Failed getLocalDoc by local prefix:', e); }
                   }
                   if (!b64) {
-                    toast.error('الملف غير متوفر حالياً، يرجى إعادة التوليد.');
+                    toast.error(t('chatui.fileUnavailable'));
                     return;
                   }
                   const mimeType = (msg as any).documentData.mimeType || ((msg as any).documentData.type === 'pdf' ? 'application/pdf' : ((msg as any).documentData.type === 'pptx' ? 'application/vnd.openxmlformats-officedocument.presentationml.presentation' : (msg as any).documentData.spec ? 'image/png' : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'));
@@ -313,7 +316,7 @@ export default function MessageBubble({
                 }} 
                 className="text-indigo-600 dark:text-indigo-400 hover:text-white bg-indigo-50 dark:bg-indigo-950/40 hover:bg-indigo-500 dark:hover:bg-indigo-600 px-3 py-1.5 rounded-xl text-xs font-semibold transition flex-shrink-0 cursor-pointer whitespace-nowrap"
               >
-                {(msg as any).documentData.spec ? 'تحميل PNG' : 'تحميل الملف'}
+                {(msg as any).documentData.spec ? t('chatui.downloadPng') : t('chat.downloadMedia')}
               </button>
             </div>
           </div>
@@ -358,10 +361,10 @@ export default function MessageBubble({
                     ? "bg-indigo-600 text-white shadow-sm"
                     : "text-gray-700 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 hover:text-indigo-600 dark:hover:text-indigo-400"
                 )}
-                title="تعديل أو إعادة تصميم هذه الصورة"
+                title={t('chatui.editImageTitle')}
               >
                 <Wand2 className="w-3.5 h-3.5" />
-                <span>تعديل</span>
+                <span>{t('chat.editMessage')}</span>
               </button>
             )}
 
@@ -382,10 +385,10 @@ export default function MessageBubble({
                   }
                 }}
                 className="px-2.5 py-1.5 rounded-xl text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-rose-50 dark:hover:bg-rose-950/40 hover:text-rose-600 dark:hover:text-rose-400 flex items-center gap-1.5 transition cursor-pointer active:scale-95"
-                title="أداة الفرشاة والممحاة (Inpaint) لتعديل جزء محدد"
+                title={t('chatui.brushTitle')}
               >
                 <Paintbrush className="w-3.5 h-3.5" />
-                <span>الفرشاة</span>
+                <span>{t('chatui.brush')}</span>
               </button>
             )}
 
@@ -395,7 +398,7 @@ export default function MessageBubble({
                 onClick={() => handleDownloadPNG(msg)}
                 disabled={exportingMsgPDFId === msg.id}
                 className="p-1.5 rounded-xl text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white transition cursor-pointer disabled:opacity-50 active:scale-95"
-                title={msg.mediaType === 'audio' ? 'تحميل التسجيل الصوتي (WAV)' : 'تحميل الملف'}
+                title={msg.mediaType === 'audio' ? t('chatui.downloadAudio') : t('chat.downloadMedia')}
               >
                 {exportingMsgPDFId === msg.id ? (
                   <NajeSpinner className="w-4 h-4" />
@@ -412,7 +415,7 @@ export default function MessageBubble({
                 "p-1 sm:p-1.5 rounded-lg sm:rounded-xl transition cursor-pointer active:scale-95 flex items-center gap-1",
                 copied ? "text-emerald-600 dark:text-emerald-400 bg-emerald-500/10" : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
               )}
-              title={copied ? "تم النسخ" : "نسخ النص"}
+              title={copied ? t('common.copied') : t('chat.copyMessage')}
             >
               {copied ? (
                 <Check className="w-3.5 h-3.5 text-emerald-500 stroke-[2.5]" />
@@ -430,7 +433,7 @@ export default function MessageBubble({
                 "p-1 sm:p-1.5 rounded-lg sm:rounded-xl transition cursor-pointer active:scale-95",
                 favorites.includes(msg.id) ? "text-amber-500 bg-amber-500/10" : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
               )}
-              title={favorites.includes(msg.id) ? "محفوظة" : "حفظ في المفضلة"}
+              title={favorites.includes(msg.id) ? t('chatui.saved') : t('chatui.saveFavorite')}
             >
               <Star className={cn("w-3.5 h-3.5", favorites.includes(msg.id) && "fill-current")} />
             </button>
@@ -441,7 +444,7 @@ export default function MessageBubble({
               <button
                 type="button"
                 onClick={() => openFeedback(msg.id, 'up')}
-                title="مفيد"
+                title={t('chatui.helpful')}
                 className={cn(
                   "p-1 sm:p-1.5 rounded-lg sm:rounded-xl transition cursor-pointer active:scale-95",
                   votedMessages[msg.id] === 'up' ? "text-indigo-600 dark:text-indigo-400 bg-indigo-500/10" : "text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-gray-100 dark:hover:bg-gray-800"
@@ -452,7 +455,7 @@ export default function MessageBubble({
               <button
                 type="button"
                 onClick={() => openFeedback(msg.id, 'down')}
-                title="غير مفيد"
+                title={t('chatui.notHelpful')}
                 className={cn(
                   "p-1 sm:p-1.5 rounded-lg sm:rounded-xl transition cursor-pointer active:scale-95",
                   votedMessages[msg.id] === 'down' ? "text-rose-500 bg-rose-500/10" : "text-gray-500 hover:text-rose-500 hover:bg-gray-100 dark:hover:bg-gray-800"
@@ -469,7 +472,7 @@ export default function MessageBubble({
             <input 
               value={editInstruction}
               onChange={e => setEditInstruction(e.target.value)}
-              placeholder="اكتب تعديلك هنا..."
+              placeholder={t('chatui.editPlaceholder')}
               onKeyDown={e => {
                 if (e.key === 'Enter' && editInstruction.trim()) {
                   e.preventDefault();
@@ -488,14 +491,14 @@ export default function MessageBubble({
               }} 
               className="bg-indigo-600 hover:bg-indigo-500 px-4 py-2 rounded-lg text-sm font-medium text-white transition active:scale-95 cursor-pointer shadow-sm"
             >
-              تطبيق
+              {t('chatui.apply')}
             </button>
             <button 
               type="button"
               onClick={() => setEditingMessageId(null)} 
               className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white px-3 py-2 text-sm transition cursor-pointer"
             >
-              إلغاء
+              {t('common.cancel')}
             </button>
           </div>
         )}

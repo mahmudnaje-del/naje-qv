@@ -205,6 +205,57 @@ html:not(.dark) .naje-chroma :is(.bg-white\/\[0\.04\], .bg-white\/5, .bg-white\/
   color: #f3ead8;
 }
 
+.naje-cv-studio .cv-desk {
+  background:
+    radial-gradient(880px 220px at 50% 0%, rgba(196, 163, 90, 0.16), transparent 58%),
+    linear-gradient(180deg, #1a2436 0%, #0e1626 100%);
+  border: 1px solid rgba(196, 163, 90, 0.22);
+  box-shadow: inset 0 1px 0 rgba(243, 234, 216, 0.06);
+}
+
+.naje-cv-studio .cv-spine {
+  width: 2px;
+  background: linear-gradient(180deg, #e8c36a 0%, rgba(196, 163, 90, 0.15) 100%);
+}
+
+.naje-cv-studio .cv-paper-well {
+  background:
+    linear-gradient(180deg, rgba(255, 250, 240, 0.04), transparent 28%),
+    #0c1422;
+}
+
+/* NAJE Motion — control room. Ice signal + tally amber. Not Ad copper, not CV gold. */
+.naje-motion-studio {
+  color-scheme: dark;
+  --naje-p: #8ec8ff;
+  --naje-s: #ffb020;
+  --naje-on-accent: #071018;
+  --naje-accent: #8ec8ff;
+  --naje-accent-2: #ffb020;
+  --naje-canvas: #07090f;
+  --naje-elevated: #10151f;
+  --naje-card: #0e131c;
+  --naje-ink: #e7eef8;
+  --naje-muted: #93a0b5;
+  --naje-line: rgba(142, 200, 255, 0.22);
+  --naje-accent-soft: rgba(142, 200, 255, 0.12);
+  --naje-glow: rgba(142, 200, 255, 0.24);
+  --color-white: #ffffff;
+  background-color: #07090f;
+  color: #e7eef8;
+}
+
+.naje-motion-studio .motion-letterbox {
+  box-shadow:
+    inset 0 0 0 1px rgba(142, 200, 255, 0.35),
+    0 24px 60px -36px rgba(0, 0, 0, 0.8);
+}
+
+.naje-motion-studio .motion-tally {
+  background: #ff3b30;
+  box-shadow: 0 0 10px rgba(255, 59, 48, 0.85);
+}
+
 /* Creatively keeps its original dark studio — independent of app theme */
 .naje-creative-studio {
   color-scheme: dark;

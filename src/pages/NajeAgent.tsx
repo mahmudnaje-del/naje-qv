@@ -69,34 +69,34 @@ const INITIAL_GREETING: AgentChatMessage = {
   timestamp: Date.now()
 };
 
-const SUGGESTED_PROMPTS = [
-  'ابنِ لي هوية بصرية كاملة مع إعلانات سوشيال ميديا وفيديو ترويجي لمتجري',
-  'حلل مصادر مشروعي وأنشئ لوحة الألوان والشعار مع حملة إعلانات إطلاق',
-  'اصنع إعلان فيديو سينمائي مع سيناريو وتعليق صوتي فخم لمنتجي',
-  'بناء موقع تجارة إلكترونية كامل مع هوية البراند وتصاميم الإعلانات'
+const SUGGESTED_PROMPT_KEYS = [
+  'tools.agent.suggest1',
+  'tools.agent.suggest2',
+  'tools.agent.suggest3',
+  'tools.agent.suggest4',
 ];
 
 const getAgentMeta = (toolName: string) => {
   switch (toolName) {
     case 'brand_identity':
     case 'graphic_designer':
-      return { name: 'وكيل الهوية', icon: Palette };
+      return { nameKey: 'tools.agent.agentBrand', icon: Palette };
     case 'marketing_copywriter':
     case 'ad_creator':
-      return { name: 'وكيل الإعلانات', icon: Megaphone };
+      return { nameKey: 'tools.agent.agentAds', icon: Megaphone };
     case 'video_director':
     case 'voiceover_producer':
-      return { name: 'وكيل الفيديو', icon: Film };
+      return { nameKey: 'tools.agent.agentVideo', icon: Film };
     case 'fullstack_engineer':
-      return { name: 'وكيل الأنظمة', icon: Code2 };
+      return { nameKey: 'tools.agent.agentSystems', icon: Code2 };
     default:
-      return { name: 'وكيل ناجي', icon: Bot };
+      return { nameKey: 'tools.agent.agentNaje', icon: Bot };
   }
 };
 
 export default function NajeAgent() {
   const { user, sidebarOpen, setSidebarOpen } = useAppStore();
-  const { isRtl, t } = useI18n();
+  const { isRtl, t, formatDate } = useI18n();
   const [searchParams, setSearchParams] = useSearchParams();
   const chatId = searchParams.get('chatId');
 
@@ -184,7 +184,7 @@ export default function NajeAgent() {
             await setDoc(newRef, {
               ownerId: user.uid,
               type: 'agent',
-              title: 'مساحة وكيل ناجي',
+              title: t('tools.agent.sessionTitle'),
               createdAt: Date.now(),
               sources: []
             });
@@ -229,7 +229,7 @@ export default function NajeAgent() {
     setSourceTitle('');
     setSourceContent('');
     setSourceUrl('');
-    toast.success('تمت إضافة المصدر بنجاح! سيتم اعتماده بواسطة الوكلاء.');
+    toast.success(t('tools.agent.sourceAdded'));
   };
 
   // Handle file upload to sources
@@ -247,7 +247,7 @@ export default function NajeAgent() {
           title: file.name,
           type: 'image',
           previewUrl: result,
-          content: `صورة مرجعية: ${file.name} (حجم: ${(file.size / 1024).toFixed(1)} KB)`,
+          content: t('tools.agent.refImage', { name: file.name, size: (file.size / 1024).toFixed(1) }),
           size: file.size
         });
         setSourceFileUploading(false);
@@ -273,7 +273,7 @@ export default function NajeAgent() {
   const handleDeleteSource = (id: string) => {
     const updated = sources.filter(s => s.id !== id);
     updateSources(updated);
-    toast.success('تم حذف المصدر.');
+    toast.success(t('tools.agent.sourceDeleted'));
   };
 
   // Subscribe to user missions
@@ -325,7 +325,7 @@ export default function NajeAgent() {
     // Update chat title in recent chats
     if (chatId) {
       updateDoc(doc(db, 'chats', chatId), {
-        title: text.length > 28 ? `وكيل ناجي: ${text.slice(0, 28)}...` : `وكيل ناجي: ${text}`,
+        title: text.length > 28 ? `${t('tools.agent.chatTitlePrefix')}: ${text.slice(0, 28)}...` : `${t('tools.agent.chatTitlePrefix')}: ${text}`,
         updatedAt: Date.now()
       }).catch(() => {});
     }
@@ -333,7 +333,7 @@ export default function NajeAgent() {
     try {
       const token = await auth.currentUser?.getIdToken();
       if (!token) {
-        toast.error('يجب تسجيل الدخول لاستخدام وكيل ناجي.');
+        toast.error(t('tools.agent.loginRequired'));
         setIsSendingChat(false);
         return;
       }
@@ -343,7 +343,7 @@ export default function NajeAgent() {
         sources: sources.map(s => ({
           title: s.title,
           type: s.type,
-          snippet: s.content ? s.content.slice(0, 1000) : (s.url || 'مرفق وسائط/ملف')
+          snippet: s.content ? s.content.slice(0, 1000) : (s.url || t('tools.agent.mediaSnippet'))
         })),
         sourceCount: sources.length,
         orchestrationSystem: 'Multi-Agent Orchestra (Brand Identity Agent, Advertising & Campaign Agent, Video & Script Director, Graphic Designer, Fullstack Engineer)',
@@ -366,7 +366,7 @@ export default function NajeAgent() {
       });
 
       if (!res.ok) {
-        throw new Error('تعذر التواصل مع خادم وكيل ناجي حالياً.');
+        throw new Error(t('tools.agent.serverDown'));
       }
 
       const turnData = await res.json();
@@ -407,12 +407,12 @@ export default function NajeAgent() {
   // User accepts proposal -> Create mission in Firestore
   const handleApproveProposal = async (proposal: AgentPlanProposal) => {
     if (!user?.uid) {
-      toast.error('يجب تسجيل الدخول أولاً.');
+      toast.error(t('tools.agent.loginFirst'));
       return;
     }
 
     if ((user.balance ?? 0) < proposal.totalEstimatedPoints) {
-      toast.error(`رصيدك الحالي (${user.balance ?? 0}) لا يكفي لتشغيل هذه المهمة (${proposal.totalEstimatedPoints} نقطة).`);
+      toast.error(t('tools.agent.insufficientBalance', { balance: user.balance ?? 0, cost: proposal.totalEstimatedPoints }));
       return;
     }
 
@@ -460,10 +460,10 @@ export default function NajeAgent() {
         });
       }
 
-      toast.success('تم إنشاء خطة العمل بنجاح! انقر على "بدء التنفيذ المستقل" لبدء توليد المخرجات.');
+      toast.success(t('tools.agent.planSaved'));
     } catch (err: any) {
       console.error('Error approving proposal:', err);
-      toast.error('تعذر حفظ الخطة، حاول ثانية.');
+      toast.error(t('tools.agent.planSaveFail'));
     }
   };
 
@@ -502,7 +502,7 @@ export default function NajeAgent() {
 
             // Streaming handler for code projects
             if (tc.name === 'fullstack_engineer') {
-              setExecutingStatusMessage(`جاري نسج وبناء المشروع البرمجي مع وكيل الأنظمة...`);
+              setExecutingStatusMessage(t('tools.agent.weaving'));
               const streamRes = await fetch('/api/agent/execute-tool-stream', {
                 method: 'POST',
                 headers: {
@@ -518,7 +518,7 @@ export default function NajeAgent() {
 
               if (!streamRes.ok) {
                 const errData = await streamRes.json().catch(() => ({}));
-                throw new Error(errData.error || 'فشل تشغيل مهندس الأنظمة المستقل.');
+                throw new Error(errData.error || t('tools.agent.engineerFail'));
               }
 
               const reader = streamRes.body?.getReader();
@@ -553,7 +553,7 @@ export default function NajeAgent() {
                           }
                           setLiveProgress(null);
                         } else if (event.type === 'error') {
-                          throw new Error(event.error || 'حدث خطأ أثناء نسج الملفات.');
+                          throw new Error(event.error || t('tools.agent.weaveError'));
                         }
                       } catch (parseErr) {
                         console.warn('SSE Parse error:', parseErr);
@@ -563,7 +563,7 @@ export default function NajeAgent() {
                 }
               }
             } else {
-              setExecutingStatusMessage(`جاري تنفيذ: ${tc.title}...`);
+              setExecutingStatusMessage(t('tools.agent.executingTool', { title: tc.title }));
               const execRes = await fetch('/api/agent/execute-tool', {
                 method: 'POST',
                 headers: {
@@ -579,7 +579,7 @@ export default function NajeAgent() {
 
               if (!execRes.ok) {
                 const errData = await execRes.json().catch(() => ({}));
-                throw new Error(errData.error || `فشل تشغيل أداة ${tc.title}`);
+                throw new Error(errData.error || t('tools.agent.toolFailed', { title: tc.title }));
               }
 
               const execData = await execRes.json();
@@ -618,11 +618,11 @@ export default function NajeAgent() {
         updatedAt: Date.now()
       });
 
-      toast.success('اكتملت المهمة بنجاح! تم بناء الهوية والإعلانات والمخرجات، يمكنك معاينتها في تبويب "النتائج".');
+      toast.success(t('tools.agent.missionDone'));
       setTab('results');
     } catch (err: any) {
       console.error('Execution error:', err);
-      toast.error(err.message || 'توقف التنفيذ بسبب خطأ.');
+      toast.error(err.message || t('tools.agent.execStopped'));
       await updateDoc(missionRef, { status: 'failed', updatedAt: Date.now() });
     } finally {
       setIsExecuting(false);
@@ -647,10 +647,10 @@ export default function NajeAgent() {
 
       const content = await zip.generateAsync({ type: "blob" });
       saveAs(content, artifact.downloadFilename || `${artifact.title || 'project'}.zip`);
-      toast.success('تم تصدير وتحميل حزمة المشروع البرمجي ZIP بنجاح!');
+      toast.success(t('tools.agent.zipOk'));
     } catch (err) {
       console.error('ZIP download error:', err);
-      toast.error('تعذر تصدير المشروع كملف مضغوط.');
+      toast.error(t('tools.agent.zipFail'));
     }
   };
 
@@ -675,8 +675,8 @@ export default function NajeAgent() {
     : [];
 
   const activeAgentNames = currentRunningTools.length > 0
-    ? Array.from(new Set(currentRunningTools.map(tc => getAgentMeta(tc.name).name)))
-    : (isAnyAgentWorking ? ['وكيل ناجي'] : []);
+    ? Array.from(new Set(currentRunningTools.map(tc => t(getAgentMeta(tc.name).nameKey))))
+    : (isAnyAgentWorking ? [t('tools.agent.agentNaje')] : []);
 
   const activeAgentsCount = Math.max(activeAgentNames.length, 1);
   const ActiveAgentIcon = currentRunningTools.length > 0 
@@ -715,7 +715,7 @@ export default function NajeAgent() {
           if (file) {
             const isImg = file.type.startsWith('image/');
             handleFileUpload(e, isImg);
-            setInputText(prev => prev ? `${prev}\n(تم إرفاق المصدر: ${file.name})` : `اعتمد على المصدر المرفوع (${file.name}) لبناء الهوية والحملة الإعلانية.`);
+            setInputText(prev => prev ? `${prev}\n${t('tools.agent.attachedNote', { name: file.name })}` : t('tools.agent.attachedPrompt', { name: file.name }));
           }
         }} 
         className="hidden" 
@@ -746,11 +746,10 @@ export default function NajeAgent() {
                 Naje Agent
               </h1>
               <span className="hidden sm:inline-flex text-[9px] font-bold px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 shrink-0">
-                وكلاء
-              </span>
+{t('tools.agent.badge')}              </span>
             </div>
             <p className="text-[10px] text-gray-500 dark:text-gray-400 truncate hidden md:block">
-              بناء الهوية البصرية وصياغة الإعلانات والمشاريع
+              {t('tools.agent.tagline')}
             </p>
           </div>
         </div>
@@ -836,7 +835,7 @@ export default function NajeAgent() {
                       ? 'bg-purple-600 text-white shadow-sm' 
                       : 'bg-gradient-to-tr from-purple-600 via-indigo-600 to-pink-600 text-white shadow-sm'
                   }`}>
-                    {msg.role === 'user' ? 'أنت' : <Bot className="w-4 h-4" />}
+                    {msg.role === 'user' ? t('tools.agent.you') : <Bot className="w-4 h-4" />}
                   </div>
 
                   {/* Bubble Content */}
@@ -847,7 +846,7 @@ export default function NajeAgent() {
                           ? 'bg-purple-600 text-white shadow-sm rounded-tr-sm'
                           : 'bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 shadow-sm text-gray-800 dark:text-gray-200 rounded-tl-sm'
                       }`}>
-                        {msg.content}
+                        {msg.id === 'msg_welcome' ? t('tools.agent.greeting') : msg.content}
                       </div>
                     )}
 
@@ -856,7 +855,7 @@ export default function NajeAgent() {
                       <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/60 text-xs sm:text-sm text-amber-900 dark:text-amber-200 shadow-sm space-y-3">
                         <div className="flex items-center gap-2 font-extrabold">
                           <HelpCircle className="w-4 h-4 text-amber-600 shrink-0" />
-                          <span>سؤال استيضاحي من الوكيل:</span>
+                          <span>{t('tools.agent.clarify')}</span>
                         </div>
                         <p className="leading-relaxed">{msg.question}</p>
                         {msg.suggestedQuickReplies && msg.suggestedQuickReplies.length > 0 && (
@@ -891,13 +890,13 @@ export default function NajeAgent() {
                             </p>
                           </div>
                           <span className="text-[11px] font-extrabold px-2.5 py-1 rounded-full bg-purple-600 text-white shadow-sm shrink-0">
-                            {msg.proposal.totalEstimatedPoints} نقطة
+                            {t('tools.agent.pointsBadge', { count: msg.proposal.totalEstimatedPoints })}
                           </span>
                         </div>
 
                         {/* Proposed Steps */}
                         <div className="space-y-2">
-                          <span className="text-[11px] font-bold text-gray-500 dark:text-gray-400">مراحل التنفيذ المقترحة:</span>
+                          <span className="text-[11px] font-bold text-gray-500 dark:text-gray-400">{t('tools.agent.proposedSteps')}</span>
                           {msg.proposal.steps.map((st, sIdx) => (
                             <div key={sIdx} className="p-3 bg-white/80 dark:bg-gray-900/80 rounded-xl border border-gray-200/60 dark:border-gray-800/60 text-xs">
                               <div className="font-bold text-gray-800 dark:text-gray-200">{st.title}</div>
@@ -913,7 +912,7 @@ export default function NajeAgent() {
                             className="px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-xl text-xs font-extrabold shadow-sm hover:shadow transition cursor-pointer flex items-center gap-2"
                           >
                             <Check className="w-4 h-4" />
-                            <span>اعتماد الخطة والبدء</span>
+                            <span>{t('tools.agent.approvePlan')}</span>
                           </button>
                         </div>
                       </div>
@@ -936,7 +935,7 @@ export default function NajeAgent() {
                         activeMission.status === 'executing' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 animate-pulse' :
                         'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300'
                       }`}>
-                        {activeMission.status === 'completed' ? 'مكتملة' : activeMission.status === 'executing' ? 'قيد المعالجة' : 'بانتظار الإطلاق'}
+                        {activeMission.status === 'completed' ? t('tools.agent.statusDone') : activeMission.status === 'executing' ? t('tools.agent.statusRunning') : t('tools.agent.statusWaiting')}
                       </span>
                     </div>
 
@@ -947,7 +946,7 @@ export default function NajeAgent() {
                         className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-extrabold shadow transition cursor-pointer flex items-center gap-1.5"
                       >
                         <Play className="w-3.5 h-3.5" />
-                        <span>تشغيل المهام الآن</span>
+                        <span>{t('tools.agent.runNow')}</span>
                       </button>
                     )}
 
@@ -957,7 +956,7 @@ export default function NajeAgent() {
                         className="px-3 py-1.5 bg-purple-600 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5"
                       >
                         <Sparkles className="w-3.5 h-3.5" />
-                        <span>معاينة النتائج</span>
+                        <span>{t('tools.agent.viewResults')}</span>
                       </button>
                     )}
                   </div>
@@ -972,7 +971,7 @@ export default function NajeAgent() {
                            <Circle className="w-4 h-4 text-gray-400" />}
                           <span className="font-bold text-gray-800 dark:text-gray-200">{st.title}</span>
                         </div>
-                        <span className="text-[10px] text-gray-500">{st.toolCalls?.length || 0} أدوات</span>
+                        <span className="text-[10px] text-gray-500">{t('tools.agent.toolsCount', { count: st.toolCalls?.length || 0 })}</span>
                       </div>
                     ))}
                   </div>
@@ -980,7 +979,7 @@ export default function NajeAgent() {
                   {isExecuting && (
                     <div className="p-3 bg-purple-50 dark:bg-purple-950/40 rounded-xl border border-purple-200 dark:border-purple-800 text-xs font-semibold text-purple-700 dark:text-purple-300 flex items-center gap-2">
                       <NajeSpinner className="w-4 h-4" />
-                      <span>{executingStatusMessage || 'وكلاء ناجي يعملون على معالجة الخطوات بالتتابع...'}</span>
+                      <span>{executingStatusMessage || t('tools.agent.agentsFallback')}</span>
                     </div>
                   )}
                 </div>
@@ -992,7 +991,7 @@ export default function NajeAgent() {
                     <NajeSpinner className="w-4 h-4" />
                   </div>
                   <div className="p-3.5 rounded-2xl bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 text-xs text-gray-500 dark:text-gray-400 flex items-center gap-2">
-                    <span>وكيل ناجي يقرأ مصادرك ويهندس الاستجابة...</span>
+                    <span>{t('tools.agent.reading')}</span>
                   </div>
                 </div>
               )}
@@ -1003,13 +1002,13 @@ export default function NajeAgent() {
             {/* Quick Suggested Prompts */}
             {messages.length <= 2 && (
               <div className="px-4 py-2 flex flex-wrap gap-1.5 border-t border-gray-100 dark:border-gray-800/60 bg-white/20 dark:bg-gray-900/20">
-                {SUGGESTED_PROMPTS.map((prompt, pIdx) => (
+                {SUGGESTED_PROMPT_KEYS.map((key) => (
                   <button
-                    key={pIdx}
-                    onClick={() => handleSendMessage(prompt)}
+                    key={key}
+                    onClick={() => handleSendMessage(t(key))}
                     className="text-[11px] px-3 py-1.5 rounded-full bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:border-purple-400 hover:text-purple-600 transition cursor-pointer"
                   >
-                    {prompt}
+                    {t(key)}
                   </button>
                 ))}
               </div>
@@ -1030,7 +1029,7 @@ export default function NajeAgent() {
                         </span>
                       </div>
                       <span>
-                        {activeAgentsCount === 1 ? '1 وكيل شغال' : `${activeAgentsCount} وكلاء شغالين`}
+                        {activeAgentsCount === 1 ? t('tools.agent.oneWorking') : t('tools.agent.manyWorking', { count: activeAgentsCount })}
                       </span>
                       {activeAgentNames.length > 0 && (
                         <span className="text-[11px] font-semibold text-purple-600 dark:text-purple-400 bg-white/80 dark:bg-gray-900/60 px-2 py-0.5 rounded-lg border border-purple-200/60 dark:border-purple-800/40">
@@ -1055,7 +1054,7 @@ export default function NajeAgent() {
                     type="button"
                     onClick={() => chatAttachmentInputRef.current?.click()}
                     className="p-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition cursor-pointer shrink-0"
-                    title="إرفاق ملف أو صورة لمصادر المشروع"
+                    title={t('tools.agent.attachTitle')}
                   >
                     <Paperclip className="w-4 h-4" />
                   </button>
@@ -1064,7 +1063,7 @@ export default function NajeAgent() {
                     type="text"
                     value={inputText}
                     onChange={(e) => setInputText(e.target.value)}
-                    placeholder={sources.length > 0 ? "صف فكرتك وسيعتمد الوكلاء على مصادرك المرفوعة..." : "صف مشروعك لبناء الهوية والإعلانات (أو ارفع مصادرك أولاً)..."}
+                    placeholder={sources.length > 0 ? t('tools.agent.placeholderWithSources') : t('tools.agent.placeholderEmpty')}
                     disabled={isSendingChat}
                     className="flex-1 bg-gray-50 dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl px-4 py-2.5 text-xs sm:text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500/30"
                   />
@@ -1075,7 +1074,7 @@ export default function NajeAgent() {
                     className="px-4 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 disabled:opacity-50 text-white rounded-xl text-xs sm:text-sm font-bold shadow-sm transition cursor-pointer flex items-center gap-1.5 shrink-0"
                   >
                     {isSendingChat ? <NajeSpinner className="w-4 h-4" /> : <Send className="w-4 h-4" />}
-                    <span className="hidden sm:inline">إرسال</span>
+                    <span className="hidden sm:inline">{t('tools.agent.send')}</span>
                   </button>
                 </form>
               </div>
@@ -1093,23 +1092,23 @@ export default function NajeAgent() {
               <div>
                 <h2 className="text-base font-extrabold text-gray-900 dark:text-white flex items-center gap-2">
                   <Sparkles className="w-5 h-5 text-purple-600" />
-                  <span>معرض النتائج والمخرجات</span>
+                  <span>{t('tools.agent.resultsTitle')}</span>
                 </h2>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                  كافة الشعارات، الإعلانات، الفيديوهات، الأكواد، والكتيبات التي صنعها نظام الوكلاء
+                  {t('tools.agent.resultsDesc')}
                 </p>
               </div>
 
               {/* Filter Tabs */}
               <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
                 {[
-                  { id: 'all', label: 'الكل' },
-                  { id: 'brand', label: 'الهوية والشعار' },
-                  { id: 'ads', label: 'الإعلانات' },
-                  { id: 'video', label: 'فيديو' },
-                  { id: 'audio', label: 'صوتيات' },
-                  { id: 'code', label: 'أنظمة وأكواد' },
-                  { id: 'docs', label: 'كتيبات' }
+                  { id: 'all', label: t('common.all') },
+                  { id: 'brand', label: t('tools.agent.filterBrand') },
+                  { id: 'ads', label: t('tools.agent.filterAds') },
+                  { id: 'video', label: t('tools.agent.filterVideo') },
+                  { id: 'audio', label: t('tools.agent.filterAudio') },
+                  { id: 'code', label: t('tools.agent.filterCode') },
+                  { id: 'docs', label: t('tools.agent.filterDocs') }
                 ].map(f => (
                   <button
                     key={f.id}
@@ -1132,17 +1131,17 @@ export default function NajeAgent() {
                 <div className="h-full flex flex-col items-center justify-center text-center p-8 bg-white/40 dark:bg-gray-900/30 rounded-3xl border border-dashed border-gray-200 dark:border-gray-800">
                   <Layers className="w-12 h-12 text-gray-300 dark:text-gray-600 mb-3" />
                   <h3 className="text-sm font-extrabold text-gray-800 dark:text-gray-200">
-                    لم يتم توليد نتائج بعد
+                    {t('tools.agent.noResults')}
                   </h3>
                   <p className="text-xs text-gray-500 dark:text-gray-400 max-w-md mt-1 mb-4 leading-relaxed">
-                    ابدأ محادثة في تبويب "الدردشة" واطلب من الوكلاء بناء الهوية البصرية أو صياغة الإعلانات، وستظهر كافة النتائج والمخرجات فور اكتمالها هنا.
+                    {t('tools.agent.noResultsDesc')}
                   </p>
                   <button
                     onClick={() => setTab('chat')}
                     className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold shadow-sm transition cursor-pointer flex items-center gap-1.5"
                   >
                     <MessageSquare className="w-4 h-4" />
-                    <span>بدء مهمة في الدردشة</span>
+                    <span>{t('tools.agent.startInChat')}</span>
                   </button>
                 </div>
               ) : (
@@ -1178,12 +1177,12 @@ export default function NajeAgent() {
                                 artifacts: updated,
                                 updatedAt: Date.now()
                               });
-                              toast.success((art as any).isFavorite ? 'تم إزالة التثبيت' : 'تم تثبيت المخرج وحمايته ⭐');
+                              toast.success((art as any).isFavorite ? t('tools.agent.unpinned') : t('tools.agent.pinned'));
                             }}
                             className={`p-1 rounded-lg transition cursor-pointer ${
                               (art as any).isFavorite ? 'text-amber-500' : 'text-gray-400 opacity-60 group-hover:opacity-100'
                             }`}
-                            title="تثبيت"
+                            title={t('tools.agent.pin')}
                           >
                             <Star className={`w-4 h-4 ${(art as any).isFavorite ? 'fill-amber-500' : ''}`} />
                           </button>
@@ -1209,16 +1208,16 @@ export default function NajeAgent() {
                                 <div key={k} className="h-6 flex-1 rounded-md" style={{ backgroundColor: hex }} title={`${k}: ${hex}`} />
                               ))}
                             </div>
-                            <p className="text-[10px] text-gray-500 truncate">{art.data.name || 'لوحة الألوان المعتمدة'}</p>
+                            <p className="text-[10px] text-gray-500 truncate">{art.data.name || t('tools.agent.paletteFallback')}</p>
                           </div>
                         )}
 
                         {art.type === 'code_project' && (
                           <div className="p-3 bg-gray-50 dark:bg-gray-800/60 rounded-xl space-y-1">
                             <span className="text-[11px] font-mono text-purple-600 dark:text-purple-400 font-bold block">
-                              {art.files?.length || 1} ملفات برمجية منسوجة
+                              {t('tools.agent.codeFiles', { count: art.files?.length || 1 })}
                             </span>
-                            <span className="text-[10px] text-gray-500 block">جاهز للمعاينة الحية والتحميل كـ ZIP</span>
+                            <span className="text-[10px] text-gray-500 block">{t('tools.agent.codeReady')}</span>
                           </div>
                         )}
                       </div>
@@ -1226,20 +1225,20 @@ export default function NajeAgent() {
                       {/* Action buttons */}
                       <div className="pt-3 border-t border-gray-100 dark:border-gray-800/60 flex items-center justify-between text-xs mt-3">
                         <span className="text-[10px] text-gray-400 font-mono">
-                          {new Date(art.createdAt).toLocaleDateString('ar-EG')}
+                          {formatDate(art.createdAt)}
                         </span>
                         <div className="flex items-center gap-2">
                           {art.type === 'code_project' && (
                             <button
                               onClick={(e) => { e.stopPropagation(); handleDownloadZip(art); }}
                               className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg text-gray-600 dark:text-gray-300"
-                              title="تحميل ZIP"
+                              title={t('tools.agent.downloadZip')}
                             >
                               <Archive className="w-3.5 h-3.5" />
                             </button>
                           )}
                           <span className="text-purple-600 font-bold text-[11px] flex items-center gap-1">
-                            <span>معاينة</span>
+                            <span>{t('common.preview')}</span>
                             <ChevronLeft className="w-3.5 h-3.5" />
                           </span>
                         </div>
@@ -1263,11 +1262,11 @@ export default function NajeAgent() {
                 <div className="flex items-center gap-2">
                   <BookOpen className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
                   <h2 className="text-base font-extrabold text-gray-900 dark:text-white">
-                    المصادر المرجعية للمشروع
+                    {t('tools.agent.sourcesTitle')}
                   </h2>
                 </div>
                 <p className="text-xs text-gray-600 dark:text-gray-300 mt-1 max-w-2xl leading-relaxed">
-                  أي مصدر ترفعه هنا (شعارك الحالي، صور منتجاتك، ملفات ومستندات، روابط، أو موجز مكتوب) يقرأه وكلاء ناجي تلقائياً: يبني وكيل الهوية البصرية الشعار والألوان بناءً عليه، ويصنع وكيل الإعلانات حملتك التسويقية المتناغمة معه.
+                  {t('tools.agent.sourcesDesc')}
                 </p>
               </div>
 
@@ -1279,7 +1278,7 @@ export default function NajeAgent() {
                   className="px-3 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 hover:border-emerald-400 rounded-xl text-xs font-bold text-gray-800 dark:text-white transition cursor-pointer flex items-center gap-1.5 shadow-sm"
                 >
                   <FileText className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>رفع مستند</span>
+                  <span>{t('tools.agent.uploadDoc')}</span>
                 </button>
 
                 <button
@@ -1288,7 +1287,7 @@ export default function NajeAgent() {
                   className="px-3 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 hover:border-purple-400 rounded-xl text-xs font-bold text-gray-800 dark:text-white transition cursor-pointer flex items-center gap-1.5 shadow-sm"
                 >
                   <ImageIcon className="w-3.5 h-3.5 text-purple-600" />
-                  <span>رفع صورة أو شعار</span>
+                  <span>{t('tools.agent.uploadLogo')}</span>
                 </button>
 
                 <button
@@ -1296,7 +1295,7 @@ export default function NajeAgent() {
                   className="px-3 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 hover:border-sky-400 rounded-xl text-xs font-bold text-gray-800 dark:text-white transition cursor-pointer flex items-center gap-1.5 shadow-sm"
                 >
                   <Link2 className="w-3.5 h-3.5 text-sky-600" />
-                  <span>إضافة رابط</span>
+                  <span>{t('tools.agent.addLink')}</span>
                 </button>
 
                 <button
@@ -1304,7 +1303,7 @@ export default function NajeAgent() {
                   className="px-3 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 hover:border-amber-400 rounded-xl text-xs font-bold text-gray-800 dark:text-white transition cursor-pointer flex items-center gap-1.5 shadow-sm"
                 >
                   <Plus className="w-3.5 h-3.5 text-amber-600" />
-                  <span>كتابة موجز</span>
+                  <span>{t('tools.agent.writeBrief')}</span>
                 </button>
               </div>
             </div>
@@ -1314,7 +1313,7 @@ export default function NajeAgent() {
               <div className="p-4 rounded-2xl bg-white dark:bg-gray-900 border border-purple-300 dark:border-purple-800 shadow-md space-y-3">
                 <div className="flex items-center justify-between">
                   <h3 className="text-xs font-extrabold text-gray-900 dark:text-white">
-                    {addingSourceType === 'link' ? 'إضافة رابط أو موقع مرجعي' : 'كتابة موجز نصي لعلامتك التجارية'}
+                    {addingSourceType === 'link' ? t('tools.agent.linkFormTitle') : t('tools.agent.briefFormTitle')}
                   </h3>
                   <button onClick={() => setAddingSourceType(null)} className="text-gray-400 hover:text-gray-600">
                     <X className="w-4 h-4" />
@@ -1323,7 +1322,7 @@ export default function NajeAgent() {
 
                 <input
                   type="text"
-                  placeholder="عنوان المصدر (مثال: موقع المنافس، أو موجز الرؤية)..."
+                  placeholder={t('tools.agent.sourceTitlePh')}
                   value={sourceTitle}
                   onChange={(e) => setSourceTitle(e.target.value)}
                   className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2 text-xs text-gray-900 dark:text-white"
@@ -1340,7 +1339,7 @@ export default function NajeAgent() {
                 ) : (
                   <textarea
                     rows={3}
-                    placeholder="اكتب تفاصيل هوية مشروعك، الألوان المفضلة، الجمهور المستهدف، أو نص الإعلان المرغوب..."
+                    placeholder={t('tools.agent.briefPh')}
                     value={sourceContent}
                     onChange={(e) => setSourceContent(e.target.value)}
                     className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3 text-xs text-gray-900 dark:text-white"
@@ -1352,12 +1351,12 @@ export default function NajeAgent() {
                     onClick={() => setAddingSourceType(null)}
                     className="px-3 py-1.5 rounded-xl text-xs text-gray-500 hover:bg-gray-100"
                   >
-                    إلغاء
+                    {t('common.cancel')}
                   </button>
                   <button
                     onClick={() => {
                       if (!sourceTitle.trim()) {
-                        toast.error('يرجى كتابة عنوان للمصدر');
+                        toast.error(t('tools.agent.needTitle'));
                         return;
                       }
                       handleAddSource({
@@ -1369,7 +1368,7 @@ export default function NajeAgent() {
                     }}
                     className="px-4 py-1.5 bg-purple-600 text-white rounded-xl text-xs font-bold"
                   >
-                    حفظ المصدر
+                    {t('tools.agent.saveSource')}
                   </button>
                 </div>
               </div>
@@ -1381,10 +1380,10 @@ export default function NajeAgent() {
                 <div className="h-full flex flex-col items-center justify-center text-center p-8 bg-white/40 dark:bg-gray-900/30 rounded-3xl border border-dashed border-gray-200 dark:border-gray-800">
                   <BookOpen className="w-12 h-12 text-gray-300 dark:text-gray-600 mb-3" />
                   <h3 className="text-sm font-extrabold text-gray-800 dark:text-gray-200">
-                    لا توجد مصادر مرفوعة بعد
+                    {t('tools.agent.noSources')}
                   </h3>
                   <p className="text-xs text-gray-500 dark:text-gray-400 max-w-md mt-1 mb-4 leading-relaxed">
-                    قم برفع ملفات PDF، صور الشعار أو المنتجات، أو روابط المواقع التي ترغب أن يستلهم منها وكيل الهوية البصرية ووكيل الإعلانات.
+                    {t('tools.agent.noSourcesDesc')}
                   </p>
                   <div className="flex items-center gap-2">
                     <button
@@ -1392,7 +1391,7 @@ export default function NajeAgent() {
                       className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm"
                     >
                       <Upload className="w-4 h-4" />
-                      <span>رفع أول مصدر الآن</span>
+                      <span>{t('tools.agent.uploadFirst')}</span>
                     </button>
                   </div>
                 </div>
@@ -1417,9 +1416,9 @@ export default function NajeAgent() {
                                 {src.title}
                               </h4>
                               <span className="text-[10px] text-gray-400">
-                                {src.type === 'file' ? 'مستند مرجعي' :
-                                 src.type === 'image' ? 'صورة / شعار' :
-                                 src.type === 'link' ? 'رابط خارجي' : 'موجز نصي'}
+                                {src.type === 'file' ? t('tools.agent.typeFile') :
+                                 src.type === 'image' ? t('tools.agent.typeImage') :
+                                 src.type === 'link' ? t('tools.agent.typeLink') : t('tools.agent.typeText')}
                               </span>
                             </div>
                           </div>
@@ -1427,7 +1426,7 @@ export default function NajeAgent() {
                           <button
                             onClick={() => handleDeleteSource(src.id)}
                             className="p-1.5 text-gray-400 hover:text-red-600 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/30 transition cursor-pointer"
-                            title="حذف المصدر"
+                            title={t('tools.agent.deleteSource')}
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
@@ -1461,8 +1460,8 @@ export default function NajeAgent() {
                       </div>
 
                       <div className="pt-3 mt-2 border-t border-gray-100 dark:border-gray-800/60 flex items-center justify-between text-[10px] text-gray-400">
-                        <span>{new Date(src.addedAt).toLocaleDateString('ar-EG')}</span>
-                        <span className="text-emerald-600 font-bold">معتمد لدى الوكلاء ✓</span>
+                        <span>{formatDate(src.addedAt)}</span>
+                        <span className="text-emerald-600 font-bold">{t('tools.agent.trusted')}</span>
                       </div>
                     </div>
                   ))}
@@ -1473,19 +1472,19 @@ export default function NajeAgent() {
             {/* CTA bar to start chat with these sources */}
             {sources.length > 0 && (
               <div className="p-3.5 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white flex flex-col sm:flex-row items-center justify-between gap-3 shadow-md">
-                <div className="text-center sm:text-right">
-                  <span className="text-xs font-extrabold block">جاهز للبدء؟ تم ربط {sources.length} مصادر</span>
-                  <span className="text-[11px] text-purple-100 opacity-90">سيعتمد وكيل الهوية ووكيل الإعلانات على هذه المصادر مباشرة.</span>
+                <div className="text-center sm:text-start">
+                  <span className="text-xs font-extrabold block">{t('tools.agent.readyCount', { count: sources.length })}</span>
+                  <span className="text-[11px] text-purple-100 opacity-90">{t('tools.agent.readyHint')}</span>
                 </div>
                 <button
                   onClick={() => {
                     setTab('chat');
-                    handleSendMessage(`اعتمد على مصادر المشروع المرفوعة (${sources.map(s => s.title).join('، ')})، وابدأ نظام الوكلاء لبناء الهوية البصرية الكاملة وصياغة الإعلانات وسيناريو الحملة التسويقية.`);
+                    handleSendMessage(t('tools.agent.launchFromSources', { titles: sources.map(s => s.title).join(isRtl ? '، ' : ', ') }));
                   }}
                   className="px-4 py-2 bg-white text-purple-700 hover:bg-purple-50 rounded-xl text-xs font-extrabold shadow transition cursor-pointer flex items-center gap-1.5 shrink-0"
                 >
                   <Sparkles className="w-3.5 h-3.5 text-purple-600" />
-                  <span>بدء بناء الهوية والحملة الإعلانية من المصادر</span>
+                  <span>{t('tools.agent.launchBtn')}</span>
                 </button>
               </div>
             )}
@@ -1497,7 +1496,7 @@ export default function NajeAgent() {
       {/* 3. Full Artifact Preview Modal (Code, Palette, Video, Audio) */}
       {/* ========================================================= */}
       {selectedArtifactPreview && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6" dir="rtl">
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6" dir={isRtl ? 'rtl' : 'ltr'}>
           <div className="bg-white dark:bg-gray-900 rounded-3xl border border-gray-200 dark:border-gray-800 w-full max-w-5xl h-[90vh] flex flex-col overflow-hidden shadow-2xl">
             {/* Modal Header */}
             <div className="p-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
@@ -1514,7 +1513,7 @@ export default function NajeAgent() {
                     className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition"
                   >
                     <Download className="w-3.5 h-3.5" />
-                    <span>تحميل ZIP</span>
+                    <span>{t('tools.agent.downloadZip')}</span>
                   </button>
                 )}
                 <button
@@ -1535,13 +1534,13 @@ export default function NajeAgent() {
                       onClick={() => setSelectedCodeTab('preview')}
                       className={`px-3 py-1.5 rounded-lg text-xs font-bold ${selectedCodeTab === 'preview' ? 'bg-purple-600 text-white' : 'text-gray-500'}`}
                     >
-                      معاينة حية
+                      {t('tools.agent.livePreview')}
                     </button>
                     <button
                       onClick={() => setSelectedCodeTab('code')}
                       className={`px-3 py-1.5 rounded-lg text-xs font-bold ${selectedCodeTab === 'code' ? 'bg-purple-600 text-white' : 'text-gray-500'}`}
                     >
-                      استعراض الأكواد ({selectedArtifactPreview.files?.length || 0})
+                      {t('tools.agent.browseCode', { count: selectedArtifactPreview.files?.length || 0 })}
                     </button>
                   </div>
 
@@ -1561,7 +1560,7 @@ export default function NajeAgent() {
                           <button
                             key={fIdx}
                             onClick={() => setActiveFileIndex(fIdx)}
-                            className={`w-full text-right px-2.5 py-1.5 rounded-lg text-xs font-mono truncate block ${activeFileIndex === fIdx ? 'bg-purple-600 text-white' : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300'}`}
+                            className={`w-full text-start px-2.5 py-1.5 rounded-lg text-xs font-mono truncate block ${activeFileIndex === fIdx ? 'bg-purple-600 text-white' : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300'}`}
                             dir="ltr"
                           >
                             {f.path}
@@ -1590,7 +1589,7 @@ export default function NajeAgent() {
 
               {selectedArtifactPreview.type === 'brand_palette' && (
                 <div className="p-6 space-y-6 max-w-2xl mx-auto">
-                  <h4 className="text-sm font-extrabold text-gray-900 dark:text-white">دليل ألوان الهوية البصرية المعتمدة</h4>
+                  <h4 className="text-sm font-extrabold text-gray-900 dark:text-white">{t('tools.agent.paletteGuide')}</h4>
                   {selectedArtifactPreview.data?.palette && (
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                       {Object.entries(selectedArtifactPreview.data.palette).map(([k, hex]: any) => (
@@ -1606,7 +1605,7 @@ export default function NajeAgent() {
                   )}
                   {selectedArtifactPreview.data?.typography && (
                     <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-xl text-xs space-y-2">
-                      <span className="font-bold text-gray-900 dark:text-white block">الخطوط والطباعة:</span>
+                      <span className="font-bold text-gray-900 dark:text-white block">{t('tools.agent.typography')}</span>
                       <p className="text-gray-600 dark:text-gray-300">{JSON.stringify(selectedArtifactPreview.data.typography)}</p>
                     </div>
                   )}
@@ -1624,7 +1623,7 @@ export default function NajeAgent() {
                 <div className="p-6 space-y-4 max-w-3xl mx-auto">
                   <h4 className="text-sm font-extrabold text-gray-900 dark:text-white">{selectedArtifactPreview.title}</h4>
                   <div className="p-6 bg-gray-50 dark:bg-gray-800 rounded-2xl whitespace-pre-wrap text-xs sm:text-sm leading-relaxed text-gray-800 dark:text-gray-200">
-                    {selectedArtifactPreview.data?.content || 'محتوى الوثيقة الاستراتيجية...'}
+                    {selectedArtifactPreview.data?.content || t('tools.agent.docFallback')}
                   </div>
                 </div>
               )}

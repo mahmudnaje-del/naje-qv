@@ -86,14 +86,14 @@ export default function Favorites() {
       }
       await exportSingleImagePDF(
         realUrl,
-        fav.message.content || 'Saved favorite',
+        fav.message.content || t('tools.favorites.savedFavorite'),
         fav.chat?.title || 'NAJE',
         fav.message.createdAt,
-        fav.chat?.title || 'General'
+        fav.chat?.title || t('tools.favorites.general')
       );
     } catch (err) {
       console.error(err);
-      toast.error('Error exporting PDF');
+      toast.error(t('tools.favorites.exportPdfError'));
     } finally {
       setExportingId(null);
     }

@@ -7,6 +7,7 @@ import {
   MonitorSmartphone, PenTool, Focus, Rocket, Fingerprint, ScanFace, Cuboid
 } from 'lucide-react';
 import NajeSpinner from '../NajeSpinner';
+import { useI18n } from '../../i18n';
 
 interface WelcomeScreenProps {
   lang: 'ar' | 'en';
@@ -17,7 +18,7 @@ interface WelcomeScreenProps {
 }
 
 export function WelcomeScreen({ lang = 'ar', onNavigate, onSecretClick, userName }: WelcomeScreenProps) {
-  const isAr = true;
+  const { t, isRtl } = useI18n();
   const { scrollYProgress } = useScroll();
   const [loadingId, setLoadingId] = useState<string | null>(null);
 
@@ -36,7 +37,7 @@ export function WelcomeScreen({ lang = 'ar', onNavigate, onSecretClick, userName
   ];
 
   return (
-    <div className="naje-creative-studio bg-[#030303] min-h-full text-white font-sans selection:bg-purple-500/30 overflow-x-hidden" dir={isAr ? 'rtl' : 'ltr'}>
+    <div className="naje-creative-studio bg-[#030303] min-h-full text-white font-sans selection:bg-purple-500/30 overflow-x-hidden" dir={isRtl ? 'rtl' : 'ltr'}>
       {/* Background Gradients */}
       <div className="fixed inset-0 pointer-events-none z-0">
         <div className="absolute top-[-10%] ltr:left-[-10%] rtl:right-[-10%] w-[40rem] h-[40rem] bg-purple-900/20 rounded-full blur-[120px] mix-blend-screen animate-pulse" style={{ animationDuration: '10s' }} />
@@ -56,21 +57,15 @@ export function WelcomeScreen({ lang = 'ar', onNavigate, onSecretClick, userName
           >
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs font-medium text-purple-400 mb-8 backdrop-blur-md">
               <Sparkles className="w-3.5 h-3.5" />
-              <span>{userName ? `أهلاً بك ${userName} — نُبدع لك في كل بكسل` : 'أهلاً بك — نُبدع لك في كل بكسل'}</span>
+              <span>{userName ? t('creative.welcome.helloUser', { name: userName }) : t('creative.welcome.hello')}</span>
             </div>
             
             <h1 className="text-4xl md:text-6xl lg:text-7xl font-black tracking-tighter leading-[1.2] mb-8 max-w-4xl mx-auto">
-              {isAr ? (
-                <>وكالتك الإبداعية المتكاملة <br/><span className="bg-clip-text text-transparent bg-gradient-to-r from-purple-400 via-indigo-400 to-teal-400">المدعومة بالذكاء الاصطناعي</span></>
-              ) : (
-                <>Your Complete Creative Agency <br/><span className="bg-clip-text text-transparent bg-gradient-to-r from-purple-400 via-indigo-400 to-teal-400">Powered by AI</span></>
-              )}
+              <>{t('creative.welcome.heroA')} <br/><span className="bg-clip-text text-transparent bg-gradient-to-r from-purple-400 via-indigo-400 to-teal-400">{t('creative.welcome.heroB')}</span></>
             </h1>
             
             <p className="text-lg md:text-xl text-slate-400 max-w-2xl leading-relaxed mb-16 font-light">
-              {isAr 
-                ? 'منصة تصميم احترافية تحول أفكارك إلى هويات بصرية، شعارات، وفيديوهات إعلانية مذهلة. أدوات متقدمة تفهم رؤيتك وتصيغها بأدق التفاصيل.' 
-                : 'A professional design platform that turns your ideas into stunning brand identities, logos, and video ads. Advanced tools that understand your vision and craft it to the finest details.'}
+              {t('creative.welcome.heroLead')}
             </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 w-full max-w-6xl">
@@ -99,21 +94,21 @@ export function WelcomeScreen({ lang = 'ar', onNavigate, onSecretClick, userName
                           <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-purple-500/20 border border-purple-500/40 text-purple-300 shadow-[0_0_12px_rgba(168,85,247,0.3)] animate-pulse">
                             <NajeSpinner className="w-3.5 h-3.5" />
                             <span className="text-[10px] md:text-xs font-bold tracking-wide">
-                              {isAr ? 'جاري التحميل...' : 'Loading...'}
+                              {t('creative.welcome.loading')}
                             </span>
                           </div>
                         ) : item.targetAr ? (
                           <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/5 border border-white/5 backdrop-blur-md ${item.textColor}`}>
                             <span className={`w-1.5 h-1.5 rounded-full ${item.dotColor} shadow-[0_0_8px_currentColor]`}></span>
                             <span className="text-[10px] md:text-xs font-medium tracking-wide">
-                              {isAr ? item.targetAr : item.targetEn}
+                              {t(`creative.welcome.card.${item.id}.target`)}
                             </span>
                           </div>
                         ) : null}
                       </div>
                       <div>
-                        <h3 className="font-bold text-white mb-2 text-base md:text-lg group-hover:text-white/90 transition-colors">{isAr ? item.nameAr : item.nameEn}</h3>
-                        <p className="text-xs text-slate-400 leading-relaxed font-light">{isAr ? item.descAr : item.descEn}</p>
+                        <h3 className="font-bold text-white mb-2 text-base md:text-lg group-hover:text-white/90 transition-colors">{t(`creative.welcome.card.${item.id}.name`)}</h3>
+                        <p className="text-xs text-slate-400 leading-relaxed font-light">{t(`creative.welcome.card.${item.id}.desc`)}</p>
                       </div>
                     </div>
                     {isLoading ? (
@@ -121,7 +116,7 @@ export function WelcomeScreen({ lang = 'ar', onNavigate, onSecretClick, userName
                         <NajeSpinner className="w-5 h-5" />
                       </div>
                     ) : (
-                      <ChevronRight className={`absolute bottom-6 rtl:left-6 ltr:right-6 w-4 h-4 text-slate-600 group-hover:text-white transition-all duration-300 ${isAr ? 'rotate-180 group-hover:-translate-x-1' : 'group-hover:translate-x-1'}`} />
+                      <ChevronRight className={`absolute bottom-6 rtl:left-6 ltr:right-6 w-4 h-4 text-slate-600 group-hover:text-white transition-all duration-300 ${isRtl ? 'rotate-180 group-hover:-translate-x-1' : 'group-hover:translate-x-1'}`} />
                     )}
                   </motion.button>
                 );
@@ -140,21 +135,16 @@ export function WelcomeScreen({ lang = 'ar', onNavigate, onSecretClick, userName
             >
               <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-500/10 text-blue-400 text-xs font-bold border border-blue-500/20 mb-8">
                   <Wand2 className="w-4 h-4" />
-                  {isAr ? 'قصة Creative AI' : 'The Story of Creative AI'}
+                  {t('creative.welcome.storyKicker')}
               </div>
               <h2 className="text-3xl md:text-5xl font-black leading-tight mb-8 text-white">
-                {isAr ? 'لطالما تساءلنا...' : 'We always wondered...'}
+                {t('creative.welcome.wondered')}
               </h2>
               <p className="text-xl md:text-3xl text-slate-300 leading-relaxed font-light mb-8 max-w-3xl mx-auto">
-                {isAr 
-                  ? 'ماذا سيحدث لو اجتمع المصممون المبدعون مع مهندسي الذكاء الاصطناعي؟'
-                  : 'What would happen if creative designers joined forces with AI engineers?'}
+                {t('creative.welcome.wonderQ')}
               </p>
               <p className="text-lg md:text-xl text-slate-400 leading-relaxed max-w-3xl mx-auto font-light">
-                {isAr
-                  ? 'ماذا لو تم بناء أداة لا تكتفي بإنشاء التصاميم، بل تفهم الفكرة خلف التصميم نفسه؟ لم يعد الأمر مجرد تساؤل. لقد أصبح واقعًا نعيشه اليوم مع منصتنا.'
-                  : 'What if a tool was built not just to generate designs, but to deeply understand the concept behind them? It is no longer just a question. It is reality today.'
-                }
+                {t('creative.welcome.wonderA')}
               </p>
             </motion.div>
           </div>
@@ -165,32 +155,30 @@ export function WelcomeScreen({ lang = 'ar', onNavigate, onSecretClick, userName
           <div className="max-w-6xl mx-auto">
             <div className="grid md:grid-cols-2 gap-16 items-center">
               <motion.div 
-                initial={{ opacity: 0, x: isAr ? 50 : -50 }}
+                initial={{ opacity: 0, x: isRtl ? 50 : -50 }}
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true, margin: "-100px" }}
                 className="space-y-6"
               >
                 <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-purple-500/10 text-purple-400 text-xs font-bold border border-purple-500/20">
                   <BrainCircuit className="w-4 h-4" />
-                  {isAr ? 'الطبقة الذكية المخفية' : 'The Hidden Smart Layer'}
+                  {t('creative.welcome.hidden')}
                 </div>
                 <h2 className="text-3xl md:text-5xl font-black leading-tight text-white">
-                  {isAr ? 'نفهم فكرتك،' : 'We understand your vision,'} <br />
-                  <span className="text-slate-500">{isAr ? 'ونحولها إلى تحفة فنية.' : 'and turn it into a masterpiece.'}</span>
+                  {t('creative.welcome.understand')} <br />
+                  <span className="text-slate-500">{t('creative.welcome.masterpiece')}</span>
                 </h2>
                 <p className="text-slate-400 leading-relaxed text-lg font-light">
-                  {isAr 
-                    ? 'نعلم أن الكثيرين يمتلكون أفكارًا رائعة لكن يصعب عليهم وصفها. أضفنا طبقة ذكاء اصطناعي متقدمة تعمل في الخلفية؛ كل ما عليك هو كتابة فكرتك بأي أسلوب، وسيقوم نظامنا بتحليلها وفهمها بعمق، ثم تحويلها إلى وصف احترافي متكامل يُرسل مباشرة إلى محرك التصميم.' 
-                    : 'We know many have great ideas but struggle to describe them perfectly. We added an advanced AI layer in the background. Write your idea in any style, and our system will analyze and deeply understand it, converting it into a professional prompt sent directly to the design engine.'}
+                  {t('creative.welcome.hiddenBody')}
                 </p>
                 <div className="pt-4 flex flex-col gap-4">
                   <div className="flex items-center gap-4 text-sm font-medium text-slate-300 bg-white/5 p-4 rounded-2xl border border-white/5">
                     <div className="w-10 h-10 shrink-0 rounded-full bg-teal-500/10 flex items-center justify-center text-teal-400"><CheckCircle2 className="w-5 h-5" /></div>
-                    {isAr ? 'كلما كان وصفك أدق، كانت النتيجة أكثر إبداعاً وإبهاراً.' : 'The more accurate your description, the more creative and stunning the result.'}
+                    {t('creative.welcome.accurate')}
                   </div>
                   <div className="flex items-center gap-4 text-sm font-medium text-slate-300 bg-white/5 p-4 rounded-2xl border border-white/5">
                     <div className="w-10 h-10 shrink-0 rounded-full bg-purple-500/10 flex items-center justify-center text-purple-400"><CheckCircle2 className="w-5 h-5" /></div>
-                    {isAr ? 'لقد قمنا بإنشاء شعار وأيقونة Creative AI باستخدام الأداة نفسها!' : 'We created the Creative AI logo and icon using the tool itself!'}
+                    {t('creative.welcome.madeWith')}
                   </div>
                 </div>
               </motion.div>
@@ -204,7 +192,7 @@ export function WelcomeScreen({ lang = 'ar', onNavigate, onSecretClick, userName
                 <img src="/icon.png" alt="Creative AI Generated Logo" className="w-full h-full object-cover scale-105 group-hover:scale-100 transition-transform duration-700 ease-out" />
                 <div className="absolute bottom-6 inset-x-6 z-20 p-4 rounded-2xl bg-black/60 backdrop-blur-md border border-white/10 flex items-center justify-center">
                   <p className="text-xs md:text-sm font-mono text-purple-300">
-                    {isAr ? '> تم تصميم هذا الشعار بواسطة Creative AI' : '> This logo was designed by Creative AI'}
+                    {t('creative.welcome.logoCaption')}
                   </p>
                 </div>
               </motion.div>
@@ -217,10 +205,10 @@ export function WelcomeScreen({ lang = 'ar', onNavigate, onSecretClick, userName
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-16 max-w-3xl mx-auto">
               <h2 className="text-3xl md:text-5xl font-black mb-6 text-white">
-                {isAr ? 'ماذا يمكنك تصميمه؟' : 'What can you design?'}
+                {t('creative.welcome.what')}
               </h2>
               <p className="text-slate-400 text-lg leading-relaxed font-light">
-                {isAr ? 'وكالة إبداعية متكاملة تعمل بالذكاء الاصطناعي تتيح لك إنشاء تصاميم احترافية بجودة عالية تناسب الأفراد، الشركات، العلامات التجارية، وصناع المحتوى.' : 'A complete AI-powered creative agency that allows you to create professional, high-quality designs suitable for individuals, businesses, brands, and content creators.'}
+                {t('creative.welcome.whatLead')}
               </p>
             </div>
 
@@ -239,11 +227,9 @@ export function WelcomeScreen({ lang = 'ar', onNavigate, onSecretClick, userName
                 <div className="relative z-10 w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-500/20 to-indigo-500/20 border border-purple-500/20 flex items-center justify-center mb-6 text-purple-300">
                   <PenTool className="w-7 h-7" />
                 </div>
-                <h3 className="relative z-10 text-2xl font-bold mb-3 text-white">{isAr ? 'تصميم الشعارات الاحترافية' : 'Professional Logo Design'}</h3>
+                <h3 className="relative z-10 text-2xl font-bold mb-3 text-white">{t('creative.welcome.logos')}</h3>
                 <p className="relative z-10 text-sm md:text-base text-slate-400 leading-relaxed max-w-md font-light">
-                  {isAr 
-                    ? 'أنشئ شعارًا احترافيًا يعكس هويتك. نصمم شعارات نصية، رمزية، ومدمجة، بالإضافة إلى أيقونات التطبيقات العصرية الجاهزة للنشر.' 
-                    : 'Create a professional logo that reflects your identity. We design text, symbol, and combination logos, plus modern app icons ready for publishing.'}
+                  {t('creative.welcome.logosBody')}
                 </p>
               </motion.div>
 
@@ -260,11 +246,9 @@ export function WelcomeScreen({ lang = 'ar', onNavigate, onSecretClick, userName
                 <div className="relative z-10 w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500/20 to-blue-500/20 border border-indigo-500/20 flex items-center justify-center mb-6 text-indigo-300">
                   <LayoutTemplate className="w-7 h-7" />
                 </div>
-                <h3 className="relative z-10 text-2xl font-bold mb-3 text-white">{isAr ? 'الهوية البصرية الكاملة' : 'Complete Brand Kit'}</h3>
+                <h3 className="relative z-10 text-2xl font-bold mb-3 text-white">{t('creative.welcome.kit')}</h3>
                 <p className="relative z-10 text-sm text-slate-400 leading-relaxed font-light">
-                  {isAr 
-                    ? 'بطاقات أعمال، أوراق رسمية، وقوالب موحدة تخلق توافقاً مثالياً يمنح علامتك مظهراً متناسقاً في كل مكان.' 
-                    : 'Business cards, letterheads, and unified templates creating perfect consistency that gives your brand a cohesive look everywhere.'}
+                  {t('creative.welcome.kitBody')}
                 </p>
               </motion.div>
 
@@ -281,9 +265,9 @@ export function WelcomeScreen({ lang = 'ar', onNavigate, onSecretClick, userName
                 <div className="relative z-10 w-14 h-14 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-teal-500/20 border border-cyan-500/20 flex items-center justify-center mb-6 text-cyan-300">
                   <ImageIcon className="w-7 h-7" />
                 </div>
-                <h3 className="relative z-10 text-xl font-bold mb-2 text-white">{isAr ? 'الدمج الذكي الواقعي' : 'Realistic Smart Integration'}</h3>
+                <h3 className="relative z-10 text-xl font-bold mb-2 text-white">{t('creative.welcome.merge')}</h3>
                 <p className="relative z-10 text-sm text-slate-400 leading-relaxed font-light">
-                  {isAr ? 'ارفع شعارك أو صورة منتجك لنقوم بدمجها بشكل طبيعي داخل مشاهد واقعية مع إضاءة سينمائية احترافية.' : 'Upload your logo or product image and we naturally merge it into realistic scenes with professional cinematic lighting.'}
+                  {t('creative.welcome.mergeBody')}
                 </p>
               </motion.div>
 
@@ -300,9 +284,9 @@ export function WelcomeScreen({ lang = 'ar', onNavigate, onSecretClick, userName
                 <div className="relative z-10 w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-green-500/20 border border-emerald-500/20 flex items-center justify-center mb-6 text-emerald-300">
                   <ScanFace className="w-7 h-7" />
                 </div>
-                <h3 className="relative z-10 text-xl font-bold mb-2 text-white">{isAr ? 'اللوحات والواجهات' : 'Billboards & Storefronts'}</h3>
+                <h3 className="relative z-10 text-xl font-bold mb-2 text-white">{t('creative.welcome.boards')}</h3>
                 <p className="relative z-10 text-sm text-slate-400 leading-relaxed font-light">
-                  {isAr ? 'صمم إعلانات خارجية وواجهات محلات تجارية بجودة واقعية مذهلة تلفت الأنظار وتبرز رسالتك الإعلانية بقوة.' : 'Design outdoor ads and storefronts with stunning realism that captures attention and powerfully highlights your message.'}
+                  {t('creative.welcome.boardsBody')}
                 </p>
               </motion.div>
 
@@ -319,9 +303,9 @@ export function WelcomeScreen({ lang = 'ar', onNavigate, onSecretClick, userName
                 <div className="relative z-10 w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 border border-amber-500/20 flex items-center justify-center mb-6 text-amber-300">
                   <Video className="w-7 h-7" />
                 </div>
-                <h3 className="relative z-10 text-xl font-bold mb-2 text-white">{isAr ? 'فيديوهات إعلانية سينمائية' : 'Cinematic Video Ads'}</h3>
+                <h3 className="relative z-10 text-xl font-bold mb-2 text-white">{t('creative.welcome.films')}</h3>
                 <p className="relative z-10 text-sm text-slate-400 leading-relaxed font-light">
-                  {isAr ? 'إنتاج فيديو عالي الجودة يبدأ بكتابة السيناريو، توليد المشاهد، وصولاً إلى التحريك السينمائي والانتقالات الاحترافية.' : 'Produce high-quality video starting with scriptwriting, scene generation, all the way to cinematic animation and transitions.'}
+                  {t('creative.welcome.filmsBody')}
                 </p>
               </motion.div>
 
@@ -339,10 +323,10 @@ export function WelcomeScreen({ lang = 'ar', onNavigate, onSecretClick, userName
               viewport={{ once: true }}
             >
               <h2 className="text-4xl md:text-6xl font-black mb-6 tracking-tight text-white">
-                {isAr ? 'صمّم أسرع، أبدع أكثر' : 'Design Faster, Create More'}
+                {t('creative.welcome.cta')}
               </h2>
               <p className="text-xl text-slate-400 mb-12 max-w-2xl mx-auto font-light leading-relaxed">
-                {isAr ? 'حتى نحن في Qelva AI نعتمد على Creative AI لإنشاء الشعارات وأيقونات التطبيقات الخاصة بمشاريعنا. اجعل أفكارك تنبض بالحياة اليوم.' : 'Even we at Qelva AI rely on Creative AI to create logos and app icons for our projects. Bring your ideas to life today.'}
+                {t('creative.welcome.ctaBody')}
               </p>
               
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -353,12 +337,12 @@ export function WelcomeScreen({ lang = 'ar', onNavigate, onSecretClick, userName
                 >
                   {loadingId === 'footer_cta' ? (
                     <>
-                      <span>{isAr ? 'جاري الانتقال...' : 'Navigating...'}</span>
+                      <span>{t('creative.welcome.navigating')}</span>
                       <NajeSpinner className="w-5 h-5" />
                     </>
                   ) : (
                     <>
-                      <span>{isAr ? 'ابدأ التصميم الآن' : 'Start Designing Now'}</span>
+                      <span>{t('creative.welcome.start')}</span>
                       <Sparkles className="w-5 h-5" />
                     </>
                   )}

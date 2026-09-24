@@ -41,6 +41,7 @@ import { getAllDesigns, saveDesign } from '../../lib/creativelyDesigns';
 import { formatProfessionalError } from '../../utils/errorFormatter';
 import NajeErrorCard from '../NajeErrorCard';
 import { useAppStore } from '../../store';
+import { useI18n } from '../../i18n';
 
 const safeLocalStorage = {
   getItem: (key: string): string | null => {
@@ -97,7 +98,9 @@ interface InlineVideoMessageProps {
   onFinished: (videoUrl: string) => void;
 }
 
-function InlineVideoMessage({ operationName, initialVideoUrl, lang, onFinished }: InlineVideoMessageProps) {
+function InlineVideoMessage({
+ operationName, initialVideoUrl, lang, onFinished }: InlineVideoMessageProps) {
+  const { t, locale, isRtl } = useI18n();
   const [progress, setProgress] = useState(0);
   const [videoUrl, setVideoUrl] = useState(initialVideoUrl || '');
   const [hasError, setHasError] = useState(false);
@@ -203,7 +206,7 @@ function InlineVideoMessage({ operationName, initialVideoUrl, lang, onFinished }
     return (
       <div className="mt-4 p-4 rounded-xl border border-red-500/20 bg-red-500/10 text-red-400 text-xs flex flex-col items-center justify-center gap-2 max-w-sm">
         <AlertTriangle className="w-5 h-5" />
-        <span className="font-semibold">{lang === 'ar' ? 'فشل توليد الفيديو أو نفذ الرصيد' : 'Video generation failed or quota exceeded.'}</span>
+        <span className="font-semibold">{t('creative.m211')}</span>
       </div>
     );
   }
@@ -213,7 +216,7 @@ function InlineVideoMessage({ operationName, initialVideoUrl, lang, onFinished }
       <div className="mt-4 space-y-3 max-w-sm" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center gap-2 text-green-400 text-xs font-bold">
           <CheckCircle className="w-4 h-4" />
-          <span>{lang === 'ar' ? 'تم تجهيز الفيديو بنجاح!' : 'Video successfully generated!'}</span>
+          <span>{t('creative.m019')}</span>
         </div>
         <div className="relative group rounded-xl overflow-hidden border border-white/10 shadow-xl bg-black/50 aspect-video">
           <video 
@@ -230,12 +233,10 @@ function InlineVideoMessage({ operationName, initialVideoUrl, lang, onFinished }
             className="px-4 py-2.5 bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs rounded-xl transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
           >
             <Download className="w-4 h-4" />
-            {lang === 'ar' ? 'تحميل الفيديو' : 'Download Video'}
+            {t('creative.m018')}
           </a>
           <span className="text-[10px] text-slate-400 leading-relaxed block text-center">
-            {lang === 'ar' 
-              ? 'إذا واجهتك مشكلة في التحميل، اضغط مطولاً على الفيديو ثم اختر تحميل.' 
-              : 'If you encounter an issue downloading, long-press the video and select download.'}
+            {t('creative.m210')}
           </span>
         </div>
       </div>
@@ -247,13 +248,11 @@ function InlineVideoMessage({ operationName, initialVideoUrl, lang, onFinished }
       <div className="flex items-center gap-3 text-purple-400">
         <NajeSpinner className="w-5 h-5" />
         <span className="text-sm font-bold">
-          {lang === 'ar' ? 'جاري تصوير وإنتاج الفيديو...' : 'Producing and generating video...'}
+          {t('creative.m209')}
         </span>
       </div>
       <p className="text-xs text-slate-400 leading-relaxed">
-        {lang === 'ar' 
-          ? 'يستغرق توليد الفيديو بضع دقائق. شكراً لصبرك!' 
-          : 'Generating video takes a few minutes. Thanks for your patience!'}
+        {t('creative.m208')}
       </p>
       
       <div className="space-y-1.5">
@@ -264,7 +263,7 @@ function InlineVideoMessage({ operationName, initialVideoUrl, lang, onFinished }
           />
         </div>
         <div className="flex justify-between items-center text-[10px] font-bold text-slate-500">
-          <span>{lang === 'ar' ? 'التقدم' : 'Progress'}</span>
+          <span>{t('creative.m207')}</span>
           <span>{Math.round(progress)}%</span>
         </div>
       </div>
@@ -279,7 +278,7 @@ interface ChatSession {
   updatedAt: number;
 }
 
-export function ChatDesigner({ 
+export function ChatDesigner({
   activationCode = 'naje_authenticated', 
   setActivationCode = () => {}, 
   isCodeValid = true, 
@@ -291,6 +290,7 @@ export function ChatDesigner({
   onGoHome,
   onPaywallTrigger
 }: ChatDesignerProps) {
+  const { t, locale, isRtl } = useI18n();
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -345,9 +345,7 @@ export function ChatDesigner({
   const [isDeleteConfirming, setIsDeleteConfirming] = useState(false);
 
   const handleCopyLink = async (text: string) => {
-    const promotionalText = lang === 'ar' 
-      ? ` شاهد هذا التصميم المذهل الذي تم إنشاؤه بواسطة Creative AI! \n\n الرابط:\n${text}\n\nصمم هويتك البصرية وفيديوهاتك السينمائية الآن بلمسة من الذكاء الاصطناعي!`
-      : ` Check out this stunning design created by Creative AI! \n\n Link:\n${text}\n\nCreate your brand identity and cinematic videos now with the power of AI!`;
+    const promotionalText = t('creative.m206', { p0: text });
     const textToCopy = text.startsWith('http') ? promotionalText : text;
 
     try {
@@ -441,13 +439,11 @@ export function ChatDesigner({
   const createNewSession = () => {
     const newSession: ChatSession = {
       id: Date.now().toString() + "-" + Math.random().toString(36).substring(7) + Math.random().toString(36).substring(7),
-      title: lang === 'ar' ? 'محادثة جديدة' : 'New Chat',
+      title: t('creative.m194'),
       messages: [
         {
           role: 'assistant',
-          content: lang === 'ar' 
-            ? 'مرحباً بك في **Creative AI** \n\nأنا مساعدك الذكي لتصميم الجرافيك. يمكنني مساعدتك في تحويل أفكارك إلى تصاميم احترافية بضغطة زر. إليك نظرة سريعة على ميزاتي:\n\n*   ** توليد الصور الذكية:** تصميم صور عالية الدقة لتناسب جميع احتياجاتك.\n*   ** واجهة سهلة:** يمكنك تعديل وتخصيص الأفكار بمجرد الدردشة معي.\n*   ** أبعاد متعددة:** دعم لأبعاد 1:1 للصور القياسية.\n\nأنا جاهز دائماً. ماذا تود أن نصمم اليوم؟' 
-            : 'Welcome to **Creative AI** \n\nI am your intelligent graphic design assistant. I can help you turn your ideas into professional designs with a click. Here is a quick look at my features:\n\n*   ** Smart Image Generation:** High-resolution image design tailored to your needs.\n*   ** Easy Interface:** Modify and customize ideas just by chatting with me.\n*   ** Multiple Dimensions:** Support for standard 1:1 dimensions.\n\nI am always ready. What would you like to design today?'
+          content: t('creative.m205')
         }
       ],
       updatedAt: Date.now()
@@ -464,13 +460,11 @@ export function ChatDesigner({
       if (newSessions.length === 0) {
         const newSession: ChatSession = {
           id: Date.now().toString() + "-" + Math.random().toString(36).substring(7) + Math.random().toString(36).substring(7),
-          title: lang === 'ar' ? 'محادثة جديدة' : 'New Chat',
+          title: t('creative.m194'),
           messages: [
             {
               role: 'assistant',
-              content: lang === 'ar' 
-                ? 'مرحباً! أنا المساعد الذكي الخاص بك من Creative AI. كيف يمكنني مساعدتك في تصميماتك اليوم؟' 
-                : 'Hello! I am your Creative AI assistant. How can I help you design today?'
+              content: t('creative.m204')
             }
           ],
           updatedAt: Date.now()
@@ -575,9 +569,7 @@ export function ChatDesigner({
       setTimeout(() => {
         addMessage(sessionIdForRequest, { 
           role: 'assistant', 
-          content: lang === 'ar' 
-            ? ' عذراً، لقد استنفذت كامل الرصيد المتاح لهذا الكود. يرجى تجديد الاشتراك أو شحن الكود لمواصلة توليد التصاميم والردود الذكية.' 
-            : ' Sorry, you have exhausted your available credit for this activation code. Please renew your subscription or recharge the code to continue generating smart designs and replies.'
+          content: t('creative.m203')
         });
         setIsLoading(false);
       }, 1000);
@@ -685,7 +677,7 @@ export function ChatDesigner({
         if (lastStreamError) {
           throw new Error(lastStreamError);
         }
-        throw new Error('تعذّر قراءة رد النموذج.');
+        throw new Error(t('creative.modelReadFail'));
       }
     } catch (err: any) {
       console.error(err);
@@ -726,7 +718,7 @@ export function ChatDesigner({
   if (!isStorageLoaded) return (
     <div className="naje-creative-studio min-h-screen bg-[#030303] flex flex-col items-center justify-center gap-3 text-white">
       <NajeThinking size={56} />
-      <span className="text-xs font-black text-purple-300">ناجي يفكّر…</span>
+      <span className="text-xs font-black text-purple-300">{t('creative.thinking')}</span>
     </div>
   );
 
@@ -751,7 +743,7 @@ export function ChatDesigner({
               <button 
                 onClick={onGoHome}
                 className="absolute top-4 ltr:right-4 rtl:left-4 p-2 bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white rounded-full transition-colors"
-                title={lang === 'ar' ? 'الرئيسية' : 'Home'}
+                title={t('nav.home')}
               >
                 <X className="w-5 h-5" />
               </button>
@@ -762,13 +754,11 @@ export function ChatDesigner({
             </div>
             
             <h3 className="text-xl md:text-2xl font-extrabold text-white mb-2">
-              {lang === 'ar' ? 'أدخل كود التفعيل' : 'Enter Activation Code'}
+              {t('creative.m202')}
             </h3>
             
             <p className="text-slate-400 mb-6 max-w-sm text-xs md:text-sm leading-relaxed font-medium">
-              {lang === 'ar' 
-                ? 'يجب إدخال كود التفعيل بشكل صحيح لفتح النظام وبدء إنشاء التصاميم الذكية.'
-                : 'You must enter a valid activation code to unlock the system and begin generating smart designs.'}
+              {t('creative.m201')}
             </p>
 
             <div className="w-full flex flex-col gap-3">
@@ -782,7 +772,7 @@ export function ChatDesigner({
                     safeLocalStorage.setItem('koun_activation_code', val);
                   }}
                   maxLength={32}
-                  placeholder={lang === 'ar' ? 'أدخل كود التفعيل هنا...' : 'Enter code here...'}
+                  placeholder={t('creative.m200')}
                   className="w-full bg-black/60 border-2 border-purple-500/20 focus:border-purple-500/60 rounded-xl px-4 py-3.5 text-center text-white placeholder-slate-500 focus:outline-none focus:bg-black/80 transition-all font-mono text-base tracking-widest uppercase shadow-inner"
                 />
                 {isCheckingCode && (
@@ -798,7 +788,7 @@ export function ChatDesigner({
                 rel="noreferrer" 
                 className="w-full px-6 py-3.5 rounded-xl bg-green-600/15 hover:bg-green-600/25 border border-green-500/30 text-green-400 font-medium transition-colors text-center text-sm flex items-center justify-center gap-2"
               >
-                {lang === 'ar' ? 'للحصول على كود' : 'To get a code'} <span className="underline font-bold text-white">{lang === 'ar' ? 'اضغط هنا' : 'click here'}</span>
+                {t('creative.m199')} <span className="underline font-bold text-white">{t('creative.m198')}</span>
               </a>
 
               {codeStatus && (
@@ -810,10 +800,10 @@ export function ChatDesigner({
                       : 'bg-green-500/10 text-green-400 border-green-500/30'
                 }`}>
                   {codeStatus.error 
-                    ? (lang === 'ar' ? 'الكود غير صحيح' : 'Invalid code')
+                    ? (t('creative.m197'))
                     : codeStatus.usage >= codeStatus.limit 
-                      ? (lang === 'ar' ? 'استنفدت رصيدك' : 'Code limit reached')
-                      : (lang === 'ar' ? 'تم التحقق بنجاح!' : 'Verified successfully!')}
+                      ? (t('creative.m196'))
+                      : (t('creative.m195'))}
                 </div>
               )}
             </div>
@@ -858,7 +848,7 @@ export function ChatDesigner({
                 className="w-full py-3 px-4 rounded-[20px] bg-white/[0.05] hover:bg-white/[0.08] text-white font-medium flex items-center justify-center gap-3 transition-all text-sm border border-white/5"
               >
                 <Plus className="w-4 h-4" />
-                {lang === 'ar' ? 'محادثة جديدة' : 'New Chat'}
+                {t('creative.m194')}
               </button>
 
               <div className="grid grid-cols-2 gap-2 mt-1">
@@ -870,7 +860,7 @@ export function ChatDesigner({
                   className={`py-2.5 px-3 rounded-xl font-medium text-xs flex items-center justify-center gap-2 transition-colors ${activeTab === 'library' ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30' : 'text-slate-300 hover:bg-white/5 border border-transparent'}`}
                 >
                   <ImageIconSVG className="w-3.5 h-3.5" />
-                  {lang === 'ar' ? 'مكتبتي' : 'Library'}
+                  {t('creative.m193')}
                 </button>
 
                 <button 
@@ -881,7 +871,7 @@ export function ChatDesigner({
                   className={`py-2.5 px-3 rounded-xl font-medium text-xs flex items-center justify-center gap-2 transition-colors ${activeTab === 'settings' ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30' : 'text-slate-300 hover:bg-white/5 border border-transparent'}`}
                 >
                   <Settings className="w-3.5 h-3.5" />
-                  {lang === 'ar' ? 'الإعدادات' : 'Settings'}
+                  {t('creative.m192')}
                 </button>
               </div>
 
@@ -894,7 +884,7 @@ export function ChatDesigner({
                   className="w-full py-2.5 px-4 rounded-xl text-slate-300 hover:bg-white/5 hover:text-white border border-white/5 font-semibold text-xs flex items-center justify-center gap-2 transition-all mt-1"
                 >
                   <RotateCcw className="w-4 h-4 text-purple-400" />
-                  {lang === 'ar' ? 'الرئيسية' : 'Main Screen'}
+                  {t('creative.m191')}
                 </button>
               )}
             </div>
@@ -903,7 +893,7 @@ export function ChatDesigner({
             <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
               <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3 px-2 flex items-center gap-1.5">
                 <MessageSquare className="w-3 h-3 opacity-60" />
-                {lang === 'ar' ? 'المحادثات السابقة' : 'Previous Chats'}
+                {t('creative.m190')}
               </h3>
               <div className="flex flex-col gap-1">
                 {sessions.map((session, idx) => (
@@ -943,12 +933,10 @@ export function ChatDesigner({
                   </div>
                   <div className="flex-1 min-w-0">
                     <span className="text-[9px] font-bold text-purple-400/80 uppercase tracking-wider block">
-                      {lang === 'ar' ? 'رصيد التصاميم المتبقي' : 'Quota Remaining'}
+                      {t('creative.m189')}
                     </span>
                     <span className="text-xs font-bold text-slate-100 block">
-                      {lang === 'ar' 
-                        ? `${codeStatus.limit - codeStatus.usage} من أصل ${codeStatus.limit}` 
-                        : `${codeStatus.limit - codeStatus.usage} left of ${codeStatus.limit}`}
+                      {t('creative.m188', { p0: codeStatus.limit - codeStatus.usage, p1: codeStatus.limit })}
                     </span>
                   </div>
                 </button>
@@ -970,13 +958,13 @@ export function ChatDesigner({
                   {activeTab === 'library' && (
                     <>
                       <ImageIconSVG className="w-4 h-4 text-purple-400" />
-                      <span>{lang === 'ar' ? 'مكتبتي الخاصة' : 'My Personal Library'}</span>
+                      <span>{t('creative.m187')}</span>
                     </>
                   )}
                   {activeTab === 'settings' && (
                     <>
                       <Settings className="w-4 h-4 text-purple-400" />
-                      <span>{lang === 'ar' ? 'إعدادات النظام' : 'System Settings'}</span>
+                      <span>{t('creative.m186')}</span>
                     </>
                   )}
                   {activeTab === 'chat' && (
@@ -996,10 +984,10 @@ export function ChatDesigner({
                   <button 
                     onClick={onGoHome}
                     className="p-2 md:px-4 md:py-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 border border-red-500/20 hover:border-red-500/40 rounded-xl transition-all flex items-center justify-center gap-1.5 text-xs font-bold"
-                    title={lang === 'ar' ? 'الرجوع للرئيسية' : 'Back to Home'}
+                    title={t('creative.m185')}
                   >
                     <ChevronDown className="w-4 h-4 md:rotate-90 rtl:md:-rotate-90" />
-                    <span className="hidden md:inline">{lang === 'ar' ? 'الرئيسية' : 'Home'}</span>
+                    <span className="hidden md:inline">{t('nav.home')}</span>
                   </button>
                 )}
                 {activeTab === 'chat' && currentSessionId && (
@@ -1020,15 +1008,15 @@ export function ChatDesigner({
                     }`}
                     title={
                       isDeleteConfirming 
-                        ? (lang === 'ar' ? 'انقر مجدداً للتأكيد النهائي!' : 'Click again to confirm delete!') 
-                        : (lang === 'ar' ? 'حذف هذه المحادثة' : 'Delete this chat')
+                        ? (t('creative.m184')) 
+                        : (t('creative.m183'))
                     }
                   >
                     <Trash2 className="w-4 h-4" />
                     <span className="hidden sm:inline text-xs font-semibold">
                       {isDeleteConfirming 
-                        ? (lang === 'ar' ? 'تأكيد الحذف الكلي؟' : 'Confirm Delete?') 
-                        : (lang === 'ar' ? 'حذف المحادثة' : 'Delete Chat')}
+                        ? (t('creative.m182')) 
+                        : (t('creative.m181'))}
                     </span>
                   </button>
                 )}
@@ -1036,11 +1024,11 @@ export function ChatDesigner({
                 <button 
                   onClick={() => setActiveTab(activeTab === 'chat' ? 'settings' : 'chat')}
                   className={`p-2 rounded-xl border text-slate-300 hover:text-white transition-all text-sm flex items-center gap-1.5 ${activeTab === 'settings' ? 'bg-purple-500/20 border-purple-500/30' : 'bg-white/5 border-white/10'}`}
-                  title={lang === 'ar' ? 'الإعدادات والكود' : 'Settings & Code'}
+                  title={t('creative.m180')}
                 >
                   <Settings className="w-4 h-4 animate-hover-spin" />
                   <span className="hidden sm:inline text-xs font-semibold">
-                    {lang === 'ar' ? 'الكود' : 'Code'}
+                    {t('creative.m179')}
                   </span>
                 </button>
               </div>
@@ -1064,12 +1052,10 @@ export function ChatDesigner({
                       <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-3">
                         <div>
                           <h2 className="text-xl md:text-2xl font-extrabold text-white flex items-center gap-3">
-                            {lang === 'ar' ? 'مكتبة التصاميم المحلية' : 'Local Design Library'}
+                            {t('creative.m178')}
                           </h2>
                           <p className="text-xs text-slate-400 mt-1">
-                            {lang === 'ar' 
-                              ? 'كل التصاميم التي تم ابتكارها وتخزينها محلياً في ذاكرة متصفحك بشكل آمن.' 
-                              : 'All designs generated and secured within your browser database.'}
+                            {t('creative.m177')}
                           </p>
                         </div>
                         <button 
@@ -1077,7 +1063,7 @@ export function ChatDesigner({
                           className="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-semibold rounded-lg text-slate-300 hover:text-white transition-colors self-start flex items-center gap-2"
                         >
                           <RotateCcw className="w-3.5 h-3.5" />
-                          {lang === 'ar' ? 'تحديث المعرض' : 'Refresh Library'}
+                          {t('creative.m176')}
                         </button>
                       </div>
 
@@ -1086,9 +1072,9 @@ export function ChatDesigner({
                           <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4">
                             <ImageIconSVG className="w-8 h-8 opacity-45 text-purple-400" />
                           </div>
-                          <p className="text-base font-semibold">{lang === 'ar' ? 'المكتبة فارغة حالياً' : 'Your library is empty'}</p>
+                          <p className="text-base font-semibold">{t('creative.m175')}</p>
                           <p className="text-xs mt-2 text-slate-500 max-w-sm mx-auto leading-relaxed">
-                            {lang === 'ar' ? 'ابدأ محادثة واطلب تصميماً أو قم بإنشاء شعار ليتم حفظه وتجميعه تلقائياً هنا.' : 'Start a design discussion or generate a logo to save elements dynamically.'}
+                            {t('creative.m174')}
                           </p>
                         </div>
                       ) : (
@@ -1139,10 +1125,10 @@ export function ChatDesigner({
                       <div>
                         <h2 className="text-xl md:text-2xl font-extrabold text-white flex items-center gap-3">
                           <Settings className="w-6 h-6 text-purple-400" />
-                          {lang === 'ar' ? 'إعدادات كود التفعيل والحساب' : 'Activation Code & Settings'}
+                          {t('creative.m173')}
                         </h2>
                         <p className="text-xs text-slate-400 mt-1">
-                          {lang === 'ar' ? 'إدارة وتعديل كود التفعيل الخاص بك ومتابعة الحصص المتبقية.' : 'Manage active validation credentials and trace user remaining quotas.'}
+                          {t('creative.m172')}
                         </p>
                       </div>
 
@@ -1150,7 +1136,7 @@ export function ChatDesigner({
                       <div className="bg-white/5 border border-white/10 rounded-2xl p-5 md:p-6 space-y-4 shadow-xl">
                         <h3 className="text-sm font-bold text-slate-200 flex items-center gap-2">
                           <KeyRound className="w-4 h-4 text-purple-400" />
-                          {lang === 'ar' ? 'كود التفعيل الحالي' : 'Active Credentials'}
+                          {t('creative.m171')}
                         </h3>
                         
                         <div className="flex flex-col md:flex-row gap-3">
@@ -1163,7 +1149,7 @@ export function ChatDesigner({
                               safeLocalStorage.setItem('koun_activation_code', val);
                             }}
                             maxLength={32}
-                            placeholder={lang === 'ar' ? 'أدخل كود التفعيل...' : 'Enter activation code...'}
+                            placeholder={t('creative.m170')}
                             className="flex-1 bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-center md:text-start text-white placeholder-slate-500 focus:outline-none focus:border-purple-500 font-mono text-sm tracking-wider uppercase"
                           />
                           {isCheckingCode && (
@@ -1184,20 +1170,18 @@ export function ChatDesigner({
                             {codeStatus.error ? (
                               <>
                                 <Info className="w-4 h-4 shrink-0" />
-                                <span>{lang === 'ar' ? 'كود تفعيل غير صحيح. يرجى مراجعته.' : 'Invalid activation code.'}</span>
+                                <span>{t('creative.m169')}</span>
                               </>
                             ) : codeStatus.usage >= codeStatus.limit ? (
                               <>
                                 <Info className="w-4 h-4 shrink-0" />
-                                <span>{lang === 'ar' ? 'عذراً، لقد استنفذت رصيد الكود بالكامل.' : 'Quota reached. No designs left.'}</span>
+                                <span>{t('creative.m168')}</span>
                               </>
                             ) : (
                               <>
                                 <CheckCircle className="w-4 h-4 shrink-0" />
                                 <span>
-                                  {lang === 'ar' 
-                                    ? `الكود صالح ومفعل. الرصيد المتبقي: ${codeStatus.limit - codeStatus.usage} تصاميم.` 
-                                    : `Code active. ${codeStatus.limit - codeStatus.usage} designs left.`}
+                                  {t('creative.m167', { p0: codeStatus.limit - codeStatus.usage })}
                                 </span>
                               </>
                             )}
@@ -1226,18 +1210,16 @@ export function ChatDesigner({
                             </svg>
                             <div className="absolute inset-0 flex flex-col items-center justify-center">
                               <span className="text-lg font-extrabold text-white">{quotaPercentage}%</span>
-                              <span className="text-[9px] uppercase tracking-widest text-slate-400">{lang === 'ar' ? 'متاح' : 'Available'}</span>
+                              <span className="text-[9px] uppercase tracking-widest text-slate-400">{t('creative.m166')}</span>
                             </div>
                           </div>
 
                           <div className="flex-1 space-y-2 text-center md:text-start">
                             <h4 className="text-sm font-bold text-slate-200">
-                              {lang === 'ar' ? 'تحليل رصيد الاستخدام المتاح' : 'Quota Metrics'}
+                              {t('creative.m165')}
                             </h4>
                             <p className="text-xs text-slate-400 leading-relaxed">
-                              {lang === 'ar' 
-                                ? `تم توليد وإنشاء ${codeStatus.usage} تصميم من إجمالي باقة ${codeStatus.limit} تصاميم. يمكنك استهلاك رصيدك المتبقي بأي وقت.` 
-                                : `Used ${codeStatus.usage} of your ${codeStatus.limit} allotted designs. Keep working smoothly.`}
+                              {t('creative.m164', { p0: codeStatus.usage, p1: codeStatus.limit })}
                             </p>
                           </div>
                         </div>
@@ -1248,10 +1230,10 @@ export function ChatDesigner({
                         <div className="space-y-1">
                           <h4 className="text-sm font-bold text-green-400 flex items-center gap-2">
                             <HelpCircle className="w-4 h-4" />
-                            {lang === 'ar' ? 'تجديد الاشتراك أو طلب مساعدة؟' : 'Need more quota or assistance?'}
+                            {t('creative.m163')}
                           </h4>
                           <p className="text-xs text-slate-300">
-                            {lang === 'ar' ? 'اضغط هنا للتواصل مباشرة مع الدعم الفني وتجديد الكود.' : 'Click to easily reach out via WhatsApp for active support.'}
+                            {t('creative.m162')}
                           </p>
                         </div>
                         <a 
@@ -1260,7 +1242,7 @@ export function ChatDesigner({
                           rel="noreferrer"
                           className="px-5 py-2.5 bg-green-600 hover:bg-green-500 text-white font-bold text-xs rounded-xl transition-all shadow-lg text-center whitespace-nowrap self-start md:self-auto"
                         >
-                          {lang === 'ar' ? 'تواصل معنا على واتساب' : 'Contact us on WhatsApp'}
+                          {t('creative.m161')}
                         </a>
                       </div>
 
@@ -1269,12 +1251,10 @@ export function ChatDesigner({
                         <div className="space-y-1">
                           <h4 className="text-sm font-bold text-red-400 flex items-center gap-2">
                             <Trash2 className="w-4 h-4" />
-                            {lang === 'ar' ? 'تنظيف الذاكرة والمخلفات' : 'Privacy Control & Database reset'}
+                            {t('creative.m160')}
                           </h4>
                           <p className="text-xs text-slate-400 leading-relaxed">
-                            {lang === 'ar' 
-                              ? 'سيقوم هذا الإجراء بحذف كل سجلات ومحادثات الدردشة المخزنة في متصفحك بشكل كامل ونهائي. لن تتأثر التصاميم المحفوظة بملفاتك.' 
-                              : 'This will completely erase your local chat message history in this browser. Your designs are unaffected.'}
+                            {t('creative.m159')}
                           </p>
                         </div>
                         
@@ -1283,7 +1263,7 @@ export function ChatDesigner({
                             onClick={() => setClearConfirm(true)}
                             className="px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 text-xs font-semibold rounded-lg transition-colors"
                           >
-                            {lang === 'ar' ? 'مسح سجل المحادثات بالكامل' : 'Erase All Chat Histories'}
+                            {t('creative.m158')}
                           </button>
                         ) : (
                           <div className="flex items-center gap-2">
@@ -1291,13 +1271,13 @@ export function ChatDesigner({
                               onClick={handleClearAllHistory}
                               className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white text-xs font-bold rounded-lg transition-colors"
                             >
-                              {lang === 'ar' ? 'نعم، امسح الآن' : 'Yes, Delete Permanent'}
+                              {t('creative.m157')}
                             </button>
                             <button 
                               onClick={() => setClearConfirm(false)}
                               className="px-4 py-2 bg-white/5 hover:bg-white/10 text-slate-300 text-xs font-semibold rounded-lg transition-colors"
                             >
-                              {lang === 'ar' ? 'إلغاء' : 'Cancel'}
+                              {t('common.cancel')}
                             </button>
                           </div>
                         )}
@@ -1447,7 +1427,7 @@ export function ChatDesigner({
                                            </div>
                                            <div className="text-start">
                                              <div className={`text-sm font-bold ${!useCreativePro ? 'text-white' : 'text-slate-300'}`}>Creative Imagen</div>
-                                             <div className="text-[10px] text-slate-500">{lang === 'ar' ? 'النموذج الافتراضي السريع' : 'Fast default model'}</div>
+                                             <div className="text-[10px] text-slate-500">{t('creative.m156')}</div>
                                            </div>
                                          </div>
                                          {!useCreativePro && <CheckCircle2 className="w-4 h-4 text-amber-400" />}
@@ -1466,7 +1446,7 @@ export function ChatDesigner({
                                              <div className={`text-sm font-bold flex items-center gap-1.5 ${useCreativePro ? 'text-white' : 'text-slate-300'}`}>
                                                 Creative Imagen Pro <span className="bg-purple-500 text-white text-[8px] px-1 py-0.5 rounded font-black uppercase">Pro</span>
                                              </div>
-                                             <div className="text-[10px] text-slate-500">{lang === 'ar' ? 'جودة فائقة وواقعية سينمائية' : 'Ultra quality & cinematic'}</div>
+                                             <div className="text-[10px] text-slate-500">{t('creative.m155')}</div>
                                            </div>
                                          </div>
                                          {useCreativePro && <CheckCircle2 className="w-4 h-4 text-purple-400" />}
@@ -1477,7 +1457,7 @@ export function ChatDesigner({
                              </div>
                              
                              <span className="text-[10px] text-slate-500 px-2">
-                                {useCreativePro ? (lang === 'ar' ? '1.5 نقطة / تصميم' : '1.5 pts / design') : (lang === 'ar' ? '1 نقطة / تصميم' : '1 pt / design')}
+                                {useCreativePro ? (t('creative.m154')) : (t('creative.m153'))}
                              </span>
                           </div>
 
@@ -1558,7 +1538,7 @@ export function ChatDesigner({
                               onKeyDown={handleKeyDown}
                               disabled={isLoading}
                               rows={1}
-                              placeholder={lang === 'ar' ? 'اكتب فكرتك للتصميم...' : 'Describe your design idea...'}
+                              placeholder={t('creative.m152')}
                               className="w-full bg-white/[0.03] hover:bg-white/[0.05] border border-white/5 focus:border-white/10 focus:bg-white/[0.08] rounded-[24px] py-3.5 ltr:pl-12 ltr:pr-14 rtl:pr-12 rtl:pl-14 text-white placeholder-slate-500 focus:outline-none transition-all disabled:opacity-50 resize-none shadow-sm backdrop-blur-3xl text-sm md:text-base custom-scrollbar max-h-[120px] font-light"
                               style={{ minHeight: '50px' }}
                             />
@@ -1574,7 +1554,7 @@ export function ChatDesigner({
                         </form>
                         <div className="text-center mt-2">
                           <span className="text-[9px] text-slate-500 uppercase tracking-widest font-mono">
-                            {lang === 'ar' ? 'الذكاء الاصطناعي يمكن أن يرتكب أخطاء فنية.' : 'AI models may produce technical inaccuracies.'}
+                            {t('creative.m151')}
                           </span>
                         </div>
                       </div>
@@ -1628,13 +1608,13 @@ export function ChatDesigner({
                   <div className="space-y-2 text-start" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
                     <div className="flex items-center gap-2 text-purple-400 text-xs font-bold uppercase tracking-wider">
                       <Sparkles className="w-4 h-4" />
-                      <span>{lang === 'ar' ? 'خيارات التصميم الذكي' : 'Design Masterpiece'}</span>
+                      <span>{t('creative.m150')}</span>
                     </div>
                     <h3 className="text-xl font-extrabold text-white leading-snug font-sans">
-                      {lang === 'ar' ? 'تحرير وتنزيل تصميمك' : 'Edit & Export Design'}
+                      {t('creative.m149')}
                     </h3>
                     <p className="text-xs text-slate-400">
-                      {lang === 'ar' ? 'اختر الإجراء المناسب لتصميمك المولد بالذكاء الاصطناعي.' : 'Perform action on your high-quality AI-crafted asset.'}
+                      {t('creative.m148')}
                     </p>
                   </div>
 
@@ -1650,7 +1630,7 @@ export function ChatDesigner({
                       <div className="p-2.5 bg-purple-500/10 group-hover:bg-purple-500/20 text-purple-400 rounded-xl transition-all">
                         <Download className="w-5 h-5" />
                       </div>
-                      <span className="text-xs font-bold">{lang === 'ar' ? 'تنزيل الصورة' : 'Download'}</span>
+                      <span className="text-xs font-bold">{t('creative.m147')}</span>
                     </a>
 
                     <button 
@@ -1663,7 +1643,7 @@ export function ChatDesigner({
                         {copiedSuccess ? <CheckCircle className="w-5 h-5 text-emerald-400 animate-pulse" /> : <Share2 className="w-5 h-5" />}
                       </div>
                       <span className="text-xs font-bold">
-                        {copiedSuccess ? (lang === 'ar' ? 'تم النسخ!' : 'Copied!') : (lang === 'ar' ? 'مشاركة الرابط' : 'Copy Link')}
+                        {copiedSuccess ? (t('common.copied')) : (t('creative.m146'))}
                       </span>
                     </button>
                   </div>
@@ -1671,12 +1651,12 @@ export function ChatDesigner({
                   {/* Smart Edit Section */}
                   <div className="space-y-3 pt-4 border-t border-white/5 text-start" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
                     <label className="text-xs font-bold text-slate-300 block">
-                      {lang === 'ar' ? 'طلب تعديل ذكي على الصورة' : 'Request Smart Modification'}
+                      {t('creative.m145')}
                     </label>
                     <textarea 
                       value={editPromptText}
                       onChange={(e) => setEditPromptText(e.target.value)}
-                      placeholder={lang === 'ar' ? 'مثال: غير الخلفية للون أسود، أو أضف لمعان ذهبي...' : 'E.g., change background to dark gold, add glow...'}
+                      placeholder={t('creative.m144')}
                       className="w-full bg-black/40 border border-white/10 hover:border-purple-500/30 focus:border-purple-500 rounded-xl p-3.5 text-white placeholder-slate-500 focus:outline-none transition-all resize-none text-xs leading-relaxed"
                       rows={3}
                     />
@@ -1691,7 +1671,7 @@ export function ChatDesigner({
                       className="w-full py-3 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 disabled:from-purple-600/50 disabled:to-indigo-600/50 text-white font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-lg shadow-purple-500/10 disabled:pointer-events-none"
                     >
                       <Sparkles className="w-3.5 h-3.5" />
-                      {lang === 'ar' ? 'إرسال طلب التعديل للذكاء الاصطناعي' : 'Send Modification Request'}
+                      {t('creative.m143')}
                     </button>
                   </div>
                 </div>

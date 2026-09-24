@@ -258,11 +258,7 @@ export default function Store() {
     };
     script.onerror = () => {
       setSdkLoading(false);
-      setSdkError(
-        locale === 'ar'
-          ? 'تعذر تحميل بوابة الدفع. تحقق من اتصال الإنترنت وحاول مرة أخرى.'
-          : 'Failed to load payment gateway. Please check your connection and try again.'
-      );
+      setSdkError(t('shell.store.gatewayLoadFail'));
     };
     document.body.appendChild(script);
   }, [clientId, locale]);
@@ -282,11 +278,7 @@ export default function Store() {
             try {
               const token = await auth.currentUser?.getIdToken();
               if (!token) {
-                toast.error(
-                  locale === 'ar'
-                    ? 'يجب تسجيل الدخول أولاً لإتمام عملية الدفع'
-                    : 'Please log in first to complete payment'
-                );
+                toast.error(t('shell.store.loginToPay'));
                 throw new Error('User not authenticated');
               }
               const res = await fetch('/api/paypal/create-order', {
@@ -297,10 +289,7 @@ export default function Store() {
               const data = await res.json();
               if (!res.ok || !data.order_id) {
                 toast.error(
-                  data.error ||
-                    (locale === 'ar'
-                      ? 'فشل في إنشاء طلب الدفع عبر PayPal'
-                      : 'Failed to create PayPal payment order')
+                  data.error || t('shell.store.createOrderFail')
                 );
                 throw new Error(data.error || 'create_order_failed');
               }
@@ -321,10 +310,7 @@ export default function Store() {
               const result = await res.json();
               if (!res.ok) {
                 toast.error(
-                  result.error ||
-                    (locale === 'ar'
-                      ? 'حدث خطأ أثناء تأكيد عملية الدفع'
-                      : 'An error occurred while confirming payment')
+                  result.error || t('shell.store.confirmPayError')
                 );
                 return;
               }
@@ -334,15 +320,10 @@ export default function Store() {
                 packages.find((p) => p.id === selectedIdRef.current)?.points ||
                 0;
               setSuccessInfo({ points: pointsAdded, newBalance: result.newBalance });
-              toast.success(
-                locale === 'ar'
-                  ? `تم شحن ${pointsAdded} نقطة إلى رصيدك بنجاح!`
-                  : `Successfully added ${pointsAdded} points to your balance!`
-              );
+              toast.success(t('shell.store.pointsAdded', { points: pointsAdded }));
             } catch (err: any) {
               toast.error(
-                err.message ||
-                  (locale === 'ar' ? 'فشل في إتمام عملية الشحن' : 'Payment completion failed')
+                err.message || t('shell.store.completeFail')
               );
             } finally {
               setIsProcessing(false);
@@ -351,11 +332,7 @@ export default function Store() {
           onError: (err: any) => {
             setIsProcessing(false);
             console.error('PayPal button error:', err);
-            toast.error(
-              locale === 'ar'
-                ? 'تعذرت عملية الدفع عبر PayPal أو البطاقة. يرجى التحقق من البيانات والمحاولة مرة أخرى.'
-                : 'Payment via PayPal or card was unsuccessful. Please check card info and try again.'
-            );
+            toast.error(t('shell.store.paypalFail'));
           },
           onCancel: () => {
             setIsProcessing(false);
@@ -414,7 +391,7 @@ export default function Store() {
           </div>
           {mode === 'sandbox' && (
             <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">
-              {locale === 'ar' ? 'وضع تجريبي (Sandbox)' : 'Sandbox Mode'}
+              {t('shell.store.sandbox')}
             </span>
           )}
         </div>
@@ -444,17 +421,7 @@ export default function Store() {
                 {t('store.paymentSuccess')}
               </p>
               <p className="text-xs text-emerald-300">
-                {locale === 'ar' ? (
-                  <>
-                    أضيفت <span className="font-extrabold text-white">{successInfo.points} نقطة</span> — رصيدك الآن{' '}
-                    <span className="font-mono font-bold text-white">{successInfo.newBalance}</span> نقطة
-                  </>
-                ) : (
-                  <>
-                    Added <span className="font-extrabold text-white">{successInfo.points} points</span> — Your balance is now{' '}
-                    <span className="font-mono font-bold text-white">{successInfo.newBalance}</span> pts
-                  </>
-                )}
+                {t('shell.store.addedPoints', { points: successInfo.points })} — {t('shell.store.balanceNow', { balance: successInfo.newBalance })}
               </p>
             </div>
           </div>
@@ -462,7 +429,7 @@ export default function Store() {
             to="/"
             className="bg-emerald-500 hover:bg-emerald-400 text-black text-xs font-extrabold px-4 py-2 rounded-xl transition whitespace-nowrap"
           >
-            {locale === 'ar' ? 'ابدأ الإبداع الآن' : 'Start Creating Now'}
+            {t('shell.store.startCreating')}
           </Link>
         </div>
       )}
@@ -477,9 +444,7 @@ export default function Store() {
               key={pkg.id}
               type="button"
               onClick={() => setSelectedId(pkg.id)}
-              className={`relative ${
-                isRtl ? 'text-right' : 'text-left'
-              } p-6 rounded-2xl border transition-all duration-200 cursor-pointer flex flex-col bg-white dark:bg-zinc-900 ${
+              className={`relative text-start p-6 rounded-2xl border transition-all duration-200 cursor-pointer flex flex-col bg-white dark:bg-zinc-900 ${
                 isSelected
                   ? 'border-amber-500 shadow-lg shadow-amber-500/10 ring-1 ring-amber-400/40'
                   : 'border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700'
@@ -487,9 +452,7 @@ export default function Store() {
             >
               {content.badge && (
                 <span
-                  className={`absolute -top-3 ${
-                    isRtl ? 'right-5' : 'left-5'
-                  } text-[10px] font-extrabold px-3 py-1 rounded-full border shadow-sm ${
+                  className={`absolute -top-3 start-5 text-[10px] font-extrabold px-3 py-1 rounded-full border shadow-sm ${
                     isSelected
                       ? 'bg-amber-400 text-black border-amber-300'
                       : 'bg-zinc-900 text-white border-zinc-800 dark:bg-zinc-800'
@@ -536,9 +499,7 @@ export default function Store() {
                 }`}
               >
                 {isSelected
-                  ? locale === 'ar'
-                    ? 'مُختارة الآن'
-                    : 'Selected'
+                  ? t('shell.store.selectedNow')
                   : t('store.purchaseBtn')}
               </div>
             </button>
@@ -555,7 +516,7 @@ export default function Store() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-5 border-b border-zinc-200 dark:border-zinc-800">
             <div>
               <p className="text-xs text-zinc-600 dark:text-zinc-400 mb-1">
-                {locale === 'ar' ? 'إتمام الشراء للباقة المحددة' : 'Checkout for Selected Package'}
+                {t('shell.store.checkoutTitle')}
               </p>
               <p className="text-lg font-bold text-zinc-900 dark:text-white flex items-center gap-2 flex-wrap">
                 <span>{selectedContent?.name}</span>
@@ -595,20 +556,14 @@ export default function Store() {
                   <div>
                     <div className="flex items-center gap-2 flex-wrap">
                       <h4 className="text-sm font-extrabold text-white">
-                        {locale === 'ar'
-                          ? 'بطاقات الائتمان والدفع المباشر (Credit & Debit Cards)'
-                          : 'Credit & Debit Cards (Visa • Mastercard • Mada • Amex)'}
+                        {t('shell.store.cardsTitle')}
                       </h4>
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
-                        {locale === 'ar'
-                          ? 'دفع فوري بدون الحاجة لحساب PayPal'
-                          : 'Instant Direct Card Checkout'}
+                        {t('shell.store.instantCard')}
                       </span>
                     </div>
                     <p className="text-xs text-gray-300 mt-1 leading-relaxed">
-                      {locale === 'ar'
-                        ? 'تدعم البوابة الدفع المباشر بجميع بطاقات الائتمان والسحب البنكي (Visa • Mastercard • مدى • Amex) دون الحاجة لامتلاك أو فتح حساب، كما يمكنك الدفع مباشرة برصيد حساب PayPal.'
-                        : 'Supports all major credit & debit cards worldwide without requiring a PayPal account, or you can pay with your existing PayPal balance.'}
+                      {t('shell.store.cardsBody')}
                     </p>
                   </div>
                 </div>
@@ -626,15 +581,8 @@ export default function Store() {
             <div className="p-3.5 rounded-xl bg-indigo-950/20 border border-indigo-500/25 flex items-start gap-2.5 text-xs text-indigo-300">
               <Info className="w-4 h-4 text-indigo-400 shrink-0 mt-0.5" />
               <p className="leading-relaxed">
-                {locale === 'ar' ? (
-                  <>
-                    <strong className="text-white">حماية بنكية عالمية:</strong> عند الضغط على زر الدفع، تفتح بوابة PayPal نافذة مشفرة لمعالجة بيانات بطاقتك مباشرة على خوادم بنكية آمنة معتمدة (PCI-DSS). لا يتم تخزين أرقام بطاقتك على خوادمنا نهائياً، وتضاف النقاط فوراً لحسابك.
-                  </>
-                ) : (
-                  <>
-                    <strong className="text-white">Global Bank Protection:</strong> Clicking the payment button opens an encrypted PayPal gateway window to handle your card details directly on certified banking servers (PCI-DSS). Your card details are never stored on our servers, and points are credited instantly.
-                  </>
-                )}
+                <strong className="text-white">{t('shell.store.bankProtectTitle')}</strong>{' '}
+                {t('shell.store.bankProtectBody')}
               </p>
             </div>
 
@@ -647,7 +595,7 @@ export default function Store() {
                     <div className="flex items-center gap-2">
                       <Lock className="w-4 h-4 text-amber-400" />
                       <span className="text-xs font-bold text-white">
-                        {locale === 'ar' ? 'بوابة الدفع والمعالجة المباشرة' : 'Direct Payment Gateway'}
+                        {t('shell.store.gatewayTitle')}
                       </span>
                     </div>
                     <span className="text-[11px] font-mono text-emerald-400 flex items-center gap-1">
@@ -662,9 +610,7 @@ export default function Store() {
                         <div className="py-8 flex flex-col items-center justify-center gap-2.5 text-xs text-gray-400">
                           <NajeSpinner className="w-6 h-6 text-amber-400" />
                           <span>
-                            {locale === 'ar'
-                              ? 'جاري تحميل بوابة الدفع الآمنة وشارات البطاقات...'
-                              : 'Loading secure payment gateway...'}
+                            {t('shell.store.loadingGateway')}
                           </span>
                         </div>
                       )}
@@ -679,7 +625,7 @@ export default function Store() {
                             onClick={() => window.location.reload()}
                             className="text-[11px] underline text-rose-400 hover:text-white cursor-pointer"
                           >
-                            {locale === 'ar' ? 'إعادة المحاولة' : 'Retry'}
+                            {t('common.retry')}
                           </button>
                         </div>
                       )}
@@ -693,9 +639,7 @@ export default function Store() {
                         <div className="mt-3 text-xs text-amber-300 flex items-center justify-center gap-2 animate-pulse bg-amber-500/10 p-2.5 rounded-xl border border-amber-500/20">
                           <RefreshCw className="w-4 h-4 animate-spin text-amber-400" />
                           <span>
-                            {locale === 'ar'
-                              ? 'جاري معالجة الشحن وإيداع النقاط في حسابك...'
-                              : 'Processing transaction and crediting points...'}
+                            {t('shell.store.processingTopup')}
                           </span>
                         </div>
                       )}
@@ -706,35 +650,23 @@ export default function Store() {
                         <AlertCircle className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
                         <div>
                           <p className="font-bold text-amber-300 text-sm mb-1">
-                            {locale === 'ar'
-                              ? 'خدمة الدفع ببطاقات الائتمان والسحب مفعلة برمجياً'
-                              : 'Credit & Debit Card Checkout Configured'}
+                            {t('shell.store.cardsConfigured')}
                           </p>
                           <p className="text-gray-300 text-xs">
-                            {locale === 'ar' ? (
-                              <>
-                                بوابة PayPal وبطاقات Visa و Mastercard جاهزة. بانتظار تعيين{' '}
-                                <code className="text-amber-300 font-mono bg-black/50 px-1 py-0.5 rounded">
-                                  PAYPAL_CLIENT_ID
-                                </code>{' '}
-                                في خادم التطبيق.
-                              </>
-                            ) : (
-                              <>
-                                PayPal and card processing are ready. Awaiting{' '}
-                                <code className="text-amber-300 font-mono bg-black/50 px-1 py-0.5 rounded">
-                                  PAYPAL_CLIENT_ID
-                                </code>{' '}
-                                environment configuration.
-                              </>
-                            )}
+                            <>
+                              {t('shell.store.awaitingClient')}{' '}
+                              <code className="text-amber-300 font-mono bg-black/50 px-1 py-0.5 rounded">
+                                PAYPAL_CLIENT_ID
+                              </code>{' '}
+                              {t('shell.store.onServer')}
+                            </>
                           </p>
                         </div>
                       </div>
 
                       <div className="pt-3 border-t border-amber-500/20 flex items-center justify-between">
                         <span className="text-[11px] text-gray-400">
-                          {locale === 'ar' ? 'البطاقات المعتمدة فور التفعيل:' : 'Accepted cards:'}
+                          {t('shell.store.acceptedCards')}
                         </span>
                         <div className="flex items-center gap-1.5">
                           <VisaBadge size="sm" />
@@ -751,15 +683,11 @@ export default function Store() {
                     <div className="flex items-center gap-1.5 text-emerald-400">
                       <ShieldCheck className="w-3.5 h-3.5" />
                       <span>
-                        {locale === 'ar'
-                          ? 'معتمد ومحمي بمعايير PCI-DSS المصرفية'
-                          : 'Certified PCI-DSS Compliant'}
+                        {t('shell.store.pci')}
                       </span>
                     </div>
                     <span className="text-gray-500">
-                      {locale === 'ar'
-                        ? 'لا يتم تخزين بيانات بطاقتك أبداً'
-                        : 'Card info is never stored'}
+                      {t('shell.store.neverStoreCard')}
                     </span>
                   </div>
                 </div>
@@ -769,35 +697,35 @@ export default function Store() {
               <div className="lg:col-span-5 space-y-4">
                 <div className="bg-naje-elevated border border-gray-800 rounded-2xl p-4 text-xs space-y-2.5 shadow-md">
                   <div className="flex items-center justify-between pb-2 border-b border-gray-800 text-gray-400 font-medium">
-                    <span>{locale === 'ar' ? 'ملخص الفاتورة الفورية' : 'Order Receipt'}</span>
+                    <span>{t('shell.store.receipt')}</span>
                     <span className="text-[10px] text-emerald-400 flex items-center gap-1 font-bold">
                       <Zap className="w-3 h-3" />
-                      {locale === 'ar' ? 'تسليم فوري لحظي' : 'Instant Delivery'}
+                      {t('shell.store.instantDelivery')}
                     </span>
                   </div>
 
                   <div className="flex items-center justify-between text-gray-300">
-                    <span>{locale === 'ar' ? 'الباقة المختارة:' : 'Selected Package:'}</span>
+                    <span>{t('shell.store.selectedPackage')}</span>
                     <span className="font-bold text-white">{selectedContent?.name}</span>
                   </div>
 
                   <div className="flex items-center justify-between text-gray-300">
-                    <span>{locale === 'ar' ? 'الرصيد الإبداعي:' : 'Creative Points:'}</span>
+                    <span>{t('shell.store.creativeBalance')}</span>
                     <span className="font-bold text-amber-400 font-mono">
                       +{selectedPackage?.points} {t('store.pointsUnit')}
                     </span>
                   </div>
 
                   <div className="flex items-center justify-between text-gray-300">
-                    <span>{locale === 'ar' ? 'الضرائب ورسوم المعالجة:' : 'Taxes & Gateway Fees:'}</span>
+                    <span>{t('shell.store.fees')}</span>
                     <span className="text-emerald-400 font-bold">
-                      {locale === 'ar' ? '$0.00 (شاملة)' : '$0.00 (Included)'}
+                      {t('shell.store.feesIncluded')}
                     </span>
                   </div>
 
                   <div className="pt-2 border-t border-gray-800/80 flex items-center justify-between text-sm">
                     <span className="font-extrabold text-white">
-                      {locale === 'ar' ? 'المبلغ الإجمالي للدفع:' : 'Total Amount Due:'}
+                      {t('shell.store.totalDue')}
                     </span>
                     <span className="font-mono font-black text-lg text-amber-300">
                       ${selectedPackage?.usd.toFixed(2)} USD
@@ -814,32 +742,30 @@ export default function Store() {
       <div className="mt-6 flex flex-wrap gap-3 text-[11px] text-gray-500 dark:text-gray-400">
         <span className="flex items-center gap-1.5">
           <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
-          {locale === 'ar' ? 'دفع مشفّر بالكامل 256-bit' : 'Full 256-bit SSL Encryption'}
+          {t('shell.store.ssl')}
         </span>
         <span className="flex items-center gap-1.5">
           <Zap className="w-3.5 h-3.5 text-amber-500" />
-          {locale === 'ar'
-            ? 'النقاط تُضاف تلقائياً فور تأكيد الدفع'
-            : 'Instant Automatic Balance Top-up'}
+          {t('shell.store.autoPoints')}
         </span>
         <span className="flex items-center gap-1.5">
           <Bot className="w-3.5 h-3.5 text-purple-400" />
-          {locale === 'ar' ? 'وصول فوري للوكيل الذكي' : 'Full Naje AI Agent Access'}
+          {t('shell.store.agentAccess')}
         </span>
         <span className="flex items-center gap-1.5">
           <Megaphone className="w-3.5 h-3.5 text-indigo-400" />
-          {locale === 'ar' ? 'أدوات إعلانية متقدمة' : 'Advanced Video Ad Studio'}
+          {t('shell.store.adTools')}
         </span>
         <span className="flex items-center gap-1.5">
           <Clapperboard className="w-3.5 h-3.5 text-rose-400" />
-          {locale === 'ar' ? 'فيديو سينمائي حتى 30 ثانية' : 'Up to 30s Cinematic Videos'}
+          {t('shell.store.cinematic30')}
         </span>
       </div>
 
       <p className="mt-6 text-center text-xs text-gray-500">
-        {locale === 'ar' ? 'عندك كود شحن مسبق الدفع؟ ' : 'Have a prepaid activation code? '}
+        {t('shell.store.haveCode')}
         <Link to="/settings" className="text-indigo-500 font-bold hover:text-indigo-400">
-          {locale === 'ar' ? 'استخدمه من صفحة الإعدادات' : 'Redeem it in Settings'}
+          {t('shell.store.redeemInSettings')}
         </Link>
       </p>
     </div>

@@ -21,11 +21,13 @@ import AdminAuditLogView from '../components/admin/AdminAuditLogView';
 import AdminFeatureFlags from '../components/admin/AdminFeatureFlags';
 import { AdminModelPricing } from '../components/admin/AdminModelPricing';
 import { AdminNajeAd } from '../components/admin/AdminNajeAd';
+import { useI18n } from '../i18n';
 
 
 export default function Admin() {
   const navigate = useNavigate();
   const { user } = useAppStore();
+  const { t, isRtl, formatDate } = useI18n();
   const [points, setPoints] = useState<number>(10);
   const [bulkCount, setBulkCount] = useState<number>(1);
   const [maxUsage, setMaxUsage] = useState<number>(1);
@@ -43,15 +45,15 @@ export default function Admin() {
 
   // User Capacity Limit States
   const [maxUsersLimit, setMaxUsersLimit] = useState<string>('0');
-  const [maxUsersMessage, setMaxUsersMessage] = useState<string>('نعتذر، وصل التطبيق إلى الحد الأقصى للمستخدمين المسموح بتسجيلهم حالياً. يرجى التواصل مع الإدارة.');
+  const [maxUsersMessage, setMaxUsersMessage] = useState<string>(t('tools.admin.capDeniedDefault'));
   const [limitSaving, setLimitSaving] = useState<boolean>(false);
 
   // Emergency Maintenance / System Status States
   const [maintIsActive, setMaintIsActive] = useState<boolean>(false);
-  const [maintTitle, setMaintTitle] = useState<string>('إيقاف الخدمات مؤقتاً للتطوير والإصلاح');
-  const [maintIntro, setMaintIntro] = useState<string>('تم إيقاف الخدمات من أجل التطوير والإصلاح، شكراً لكم.');
-  const [maintExplanation, setMaintExplanation] = useState<string>('يقوم فريق المطورين حالياً بإجراء تحديثات هامة وتحسينات أمنية وشاملة للبنية التحتية لضمان تقديم أداء أفضل وأسرع لكافة المستخدمين. سينتهي العمل وتعود كافة الخدمات فور اكتمال التحديثات.');
-  const [maintSolutions, setMaintSolutions] = useState<string>('يرجى الانتظار والعودة لاحقاً.\nتابع الإشعارات الرسمية لمعرفة فور عودة الخدمة للعمل.');
+  const [maintTitle, setMaintTitle] = useState<string>(t('tools.admin.maintTitleDefault'));
+  const [maintIntro, setMaintIntro] = useState<string>(t('tools.admin.maintIntroDefault'));
+  const [maintExplanation, setMaintExplanation] = useState<string>(t('tools.admin.maintExplainDefault'));
+  const [maintSolutions, setMaintSolutions] = useState<string>(t('tools.admin.maintSolutionsDefault'));
   const [maintSaving, setMaintSaving] = useState<boolean>(false);
 
   // Skills Library States
@@ -86,7 +88,7 @@ export default function Admin() {
     try {
       const currentUser = auth.currentUser;
       if (!currentUser) {
-        toast.error("يرجى تسجيل الدخول أولاً.");
+        toast.error(t('tools.admin.voiceNeedLogin'));
         return;
       }
       const token = await currentUser.getIdToken();
@@ -100,13 +102,13 @@ export default function Admin() {
       });
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.error || "حدث خطأ أثناء طلب توليد الأصوات.");
+        throw new Error(data.error || t('tools.admin.voiceReqError'));
       }
       setVoiceGenResult(data);
-      toast.success(data.message || "تمت معالجة الأصوات بنجاح!");
+      toast.success(data.message || t('tools.admin.voiceOk'));
     } catch (err: any) {
       console.error("handleGenerateVoiceSamples error:", err);
-      toast.error(err.message || "فشلت عملية توليد الأصوات.");
+      toast.error(err.message || t('tools.admin.voiceFail'));
     } finally {
       setVoiceGenLoading(false);
     }
@@ -121,9 +123,9 @@ export default function Admin() {
   const handleDeleteFeedback = async (fbId: string) => {
     try {
       await deleteDoc(doc(db, 'feedback_signals', fbId));
-      toast.success('تم حذف التقييم بنجاح');
+      toast.success(t('tools.admin.fbDeleted'));
     } catch (err) {
-      toast.error('تعذر حذف التقييم');
+      toast.error(t('tools.admin.fbDeleteFail'));
     }
   };
   const [providers, setProviders] = useState({
@@ -135,30 +137,30 @@ export default function Admin() {
 
   const handleSendNotification = async () => {
     if (!notifTitle.trim()) {
-      toast.error('يرجى إدخال عنوان الإشعار');
+      toast.error(t('tools.admin.notifNeedTitle'));
       return;
     }
     if (!notifMessage.trim()) {
-      toast.error('يرجى إدخال نص الرسالة');
+      toast.error(t('tools.admin.notifNeedBody'));
       return;
     }
     if (notifTarget === 'specific' && !notifTargetUid.trim()) {
-      toast.error('يرجى إدخال معرف المستخدم المستهدف (UID)');
+      toast.error(t('tools.admin.notifNeedUid'));
       return;
     }
 
     const confirmMsg = notifTarget === 'all' 
-      ? 'هل أنت متأكد من رغبتك في إرسال هذا الإشعار لجميع المستخدمين؟' 
-      : 'هل أنت متأكد من رغبتك في إرسال هذا الإشعار للمستخدم المحدد؟';
+      ? t('tools.admin.notifConfirmAll') 
+      : t('tools.admin.notifConfirmOne');
 
-    const confirmed = await useToastStore.getState().showConfirm('تأكيد الإرسال', confirmMsg);
+    const confirmed = await useToastStore.getState().showConfirm(t('tools.admin.notifConfirmTitle'), confirmMsg);
     if (!confirmed) return;
 
     setIsSendingNotif(true);
     try {
       const token = await auth.currentUser?.getIdToken();
       if (!token) {
-        throw new Error('لم يتم العثور على توكين الصلاحية. يرجى تسجيل الدخول مجدداً.');
+        throw new Error(t('tools.admin.noToken'));
       }
 
       const res = await fetch('/api/admin/send-notification', {
@@ -178,15 +180,15 @@ export default function Admin() {
 
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.error || 'فشل إرسال الإشعار');
+        throw new Error(data.error || t('tools.admin.notifSendFail'));
       }
 
-      toast.success(data.message || 'تم إرسال الإشعار بنجاح!');
+      toast.success(data.message || t('tools.admin.notifSent'));
       setNotifTitle('');
       setNotifMessage('');
     } catch (err: any) {
       console.error(err);
-      toast.error(err.message || 'حدث خطأ غير متوقع أثناء إرسال الإشعار.');
+      toast.error(err.message || t('tools.admin.notifUnexpected'));
     } finally {
       setIsSendingNotif(false);
     }
@@ -222,9 +224,9 @@ export default function Admin() {
           })
         });
         const data = await resp.json();
-        if (!resp.ok) throw new Error(data.error || 'فشل توليد الأكواد بالجملة');
+        if (!resp.ok) throw new Error(data.error || t('tools.admin.codesBulkFail'));
         setCodes([...data.codes, ...codes]);
-        toast.success(`تم توليد ${data.totalGenerated} كود بنجاح (معرف الدفعة: ${data.batchId})!`);
+        toast.success(t('tools.admin.codesBulkOk', { count: data.totalGenerated, batch: data.batchId }));
       } else {
         const newCode = generateCode();
         const docRef = await addDoc(collection(db, 'redeem_codes'), {
@@ -237,26 +239,26 @@ export default function Admin() {
           createdAt: Date.now()
         });
         setCodes([{ id: docRef.id, code: newCode, points, used: false, maxUsage, usageCount: 0, usedByArray: [], createdAt: Date.now() }, ...codes]);
-        toast.success(`تم توليد الكود بنجاح!`);
+        toast.success(t('tools.admin.codeOneOk'));
       }
     } catch (err: any) {
       console.error(err);
-      toast.error('حدث خطأ أثناء التوليد: ' + err.message);
+      toast.error(t('tools.admin.genError', { message: err.message }));
     } finally {
       setIsGeneratingCodes(false);
     }
   };
 
   const exportCSV = () => {
-    const rawCsv = "الكود,النقاط,تاريخ التوليد\n"
-      + codes.map(c => `${c.code},${c.points},${new Date(c.createdAt).toLocaleDateString('ar-EG')}`).join("\n");
+    const rawCsv = t('tools.admin.csvHeader') + '\n'
+      + codes.map(c => `${c.code},${c.points},${formatDate(c.createdAt, { dateStyle: 'medium' })}`).join("\n");
     
     triggerSmartDownload({
       data: rawCsv,
       mimeType: 'text/csv',
       ext: 'csv',
-      title: `سجل_أكواد_التفعيل_منصة_ناجي_${new Date().toISOString().slice(0, 10)}`,
-      fallbackName: 'سجل_أكواد_التفعيل_ناجي',
+      title: t('tools.admin.codesExportTitle') + '_' + new Date().toISOString().slice(0, 10),
+      fallbackName: t('tools.admin.codesExportFallback'),
     });
   };
 
@@ -365,15 +367,15 @@ export default function Admin() {
     try {
       await setDoc(doc(db, 'config', 'system_status'), {
         maxUsersLimit: finalLimitVal,
-        maxUsersMessage: maxUsersMessage.trim() || 'نعتذر، وصل التطبيق إلى الحد الأقصى للمستخدمين المسموح بتسجيلهم حالياً. يرجى التواصل مع الإدارة.',
+        maxUsersMessage: maxUsersMessage.trim() || t('tools.admin.capDeniedDefault'),
         registeredUsersCount: users.length,
         updatedAt: Date.now(),
         updatedBy: user?.email || user?.uid || 'admin'
       }, { merge: true });
-      toast.success('تم حفظ وتحديث سقف عدد المستخدمين بنجاح!');
+      toast.success(t('tools.admin.capSaved'));
     } catch (err: any) {
       console.error(err);
-      toast.error('حدث خطأ أثناء حفظ سقف المستخدمين: ' + err.message);
+      toast.error(t('tools.admin.capSaveError', { message: err.message }));
     } finally {
       setLimitSaving(false);
     }
@@ -381,9 +383,9 @@ export default function Admin() {
 
   const handleToggleMaintenance = async (enable: boolean) => {
     const confirmMsg = enable
-      ? 'هل أنت متأكد من إيقاف خدمات ناجي بشكل كامل وتفعيل وضع الصيانة والتطوير لجميع المستخدمين؟'
-      : 'هل أنت متأكد من إلغاء وضع الصيانة وإعادة تشغيل خدمات ناجي بنجاح؟';
-    const confirmed = await useToastStore.getState().showConfirm('تنبيه حالة النظام', confirmMsg);
+      ? t('tools.admin.maintConfirmOff')
+      : t('tools.admin.maintConfirmOn');
+    const confirmed = await useToastStore.getState().showConfirm(t('tools.admin.systemAlertTitle'), confirmMsg);
     if (!confirmed) return;
 
     setMaintSaving(true);
@@ -391,22 +393,22 @@ export default function Admin() {
       const solList = maintSolutions.split('\n').map(s => s.trim()).filter(Boolean);
       await setDoc(doc(db, 'config', 'system_status'), {
         isMaintenance: enable,
-        title: maintTitle.trim() || 'إيقاف الخدمات مؤقتاً للتطوير والإصلاح',
-        intro: maintIntro.trim() || 'تم إيقاف الخدمات من أجل التطوير والإصلاح، شكراً لكم.',
-        explanation: maintExplanation.trim() || 'يقوم فريق المطورين حالياً بإجراء تحديثات هامة وتحسينات أمنية وشاملة للبنية التحتية لضمان تقديم أداء أفضل وأسرع لكافة المستخدمين. سينتهي العمل وتعود كافة الخدمات فور اكتمال التحديثات.',
-        solutions: solList.length > 0 ? solList : ['يرجى الانتظار والعودة لاحقاً.', 'تابع الإشعارات الرسمية لمعرفة فور عودة الخدمة للعمل.'],
+        title: maintTitle.trim() || t('tools.admin.maintTitleDefault'),
+        intro: maintIntro.trim() || t('tools.admin.maintIntroDefault'),
+        explanation: maintExplanation.trim() || t('tools.admin.maintExplainDefault'),
+        solutions: solList.length > 0 ? solList : [t('tools.admin.maintSolWait'), t('tools.admin.maintSolFollow')],
         updatedAt: Date.now(),
         updatedBy: user?.email || user?.uid || 'admin'
       }, { merge: true });
       setMaintIsActive(enable);
       if (enable) {
-        toast.success('تم إيقاف ناجي عن العمل وإظهار بطاقة الصيانة لجميع المستخدمين');
+        toast.success(t('tools.admin.maintStopped'));
       } else {
-        toast.success('تم إعادة تشغيل ناجي وإلغاء وضع الصيانة بنجاح');
+        toast.success(t('tools.admin.maintResumed'));
       }
     } catch (err: any) {
       console.error(err);
-      toast.error('حدث خطأ أثناء تحديث حالة النظام: ' + err.message);
+      toast.error(t('tools.admin.systemUpdateError', { message: err.message }));
     } finally {
       setMaintSaving(false);
     }
@@ -425,10 +427,10 @@ export default function Admin() {
         updatedAt: Date.now(),
         updatedBy: user?.email || user?.uid || 'admin'
       }, { merge: true });
-      toast.success('تم حفظ وتعديل نصوص بطاقة الصيانة بنجاح!');
+      toast.success(t('tools.admin.maintTextSaved'));
     } catch (err: any) {
       console.error(err);
-      toast.error('حدث خطأ أثناء الحفظ: ' + err.message);
+      toast.error(t('tools.admin.saveErrorMsg', { message: err.message }));
     } finally {
       setMaintSaving(false);
     }
@@ -436,10 +438,10 @@ export default function Admin() {
 
   const handleGrantAdmin = async (targetUid: string, canAddAdmins: boolean) => {
     if (!user?.canAddAdmins) {
-      toast.error('ليس لديك صلاحية لإضافة مدراء.');
+      toast.error(t('tools.admin.noPermAddAdmin'));
       return;
     }
-    const confirmed = await useToastStore.getState().showConfirm('تأكيد الإجراء', 'هل أنت متأكد من منح صلاحيات الإدارة لهذا المستخدم؟');
+    const confirmed = await useToastStore.getState().showConfirm(t('tools.admin.confirmActionTitle'), t('tools.admin.confirmGrantAdmin'));
     if (confirmed) {
       try {
         await updateDoc(doc(db, 'users', targetUid), {
@@ -447,10 +449,10 @@ export default function Admin() {
           canAddAdmins
         });
         setUsers(users.map(u => u.uid === targetUid ? { ...u, isAdmin: true, canAddAdmins } : u));
-        toast.success('تم منح الصلاحيات بنجاح.');
+        toast.success(t('tools.admin.grantOk'));
       } catch (err) {
         console.error(err);
-        toast.error('حدث خطأ أثناء ترقية المستخدم.');
+        toast.error(t('tools.admin.grantFail'));
       }
     }
   };
@@ -458,35 +460,35 @@ export default function Admin() {
   const handleToggleBlock = async (targetUid: string, currentBlockStatus: boolean) => {
     if (!user?.isAdmin) return;
     if (targetUid === user.uid) {
-      toast.error('لا يمكنك حظر نفسك.');
+      toast.error(t('tools.admin.cantBlockSelf'));
       return;
     }
-    const msg = currentBlockStatus ? 'هل أنت متأكد من فك الحظر عن هذا المستخدم؟' : 'هل أنت متأكد من حظر هذا المستخدم؟';
-    const confirmed = await useToastStore.getState().showConfirm('تأكيد الإجراء', msg);
+    const msg = currentBlockStatus ? t('tools.admin.confirmUnblock') : t('tools.admin.confirmBlock');
+    const confirmed = await useToastStore.getState().showConfirm(t('tools.admin.confirmActionTitle'), msg);
     if (confirmed) {
       try {
         await updateDoc(doc(db, 'users', targetUid), {
           isBlocked: !currentBlockStatus
         });
         setUsers(users.map(u => u.uid === targetUid ? { ...u, isBlocked: !currentBlockStatus } : u));
-        toast.success('تم تنفيذ العملية بنجاح.');
+        toast.success(t('tools.admin.actionOk'));
       } catch (err) {
         console.error(err);
-        toast.error('حدث خطأ أثناء تنفيذ العملية.');
+        toast.error(t('tools.admin.actionFail'));
       }
     }
   };
 
   const handleRevokeAdmin = async (targetUid: string) => {
     if (!user?.canAddAdmins) {
-      toast.error('ليس لديك صلاحية لإزالة المدراء.');
+      toast.error(t('tools.admin.noPermRemoveAdmin'));
       return;
     }
     if (targetUid === user.uid) {
-      toast.error('لا يمكنك إزالة صلاحياتك بنفسك.');
+      toast.error(t('tools.admin.cantRemoveSelf'));
       return;
     }
-    const confirmed = await useToastStore.getState().showConfirm('تأكيد الإجراء', 'هل أنت متأكد من سحب صلاحيات الإدارة من هذا المستخدم؟');
+    const confirmed = await useToastStore.getState().showConfirm(t('tools.admin.confirmActionTitle'), t('tools.admin.confirmRevoke'));
     if (confirmed) {
       try {
         await updateDoc(doc(db, 'users', targetUid), {
@@ -494,10 +496,10 @@ export default function Admin() {
           canAddAdmins: false
         });
         setUsers(users.map(u => u.uid === targetUid ? { ...u, isAdmin: false, canAddAdmins: false } : u));
-        toast.success('تم سحب الصلاحيات بنجاح.');
+        toast.success(t('tools.admin.revokeOk'));
       } catch (err) {
         console.error(err);
-        toast.error('حدث خطأ أثناء سحب الصلاحيات.');
+        toast.error(t('tools.admin.revokeFail'));
       }
     }
   };
@@ -520,7 +522,7 @@ export default function Admin() {
     if (!balanceModalUser) return;
     const numAmount = Number(adjustAmount);
     if (isNaN(numAmount) || numAmount < 0) {
-      toast.error('يرجى إدخال قيمة عددية موجبة وصحيحة للنقاط.');
+      toast.error(t('tools.admin.needPositivePoints'));
       return;
     }
     const finalReason = adjustReasonPreset === 'custom' 
@@ -531,7 +533,7 @@ export default function Admin() {
     try {
       const currentUser = auth.currentUser;
       if (!currentUser) {
-        toast.error('يرجى تسجيل الدخول كمسؤول أولاً.');
+        toast.error(t('tools.admin.needAdminLogin'));
         setAdjustSubmitting(false);
         return;
       }
@@ -552,14 +554,14 @@ export default function Admin() {
       });
       const data = await res.json();
       if (!res.ok || !data.success) {
-        throw new Error(data.error || 'فشلت عملية تعديل الرصيد');
+        throw new Error(data.error || t('tools.admin.balanceAdjustFail'));
       }
 
       setUsers(users.map(u => u.uid === balanceModalUser.uid ? { ...u, balance: data.newBalance } : u));
-      toast.success(`تم تحديث رصيد ${balanceModalUser.displayName || balanceModalUser.email} بنجاح! الرصيد الجديد: ${data.newBalance} نقطة`);
+      toast.success(t('tools.admin.balanceUpdated', { name: balanceModalUser.displayName || balanceModalUser.email, balance: data.newBalance }));
       handleCloseBalanceModal();
     } catch (err: any) {
-      toast.error('خطأ في تعديل الرصيد: ' + err.message);
+      toast.error(t('tools.admin.balanceAdjustError', { message: err.message }));
     } finally {
       setAdjustSubmitting(false);
     }
@@ -577,25 +579,25 @@ export default function Admin() {
     setProviders(updated);
     try {
       await setDoc(doc(db, 'config', 'providers_settings'), updated);
-      toast.success('تم تحديث مزود الخدمة بنجاح!');
+      toast.success(t('tools.admin.providerUpdated'));
     } catch (err: any) {
-      toast.error('حدث خطأ أثناء تحديث مزود الخدمة: ' + err.message);
+      toast.error(t('tools.admin.providerUpdateError', { message: err.message }));
     }
   };
 
   // Aggregate stats by model
   const aggregatedStats = () => {
     const categories: Record<string, { name: string, count: number, points: number, costUSD: number }> = {
-      'lite': { name: 'Naje Imagen Lite (صورة)', count: 0, points: 0, costUSD: 0 },
-      'spectra': { name: 'Naje Imagen (صورة)', count: 0, points: 0, costUSD: 0 },
-      'nova': { name: 'Naje Imagen Pro (صورة)', count: 0, points: 0, costUSD: 0 },
-      'veo': { name: 'Naje Video (فيديو)', count: 0, points: 0, costUSD: 0 },
-      'veo-pro': { name: 'Naje Video Pro (فيديو)', count: 0, points: 0, costUSD: 0 },
-      'omni': { name: 'Naje Video Pro (فيديو)', count: 0, points: 0, costUSD: 0 },
-      'pdf': { name: 'PDF Documents (مستند)', count: 0, points: 0, costUSD: 0 },
-      'docx': { name: 'Word Documents (مستند)', count: 0, points: 0, costUSD: 0 },
-      'pptx': { name: 'PowerPoint (مستند)', count: 0, points: 0, costUSD: 0 },
-      'text': { name: 'Standard Text (محادثة)', count: 0, points: 0, costUSD: 0 }
+      'lite': { name: `Naje Imagen Lite (${t('tools.admin.kindImage')})`, count: 0, points: 0, costUSD: 0 },
+      'spectra': { name: `Naje Imagen (${t('tools.admin.kindImage')})`, count: 0, points: 0, costUSD: 0 },
+      'nova': { name: `Naje Imagen Pro (${t('tools.admin.kindImage')})`, count: 0, points: 0, costUSD: 0 },
+      'veo': { name: `Naje Video (${t('tools.admin.kindVideo')})`, count: 0, points: 0, costUSD: 0 },
+      'veo-pro': { name: `Naje Video Pro (${t('tools.admin.kindVideo')})`, count: 0, points: 0, costUSD: 0 },
+      'omni': { name: `Naje Video Pro (${t('tools.admin.kindVideo')})`, count: 0, points: 0, costUSD: 0 },
+      'pdf': { name: `PDF Documents (${t('tools.admin.kindDoc')})`, count: 0, points: 0, costUSD: 0 },
+      'docx': { name: `Word Documents (${t('tools.admin.kindDoc')})`, count: 0, points: 0, costUSD: 0 },
+      'pptx': { name: `PowerPoint (${t('tools.admin.kindDoc')})`, count: 0, points: 0, costUSD: 0 },
+      'text': { name: `Standard Text (${t('tools.admin.kindChat')})`, count: 0, points: 0, costUSD: 0 }
     };
 
     logs.forEach(log => {
@@ -637,14 +639,14 @@ export default function Admin() {
   const isLimitReached = isLimitClosedForNew || (limitNum > 0 && users.length >= limitNum);
 
   return (
-    <div className="p-4 sm:p-6 md:p-8 max-w-7xl mx-auto space-y-6 text-right" dir="rtl">
+    <div className="p-4 sm:p-6 md:p-8 max-w-7xl mx-auto space-y-6 text-start" dir={isRtl ? 'rtl' : 'ltr'}>
       {/* Top Main Bar Header */}
       <div className="bg-white/90 dark:bg-gray-900/90 backdrop-blur-md p-4 sm:p-5 rounded-2xl sm:rounded-3xl border border-gray-200/80 dark:border-gray-800/80 shadow-md shadow-purple-500/5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3.5">
           <button
             onClick={() => navigate(-1)}
             className="p-2.5 rounded-2xl bg-gray-100 hover:bg-purple-50 dark:bg-gray-800 dark:hover:bg-purple-950/40 text-gray-700 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 border border-gray-200/80 dark:border-gray-700/80 transition-all active:scale-95 shadow-sm cursor-pointer group"
-            title="رجوع للصفحة السابقة"
+            title={t('tools.admin.back')}
           >
             <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-0.5" />
           </button>
@@ -655,14 +657,14 @@ export default function Admin() {
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-xl sm:text-2xl md:text-3xl font-black text-gray-900 dark:text-white tracking-tight">
-                لوحة التحكم والتطوير
+                {t('tools.admin.pageTitle')}
               </h1>
               <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
                 Naje Admin
               </span>
             </div>
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 font-medium">
-              إدارة المستخدمين، سقف التسجيل، أسعار النماذج الموحدة، والسياسات العامة
+              {t('tools.admin.pageSubtitle')}
             </p>
           </div>
         </div>
@@ -672,7 +674,7 @@ export default function Admin() {
             to="/" 
             className="w-full sm:w-auto bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-700 hover:from-purple-700 hover:to-indigo-800 text-white px-5 py-2.5 rounded-xl transition-all font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-purple-500/20 active:scale-95 cursor-pointer border border-purple-500/20"
           >
-            <span>العودة للاستوديو الرئيسي</span>
+            <span>{t('tools.admin.backStudio')}</span>
             <ArrowRight className="w-4 h-4 rotate-180" />
           </Link>
         </div>
@@ -685,10 +687,10 @@ export default function Admin() {
             <Users className="w-6 h-6" />
           </div>
           <div className="min-w-0">
-            <span className="text-[11px] font-bold text-gray-500 dark:text-gray-400 block truncate">إجمالي المسجلين</span>
+            <span className="text-[11px] font-bold text-gray-500 dark:text-gray-400 block truncate">{t('tools.admin.metricUsers')}</span>
             <div className="flex items-baseline gap-1 mt-0.5">
               <span className="text-2xl font-black text-gray-900 dark:text-white">{users.length}</span>
-              <span className="text-xs font-medium text-gray-500">حساب</span>
+              <span className="text-xs font-medium text-gray-500">{t('tools.admin.accountUnit')}</span>
             </div>
           </div>
         </div>
@@ -698,16 +700,16 @@ export default function Admin() {
             <Lock className="w-6 h-6" />
           </div>
           <div className="min-w-0">
-            <span className="text-[11px] font-bold text-gray-500 dark:text-gray-400 block truncate">سقف السعة المسموحة</span>
+            <span className="text-[11px] font-bold text-gray-500 dark:text-gray-400 block truncate">{t('tools.admin.metricCap')}</span>
             <div className="flex items-center gap-1.5 mt-0.5">
               <span className="text-xl font-black text-gray-900 dark:text-white">
-                {isLimitClosedForNew ? 'مغلق (00)' : (limitNum > 0 ? `${limitNum}` : 'غير محدود (0)')}
+                {isLimitClosedForNew ? t('tools.admin.capClosed') : (limitNum > 0 ? `${limitNum}` : t('tools.admin.capUnlimited'))}
               </span>
               <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                 isLimitClosedForNew ? 'bg-amber-500/20 text-amber-600 dark:text-amber-400' :
                 isLimitReached ? 'bg-red-500/20 text-red-600 dark:text-red-400' : 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400'
               }`}>
-                {isLimitClosedForNew ? 'للمسجلين فقط' : (isLimitReached ? 'مكتفي' : (limitNum > 0 ? 'متاح' : 'مفتوح'))}
+                {isLimitClosedForNew ? t('tools.admin.capRegisteredOnly') : (isLimitReached ? t('tools.admin.capFull') : (limitNum > 0 ? t('tools.admin.capOpenLimited') : t('tools.admin.capOpen')))}
               </span>
             </div>
           </div>
@@ -718,11 +720,11 @@ export default function Admin() {
             <Power className="w-6 h-6" />
           </div>
           <div className="min-w-0">
-            <span className="text-[11px] font-bold text-gray-500 dark:text-gray-400 block truncate">حالة الخدمات العامة</span>
+            <span className="text-[11px] font-bold text-gray-500 dark:text-gray-400 block truncate">{t('tools.admin.metricServices')}</span>
             <span className={`text-xs font-black inline-block mt-1 px-2.5 py-0.5 rounded-full ${
               maintIsActive ? 'bg-red-500 text-white' : 'bg-emerald-500 text-white'
             }`}>
-              {maintIsActive ? 'صيانة وتوقف' : 'يعمل كالمعتاد'}
+              {maintIsActive ? t('tools.admin.maintenance') : t('tools.admin.servicesOk')}
             </span>
           </div>
         </div>
@@ -732,7 +734,7 @@ export default function Admin() {
             <Key className="w-6 h-6" />
           </div>
           <div className="min-w-0">
-            <span className="text-[11px] font-bold text-gray-500 dark:text-gray-400 block truncate">الأكواد المصدرة</span>
+            <span className="text-[11px] font-bold text-gray-500 dark:text-gray-400 block truncate">{t('tools.admin.metricCodes')}</span>
             <span className="text-2xl font-black text-purple-600 dark:text-purple-400 block mt-0.5">{codes.length}</span>
           </div>
         </div>
@@ -800,9 +802,9 @@ export default function Admin() {
                   <Lock className="w-7 h-7" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-black text-gray-900 dark:text-white">سقف عدد المستخدمين المسموح به (User Limit)</h2>
+                  <h2 className="text-xl font-black text-gray-900 dark:text-white">{t('tools.admin.capSectionTitle')}</h2>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    حدد الحد الأقصى للمستخدمين الجدد. عند الوصول للعدد المحدد يتم إيقاف تسجيل الحسابات الجديدة مع السماح للمستخدمين القدامى بالدخول والخروج بحرية.
+                    {t('tools.admin.capSectionDesc')}
                   </p>
                 </div>
               </div>
@@ -816,10 +818,10 @@ export default function Admin() {
                     : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
                 }`}>
                   {isLimitClosedForNew
-                    ? 'مغلق للجدد (متاح للمسجلين فقط)'
+                    ? t('tools.admin.capClosedNew')
                     : isLimitReached
-                    ? 'تم اكتفاء العدد'
-                    : 'متاح للتسجيل'}
+                    ? t('tools.admin.capFullShort')
+                    : t('tools.admin.capOpenReg')}
                 </span>
               </div>
             </div>
@@ -827,9 +829,9 @@ export default function Admin() {
             {/* Capacity Meter */}
             <div className="bg-gray-50 dark:bg-gray-950 p-4 sm:p-5 rounded-2xl border border-gray-200 dark:border-gray-800 space-y-3">
               <div className="flex items-center justify-between text-xs font-extrabold">
-                <span className="text-gray-700 dark:text-gray-300">وضع السعة الحالي:</span>
+                <span className="text-gray-700 dark:text-gray-300">{t('tools.admin.capModeLabel')}</span>
                 <span className="text-indigo-600 dark:text-indigo-400 font-mono text-sm">
-                  {users.length} مستخدم مسجل / {isLimitClosedForNew ? '00 (مغلق للجدد)' : (limitNum > 0 ? `${limitNum} مستخدم` : '0 (بلا حد)')}
+                  {t('tools.admin.capRatio', { count: users.length })} / {isLimitClosedForNew ? t('tools.admin.capClosed00') : (limitNum > 0 ? t('tools.admin.capUserCount', { count: limitNum }) : t('tools.admin.capNoLimit'))}
                 </span>
               </div>
 
@@ -848,15 +850,15 @@ export default function Admin() {
 
               <div className="p-3 bg-indigo-500/5 border border-indigo-500/10 rounded-xl text-xs space-y-1">
                 <div className="font-extrabold text-gray-900 dark:text-white flex items-center gap-1.5">
-                  <span>تفاصيل القيمة المحددة:</span>
+                  <span>{t('tools.admin.capValueDetails')}</span>
                   <span className="text-indigo-600 dark:text-indigo-400 font-mono">"{maxUsersLimit}"</span>
                 </div>
                 <p className="text-gray-600 dark:text-gray-400 text-[11px] leading-relaxed">
                   {isLimitClosedForNew
-                    ? '(القيمة 00): التسجيل مغلق تماماً لأي شخص جديد. متاح فقط للأشخاص المسجلين سابقاً بروابط حساباتهم.'
+                    ? t('tools.admin.capExplain00')
                     : limitNum === 0
-                    ? '(القيمة 0): التسجيل متاح للجميع وبلا حدود.'
-                    : `(القيمة ${limitNum}): التسجيل متاح للجميع حتى يصل إجمالي الحسابات إلى ${limitNum} مستخدم.`}
+                    ? t('tools.admin.capExplain0')
+                    : t('tools.admin.capExplainN', { count: limitNum })}
                 </p>
               </div>
             </div>
@@ -865,7 +867,7 @@ export default function Admin() {
             <div className="space-y-4">
               <div>
                 <label className="block text-xs font-extrabold text-gray-700 dark:text-gray-300 mb-2">
-                  خيارات سريعة لضبط نظام التسجيل:
+                  {t('tools.admin.capQuick')}
                 </label>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   <button
@@ -877,8 +879,8 @@ export default function Admin() {
                         : 'bg-gray-50 dark:bg-gray-950 border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-900'
                     }`}
                   >
-                    <span>القيمة 0 (مفتوح)</span>
-                    <span className="text-[10px] font-normal">متاح للجميع (بلا حدود)</span>
+                    <span>{t('tools.admin.opt0Title')}</span>
+                    <span className="text-[10px] font-normal">{t('tools.admin.opt0Desc')}</span>
                   </button>
 
                   <button
@@ -890,8 +892,8 @@ export default function Admin() {
                         : 'bg-gray-50 dark:bg-gray-950 border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-900'
                     }`}
                   >
-                    <span>القيمة 00 (مغلق)</span>
-                    <span className="text-[10px] font-normal">متاح للمسجلين سابقاً فقط</span>
+                    <span>{t('tools.admin.opt00Title')}</span>
+                    <span className="text-[10px] font-normal">{t('tools.admin.opt00Desc')}</span>
                   </button>
 
                   <button
@@ -903,8 +905,8 @@ export default function Admin() {
                         : 'bg-gray-50 dark:bg-gray-950 border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-900'
                     }`}
                   >
-                    <span>حد عددي أقصى</span>
-                    <span className="text-[10px] font-normal">تحديد رقم مستخدمين معين</span>
+                    <span>{t('tools.admin.optNumTitle')}</span>
+                    <span className="text-[10px] font-normal">{t('tools.admin.optNumDesc')}</span>
                   </button>
                 </div>
               </div>
@@ -912,28 +914,28 @@ export default function Admin() {
               <div className="grid md:grid-cols-2 gap-5">
                 <div>
                   <label className="block text-xs font-extrabold text-gray-700 dark:text-gray-300 mb-2">
-                    قيمة سقف المستخدمين (0 للجميع / 00 للمسجلين فقط / رقم للحد):
+                    {t('tools.admin.capValueLabel')}
                   </label>
                   <div className="relative">
                     <input
                       type="text"
                       value={maxUsersLimit}
                       onChange={(e) => setMaxUsersLimit(e.target.value)}
-                      placeholder="0 أو 00 أو رقم مثلاً 50"
-                      className="w-full bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-800 rounded-xl px-4 py-3 text-sm font-bold text-gray-900 dark:text-white focus:border-purple-500 outline-none transition dir-ltr text-right"
+                      placeholder={t('tools.admin.capPlaceholder')}
+                      className="w-full bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-800 rounded-xl px-4 py-3 text-sm font-bold text-gray-900 dark:text-white focus:border-purple-500 outline-none transition dir-ltr text-start"
                     />
                   </div>
                 </div>
 
                 <div>
                   <label className="block text-xs font-extrabold text-gray-700 dark:text-gray-300 mb-2">
-                    رسالة الرفض التي تظهر للمستخدم الجديد عند الاكتفاء أو الإغلاق:
+                    {t('tools.admin.capRejectLabel')}
                   </label>
                   <input
                     type="text"
                     value={maxUsersMessage}
                     onChange={(e) => setMaxUsersMessage(e.target.value)}
-                    placeholder="عذراً، التسجيل غير متاح حالياً..."
+                    placeholder={t('tools.admin.capMsgPlaceholder')}
                     className="w-full bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-800 rounded-xl px-4 py-3 text-sm text-gray-900 dark:text-white focus:border-purple-500 outline-none transition"
                   />
                 </div>
@@ -947,7 +949,7 @@ export default function Admin() {
                 className="w-full sm:w-auto bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-black text-xs px-6 py-3 rounded-xl transition shadow-lg shadow-purple-500/20 cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {limitSaving ? <span className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></span> : <Lock className="w-4 h-4" />}
-                {limitSaving ? 'جاري الحفظ...' : 'حفظ ونشر ضوابط التسجيل'}
+                {limitSaving ? t('common.saving') : t('tools.admin.capSaveBtn')}
               </button>
             </div>
           </div>
@@ -960,9 +962,9 @@ export default function Admin() {
                   <Mic2 className="w-7 h-7" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-black text-gray-900 dark:text-white">توليد وفحص عينات أصوات استوديو ناجي (Voice Samples)</h2>
+                  <h2 className="text-xl font-black text-gray-900 dark:text-white">{t('tools.admin.voiceSectionTitle')}</h2>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    توليد ملفات العينات الصوتية الـ 30 في استوديو الأصوات عبر محرك Gemini TTS على السيرفر الحي وحفظها كملفات WAV نقية غير فارغة.
+                    {t('tools.admin.voiceSectionDesc')}
                   </p>
                 </div>
               </div>
@@ -976,7 +978,7 @@ export default function Admin() {
                 className="bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs px-5 py-3 rounded-xl transition shadow-lg shadow-indigo-500/20 cursor-pointer disabled:opacity-50 flex items-center gap-2"
               >
                 {voiceGenLoading ? <span className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></span> : <Mic2 className="w-4 h-4" />}
-                {voiceGenLoading ? 'جاري الفحص والتوليد...' : 'فحص وتوليد الأصوات المفقودة فقط'}
+                {voiceGenLoading ? t('tools.admin.voiceChecking') : t('tools.admin.voiceCheckMissing')}
               </button>
 
               <button
@@ -986,7 +988,7 @@ export default function Admin() {
                 className="bg-amber-600 hover:bg-amber-700 text-white font-extrabold text-xs px-5 py-3 rounded-xl transition shadow-lg shadow-amber-500/20 cursor-pointer disabled:opacity-50 flex items-center gap-2"
               >
                 {voiceGenLoading ? <span className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></span> : <RefreshCw className="w-4 h-4" />}
-                إعادة توليد كافة الـ 30 صوت بالقوة
+                {t('tools.admin.voiceForce')}
               </button>
             </div>
 
@@ -995,9 +997,9 @@ export default function Admin() {
                 <p className="font-bold text-gray-900 dark:text-white">{voiceGenResult.message}</p>
                 {voiceGenResult.summary && (
                   <div className="flex items-center gap-4 text-[11px] text-gray-500">
-                    <span>توليد جديد: <b className="text-emerald-500">{voiceGenResult.summary.generatedCount}</b></span>
-                    <span>تخطي (موجود سابقاً): <b className="text-indigo-500">{voiceGenResult.summary.skippedCount}</b></span>
-                    <span>فشل: <b className="text-rose-500">{voiceGenResult.summary.failedCount}</b></span>
+                    <span>{t('tools.admin.voiceNewLabel')} <b className="text-emerald-500">{voiceGenResult.summary.generatedCount}</b></span>
+                    <span>{t('tools.admin.voiceSkipLabel')} <b className="text-indigo-500">{voiceGenResult.summary.skippedCount}</b></span>
+                    <span>{t('tools.admin.voiceFailLabel')} <b className="text-rose-500">{voiceGenResult.summary.failedCount}</b></span>
                   </div>
                 )}
               </div>
@@ -1012,9 +1014,9 @@ export default function Admin() {
                   <Power className="w-7 h-7" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-black text-gray-900 dark:text-white">التحكم في حالة الخدمة والتوقف الطارئ</h2>
+                  <h2 className="text-xl font-black text-gray-900 dark:text-white">{t('tools.admin.maintSectionTitle')}</h2>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    إيقاف خدمات التطبيق بشكل كامل في حالات الصيانة أو التحديثات الشاملة.
+                    {t('tools.admin.maintSectionDesc')}
                   </p>
                 </div>
               </div>
@@ -1029,39 +1031,39 @@ export default function Admin() {
                 }`}
               >
                 <Power className="w-4 h-4" />
-                {maintSaving ? 'جاري التنفيذ...' : (maintIsActive ? 'إعادة تشغيل ناجي (إلغاء الصيانة)' : 'إيقاف ناجي عن العمل فوراً')}
+                {maintSaving ? t('tools.admin.applying') : (maintIsActive ? t('tools.admin.maintResumeBtn') : t('tools.admin.maintStopBtn'))}
               </button>
             </div>
 
             {/* Customization Form */}
             <div className="space-y-4">
               <h3 className="text-sm font-extrabold text-gray-900 dark:text-white flex items-center gap-2">
-                تخصيص نص بطاقة التوقف في نظام الأخطاء:
+                {t('tools.admin.maintCardLabel')}
               </h3>
 
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
-                    عنوان بطاقة الخطأ والصيانة:
+                    {t('tools.admin.maintCardTitleLabel')}
                   </label>
                   <input
                     type="text"
                     value={maintTitle}
                     onChange={(e) => setMaintTitle(e.target.value)}
-                    placeholder="إيقاف الخدمات مؤقتاً للتطوير والإصلاح"
+                    placeholder={t('tools.admin.maintTitleDefault')}
                     className="w-full bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-800 rounded-xl px-4 py-2.5 text-xs text-gray-900 dark:text-white focus:border-red-500 outline-none transition"
                   />
                 </div>
 
                 <div>
                   <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
-                    رسالة التوضيح للمستخدمين:
+                    {t('tools.admin.maintIntroLabel')}
                   </label>
                   <input
                     type="text"
                     value={maintIntro}
                     onChange={(e) => setMaintIntro(e.target.value)}
-                    placeholder="تم إيقاف الخدمات من أجل التطوير والإصلاح، شكراً لكم."
+                    placeholder={t('tools.admin.maintIntroDefault')}
                     className="w-full bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-800 rounded-xl px-4 py-2.5 text-xs text-gray-900 dark:text-white focus:border-red-500 outline-none transition"
                   />
                 </div>
@@ -1069,7 +1071,7 @@ export default function Admin() {
 
               <div>
                 <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
-                  التشخيص الفني التفصيلي:
+                  {t('tools.admin.maintExplainLabel')}
                 </label>
                 <textarea
                   rows={2}
@@ -1085,7 +1087,7 @@ export default function Admin() {
                   disabled={maintSaving}
                   className="bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs px-5 py-2.5 rounded-xl transition shadow-md cursor-pointer disabled:opacity-50"
                 >
-                  {maintSaving ? 'جاري الحفظ...' : 'حفظ وتحديث نصوص الصيانة'}
+                  {maintSaving ? t('common.saving') : t('tools.admin.maintSaveTexts')}
                 </button>
               </div>
             </div>
@@ -1099,20 +1101,20 @@ export default function Admin() {
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <Users className="w-6 h-6 text-purple-600 dark:text-purple-400" />
-              <h2 className="text-xl font-black text-gray-900 dark:text-white">إدارة وحسابات المستخدمين</h2>
+              <h2 className="text-xl font-black text-gray-900 dark:text-white">{t('tools.admin.usersSectionTitle')}</h2>
             </div>
 
             {/* Filter Pills & Search */}
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
               {/* Search Box */}
               <div className="relative min-w-[220px]">
-                <Search className="w-4 h-4 text-gray-400 absolute right-3 top-3" />
+                <Search className="w-4 h-4 text-gray-400 absolute end-3 top-3" />
                 <input
                   type="text"
                   value={userSearchQuery}
                   onChange={(e) => setUserSearchQuery(e.target.value)}
-                  placeholder="بحث بالبريد أو الاسم أو UID..."
-                  className="w-full bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-800 rounded-xl pr-9 pl-3 py-2 text-xs text-gray-900 dark:text-white focus:border-purple-500 outline-none transition"
+                  placeholder={t('tools.admin.userSearchPh')}
+                  className="w-full bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-800 rounded-xl pe-9 ps-3 py-2 text-xs text-gray-900 dark:text-white focus:border-purple-500 outline-none transition"
                 />
               </div>
 
@@ -1122,19 +1124,19 @@ export default function Admin() {
                   onClick={() => setUserTypeFilter('regular')}
                   className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${userTypeFilter === 'regular' ? 'bg-indigo-600 text-white shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'}`}
                 >
-                  المستخدمون ({users.filter(u => !u.isAdmin).length})
+                  {t('tools.admin.filterRegular', { count: users.filter(u => !u.isAdmin).length })}
                 </button>
                 <button 
                   onClick={() => setUserTypeFilter('admin')}
                   className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${userTypeFilter === 'admin' ? 'bg-purple-600 text-white shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'}`}
                 >
-                  المدراء ({users.filter(u => u.isAdmin).length})
+                  {t('tools.admin.filterAdmins', { count: users.filter(u => u.isAdmin).length })}
                 </button>
                 <button 
                   onClick={() => setUserTypeFilter('all')}
                   className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${userTypeFilter === 'all' ? 'bg-gray-700 text-white shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'}`}
                 >
-                  الجميع ({users.length})
+                  {t('tools.admin.filterAllUsers', { count: users.length })}
                 </button>
               </div>
             </div>
@@ -1143,14 +1145,14 @@ export default function Admin() {
           {/* Mobile Card List (Visible on Phone Screens) */}
           <div className="block md:hidden space-y-3">
             {filteredUsers.length === 0 ? (
-              <p className="text-center text-xs text-gray-500 py-6">لا يوجد مستخدمون مطابقون لشروط البحث.</p>
+              <p className="text-center text-xs text-gray-500 py-6">{t('tools.admin.usersEmpty')}</p>
             ) : (
               filteredUsers.map(u => (
                 <div key={u.uid} className="bg-gray-50 dark:bg-gray-950/70 p-4 rounded-2xl border border-gray-200 dark:border-gray-800 space-y-3">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
                       <h4 className="text-xs font-bold text-gray-900 dark:text-white truncate">
-                        {u.displayName || u.email?.split('@')[0] || 'بدون اسم'}
+                        {u.displayName || u.email?.split('@')[0] || t('tools.admin.noName')}
                       </h4>
                       <p className="text-[11px] font-mono text-gray-500 truncate mt-0.5">{u.email}</p>
                       <p className="text-[9px] font-mono text-gray-400 truncate">UID: {u.uid}</p>
@@ -1158,18 +1160,18 @@ export default function Admin() {
 
                     <div className="flex flex-col items-end gap-1 flex-shrink-0">
                       <span className="text-xs font-extrabold text-indigo-600 dark:text-indigo-400 bg-indigo-500/10 px-2.5 py-1 rounded-lg">
-                        {u.balance} نقطة
+                        {u.balance} {t('tools.admin.point')}
                       </span>
                       {u.isAdmin ? (
                         <span className="text-[10px] font-bold bg-purple-500/20 text-purple-600 dark:text-purple-300 px-2 py-0.5 rounded-md">
-                          {u.canAddAdmins ? 'سوبر مدير' : 'مدير'}
+                          {u.canAddAdmins ? t('tools.admin.superAdmin') : t('tools.admin.adminRole')}
                         </span>
                       ) : (
-                        <span className="text-[10px] text-gray-400">مستخدم</span>
+                        <span className="text-[10px] text-gray-400">{t('tools.admin.roleUser')}</span>
                       )}
                       {u.isBlocked && (
                         <span className="text-[10px] font-bold bg-red-500/20 text-red-600 dark:text-red-400 px-2 py-0.5 rounded-md">
-                          محظور
+                          {t('tools.admin.blocked')}
                         </span>
                       )}
                     </div>
@@ -1184,31 +1186,31 @@ export default function Admin() {
                       }}
                       className="text-[11px] font-bold bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 px-3 py-2 rounded-xl flex items-center gap-1 transition cursor-pointer"
                     >
-                      <MessageSquare className="w-3.5 h-3.5" /> المحادثات
+                      <MessageSquare className="w-3.5 h-3.5" /> {t('tools.admin.chatsBtn')}
                     </button>
 
                     <button 
                       onClick={() => handleOpenBalanceModal(u)} 
                       className="text-[11px] font-bold bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 px-3 py-2 rounded-xl flex items-center gap-1 transition cursor-pointer"
                     >
-                      <Coins className="w-3.5 h-3.5" /> تعديل الرصيد
+                      <Coins className="w-3.5 h-3.5" /> {t('tools.admin.adjustBalance')}
                     </button>
 
                     {user?.canAddAdmins && u.uid !== user.uid && (
                       !u.isAdmin ? (
                         <button onClick={() => handleGrantAdmin(u.uid, false)} className="text-[11px] font-bold bg-purple-500/10 hover:bg-purple-500/20 text-purple-600 dark:text-purple-400 px-3 py-2 rounded-xl flex items-center gap-1 transition">
-                          <UserPlus className="w-3.5 h-3.5" /> ترقية كمدير
+                          <UserPlus className="w-3.5 h-3.5" /> {t('tools.admin.promoteAdmin')}
                         </button>
                       ) : (
                         <button onClick={() => handleRevokeAdmin(u.uid)} className="text-[11px] font-bold bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 px-3 py-2 rounded-xl flex items-center gap-1 transition">
-                          <ShieldAlert className="w-3.5 h-3.5" /> سحب الصلاحية
+                          <ShieldAlert className="w-3.5 h-3.5" /> {t('tools.admin.revokePerm')}
                         </button>
                       )
                     )}
 
                     {user?.isAdmin && u.uid !== user.uid && (
                       <button onClick={() => handleToggleBlock(u.uid, !!u.isBlocked)} className={`text-[11px] font-bold px-3 py-2 rounded-xl flex items-center gap-1 transition ${u.isBlocked ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-red-500/10 text-red-600 dark:text-red-400'}`}>
-                        {u.isBlocked ? 'فك الحظر' : 'حظر الحساب'}
+                        {u.isBlocked ? t('tools.admin.unblock') : t('tools.admin.blockAccount')}
                       </button>
                     )}
                   </div>
@@ -1219,38 +1221,38 @@ export default function Admin() {
 
           {/* Desktop Table View */}
           <div className="hidden md:block overflow-x-auto">
-            <table className="w-full text-xs text-right">
+            <table className="w-full text-xs text-start">
               <thead className="text-gray-500 border-b border-gray-200 dark:border-gray-800">
                 <tr>
-                  <th className="pb-3 font-extrabold">المستخدم</th>
-                  <th className="pb-3 font-extrabold">البريد الإلكتروني</th>
-                  <th className="pb-3 font-extrabold">الرصيد</th>
-                  <th className="pb-3 font-extrabold">الرتبة والحالة</th>
-                  <th className="pb-3 font-extrabold text-center">إجراءات التحكم</th>
+                  <th className="pb-3 font-extrabold">{t('tools.admin.colUser')}</th>
+                  <th className="pb-3 font-extrabold">{t('tools.admin.colEmail')}</th>
+                  <th className="pb-3 font-extrabold">{t('tools.admin.colBalance')}</th>
+                  <th className="pb-3 font-extrabold">{t('tools.admin.colRank')}</th>
+                  <th className="pb-3 font-extrabold text-center">{t('tools.admin.colControls')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-gray-800/60">
                 {filteredUsers.map(u => (
                   <tr key={u.uid} className="hover:bg-gray-50/50 dark:hover:bg-gray-950/40 transition">
                     <td className="py-3.5 font-bold text-gray-900 dark:text-white">
-                      {u.displayName || 'مستخدم بدون اسم'}
+                      {u.displayName || t('tools.admin.unnamed')}
                     </td>
                     <td className="py-3.5 font-mono text-gray-600 dark:text-gray-400">{u.email}</td>
                     <td className="py-3.5 font-black text-indigo-600 dark:text-indigo-400 text-sm">
-                      {u.balance} <span className="text-[10px] font-medium text-gray-400">نقطة</span>
+                      {u.balance} <span className="text-[10px] font-medium text-gray-400">{t('tools.admin.point')}</span>
                     </td>
                     <td className="py-3.5">
                       <div className="flex flex-wrap items-center gap-1.5">
                         {u.isAdmin ? (
                           <span className="bg-purple-500/10 text-purple-600 dark:text-purple-300 font-bold px-2.5 py-0.5 rounded-full text-[10px]">
-                            {u.canAddAdmins ? 'سوبر مدير' : 'مدير'}
+                            {u.canAddAdmins ? t('tools.admin.superAdmin') : t('tools.admin.adminRole')}
                           </span>
                         ) : (
-                          <span className="text-gray-500 text-[11px]">مستخدم عالي</span>
+                          <span className="text-gray-500 text-[11px]">{t('tools.admin.roleRegular')}</span>
                         )}
                         {u.isBlocked && (
                           <span className="bg-red-500/10 text-red-600 dark:text-red-400 font-bold px-2 py-0.5 rounded-full text-[10px]">
-                            محظور
+                            {t('tools.admin.blocked')}
                           </span>
                         )}
                       </div>
@@ -1264,32 +1266,32 @@ export default function Admin() {
                           }}
                           className="text-[11px] font-bold bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 px-2.5 py-1 rounded-lg flex items-center gap-1 transition cursor-pointer"
                         >
-                          <MessageSquare className="w-3 h-3" /> المحادثات
+                          <MessageSquare className="w-3 h-3" /> {t('tools.admin.chatsBtn')}
                         </button>
 
                         <button 
                           onClick={() => handleOpenBalanceModal(u)} 
                           className="text-[11px] font-bold bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 px-2.5 py-1 rounded-lg flex items-center gap-1 transition cursor-pointer"
-                          title="تعديل الرصيد (شحن / خصم / تعويض)"
+                          title={t('tools.admin.adjustBalanceTitle')}
                         >
-                          <Coins className="w-3 h-3" /> الرصيد
+                          <Coins className="w-3 h-3" /> {t('tools.admin.balanceShort')}
                         </button>
 
                         {user?.canAddAdmins && u.uid !== user.uid && (
                           !u.isAdmin ? (
                             <button onClick={() => handleGrantAdmin(u.uid, false)} className="text-[11px] font-bold bg-purple-500/10 hover:bg-purple-500/20 text-purple-600 dark:text-purple-400 px-2.5 py-1 rounded-lg flex items-center gap-1 transition cursor-pointer">
-                              <UserPlus className="w-3 h-3" /> ترقية كمدير
+                              <UserPlus className="w-3 h-3" /> {t('tools.admin.promoteAdmin')}
                             </button>
                           ) : (
                             <button onClick={() => handleRevokeAdmin(u.uid)} className="text-[11px] font-bold bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 px-2.5 py-1 rounded-lg flex items-center gap-1 transition cursor-pointer">
-                              <ShieldAlert className="w-3 h-3" /> سحب الإدارة
+                              <ShieldAlert className="w-3 h-3" /> {t('tools.admin.revokeAdmin')}
                             </button>
                           )
                         )}
 
                         {user?.isAdmin && u.uid !== user.uid && (
                           <button onClick={() => handleToggleBlock(u.uid, !!u.isBlocked)} className={`text-[11px] font-bold px-2.5 py-1 rounded-lg flex items-center gap-1 transition cursor-pointer ${u.isBlocked ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-red-500/10 text-red-600 dark:text-red-400'}`}>
-                            {u.isBlocked ? 'فك الحظر' : 'حظر'}
+                            {u.isBlocked ? t('tools.admin.unblock') : t('tools.admin.blockShort')}
                           </button>
                         )}
                       </div>
@@ -1307,65 +1309,65 @@ export default function Admin() {
         <div className="grid lg:grid-cols-3 gap-6">
           <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl p-5 sm:p-6 shadow-xl h-fit space-y-4">
             <h2 className="text-lg font-black flex items-center gap-2 text-gray-900 dark:text-white">
-              <Key className="w-5 h-5 text-purple-500"/> إصدار رموز الرصيد
+              <Key className="w-5 h-5 text-purple-500"/> {t('tools.admin.issueCodesTitle')}
             </h2>
             <div className="space-y-3">
               <div>
-                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">قيمة النقاط للرمز الواحد</label>
+                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">{t('tools.admin.pointsPerCode')}</label>
                 <input type="number" min="1" value={points} onChange={e => setPoints(Number(e.target.value))} className="w-full bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-800 rounded-xl px-4 py-2.5 text-xs text-gray-900 dark:text-white focus:border-purple-500 outline-none transition font-bold" />
               </div>
               <div>
-                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">عدد الرموز المطلوبة (دفعة)</label>
+                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">{t('tools.admin.codesCountLabel')}</label>
                 <input type="number" min="1" max="500" value={bulkCount} onChange={e => setBulkCount(Number(e.target.value))} className="w-full bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-800 rounded-xl px-4 py-2.5 text-xs text-gray-900 dark:text-white focus:border-purple-500 outline-none transition font-bold" />
               </div>
               <div>
-                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">حد الاستخدام للرمز الواحد</label>
+                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">{t('tools.admin.usageLimitLabel')}</label>
                 <input type="number" min="1" value={maxUsage} onChange={e => setMaxUsage(Number(e.target.value))} className="w-full bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-800 rounded-xl px-4 py-2.5 text-xs text-gray-900 dark:text-white focus:border-purple-500 outline-none transition font-bold" />
               </div>
               <button onClick={handleCreateCode} disabled={isGeneratingCodes} className="w-full bg-purple-600 hover:bg-purple-700 text-white py-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 mt-2 disabled:opacity-50 transition shadow-lg shadow-purple-500/20 cursor-pointer">
                 {isGeneratingCodes ? <span className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></span> : <Plus className="w-4 h-4" />} 
-                {isGeneratingCodes ? 'جاري الإصدار...' : 'إصدار الرموز الآن'}
+                {isGeneratingCodes ? t('tools.admin.issuing') : t('tools.admin.issueNow')}
               </button>
             </div>
           </div>
 
           <div className="lg:col-span-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl p-5 sm:p-6 shadow-xl space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-black text-gray-900 dark:text-white">أحدث الرموز المصدرة ({codes.length})</h2>
+              <h2 className="text-lg font-black text-gray-900 dark:text-white">{t('tools.admin.latestCodes', { count: codes.length })}</h2>
               <button onClick={exportCSV} className="text-xs bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 px-3 py-1.5 rounded-xl flex items-center gap-1.5 transition cursor-pointer font-bold">
-                <Download className="w-3.5 h-3.5" /> تصدير CSV
+                <Download className="w-3.5 h-3.5" /> {t('tools.admin.exportCsv')}
               </button>
             </div>
 
             <div className="overflow-x-auto">
-              <table className="w-full text-xs text-right">
+              <table className="w-full text-xs text-start">
                 <thead className="text-gray-500 border-b border-gray-200 dark:border-gray-800">
                   <tr>
-                    <th className="pb-3 font-bold">الرمز</th>
-                    <th className="pb-3 font-bold">النقاط</th>
-                    <th className="pb-3 font-bold">الحالة</th>
-                    <th className="pb-3 font-bold">تاريخ الإصدار</th>
-                    <th className="pb-3 font-bold text-center">نسخ</th>
+                    <th className="pb-3 font-bold">{t('tools.admin.colCode')}</th>
+                    <th className="pb-3 font-bold">{t('common.points')}</th>
+                    <th className="pb-3 font-bold">{t('common.status')}</th>
+                    <th className="pb-3 font-bold">{t('tools.admin.colIssued')}</th>
+                    <th className="pb-3 font-bold text-center">{t('common.copy')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 dark:divide-gray-800/60">
                   {codes.map((c: any) => (
                     <tr key={c.id}>
                       <td className="py-3 font-mono font-bold text-gray-900 dark:text-gray-200">{c.code}</td>
-                      <td className="py-3 font-black text-indigo-600 dark:text-indigo-400">{c.points} نقطة</td>
+                      <td className="py-3 font-black text-indigo-600 dark:text-indigo-400">{c.points} {t('tools.admin.point')}</td>
                       <td className="py-3">
                         {c.used ? (
-                          <span className="text-[10px] bg-red-500/10 text-red-600 dark:text-red-400 px-2 py-0.5 rounded-md font-bold">مستخدم</span>
+                          <span className="text-[10px] bg-red-500/10 text-red-600 dark:text-red-400 px-2 py-0.5 rounded-md font-bold">{t('tools.admin.codeUsed')}</span>
                         ) : (
-                          <span className="text-[10px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded-md font-bold">متاح</span>
+                          <span className="text-[10px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded-md font-bold">{t('tools.admin.codeAvailable')}</span>
                         )}
                       </td>
-                      <td className="py-3 text-gray-500 text-[11px]">{new Date(c.createdAt).toLocaleDateString('ar-EG')}</td>
+                      <td className="py-3 text-gray-500 text-[11px]">{formatDate(c.createdAt, { dateStyle: 'medium' })}</td>
                       <td className="py-3 text-center">
                         <button 
-                          onClick={() => { navigator.clipboard.writeText(c.code); toast.success('تم نسخ الكود!'); }}
+                          onClick={() => { navigator.clipboard.writeText(c.code); toast.success(t('tools.admin.codeCopiedBang')); }}
                           className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg text-gray-400 hover:text-white transition cursor-pointer"
-                          title="نسخ الكود"
+                          title={t('tools.admin.copyCodeTitle')}
                         >
                           <Copy className="w-3.5 h-3.5" />
                         </button>
@@ -1395,24 +1397,24 @@ export default function Admin() {
         <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl p-5 sm:p-7 shadow-xl space-y-4">
           <div className="flex items-center gap-3">
             <AlertTriangle className="w-6 h-6 text-red-500 animate-pulse" />
-            <h2 className="text-xl font-black text-gray-900 dark:text-white">سجل الطلبات المرفوضة لسلامة المحتوى</h2>
+            <h2 className="text-xl font-black text-gray-900 dark:text-white">{t('tools.admin.flaggedTitle')}</h2>
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-xs text-right">
+            <table className="w-full text-xs text-start">
               <thead className="text-gray-500 border-b border-gray-200 dark:border-gray-800">
                 <tr>
-                  <th className="pb-3 font-bold">المستخدم ID</th>
-                  <th className="pb-3 font-bold">النوع</th>
-                  <th className="pb-3 font-bold">النص المُدخل (Prompt)</th>
-                  <th className="pb-3 font-bold">سبب الرفض</th>
-                  <th className="pb-3 font-bold">التاريخ</th>
+                  <th className="pb-3 font-bold">{t('tools.admin.colUserId')}</th>
+                  <th className="pb-3 font-bold">{t('tools.admin.colType')}</th>
+                  <th className="pb-3 font-bold">{t('tools.admin.colPrompt')}</th>
+                  <th className="pb-3 font-bold">{t('tools.admin.colReason')}</th>
+                  <th className="pb-3 font-bold">{t('tools.admin.colDate')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-gray-800/60">
                 {flaggedRequests.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="py-6 text-center text-gray-400">لا توجد طلبات محظورة في السجل.</td>
+                    <td colSpan={5} className="py-6 text-center text-gray-400">{t('tools.admin.noFlaggedLog')}</td>
                   </tr>
                 ) : (
                   flaggedRequests.map((req, idx) => (
@@ -1420,13 +1422,13 @@ export default function Admin() {
                       <td className="py-3 font-mono text-gray-500 text-[11px]">{req.uid}</td>
                       <td className="py-3">
                         <span className="bg-red-500/10 text-red-600 dark:text-red-400 px-2 py-0.5 rounded text-[10px] font-bold">
-                          {req.type === 'image' ? 'صورة' : (req.type === 'video' ? 'فيديو' : 'نص/مستند')}
+                          {req.type === 'image' ? t('tools.admin.typeImage') : (req.type === 'video' ? t('tools.admin.typeVideo') : t('tools.admin.typeDoc'))}
                         </span>
                       </td>
                       <td className="py-3 max-w-xs truncate text-gray-900 dark:text-gray-200" title={req.prompt}>{req.prompt}</td>
                       <td className="py-3 text-amber-500 font-bold">{req.reason}</td>
                       <td className="py-3 text-gray-500 text-[11px]">
-                        {new Date(req.createdAt).toLocaleString('ar-EG')}
+                        {formatDate(req.createdAt, { dateStyle: 'medium', timeStyle: 'short' })}
                       </td>
                     </tr>
                   ))
@@ -1441,12 +1443,12 @@ export default function Admin() {
       {activeTab === 'skills' && (
         <div className="space-y-6">
           <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl p-5 sm:p-7 shadow-xl space-y-4">
-            <h3 className="font-bold text-sm">{editingSkillId ? 'تعديل مهارة' : 'إضافة مهارة جديدة'}</h3>
+            <h3 className="font-bold text-sm">{editingSkillId ? t('tools.admin.skillEdit') : t('tools.admin.skillAdd')}</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <input
                 value={skillDraft.name}
                 onChange={e => setSkillDraft({ ...skillDraft, name: e.target.value })}
-                placeholder="اسم المهارة (مثال: تنسيق العربية)"
+                placeholder={t('tools.admin.skillNamePh')}
                 className="bg-gray-50 dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-xl px-3 py-2 text-xs outline-none text-gray-900 dark:text-white font-bold"
               />
               <select
@@ -1454,16 +1456,16 @@ export default function Admin() {
                 onChange={e => setSkillDraft({ ...skillDraft, appliesTo: e.target.value })}
                 className="bg-gray-50 dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-xl px-3 py-2 text-xs outline-none text-gray-900 dark:text-white font-bold"
               >
-                <option value="all">كل المستندات</option>
-                <option value="pptx">عروض تقديمية (PPTX)</option>
-                <option value="docx">مستندات وورد (DOCX)</option>
-                <option value="pdf">ملفات PDF</option>
+                <option value="all">{t('tools.admin.skillsAll')}</option>
+                <option value="pptx">{t('tools.admin.skillsPptx')}</option>
+                <option value="docx">{t('tools.admin.skillsDocx')}</option>
+                <option value="pdf">{t('tools.admin.skillsPdf')}</option>
               </select>
               <input
                 type="number"
                 value={skillDraft.priority}
                 onChange={e => setSkillDraft({ ...skillDraft, priority: Number(e.target.value) })}
-                placeholder="الأولوية"
+                placeholder={t('tools.admin.skillPriorityPh')}
                 className="bg-gray-50 dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-xl px-3 py-2 text-xs outline-none text-gray-900 dark:text-white"
               />
             </div>
@@ -1472,7 +1474,7 @@ export default function Admin() {
               value={skillDraft.instructions}
               onChange={e => setSkillDraft({ ...skillDraft, instructions: e.target.value })}
               rows={4}
-              placeholder="تعليمات المهارة..."
+              placeholder={t('tools.admin.skillInstrPh')}
               className="w-full bg-gray-50 dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-xl px-3 py-2 text-xs outline-none text-gray-900 dark:text-white"
             />
 
@@ -1498,16 +1500,16 @@ export default function Admin() {
                   }
                   setSkillDraft({ name: '', appliesTo: 'all', priority: 10, instructions: '', enabled: true });
                   setEditingSkillId(null);
-                  toast.success('تم حفظ المهارة بنجاح!');
+                  toast.success(t('tools.admin.skillSaved'));
                 } catch (e) {
-                  toast.error('تعذر حفظ المهارة');
+                  toast.error(t('tools.admin.skillSaveFail'));
                 } finally {
                   setSkillSaving(false);
                 }
               }}
               className="px-5 py-2.5 bg-gradient-to-tr from-indigo-600 to-purple-600 text-white rounded-xl text-xs font-bold disabled:opacity-50 cursor-pointer"
             >
-              {skillSaving ? 'جاري الحفظ...' : (editingSkillId ? 'حفظ التعديل' : 'إضافة المهارة')}
+              {skillSaving ? t('common.saving') : (editingSkillId ? t('tools.admin.skillSaveEdit') : t('tools.admin.skillAddBtn'))}
             </button>
           </div>
         </div>
@@ -1554,20 +1556,20 @@ export default function Admin() {
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
                   <div className="flex items-center gap-2">
-                    <h3 className="font-black text-xl text-gray-900 dark:text-white">مركز متابعة التغذية الراجعة وتقييمات المستخدمين</h3>
+                    <h3 className="font-black text-xl text-gray-900 dark:text-white">{t('tools.admin.fbCenterTitle')}</h3>
                     <span className="flex items-center gap-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-[10px] font-bold px-2.5 py-1 rounded-full animate-pulse">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                      بث مباشر منظم
+                      {t('tools.admin.fbLive')}
                     </span>
                   </div>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    قناة متزامنة فورياً مع Firebase لعرض وتحليل انطباعات المستخدمين وملاحظات الجودة بعد التوليد.
+                    {t('tools.admin.fbCenterDesc')}
                   </p>
                 </div>
 
                 <div className="flex items-center gap-2 text-xs font-bold text-gray-500 bg-gray-100 dark:bg-gray-800 px-3 py-1.5 rounded-xl border border-gray-200 dark:border-gray-700">
                   <Activity className="w-4 h-4 text-purple-500" />
-                  <span>إجمالي الإشارات: {feedbackSignals.length}</span>
+                  <span>{t('tools.admin.fbTotalSignals', { count: feedbackSignals.length })}</span>
                 </div>
               </div>
 
@@ -1575,7 +1577,7 @@ export default function Admin() {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-2">
                 <div className="p-4 rounded-2xl bg-gray-50 dark:bg-gray-950 border border-gray-200 dark:border-gray-800 flex items-center justify-between">
                   <div>
-                    <span className="text-[11px] font-bold text-gray-500 block">إجمالي التقييمات</span>
+                    <span className="text-[11px] font-bold text-gray-500 block">{t('tools.admin.fbTotalLabel')}</span>
                     <span className="text-2xl font-black text-gray-900 dark:text-white">{feedbackSignals.length}</span>
                   </div>
                   <div className="p-3 bg-purple-500/10 text-purple-500 rounded-xl">
@@ -1585,7 +1587,7 @@ export default function Admin() {
 
                 <div className="p-4 rounded-2xl bg-emerald-500/5 dark:bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-between">
                   <div>
-                    <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 block">إشادة وإعجاب</span>
+                    <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 block">{t('tools.admin.fbUpLabel')}</span>
                     <div className="flex items-baseline gap-2">
                       <span className="text-2xl font-black text-emerald-600 dark:text-emerald-400">{upVotes.length}</span>
                       <span className="text-xs font-bold text-emerald-500">({upPercent}%)</span>
@@ -1598,7 +1600,7 @@ export default function Admin() {
 
                 <div className="p-4 rounded-2xl bg-red-500/5 dark:bg-red-500/10 border border-red-500/20 flex items-center justify-between">
                   <div>
-                    <span className="text-[11px] font-bold text-red-600 dark:text-red-400 block">عدم إعجاب / ملاحظات</span>
+                    <span className="text-[11px] font-bold text-red-600 dark:text-red-400 block">{t('tools.admin.fbDownLabel')}</span>
                     <div className="flex items-baseline gap-2">
                       <span className="text-2xl font-black text-red-600 dark:text-red-400">{downVotes.length}</span>
                       <span className="text-xs font-bold text-red-500">({downPercent}%)</span>
@@ -1610,10 +1612,10 @@ export default function Admin() {
                 </div>
 
                 <div className="p-4 rounded-2xl bg-indigo-500/5 dark:bg-indigo-500/10 border border-indigo-500/20">
-                  <span className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 block mb-1">أبرز الأسباب الشائعة</span>
+                  <span className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 block mb-1">{t('tools.admin.fbTopReasons')}</span>
                   <div className="flex flex-wrap gap-1">
                     {topReasons.length === 0 ? (
-                      <span className="text-xs text-gray-400">لا توجد وسوم حتى الآن</span>
+                      <span className="text-xs text-gray-400">{t('tools.admin.fbNoTags')}</span>
                     ) : (
                       topReasons.slice(0, 3).map(([reason, count]) => (
                         <span key={reason} className="text-[10px] bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 px-2 py-0.5 rounded-full font-bold">
@@ -1631,13 +1633,13 @@ export default function Admin() {
               <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
                 {/* Search */}
                 <div className="relative flex-1">
-                  <Search className="w-4 h-4 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2" />
+                  <Search className="w-4 h-4 text-gray-400 absolute end-3 top-1/2 -translate-y-1/2" />
                   <input
                     type="text"
                     value={feedbackSearch}
                     onChange={e => setFeedbackSearch(e.target.value)}
-                    placeholder="ابحث بالنص، السبب، أو رمز المستخدم..."
-                    className="w-full bg-gray-50 dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-xl pr-9 pl-4 py-2 text-xs outline-none text-gray-900 dark:text-white focus:border-purple-500 transition"
+                    placeholder={t('tools.admin.fbSearchPh')}
+                    className="w-full bg-gray-50 dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-xl pe-9 ps-4 py-2 text-xs outline-none text-gray-900 dark:text-white focus:border-purple-500 transition"
                   />
                 </div>
 
@@ -1649,7 +1651,7 @@ export default function Admin() {
                       feedbackFilter === 'all' ? 'bg-purple-600 text-white shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
                     }`}
                   >
-                    الكل ({feedbackSignals.length})
+                    {t('tools.admin.fbAll', { count: feedbackSignals.length })}
                   </button>
                   <button
                     onClick={() => setFeedbackFilter('up')}
@@ -1658,7 +1660,7 @@ export default function Admin() {
                     }`}
                   >
                     <ThumbsUp className="w-3.5 h-3.5" />
-                    <span>إيجابي ({upVotes.length})</span>
+                    <span>{t('tools.admin.fbUp', { count: upVotes.length })}</span>
                   </button>
                   <button
                     onClick={() => setFeedbackFilter('down')}
@@ -1667,7 +1669,7 @@ export default function Admin() {
                     }`}
                   >
                     <ThumbsDown className="w-3.5 h-3.5" />
-                    <span>سلبي ({downVotes.length})</span>
+                    <span>{t('tools.admin.fbDown', { count: downVotes.length })}</span>
                   </button>
                 </div>
               </div>
@@ -1677,12 +1679,12 @@ export default function Admin() {
                 {filteredFeedback.length === 0 ? (
                   <div className="p-8 text-center bg-gray-50 dark:bg-gray-950/50 rounded-2xl border border-dashed border-gray-200 dark:border-gray-800 space-y-2">
                     <MessageSquare className="w-8 h-8 text-gray-400 mx-auto opacity-50" />
-                    <p className="text-xs font-bold text-gray-500">لا توجد تقييمات مطابقة للفلاتر المحددة حالياً.</p>
+                    <p className="text-xs font-bold text-gray-500">{t('tools.admin.fbEmpty')}</p>
                   </div>
                 ) : (
                   filteredFeedback.map((fb) => {
                     const matchedUser = users.find(u => u.uid === (fb.ownerId || fb.userId));
-                    const userDisplay = matchedUser?.email || fb.userEmail || matchedUser?.displayName || fb.ownerId || fb.userId || 'مستخدم غير معروف';
+                    const userDisplay = matchedUser?.email || fb.userEmail || matchedUser?.displayName || fb.ownerId || fb.userId || t('tools.admin.unknownUser');
                     const isUp = fb.signal === 'up';
 
                     return (
@@ -1706,11 +1708,11 @@ export default function Admin() {
                               </span>
                               {fb.chatType && (
                                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
-                                  نوع المحادثة: {fb.chatType}
+                                  {t('tools.admin.fbChatType', { type: fb.chatType })}
                                 </span>
                               )}
                               <span className="text-[10px] text-gray-400 font-mono">
-                                {fb.createdAt ? new Date(fb.createdAt).toLocaleString('ar-EG') : 'الآن'}
+                                {fb.createdAt ? formatDate(fb.createdAt, { dateStyle: 'medium', timeStyle: 'short' }) : t('tools.admin.now')}
                               </span>
                             </div>
 
@@ -1746,7 +1748,7 @@ export default function Admin() {
                           <button
                             onClick={() => handleDeleteFeedback(fb.id)}
                             className="p-2 text-gray-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-500/10 rounded-xl transition cursor-pointer"
-                            title="حذف التقييم من السجل"
+                            title={t('tools.admin.fbDeleteTitle')}
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
@@ -1767,26 +1769,26 @@ export default function Admin() {
           <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl p-5 sm:p-6 shadow-xl space-y-4">
             <h2 className="text-lg font-black flex items-center gap-2 text-gray-900 dark:text-white">
               <Bell className="w-5 h-5 text-purple-500" />
-              <span>إرسال إشعار للمستخدمين</span>
+              <span>{t('tools.admin.notifSendTitle')}</span>
             </h2>
             <div className="space-y-3">
               <div>
-                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">عنوان الإشعار</label>
+                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">{t('tools.admin.notifTitleLabel')}</label>
                 <input
                   type="text"
                   value={notifTitle}
                   onChange={(e) => setNotifTitle(e.target.value)}
-                  placeholder="مثال: ميزة جديدة متاحة الان"
+                  placeholder={t('tools.admin.notifTitlePh')}
                   className="w-full bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-800 rounded-xl px-4 py-2.5 text-xs text-gray-900 dark:text-white focus:border-purple-500 outline-none transition"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">نص الرسالة</label>
+                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">{t('tools.admin.notifBodyLabel')}</label>
                 <textarea
                   value={notifMessage}
                   onChange={(e) => setNotifMessage(e.target.value)}
-                  placeholder="اكتب التفاصيل هنا..."
+                  placeholder={t('tools.admin.notifBodyPh')}
                   rows={3}
                   className="w-full bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-800 rounded-xl p-3 text-xs text-gray-900 dark:text-white focus:border-purple-500 outline-none transition resize-none"
                 />
@@ -1798,7 +1800,7 @@ export default function Admin() {
                 className="w-full bg-purple-600 hover:bg-purple-700 text-white py-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition shadow-lg shadow-purple-500/20 cursor-pointer disabled:opacity-50"
               >
                 {isSendingNotif ? <span className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></span> : <Send className="w-4 h-4" />}
-                {isSendingNotif ? 'جاري الإرسال...' : 'إرسال الإشعار الآن'}
+                {isSendingNotif ? t('tools.admin.notifSending') : t('tools.admin.notifSendNow')}
               </button>
             </div>
           </div>
@@ -1806,15 +1808,15 @@ export default function Admin() {
           <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl p-5 sm:p-6 shadow-xl">
             <h2 className="text-lg font-black mb-4 flex items-center gap-2 text-gray-900 dark:text-white">
               <Sparkles className="w-5 h-5 text-purple-400" />
-              <span>معاينة الإشعار للمستخدم</span>
+              <span>{t('tools.admin.notifPreviewHeading')}</span>
             </h2>
             <div className="p-4 bg-gray-50 dark:bg-gray-950/50 border border-dashed border-gray-300 dark:border-gray-800 rounded-2xl">
               <div className="border border-gray-200 dark:border-gray-800 rounded-2xl p-4 bg-white dark:bg-[#0d0f12]">
                 <div className="flex items-center gap-2 mb-1">
                   <Bell className="w-4 h-4 text-purple-500" />
-                  <span className="text-xs font-bold text-gray-900 dark:text-white">{notifTitle || 'عنوان الإشعار التجريبي'}</span>
+                  <span className="text-xs font-bold text-gray-900 dark:text-white">{notifTitle || t('tools.admin.notifPreviewTitle')}</span>
                 </div>
-                <p className="text-xs text-gray-500 leading-relaxed">{notifMessage || 'نص الإشعار التجريبي سيظهر هنا للمستخدم.'}</p>
+                <p className="text-xs text-gray-500 leading-relaxed">{notifMessage || t('tools.admin.notifPreviewBody')}</p>
               </div>
             </div>
           </div>
@@ -1824,7 +1826,7 @@ export default function Admin() {
       {/* Support Balance Adjustment Modal */}
       {balanceModalUser && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl max-w-lg w-full p-6 shadow-2xl relative text-right">
+          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl max-w-lg w-full p-6 shadow-2xl relative text-start">
             <button 
               onClick={handleCloseBalanceModal}
               className="absolute top-4 left-4 p-2 rounded-xl text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition cursor-pointer"
@@ -1837,28 +1839,28 @@ export default function Admin() {
                 <Coins className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="text-base font-black text-gray-900 dark:text-white">تعديل رصيد المستخدم (دعم فني)</h3>
-                <p className="text-xs text-gray-500">شحن، خصم أو ضبط رصيد النقاط مع توثيق السبب في سجل العمليات</p>
+                <h3 className="text-base font-black text-gray-900 dark:text-white">{t('tools.admin.balanceTitle')}</h3>
+                <p className="text-xs text-gray-500">{t('tools.admin.balanceDesc')}</p>
               </div>
             </div>
 
             {/* Target User Info Banner */}
             <div className="bg-gray-50 dark:bg-gray-950/60 border border-gray-200 dark:border-gray-800 rounded-2xl p-3.5 mb-4 flex items-center justify-between">
               <div>
-                <div className="font-bold text-xs text-gray-900 dark:text-white">{balanceModalUser.displayName || 'مستخدم بدون اسم'}</div>
+                <div className="font-bold text-xs text-gray-900 dark:text-white">{balanceModalUser.displayName || t('tools.admin.unnamed')}</div>
                 <div className="text-[11px] font-mono text-gray-500">{balanceModalUser.email}</div>
               </div>
-              <div className="text-left">
-                <div className="text-[10px] text-gray-400">الرصيد الحالي</div>
+              <div className="text-end">
+                <div className="text-[10px] text-gray-400">{t('tools.admin.currentBalance')}</div>
                 <div className="font-mono font-black text-indigo-600 dark:text-indigo-400 text-sm">
-                  {balanceModalUser.balance || 0} <span className="text-[10px] font-normal text-gray-400">نقطة</span>
+                  {balanceModalUser.balance || 0} <span className="text-[10px] font-normal text-gray-400">{t('common.points')}</span>
                 </div>
               </div>
             </div>
 
             {/* Action Type Selector */}
             <div className="mb-4">
-              <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">نوع العملية</label>
+              <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">{t('tools.admin.opType')}</label>
               <div className="grid grid-cols-3 gap-2">
                 <button
                   type="button"
@@ -1869,7 +1871,7 @@ export default function Admin() {
                       : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
                   }`}
                 >
-                  <Plus className="w-3.5 h-3.5" /> إضافة (شحن)
+                  <Plus className="w-3.5 h-3.5" /> {t('tools.admin.opAdd')}
                 </button>
                 <button
                   type="button"
@@ -1880,7 +1882,7 @@ export default function Admin() {
                       : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
                   }`}
                 >
-                  <Minus className="w-3.5 h-3.5" /> خصم نقاط
+                  <Minus className="w-3.5 h-3.5" /> {t('tools.admin.opDeduct')}
                 </button>
                 <button
                   type="button"
@@ -1891,7 +1893,7 @@ export default function Admin() {
                       : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
                   }`}
                 >
-                  <RefreshCw className="w-3.5 h-3.5" /> تعيين مباشر
+                  <RefreshCw className="w-3.5 h-3.5" /> {t('tools.admin.opSet')}
                 </button>
               </div>
             </div>
@@ -1899,7 +1901,7 @@ export default function Admin() {
             {/* Amount & Quick Buttons */}
             <div className="mb-4">
               <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
-                {adjustAction === 'set' ? 'الرصيد الإجمالي الجديد' : 'عدد النقاط المراد تطبيقها'}
+                {adjustAction === 'set' ? t('tools.admin.amountNew') : t('tools.admin.amountApply')}
               </label>
               <div className="flex gap-2 mb-2">
                 <input
@@ -1908,7 +1910,7 @@ export default function Admin() {
                   step="0.5"
                   value={adjustAmount}
                   onChange={(e) => setAdjustAmount(e.target.value)}
-                  placeholder="مثال: 10"
+                  placeholder={t('tools.admin.amountPh')}
                   className="flex-1 bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-800 rounded-xl px-4 py-2 text-xs text-gray-900 dark:text-white font-mono outline-none focus:border-indigo-500 transition"
                 />
                 <div className="flex gap-1">
@@ -1938,9 +1940,9 @@ export default function Admin() {
 
                 return (
                   <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-xl p-2.5 flex items-center justify-between text-xs">
-                    <span className="text-gray-600 dark:text-gray-300 font-medium">الرصيد الناتج بعد التنفيذ:</span>
+                    <span className="text-gray-600 dark:text-gray-300 font-medium">{t('tools.admin.resultBalance')}</span>
                     <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400">
-                      {simulated} نقطة {delta !== 0 && <span className={`text-[11px] ${delta > 0 ? 'text-emerald-500' : 'text-red-500'}`}>({delta > 0 ? `+${delta}` : delta})</span>}
+                      {t('tools.agent.pointsBadge', { count: simulated })} {delta !== 0 && <span className={`text-[11px] ${delta > 0 ? 'text-emerald-500' : 'text-red-500'}`}>({delta > 0 ? `+${delta}` : delta})</span>}
                     </span>
                   </div>
                 );
@@ -1949,17 +1951,17 @@ export default function Admin() {
 
             {/* Reason Selector */}
             <div className="mb-3">
-              <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">سبب التعديل (للتوثيق)</label>
+              <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">{t('tools.admin.reasonLabel')}</label>
               <NajeSelect
                 value={adjustReasonPreset}
                 onChange={(val) => setAdjustReasonPreset(val)}
                 options={[
-                  { value: 'تعويض عن عملية توليد متعثرة', label: 'تعويض عن عملية توليد متعثرة' },
-                  { value: 'مكافأة / ترقية دعم فني', label: 'مكافأة / ترقية دعم فني' },
-                  { value: 'شحن يدوي للعميل (دفع خارجي)', label: 'شحن يدوي للعميل (دفع خارجي)' },
-                  { value: 'تصحيح رصيد خاطئ', label: 'تصحيح رصيد خاطئ' },
-                  { value: 'خصم نقاط بسبب إساءة استخدام', label: 'خصم نقاط بسبب إساءة استخدام' },
-                  { value: 'custom', label: 'سبب مخصص آخر...' }
+                  { value: 'تعويض عن عملية توليد متعثرة', label: t('tools.admin.reasonFail') },
+                  { value: 'مكافأة / ترقية دعم فني', label: t('tools.admin.reasonReward') },
+                  { value: 'شحن يدوي للعميل (دفع خارجي)', label: t('tools.admin.reasonManual') },
+                  { value: 'تصحيح رصيد خاطئ', label: t('tools.admin.reasonFix') },
+                  { value: 'خصم نقاط بسبب إساءة استخدام', label: t('tools.admin.reasonAbuse') },
+                  { value: 'custom', label: t('tools.admin.reasonCustom') }
                 ]}
               />
             </div>
@@ -1970,7 +1972,7 @@ export default function Admin() {
                   type="text"
                   value={adjustCustomReason}
                   onChange={(e) => setAdjustCustomReason(e.target.value)}
-                  placeholder="اكتب سبب التعديل هنا..."
+                  placeholder={t('tools.admin.reasonPh')}
                   className="w-full bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-800 rounded-xl px-4 py-2 text-xs text-gray-900 dark:text-white outline-none focus:border-indigo-500 transition"
                 />
               </div>
@@ -1978,11 +1980,11 @@ export default function Admin() {
 
             {/* Internal Notes */}
             <div className="mb-5">
-              <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">ملاحظات إدارية داخلية (اختياري)</label>
+              <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">{t('tools.admin.notesLabel')}</label>
               <textarea
                 value={adjustNotes}
                 onChange={(e) => setAdjustNotes(e.target.value)}
-                placeholder="رقم تذكرة الدعم، سبب تفصيلي، إلخ..."
+                placeholder={t('tools.admin.notesPh')}
                 rows={2}
                 className="w-full bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-800 rounded-xl p-2.5 text-xs text-gray-900 dark:text-white outline-none focus:border-indigo-500 transition resize-none"
               />
@@ -1996,7 +1998,7 @@ export default function Admin() {
                 disabled={adjustSubmitting}
                 className="flex-1 py-2.5 rounded-xl border border-gray-200 dark:border-gray-800 text-xs font-bold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition cursor-pointer"
               >
-                إلغاء
+                {t('common.cancel')}
               </button>
               <button
                 type="button"
@@ -2005,7 +2007,7 @@ export default function Admin() {
                 className="flex-1 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-lg shadow-indigo-500/20 transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
               >
                 {adjustSubmitting ? <span className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></span> : <CheckCircle className="w-4 h-4" />}
-                {adjustSubmitting ? 'جاري التنفيذ...' : 'تأكيد وحفظ التعديل'}
+                {adjustSubmitting ? t('tools.admin.applying') : t('tools.admin.confirmSave')}
               </button>
             </div>
           </div>

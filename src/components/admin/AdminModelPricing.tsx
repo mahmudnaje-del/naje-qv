@@ -8,19 +8,21 @@ import {
 import { ModelEndpoint } from '../../types';
 import { calculateMarginPercentage, POINT_USD_VALUE, SEED_ENDPOINTS } from '../../lib/modelRegistry';
 import { auth } from '../../firebase';
+import { useI18n } from '../../i18n';
 
 interface AdminModelPricingProps {}
 
-const FEATURE_GROUPS: { key: ModelEndpoint['featureGroup']; labelAr: string; icon: any; color: string; bg: string }[] = [
-  { key: 'text', labelAr: 'المحادثات والنصوص (Text Models)', icon: MessageSquare, color: 'text-purple-500', bg: 'bg-purple-500/10' },
-  { key: 'image', labelAr: 'استوديو الصور (Image Studio)', icon: Image, color: 'text-pink-500', bg: 'bg-pink-500/10' },
-  { key: 'video', labelAr: 'استوديو الفيديو (Video Studio)', icon: Video, color: 'text-blue-500', bg: 'bg-blue-500/10' },
-  { key: 'ui', labelAr: 'توليد الواجهات والبرمجة (UI & Fullstack)', icon: Layout, color: 'text-amber-500', bg: 'bg-amber-500/10' },
-  { key: 'document', labelAr: 'العروض والمستندات (Documents & Slides)', icon: FileText, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
-  { key: 'voice', labelAr: 'استوديو الصوتيات (Voice TTS)', icon: Mic, color: 'text-indigo-500', bg: 'bg-indigo-500/10' }
+const FEATURE_GROUPS: { key: ModelEndpoint['featureGroup']; labelKey: string; icon: any; color: string; bg: string }[] = [
+  { key: 'text', labelKey: 'tools.admin.groupText', icon: MessageSquare, color: 'text-purple-500', bg: 'bg-purple-500/10' },
+  { key: 'image', labelKey: 'tools.admin.groupImage', icon: Image, color: 'text-pink-500', bg: 'bg-pink-500/10' },
+  { key: 'video', labelKey: 'tools.admin.groupVideo', icon: Video, color: 'text-blue-500', bg: 'bg-blue-500/10' },
+  { key: 'ui', labelKey: 'tools.admin.groupUi', icon: Layout, color: 'text-amber-500', bg: 'bg-amber-500/10' },
+  { key: 'document', labelKey: 'tools.admin.groupDoc', icon: FileText, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
+  { key: 'voice', labelKey: 'tools.admin.groupVoice', icon: Mic, color: 'text-indigo-500', bg: 'bg-indigo-500/10' }
 ];
 
 export const AdminModelPricing: React.FC<AdminModelPricingProps> = () => {
+  const { t, isRtl } = useI18n();
   const [endpoints, setEndpoints] = useState<ModelEndpoint[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -119,7 +121,7 @@ export const AdminModelPricing: React.FC<AdminModelPricingProps> = () => {
       });
       setEditForms(initialForms);
     } catch (err: any) {
-      setError(err.message || 'حدث خطأ أثناء تحميل البيانات');
+      setError(err.message || t('tools.admin.pricingLoadError'));
       setEndpoints(SEED_ENDPOINTS);
     } finally {
       setLoading(false);
@@ -173,13 +175,13 @@ export const AdminModelPricing: React.FC<AdminModelPricingProps> = () => {
         setFeedbackMsg({ 
           id: endpoint.id, 
           type: 'success', 
-          text: newEnabledState ? 'تم تفعيل النموذج بنجاح.' : 'تم تعطيل النموذج بنجاح (سيتم حظر طلباته تلقائياً ومنع استهلاكه).' 
+          text: newEnabledState ? t('tools.admin.modelEnabled') : t('tools.admin.modelDisabled') 
         });
       } else {
-        throw new Error('فشل تحديث حالة النموذج على الخادم');
+        throw new Error(t('tools.admin.modelToggleServerFail'));
       }
     } catch (e: any) {
-      setFeedbackMsg({ id: endpoint.id, type: 'error', text: e.message || 'فشل تغيير حالة التفعيل' });
+      setFeedbackMsg({ id: endpoint.id, type: 'error', text: e.message || t('tools.admin.modelToggleFail') });
     }
   };
 
@@ -206,13 +208,13 @@ export const AdminModelPricing: React.FC<AdminModelPricingProps> = () => {
       const data = await res.json();
       if (data.ok) {
         setEndpoints(prev => prev.map(e => e.id === endpoint.id ? { ...e, lastValidatedOk: true, lastValidatedAt: Date.now(), lastFailureAt: undefined, lastFailureReason: undefined } : e));
-        setFeedbackMsg({ id: endpoint.id, type: 'success', text: 'تم اختبار الاتصال بالنموذج بنجاح!' });
+        setFeedbackMsg({ id: endpoint.id, type: 'success', text: t('tools.admin.modelTestOk') });
       } else {
         setEndpoints(prev => prev.map(e => e.id === endpoint.id ? { ...e, lastValidatedOk: false, lastValidatedAt: Date.now(), lastFailureAt: Date.now(), lastFailureReason: data.error } : e));
-        setFeedbackMsg({ id: endpoint.id, type: 'error', text: `فشل الاتصال: ${data.error || 'النموذج غير متجاوب'}` });
+        setFeedbackMsg({ id: endpoint.id, type: 'error', text: t('tools.admin.modelTestFail', { error: data.error || t('tools.admin.modelUnresponsive') }) });
       }
     } catch (err: any) {
-      setFeedbackMsg({ id: endpoint.id, type: 'error', text: `فشل الفحص: ${err.message}` });
+      setFeedbackMsg({ id: endpoint.id, type: 'error', text: t('tools.admin.modelCheckFail', { message: err.message }) });
     } finally {
       setValidatingId(null);
     }
@@ -272,10 +274,10 @@ export const AdminModelPricing: React.FC<AdminModelPricingProps> = () => {
 
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.error || 'فشل حفظ البيانات');
+        throw new Error(data.error || t('tools.admin.pricingSaveFail'));
       }
 
-      setFeedbackMsg({ id: endpoint.id, type: 'success', text: 'تم التحقق والحفظ بنجاح!' });
+      setFeedbackMsg({ id: endpoint.id, type: 'success', text: t('tools.admin.pricingSaved') });
       await fetchEndpoints();
     } catch (err: any) {
       setFeedbackMsg({ id: endpoint.id, type: 'error', text: err.message });
@@ -336,15 +338,15 @@ export const AdminModelPricing: React.FC<AdminModelPricingProps> = () => {
 
   if (loading) {
     return (
-      <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl p-12 text-center shadow-xl space-y-4" dir="rtl">
+      <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl p-12 text-center shadow-xl space-y-4" dir={isRtl ? 'rtl' : 'ltr'}>
         <RefreshCw className="w-8 h-8 animate-spin text-purple-600 mx-auto" />
-        <p className="text-gray-600 dark:text-gray-300 font-medium">جاري تحميل سجل المنافذ والنماذج وإحصائيات الاستهلاك...</p>
+        <p className="text-gray-600 dark:text-gray-300 font-medium">{t('tools.admin.pricingLoading')}</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6" dir="rtl">
+    <div className="space-y-6" dir={isRtl ? 'rtl' : 'ltr'}>
       {/* Header Banner */}
       <div className="bg-gradient-to-r from-purple-900/90 via-indigo-900/80 to-purple-950 border border-purple-800/50 rounded-3xl p-6 shadow-2xl text-white relative overflow-hidden">
         <div className="absolute -left-10 -bottom-10 w-48 h-48 bg-purple-500/10 rounded-full blur-3xl"></div>
@@ -355,19 +357,19 @@ export const AdminModelPricing: React.FC<AdminModelPricingProps> = () => {
                 <Cpu className="w-6 h-6 text-purple-300" />
               </div>
               <div>
-                <h2 className="text-2xl font-black text-white tracking-tight">مركز التحكم الموحد بالنماذج والتسعير</h2>
+                <h2 className="text-2xl font-black text-white tracking-tight">{t('tools.admin.pricingTitle')}</h2>
                 <div className="flex items-center gap-2 mt-1">
                   <span className="text-[11px] bg-purple-500/20 border border-purple-400/30 px-2 py-0.5 rounded-md font-mono text-purple-200">
-                    نظام الفوترة بالتوكن الحقيقي (Per-Token Real Billing)
+                    {t('tools.admin.pricingBillingBadge')}
                   </span>
                   <span className="text-[11px] bg-emerald-500/20 border border-emerald-400/30 px-2 py-0.5 rounded-md font-bold text-emerald-200">
-                    استهلاك آخر 30 يوم: {stats.total30dUsage.toFixed(1)} نقطة
+                    {t('tools.admin.pricing30d', { points: stats.total30dUsage.toFixed(1) })}
                   </span>
                 </div>
               </div>
             </div>
             <p className="text-gray-300 text-xs font-medium max-w-3xl leading-relaxed">
-              إدارة شاملة لجميع منافذ النماذج المرئية والخدمات الإدراكية في الخلفية (الناقد، مجلس العقول، مخطط الوكلاء، والمدقق) مع إمكانية ضبط معدل استهلاك التوكن لكل 1,000 توكن مدخلات ومخرجات.
+              {t('tools.admin.pricingDesc')}
             </p>
           </div>
 
@@ -377,7 +379,7 @@ export const AdminModelPricing: React.FC<AdminModelPricingProps> = () => {
               className="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs flex items-center gap-2 transition cursor-pointer border border-white/10"
             >
               <RefreshCw className="w-4 h-4" />
-              <span>تحديث السجل</span>
+              <span>{t('tools.admin.pricingRefresh')}</span>
             </button>
           </div>
         </div>
@@ -403,7 +405,7 @@ export const AdminModelPricing: React.FC<AdminModelPricingProps> = () => {
                   : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
               }`}
             >
-              الكل ({stats.totalCount})
+              {t('tools.admin.scopeAll', { count: stats.totalCount })}
             </button>
             <button
               onClick={() => setScopeFilter('user')}
@@ -413,7 +415,7 @@ export const AdminModelPricing: React.FC<AdminModelPricingProps> = () => {
                   : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
               }`}
             >
-              واجهة المستخدم ({stats.userFacingCount})
+              {t('tools.admin.scopeUser', { count: stats.userFacingCount })}
             </button>
             <button
               onClick={() => setScopeFilter('background')}
@@ -423,7 +425,7 @@ export const AdminModelPricing: React.FC<AdminModelPricingProps> = () => {
                   : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
               }`}
             >
-              خدمات الخلفية والناقد ({stats.backgroundCount})
+              {t('tools.admin.scopeBg', { count: stats.backgroundCount })}
             </button>
           </div>
 
@@ -432,23 +434,23 @@ export const AdminModelPricing: React.FC<AdminModelPricingProps> = () => {
             <select
               value={selectedGroup}
               onChange={(e) => setSelectedGroup(e.target.value)}
-              aria-label="تصفية حسب نوع الخدمة"
+              aria-label={t('tools.admin.filterServiceAria')}
               className="w-full sm:w-auto bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl px-3 py-2 text-xs font-bold text-gray-800 dark:text-gray-200 focus:ring-2 focus:ring-purple-500 focus:outline-none"
             >
-              <option value="all">جميع المجموعات ({filteredEndpoints.length})</option>
+              <option value="all">{t('tools.admin.allGroups', { count: filteredEndpoints.length })}</option>
               {FEATURE_GROUPS.map(g => (
-                <option key={g.key} value={g.key}>{g.labelAr}</option>
+                <option key={g.key} value={g.key}>{t(g.labelKey)}</option>
               ))}
             </select>
 
             <div className="relative w-full sm:w-64">
-              <Search className="w-4 h-4 text-gray-400 absolute right-3 top-2.5" />
+              <Search className="w-4 h-4 text-gray-400 absolute end-3 top-2.5" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="بحث في المنافذ أو النماذج..."
-                className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl pr-9 pl-3 py-2 text-xs text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                placeholder={t('tools.admin.pricingSearch')}
+                className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl pe-9 ps-3 py-2 text-xs text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:outline-none"
               />
             </div>
           </div>
@@ -474,7 +476,7 @@ export const AdminModelPricing: React.FC<AdminModelPricingProps> = () => {
               {/* Group Header */}
               <button
                 onClick={() => toggleGroup(group.key)}
-                className="w-full p-4 sm:p-5 bg-gray-50/80 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800 transition flex items-center justify-between gap-4 border-b border-gray-200 dark:border-gray-800 text-right cursor-pointer"
+                className="w-full p-4 sm:p-5 bg-gray-50/80 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800 transition flex items-center justify-between gap-4 border-b border-gray-200 dark:border-gray-800 text-start cursor-pointer"
               >
                 <div className="flex items-center gap-3">
                   <div className={`p-2.5 rounded-xl ${group.bg} ${group.color}`}>
@@ -482,10 +484,10 @@ export const AdminModelPricing: React.FC<AdminModelPricingProps> = () => {
                   </div>
                   <div>
                     <h3 className="font-black text-gray-900 dark:text-white text-base">
-                      {group.labelAr}
+                      {t(group.labelKey)}
                     </h3>
                     <p className="text-gray-500 dark:text-gray-400 text-xs mt-0.5 font-medium">
-                      {groupEndpoints.length} منفذ مهيأ
+                      {t('tools.admin.portsReady', { count: groupEndpoints.length })}
                     </p>
                   </div>
                 </div>
@@ -505,26 +507,26 @@ export const AdminModelPricing: React.FC<AdminModelPricingProps> = () => {
               {/* Group Table Body */}
               {!isCollapsed && (
                 <div className="overflow-x-auto">
-                  <table className="w-full text-right text-xs">
+                  <table className="w-full text-start text-xs">
                     <thead>
                       <tr className="bg-gray-100/60 dark:bg-gray-900/60 border-b border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-400 font-bold">
-                        <th className="p-3.5 sm:p-4 min-w-[190px]">الميزة والنطاق</th>
-                        <th className="p-3.5 sm:p-4 min-w-[230px]">النموذج الرئيسي والاحتياطي</th>
-                        <th className="p-3.5 sm:p-4 min-w-[120px] text-center">التفعيل / الإيقاف</th>
-                        <th className="p-3.5 sm:p-4 min-w-[120px]">نوع التسعير</th>
-                        <th className="p-3.5 sm:p-4 min-w-[200px]">التسعير بالنقاط</th>
-                        <th className="p-3.5 sm:p-4 min-w-[120px]">استهلاك 30 يوم</th>
-                        <th className="p-3.5 sm:p-4 min-w-[140px]">التكلفة (USD)</th>
-                        <th className="p-3.5 sm:p-4 min-w-[90px]">الهامش</th>
-                        <th className="p-3.5 sm:p-4 min-w-[140px]">الحالة الصحية</th>
-                        <th className="p-3.5 sm:p-4 text-center min-w-[150px]">الإجراءات</th>
+                        <th className="p-3.5 sm:p-4 min-w-[190px]">{t('tools.admin.colFeature')}</th>
+                        <th className="p-3.5 sm:p-4 min-w-[230px]">{t('tools.admin.colModels')}</th>
+                        <th className="p-3.5 sm:p-4 min-w-[120px] text-center">{t('tools.admin.colToggle')}</th>
+                        <th className="p-3.5 sm:p-4 min-w-[120px]">{t('tools.admin.colPriceType')}</th>
+                        <th className="p-3.5 sm:p-4 min-w-[200px]">{t('tools.admin.colPointsPrice')}</th>
+                        <th className="p-3.5 sm:p-4 min-w-[120px]">{t('tools.admin.colUsage30')}</th>
+                        <th className="p-3.5 sm:p-4 min-w-[140px]">{t('tools.admin.colCost')}</th>
+                        <th className="p-3.5 sm:p-4 min-w-[90px]">{t('tools.admin.colMargin')}</th>
+                        <th className="p-3.5 sm:p-4 min-w-[140px]">{t('tools.admin.colHealth')}</th>
+                        <th className="p-3.5 sm:p-4 text-center min-w-[150px]">{t('common.actions')}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
                       {groupEndpoints.length === 0 ? (
                         <tr>
                           <td colSpan={10} className="p-6 text-center text-gray-400 font-bold">
-                            لا توجد منافذ مطابقة لشروط التصفية في هذه المجموعة.
+                            {t('tools.admin.pricingEmpty')}
                           </td>
                         </tr>
                       ) : (
@@ -579,7 +581,7 @@ export const AdminModelPricing: React.FC<AdminModelPricingProps> = () => {
                                     <span>{ep.labelAr}</span>
                                     {ep.isBackground && (
                                       <span className="inline-flex items-center gap-1 text-[10px] bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold px-2 py-0.5 rounded-md border border-amber-500/20">
-                                        خدمة خلفية
+                                        {t('tools.admin.bgService')}
                                       </span>
                                     )}
                                   </div>
@@ -598,7 +600,7 @@ export const AdminModelPricing: React.FC<AdminModelPricingProps> = () => {
                                 <td className="p-3.5 sm:p-4 space-y-1.5">
                                   <div>
                                     <div className="text-[10px] text-gray-500 font-medium mb-0.5 flex items-center justify-between">
-                                      <span>الأساسي (Primary):</span>
+                                      <span>{t('tools.admin.primaryModel')}</span>
                                     </div>
                                     <input
                                       type="text"
@@ -610,7 +612,7 @@ export const AdminModelPricing: React.FC<AdminModelPricingProps> = () => {
                                   </div>
                                   <div>
                                     <div className="text-[10px] text-amber-600 dark:text-amber-400 font-medium mb-0.5 flex items-center justify-between">
-                                      <span>الاحتياطي (Fallback):</span>
+                                      <span>{t('tools.admin.fallbackModel')}</span>
                                     </div>
                                     <input
                                       type="text"
@@ -630,7 +632,7 @@ export const AdminModelPricing: React.FC<AdminModelPricingProps> = () => {
                                       onClick={() => handleToggleEnabled(ep)}
                                       role="switch"
                                       aria-checked={isEnabled}
-                                      title={isEnabled ? 'انقر لتعطيل النموذج' : 'انقر لتفعيل النموذج'}
+                                      title={isEnabled ? t('tools.admin.clickDisable') : t('tools.admin.clickEnable')}
                                       className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 ${
                                         isEnabled ? 'bg-emerald-500' : 'bg-gray-300 dark:bg-gray-700'
                                       }`}
@@ -642,7 +644,7 @@ export const AdminModelPricing: React.FC<AdminModelPricingProps> = () => {
                                       />
                                     </button>
                                     <span className={`text-[10px] font-extrabold ${isEnabled ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400 dark:text-gray-500'}`}>
-                                      {isEnabled ? 'مفعّل' : 'معطّل'}
+                                      {isEnabled ? t('tools.admin.enabled') : t('tools.admin.disabled')}
                                     </span>
                                   </div>
                                 </td>
@@ -652,12 +654,12 @@ export const AdminModelPricing: React.FC<AdminModelPricingProps> = () => {
                                   <select
                                     value={form.pricingType}
                                     onChange={(e) => handleInputChange(ep.id, 'pricingType', e.target.value)}
-                                    aria-label="نوع التسعير"
+                                    aria-label={t('tools.admin.priceTypeAria')}
                                     className="bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl px-2 py-1 text-xs font-bold text-gray-800 dark:text-gray-200 focus:ring-2 focus:ring-purple-500 focus:outline-none"
                                   >
-                                    <option value="per_token">لكل توكن</option>
-                                    <option value="per_character">لكل حرف</option>
-                                    <option value="per_generation">لكل توليد</option>
+                                    <option value="per_token">{t('tools.admin.perToken')}</option>
+                                    <option value="per_character">{t('tools.admin.perChar')}</option>
+                                    <option value="per_generation">{t('tools.admin.perGen')}</option>
                                   </select>
                                 </td>
 
@@ -667,7 +669,7 @@ export const AdminModelPricing: React.FC<AdminModelPricingProps> = () => {
                                     <div className="space-y-2">
                                       {/* Input tokens row */}
                                       <div className="flex items-center gap-1 text-[10px]">
-                                        <span className="text-gray-500 font-medium w-10 shrink-0">مدخلات:</span>
+                                        <span className="text-gray-500 font-medium w-10 shrink-0">{t('tools.admin.inputTok')}</span>
                                         <input
                                           type="number"
                                           step="0.01"
@@ -679,9 +681,9 @@ export const AdminModelPricing: React.FC<AdminModelPricingProps> = () => {
                                             handleInputChange(ep.id, 'inputPointsPer1k', val);
                                           }}
                                           className="w-14 bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800 rounded-md px-1.5 py-0.5 text-xs font-mono font-bold text-purple-700 dark:text-purple-300 focus:ring-2 focus:ring-purple-500 focus:outline-none text-center"
-                                          title="النقاط لكل حزمة"
+                                          title={t('tools.admin.pointsPerPackTitle')}
                                         />
-                                        <span className="text-purple-600 dark:text-purple-400 font-medium">نقطة /</span>
+                                        <span className="text-purple-600 dark:text-purple-400 font-medium">{t('tools.admin.pointSlash')}</span>
                                         <input
                                           type="number"
                                           step="100"
@@ -689,14 +691,14 @@ export const AdminModelPricing: React.FC<AdminModelPricingProps> = () => {
                                           value={form.inputTokenBlockSize || 1000}
                                           onChange={(e) => handleInputChange(ep.id, 'inputTokenBlockSize', parseInt(e.target.value) || 1000)}
                                           className="w-14 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-md px-1.5 py-0.5 text-xs font-mono text-gray-800 dark:text-gray-200 focus:ring-2 focus:ring-purple-500 focus:outline-none text-center"
-                                          title="حجم حزمة توكنز المدخلات"
+                                          title={t('tools.admin.inBlockTitle')}
                                         />
                                         <span className="text-gray-500 text-[9px]">T</span>
                                       </div>
 
                                       {/* Output tokens row */}
                                       <div className="flex items-center gap-1 text-[10px]">
-                                        <span className="text-gray-500 font-medium w-10 shrink-0">مخرجات:</span>
+                                        <span className="text-gray-500 font-medium w-10 shrink-0">{t('tools.admin.outputTok')}</span>
                                         <input
                                           type="number"
                                           step="0.01"
@@ -708,9 +710,9 @@ export const AdminModelPricing: React.FC<AdminModelPricingProps> = () => {
                                             handleInputChange(ep.id, 'outputPointsPer1k', val);
                                           }}
                                           className="w-14 bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800 rounded-md px-1.5 py-0.5 text-xs font-mono font-bold text-purple-700 dark:text-purple-300 focus:ring-2 focus:ring-purple-500 focus:outline-none text-center"
-                                          title="النقاط لكل حزمة"
+                                          title={t('tools.admin.pointsPerPackTitle')}
                                         />
-                                        <span className="text-purple-600 dark:text-purple-400 font-medium">نقطة /</span>
+                                        <span className="text-purple-600 dark:text-purple-400 font-medium">{t('tools.admin.pointSlash')}</span>
                                         <input
                                           type="number"
                                           step="100"
@@ -718,7 +720,7 @@ export const AdminModelPricing: React.FC<AdminModelPricingProps> = () => {
                                           value={form.outputTokenBlockSize || 1000}
                                           onChange={(e) => handleInputChange(ep.id, 'outputTokenBlockSize', parseInt(e.target.value) || 1000)}
                                           className="w-14 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-md px-1.5 py-0.5 text-xs font-mono text-gray-800 dark:text-gray-200 focus:ring-2 focus:ring-purple-500 focus:outline-none text-center"
-                                          title="حجم حزمة توكنز المخرجات"
+                                          title={t('tools.admin.outBlockTitle')}
                                         />
                                         <span className="text-gray-500 text-[9px]">T</span>
                                       </div>
@@ -734,9 +736,9 @@ export const AdminModelPricing: React.FC<AdminModelPricingProps> = () => {
                                           onChange={(e) => handleInputChange(ep.id, 'pointsPrice', parseFloat(e.target.value) || 0)}
                                           className="w-24 bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-indigo-700 dark:text-indigo-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
                                         />
-                                        <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400">نقطة / حرف</span>
+                                        <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400">{t('tools.admin.pointPerChar')}</span>
                                       </div>
-                                      <span className="text-[9px] text-gray-500">100 حرف ≈ {(Number(form.pointsPrice || 0) * 100).toFixed(2)} نقطة</span>
+                                      <span className="text-[9px] text-gray-500">{t('tools.admin.charsApprox', { points: (Number(form.pointsPrice || 0) * 100).toFixed(2) })}</span>
                                     </div>
                                   ) : (
                                     <div className="flex items-center gap-1.5">
@@ -748,7 +750,7 @@ export const AdminModelPricing: React.FC<AdminModelPricingProps> = () => {
                                         onChange={(e) => handleInputChange(ep.id, 'pointsPrice', parseFloat(e.target.value) || 0)}
                                         className="w-20 bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800 rounded-xl px-2.5 py-1.5 text-xs font-bold text-purple-700 dark:text-purple-300 focus:ring-2 focus:ring-purple-500 focus:outline-none"
                                       />
-                                      <span className="text-xs font-bold text-purple-600 dark:text-purple-400">نقطة</span>
+                                      <span className="text-xs font-bold text-purple-600 dark:text-purple-400">{t('tools.admin.point')}</span>
                                     </div>
                                   )}
                                 </td>
@@ -757,7 +759,7 @@ export const AdminModelPricing: React.FC<AdminModelPricingProps> = () => {
                                 <td className="p-3.5 sm:p-4">
                                   <div className="space-y-1">
                                     <div className="font-mono font-bold text-gray-800 dark:text-gray-200 text-xs">
-                                      {ep.total30dCostInPoints ? `${ep.total30dCostInPoints.toFixed(2)} نقطة` : '0 نقطة'}
+                                      {ep.total30dCostInPoints ? t('tools.admin.pointsFixed', { count: ep.total30dCostInPoints.toFixed(2) }) : t('tools.admin.zeroPoints')}
                                     </div>
                                     <div className="text-[10px] text-gray-400 font-mono">
                                       ≈ ${((ep.total30dCostInPoints || 0) * POINT_USD_VALUE).toFixed(2)}
@@ -800,18 +802,18 @@ export const AdminModelPricing: React.FC<AdminModelPricingProps> = () => {
                                 {/* Health Status */}
                                 <td className="p-3.5 sm:p-4">
                                   {ep.lastFailureAt && (!ep.lastValidatedAt || ep.lastFailureAt >= ep.lastValidatedAt) ? (
-                                    <div className="space-y-1" title={ep.lastFailureReason || 'تعطل النموذج'}>
+                                    <div className="space-y-1" title={ep.lastFailureReason || t('tools.admin.modelDown')}>
                                       <span className="inline-flex items-center gap-1 text-[10px] font-extrabold text-red-600 dark:text-red-400 bg-red-500/10 px-2 py-0.5 rounded-lg border border-red-500/20">
-                                        <XCircle className="w-3 h-3 shrink-0" /> ⚠️ فشل مؤخراً
+                                        <XCircle className="w-3 h-3 shrink-0" /> ⚠️ {t('tools.admin.recentFail')}
                                       </span>
                                       <div className="text-[9px] text-red-500 font-mono line-clamp-2 max-w-[140px]">
-                                        {ep.lastFailureReason || 'خطأ غير محدد'}
+                                        {ep.lastFailureReason || t('tools.admin.unspecifiedErr')}
                                       </div>
                                     </div>
                                   ) : (ep.lastValidatedOk || ep.lastKnownGoodModelId) ? (
                                     <div className="space-y-0.5">
                                       <span className="inline-flex items-center gap-1 text-[11px] font-extrabold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-lg border border-emerald-500/20">
-                                        <CheckCircle2 className="w-3 h-3 shrink-0" /> ✓ سليم
+                                        <CheckCircle2 className="w-3 h-3 shrink-0" /> ✓ {t('tools.admin.healthy')}
                                       </span>
                                       {ep.lastKnownGoodModelId && (
                                         <div className="text-[9px] text-gray-400 font-mono truncate max-w-[130px]" title={ep.lastKnownGoodModelId}>
@@ -821,7 +823,7 @@ export const AdminModelPricing: React.FC<AdminModelPricingProps> = () => {
                                     </div>
                                   ) : (
                                     <span className="inline-flex items-center gap-1 text-[11px] font-bold text-gray-500 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded-xl">
-                                      — لم يختبر
+                                      — {t('tools.admin.untested')}
                                     </span>
                                   )}
                                 </td>
@@ -832,7 +834,7 @@ export const AdminModelPricing: React.FC<AdminModelPricingProps> = () => {
                                     <button
                                       onClick={() => handleTestValidation(ep)}
                                       disabled={isValidating || isSaving}
-                                      title="اختبار الاتصال بالنموذج بدون حفظ"
+                                      title={t('tools.admin.testConnTitle')}
                                       className="p-2 rounded-xl bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-bold transition disabled:opacity-50 cursor-pointer"
                                     >
                                       {isValidating ? (
@@ -852,7 +854,7 @@ export const AdminModelPricing: React.FC<AdminModelPricingProps> = () => {
                                       ) : (
                                         <Save className="w-3.5 h-3.5" />
                                       )}
-                                      <span>حفظ</span>
+                                      <span>{t('common.save')}</span>
                                     </button>
                                   </div>
                                 </td>
@@ -890,8 +892,8 @@ export const AdminModelPricing: React.FC<AdminModelPricingProps> = () => {
       <div className="bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800/40 rounded-2xl p-4 flex items-start gap-3 text-purple-800 dark:text-purple-300 text-xs leading-relaxed">
         <Info className="w-5 h-5 shrink-0 text-purple-600 dark:text-purple-400 mt-0.5" />
         <div>
-          <span className="font-bold">ملاحظة أمان وتكامل التسعير: </span>
-          يتم احتساب النصوص والواجهات والمستندات بالتوكنات/النقاط حسب تسعير الأدمن. الصور والفيديو تسعير ثابت لكل توليد. الصوت: نقاط ناجي لكل حرف — الأدمن يحدد السعر من مجموعة «استوديو الصوتيات» (Core و Pro كلٌ على حدة).
+          <span className="font-bold">{t('tools.admin.pricingSafetyTitle')}</span>
+          {t('tools.admin.pricingSafetyBody')}
         </div>
       </div>
     </div>

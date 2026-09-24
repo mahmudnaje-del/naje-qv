@@ -36,7 +36,7 @@ export default function AuthAction() {
   // Mode-specific initialization
   useEffect(() => {
     if (!oobCode || !mode) {
-      setError(isRtl ? 'رابط الإجراء غير صالح أو تنقصه بعض المعاملات.' : 'Action link is invalid or missing required parameters.');
+      setError(t('tools.authAction.invalidLink'));
       setLoading(false);
       return;
     }
@@ -63,7 +63,7 @@ export default function AuthAction() {
               console.warn('Firestore emailVerified sync:', fsErr);
             }
           }
-          setSuccessMessage(isRtl ? 'تم تفعيل بريدك الإلكتروني بنجاح! يمكنك الآن الاستمتاع بجميع ميزات استوديو ناجي.' : 'Your email has been verified successfully! You can now use all NAJE Studio features.');
+          setSuccessMessage(t('tools.authAction.emailVerified'));
           setLoading(false);
         } else if (mode === 'verifyAndChangeEmail') {
           // Apply email change verification
@@ -80,7 +80,7 @@ export default function AuthAction() {
               console.warn('Firestore email change sync:', fsErr);
             }
           }
-          setSuccessMessage(isRtl ? 'تم تأكيد وتحديث عنوان بريدك الإلكتروني الجديد بنجاح!' : 'Your new email address has been verified and updated successfully!');
+          setSuccessMessage(t('tools.authAction.emailChanged'));
           setLoading(false);
         } else if (mode === 'recoverEmail') {
           // Undo email change
@@ -96,21 +96,21 @@ export default function AuthAction() {
               console.warn('Firestore email recovery sync:', fsErr);
             }
           }
-          setSuccessMessage(isRtl ? 'تم التراجع عن تغيير بريدك الإلكتروني بنجاح. إذا لم تطلب هذا التغيير سابقاً، نوصي بتغيير كلمة المرور فوراً لحماية حسابك.' : 'Your email change was successfully reverted. If you did not request this, please change your password immediately.');
+          setSuccessMessage(t('tools.authAction.emailRecovered'));
           setLoading(false);
         } else {
-          setError(isRtl ? 'نوع الإجراء المطلوب غير مدعوم أو غير معروف.' : 'Unsupported action type.');
+          setError(t('tools.authAction.unsupported'));
           setLoading(false);
         }
       } catch (err: any) {
         console.error('Auth action error:', err);
-        let msg = isRtl ? 'حدث خطأ أثناء معالجة الرابط.' : 'An error occurred while processing the link.';
+        let msg = t('tools.authAction.processError');
         if (err.code === 'auth/expired-action-code') {
-          msg = isRtl ? 'انتهت صلاحية هذا الرابط. يرجى طلب رابط جديد والمحاولة مجدداً.' : 'This link has expired. Please request a new one.';
+          msg = t('tools.authAction.linkExpired');
         } else if (err.code === 'auth/invalid-action-code') {
-          msg = isRtl ? 'هذا الرابط غير صالح أو تم استخدامه من قبل.' : 'This link is invalid or has already been used.';
+          msg = t('tools.authAction.linkInvalid');
         } else if (err.code === 'auth/user-disabled') {
-          msg = isRtl ? 'هذا الحساب معطل حالياً من قبل الإدارة.' : 'This account has been disabled.';
+          msg = t('tools.authAction.accountDisabled');
         } else if (err.code === 'auth/user-not-found') {
           msg = t('auth.errUserNotFound');
         }
@@ -143,11 +143,11 @@ export default function AuthAction() {
       setSuccessMessage(t('auth.resetSuccessDesc'));
     } catch (err: any) {
       console.error('Confirm password reset error:', err);
-      let msg = isRtl ? 'تعذر تغيير كلمة المرور.' : 'Failed to update password.';
+      let msg = t('tools.authAction.resetFailed');
       if (err.code === 'auth/expired-action-code') {
-        msg = isRtl ? 'انتهت صلاحية هذا الرابط. يرجى طلب رابط جديد لإعادة تعيين كلمة المرور.' : 'This reset link has expired.';
+        msg = t('tools.authAction.resetExpired');
       } else if (err.code === 'auth/invalid-action-code') {
-        msg = isRtl ? 'هذا الرابط غير صالح أو تم استخدامه مسبقاً.' : 'This reset link is invalid or already used.';
+        msg = t('tools.authAction.resetInvalid');
       } else if (err.code === 'auth/weak-password') {
         msg = t('auth.errWeakPassword');
       }
@@ -172,7 +172,7 @@ export default function AuthAction() {
             </h1>
           </Link>
           <p className="text-xs text-gray-600 dark:text-gray-400 mt-2 font-medium">
-            {isRtl ? 'مركز تأكيد وأمان حسابك في استوديو ناجي' : 'Account security and verification center'}
+            {t('tools.authAction.centerSubtitle')}
           </p>
         </div>
 
@@ -181,7 +181,7 @@ export default function AuthAction() {
           <div className="py-12 flex flex-col items-center justify-center gap-4 text-center">
             <NajeSpinner className="w-10 h-10" />
             <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-              {isRtl ? 'جاري التحقق من أمان وصلاحية الرابط...' : 'Verifying link security and validity...'}
+              {t('tools.authAction.verifying')}
             </p>
           </div>
         )}
@@ -194,7 +194,7 @@ export default function AuthAction() {
             </div>
             <div className="space-y-1">
               <h3 className="text-base font-bold text-gray-900 dark:text-white">
-                {isRtl ? 'تعذر إكمال العملية' : 'Unable to complete action'}
+                {t('tools.authAction.unableComplete')}
               </h3>
               <p className="text-xs text-rose-600 dark:text-rose-400 leading-relaxed max-w-xs">{error}</p>
             </div>
@@ -218,7 +218,7 @@ export default function AuthAction() {
             </div>
             <div className="space-y-1">
               <h3 className="text-base font-bold text-gray-900 dark:text-white">
-                {isRtl ? 'تمت العملية بنجاح' : 'Operation completed successfully'}
+                {t('tools.authAction.successTitle')}
               </h3>
               <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed max-w-xs">{successMessage}</p>
             </div>
@@ -227,7 +227,7 @@ export default function AuthAction() {
                 onClick={() => navigate(auth.currentUser ? '/' : '/auth')}
                 className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 px-4 rounded-xl transition flex items-center justify-center gap-2 text-sm shadow-md cursor-pointer"
               >
-                <span>{auth.currentUser ? (isRtl ? 'المتابعة إلى لوحة التحكم' : 'Continue to Dashboard') : t('auth.backToLogin')}</span>
+                <span>{auth.currentUser ? t('tools.authAction.continueDashboard') : t('auth.backToLogin')}</span>
                 <ActionArrow className="w-4 h-4" />
               </button>
             </div>
@@ -241,7 +241,7 @@ export default function AuthAction() {
               <KeyRound className="w-5 h-5 text-indigo-600 dark:text-indigo-400 flex-shrink-0" />
               <div className="text-start">
                 <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">
-                  {isRtl ? 'إعادة تعيين كلمة المرور للحساب:' : 'Reset password for:'}
+                  {t('tools.authAction.resetFor')}
                 </p>
                 <p className="text-xs font-bold text-indigo-600 dark:text-indigo-400 truncate dir-ltr text-start">{accountEmail}</p>
               </div>
@@ -265,7 +265,7 @@ export default function AuthAction() {
                   <Lock className="w-4 h-4 text-gray-400 absolute end-3 top-1/2 -translate-y-1/2" />
                 </div>
                 <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-1">
-                  {isRtl ? 'يجب أن تتكون من 6 خانات على الأقل.' : 'Must be at least 6 characters.'}
+                  {t('tools.authAction.minPassword')}
                 </p>
               </div>
 
@@ -293,7 +293,7 @@ export default function AuthAction() {
                 className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-bold py-2.5 px-4 rounded-xl transition flex items-center justify-center gap-2 text-sm shadow-md mt-2 cursor-pointer"
               >
                 {submitting ? <NajeSpinner className="w-4 h-4" /> : null}
-                <span>{submitting ? t('common.saving') : (isRtl ? 'حفظ كلمة المرور الجديدة' : 'Save New Password')}</span>
+                <span>{submitting ? t('common.saving') : t('tools.authAction.saveNewPassword')}</span>
               </button>
             </form>
           </div>

@@ -6,6 +6,7 @@ import { auth, db } from '../firebase';
 import { hasFeatureAccess } from '../lib/featureAccess';
 import { estimateOmniPoints } from '../lib/omniAd';
 import {
+  DIRECTOR_STEPS,
   apiAspect,
   applyHandoff,
   applyHeroPreset,
@@ -13,7 +14,6 @@ import {
   applyVariation,
   composeMotionPrompt,
   computeMotionPlan,
-  directorStepForProgress,
   loadDraft,
   readPromptHandoff,
   resolveSlot,
@@ -30,22 +30,31 @@ import NajeThinking from '../components/NajeThinking';
 import StudioBootSplash from '../components/StudioBootSplash';
 import { BestPracticeHints } from '../components/najeMotion/BestPracticeHints';
 import { BrandKit } from '../components/najeMotion/BrandKit';
+import { ContextStrip } from '../components/najeMotion/ContextStrip';
 import { DirectionPanel } from '../components/najeMotion/DirectionPanel';
 import { FormatBar } from '../components/najeMotion/FormatBar';
 import { HeroLaunch } from '../components/najeMotion/HeroLaunch';
 import { KindCards } from '../components/najeMotion/KindCards';
-import { Monitor, type SlotResult } from '../components/najeMotion/Monitor';
+import { Monitor, type MotionVersion, type SlotResult } from '../components/najeMotion/Monitor';
 import { MotionPlanView } from '../components/najeMotion/MotionPlanView';
 import { PromptPreview } from '../components/najeMotion/PromptPreview';
 import { StyleTemplates } from '../components/najeMotion/StyleTemplates';
-import { Chip, FieldLabel, StudioCard } from '../components/najeMotion/StudioUi';
+import { Chip, FieldLabel, RegFrame, StudioCard, fieldClass } from '../components/najeMotion/StudioUi';
+import { useMotionI18n } from '../components/najeMotion/i18n';
 import { usePricingConfig } from '../hooks/usePricingConfig';
-import { useI18n } from '../i18n';
 import { toast } from '../toastStore';
+
+function stepIndex(progress: number) {
+  let i = 0;
+  DIRECTOR_STEPS.forEach((s, idx) => {
+    if (progress >= s.at) i = idx;
+  });
+  return i;
+}
 
 export default function NajeIdent() {
   const { user, updateBalance } = useAppStore();
-  const { t, isRtl, formatNumber } = useI18n();
+  const { t, isRtl, formatNumber } = useMotionI18n();
   const { najeAd } = usePricingConfig();
   const pointsRate = typeof najeAd?.pointsRatePerSecond === 'number' ? najeAd.pointsRatePerSecond : 2.5;
   const resMul = najeAd?.resolutionMultiplier;
@@ -56,6 +65,10 @@ export default function NajeIdent() {
   const [job, setJob] = useState<any>(null);
   const [generatingSlot, setGeneratingSlot] = useState<IdentSlot | null>(null);
   const [results, setResults] = useState<Partial<Record<IdentSlot, SlotResult>>>({});
+  const [versions, setVersions] = useState<MotionVersion[]>([]);
+  const [focusUrl, setFocusUrl] = useState<string | null>(null);
+  const [compareUrl, setCompareUrl] = useState<string | null>(null);
+  const [compareOn, setCompareOn] = useState(false);
   const [paywall, setPaywall] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [studioEntered, setStudioEntered] = useState(() => Boolean(loadDraft().brandName.trim()));
@@ -70,6 +83,13 @@ export default function NajeIdent() {
     pointsRatePerSecond: pointsRate,
     resolutionMultiplier: resMul,
   });
+  const clock = { full: formatNumber(10), sting: formatNumber(5) };
+  const motionLabel = t(`motion.opt.motion.${draft.motion}`);
+  const logoLabel = t(`motion.opt.logo.${draft.logoBehavior}`);
+  const ctaLabel =
+    draft.outroCta === 'custom' && draft.customCta.trim()
+      ? draft.customCta.trim()
+      : t(`motion.opt.cta.${draft.outroCta}`);
 
   const patch = useCallback((partial: Partial<MotionDraft>) => {
     setDraft((prev) => ({ ...prev, ...partial }));
@@ -84,8 +104,8 @@ export default function NajeIdent() {
   }, []);
 
   useEffect(() => {
-    const t = window.setTimeout(() => saveDraft(draft), 280);
-    return () => window.clearTimeout(t);
+    const timer = window.setTimeout(() => saveDraft(draft), 280);
+    return () => window.clearTimeout(timer);
   }, [draft]);
 
   useEffect(() => {
@@ -103,13 +123,18 @@ export default function NajeIdent() {
       const data = snap.data();
       setJob(data);
       if (['completed', 'failed'].includes(data.status)) setBusy(false);
-      if (data.status === 'failed') setError(data.error || t('common.operationFailed'));
+      if (data.status === 'failed') setError(data.error || t('motion.error.failed'));
       const url = data.videoUrl || data.mediaUrl;
       const doneSlot = generatingSlotRef.current;
       if (data.status === 'completed' && url && doneSlot) {
         setResults((prev) => ({ ...prev, [doneSlot]: { jobId, videoUrl: url } }));
+        setVersions((prev) => {
+          const next = [{ slot: doneSlot, url, at: Date.now() }, ...prev.filter((v) => v.url !== url)];
+          return next.slice(0, 8);
+        });
+        setFocusUrl(url);
         if (kindRef.current === 'both' && doneSlot === 'intro') {
-          toast.success(t('najeIdent.introReadyNext'));
+          toast.success(t('motion.page.introNext'));
         }
       }
     });
@@ -136,7 +161,7 @@ export default function NajeIdent() {
     const d = nextDraft || draft;
     const currentSlot = resolveSlot(d.kind, d.activePiece);
     if (!d.brandName.trim()) {
-      toast.error(t('najeIdent.visionLabel') ? t('najeIdent.subtitle') : 'Brand name required');
+      toast.error(t('motion.page.needName'));
       return;
     }
     if (!hasFeatureAccess(user, 'najeAd')) {
@@ -144,7 +169,7 @@ export default function NajeIdent() {
       return;
     }
     if (najeAd?.enabled === false) {
-      toast.error(t('common.serviceUnavailable'));
+      toast.error(t('motion.error.unavailable'));
       return;
     }
     setError(null);
@@ -155,7 +180,7 @@ export default function NajeIdent() {
     if (!token) {
       setBusy(false);
       setGeneratingSlot(null);
-      toast.error(t('auth.signInPrompt'));
+      toast.error(t('motion.error.signIn'));
       return;
     }
     const prompt = composeMotionPrompt(d, currentSlot);
@@ -206,35 +231,43 @@ export default function NajeIdent() {
   const runSurprise = () => {
     const next = surpriseDirection(draft);
     setDraft(next);
-    toast.success('اتجاه جديد مع بقاء الهوية مقفولة إن كانت مفعّلة');
+    toast.success(t('motion.page.surpriseToast'));
   };
 
   const stepLabel =
     job?.status === 'queued'
-      ? t('najeIdent.queueStatus', { position: String(job?.queuePosition || '…') })
-      : job?.stepLabel || (busy ? directorStepForProgress(job?.progress || 0) : '');
+      ? t('motion.page.queue', { position: String(job?.queuePosition ?? '…') })
+      : job?.stepLabel || (busy ? t(`motion.step.${stepIndex(job?.progress || 0)}`) : '');
 
   const generateLabel = () => {
-    if (busy) return stepLabel || t('najeIdent.producingIdent');
-    const piece =
-      slot === 'outro' ? t('najeIdent.outroPiece') : slot === 'logo' ? t('najeIdent.logoPiece') : t('najeIdent.introPiece');
+    if (busy) return stepLabel || t('motion.page.producing');
+    const piece = t(`motion.piece.${slot}`);
+    const duration = formatNumber(draft.duration);
     if (draft.kind === 'both' && slot === 'intro' && !results.intro?.videoUrl) {
-      return t('najeIdent.produceFirst', { duration: String(draft.duration) });
+      return t('motion.page.produceFirst', { duration });
     }
     if (draft.kind === 'both' && slot === 'outro' && results.intro?.videoUrl && !results.outro?.videoUrl) {
-      return t('najeIdent.produceOutroDuration', { duration: String(draft.duration) });
+      return t('motion.page.produceOutro', { duration });
     }
-    return t('najeIdent.producePieceDuration', { piece, duration: String(draft.duration) });
+    return t('motion.page.producePiece', { piece, duration });
   };
 
   const hasResults = Object.values(results).some((r) => r?.videoUrl);
   const showHero = !studioEntered && !hasResults;
-  const presetBadge =
-    draft.projectType === 'podcast' || draft.projectType === 'channel' ? draft.projectType : '';
+  const presetBadge = draft.projectType === 'podcast' || draft.projectType === 'channel' ? draft.projectType : '';
+
+  const resetProject = () => {
+    setResults({});
+    setVersions([]);
+    setFocusUrl(null);
+    setCompareUrl(null);
+    setCompareOn(false);
+    setStudioEntered(false);
+  };
 
   return (
     <div
-      className={`naje-ad-studio relative h-full overflow-y-auto bg-[#0b0c10] px-3 pt-4 text-[#f4efe6] sm:px-6 ${
+      className={`naje-motion-studio relative h-full overflow-y-auto bg-[#07090f] px-3 pt-4 text-[#e7eef8] sm:px-6 ${
         showHero ? 'pb-8' : 'pb-28 lg:pb-8'
       }`}
       dir={isRtl ? 'rtl' : 'ltr'}
@@ -246,10 +279,10 @@ export default function NajeIdent() {
         {showHero ? (
           <>
             <div className="flex justify-end">
-              <div className="rounded-2xl border border-white/10 bg-black/30 px-3 py-1.5 text-end sm:px-4 sm:py-2">
-                <div className="text-[10px] text-white/40">{t('najeIdent.yourBalance')}</div>
-                <div className="font-mono text-base font-black text-[#e8b86d] sm:text-lg">
-                  {formatNumber(user?.balance ?? 0)} {t('common.pointsShort') || 'نقطة'}
+              <div className="rounded-2xl border border-[#8ec8ff]/18 bg-black/30 px-3 py-1.5 text-end sm:px-4 sm:py-2">
+                <div className="text-[10px] text-[#93a0b5]">{t('motion.page.balance')}</div>
+                <div className="font-mono text-base font-black text-[#ffb020] sm:text-lg">
+                  {formatNumber(user?.balance ?? 0)} {t('common.pointsShort')}
                 </div>
               </div>
             </div>
@@ -257,33 +290,34 @@ export default function NajeIdent() {
           </>
         ) : (
           <>
-            <header className="rounded-2xl border border-white/8 bg-[radial-gradient(1200px_circle_at_100%_-20%,rgba(212,165,116,0.22),transparent_45%),linear-gradient(180deg,#16120e,#0b0c10)] p-4 shadow-2xl sm:rounded-[28px] sm:p-5">
+            <RegFrame className="rounded-2xl bg-[#10151f] p-4 sm:rounded-[28px] sm:p-5">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0">
                   {!hasResults && (
                     <button
                       type="button"
                       onClick={() => setStudioEntered(false)}
-                      className="mb-2 inline-flex min-h-[44px] items-center text-[11px] font-black text-white/45 hover:text-[#e8b86d]"
+                      className="mb-2 inline-flex min-h-[44px] items-center text-[11px] font-black text-[#93a0b5] hover:text-[#8ec8ff]"
                     >
-                      {t('najeIdent.backToStart')}
+                      {t('motion.page.back')}
                     </button>
                   )}
-                  <div className="mb-1.5 inline-flex items-center gap-2 rounded-full border border-[#d4a574]/30 bg-[#d4a574]/10 px-2.5 py-0.5 text-[10px] font-black tracking-[0.14em] text-[#e8b86d]">
-                    <Clapperboard className="h-3.5 w-3.5" /> NAJE MOTION
+                  <div className="mb-1.5 inline-flex min-h-[44px] items-center gap-2 rounded-full border border-[#8ec8ff]/25 bg-[#8ec8ff]/10 px-2.5 py-0.5 text-[10px] font-black tracking-[0.14em] text-[#e7eef8]">
+                    <span className="motion-tally inline-block h-2 w-2 rounded-full" aria-hidden />
+                    <Clapperboard className="h-3.5 w-3.5 text-[#8ec8ff]" />
+                    <span className="text-[#ffb020]">REC</span>
+                    NAJE MOTION
                   </div>
-                  <h1 className="text-xl font-black leading-snug tracking-tight text-white sm:text-2xl">
-                    {t('najeIdent.title')}
+                  <h1 className="text-xl font-black leading-snug tracking-tight text-[#e7eef8] sm:text-2xl">
+                    {t('motion.page.title')}
                   </h1>
-                  <p className="mt-1 max-w-xl text-xs leading-relaxed text-white/50">
-                    {t('najeIdent.subtitle')}
-                  </p>
-                  <p className="mt-1.5 text-[11px] font-bold text-[#e8b86d]">{t('najeIdent.tagline')}</p>
+                  <p className="mt-1 max-w-xl text-xs leading-relaxed text-[#93a0b5]">{t('motion.page.subtitle')}</p>
+                  <p className="mt-1.5 text-[11px] font-bold text-[#8ec8ff]">{t('motion.page.tagline')}</p>
                 </div>
-                <div className="rounded-2xl border border-white/10 bg-black/30 px-3 py-1.5 text-end sm:px-4 sm:py-2">
-                  <div className="text-[10px] text-white/40">{t('najeIdent.yourBalance')}</div>
-                  <div className="font-mono text-base font-black text-[#e8b86d] sm:text-lg">
-                    {formatNumber(user?.balance ?? 0)} {t('common.pointsShort') || 'نقطة'}
+                <div className="rounded-2xl border border-[#8ec8ff]/18 bg-black/30 px-3 py-1.5 text-end sm:px-4 sm:py-2">
+                  <div className="text-[10px] text-[#93a0b5]">{t('motion.page.balance')}</div>
+                  <div className="font-mono text-base font-black text-[#ffb020] sm:text-lg">
+                    {formatNumber(user?.balance ?? 0)} {t('common.pointsShort')}
                   </div>
                 </div>
               </div>
@@ -291,32 +325,24 @@ export default function NajeIdent() {
                 <KindCards value={draft.kind} onChange={selectKind} preset={presetBadge} />
               </div>
               {draft.kind === 'both' && (
-                <div className="mt-3 rounded-2xl border border-white/8 bg-black/25 p-3">
-                  <p className="mb-2 text-[10px] leading-relaxed text-white/45">
-                    {t('najeIdent.bothPieceDesc')}
-                  </p>
+                <div className="mt-3 rounded-2xl border border-[#8ec8ff]/12 bg-black/25 p-3">
+                  <p className="mb-2 text-[10px] leading-relaxed text-[#93a0b5]">{t('motion.page.bothDesc')}</p>
                   <div className="grid grid-cols-2 gap-2">
-                    <Chip
-                      active={draft.activePiece === 'intro'}
-                      onClick={() => patch({ activePiece: 'intro' })}
-                      className="w-full justify-center py-2.5"
-                    >
-                      {t('najeIdent.produceIntro')}{results.intro?.videoUrl ? ` — ${t('najeIdent.ready')}` : ''}
+                    <Chip active={draft.activePiece === 'intro'} onClick={() => patch({ activePiece: 'intro' })} className="w-full justify-center py-2.5">
+                      {t('motion.page.produceIntro')}
+                      {results.intro?.videoUrl ? ` — ${t('motion.page.ready')}` : ''}
                     </Chip>
-                    <Chip
-                      active={draft.activePiece === 'outro'}
-                      onClick={() => patch({ activePiece: 'outro' })}
-                      className="w-full justify-center py-2.5"
-                    >
-                      {t('najeIdent.produceOutro')}{results.outro?.videoUrl ? ` — ${t('najeIdent.ready')}` : ''}
+                    <Chip active={draft.activePiece === 'outro'} onClick={() => patch({ activePiece: 'outro' })} className="w-full justify-center py-2.5">
+                      {t('motion.page.produceOutroBtn')}
+                      {results.outro?.videoUrl ? ` — ${t('motion.page.ready')}` : ''}
                     </Chip>
                   </div>
                   {results.intro?.videoUrl && !results.outro?.videoUrl && draft.activePiece === 'intro' && (
-                    <p className="mt-2 text-[10px] font-bold text-[#e8b86d]">{t('najeIdent.introReadyNext')}</p>
+                    <p className="mt-2 text-[10px] font-bold text-[#ffb020]">{t('motion.page.introNext')}</p>
                   )}
                 </div>
               )}
-            </header>
+            </RegFrame>
 
             {error && (
               <div className="rounded-2xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-xs text-rose-200">
@@ -324,9 +350,7 @@ export default function NajeIdent() {
                   <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
                   <span>
                     {error}
-                    <span className="mt-1 block text-[10px] text-rose-100/70">
-                      المسودة محفوظة محلياً. لم يُفقد المشروع.
-                    </span>
+                    <span className="mt-1 block text-[10px] text-rose-100/70">{t('motion.page.saved')}</span>
                   </span>
                 </p>
                 <div className="mt-2 flex flex-wrap gap-2">
@@ -338,7 +362,7 @@ export default function NajeIdent() {
                     }}
                     className="min-h-[44px] rounded-xl border border-rose-300/40 px-3 font-black"
                   >
-                    إعادة المحاولة
+                    {t('common.retry')}
                   </button>
                   <button type="button" onClick={() => setError(null)} className="min-h-[44px] font-bold text-rose-100/80">
                     {t('common.close')}
@@ -357,6 +381,7 @@ export default function NajeIdent() {
                   onAspect={(aspect) => patch({ aspect })}
                   onResolution={(resolution) => patch({ resolution })}
                 />
+                <ContextStrip draft={draft} slot={slot} onChange={patch} />
                 <BrandKit draft={draft} onChange={patch} />
                 <StyleTemplates styleId={draft.styleId} onSelect={(id) => setDraft((prev) => applyTemplate(prev, id))} />
                 <DirectionPanel draft={draft} slot={slot} onChange={patch} />
@@ -364,40 +389,40 @@ export default function NajeIdent() {
                   type="button"
                   disabled={busy}
                   onClick={runSurprise}
-                  className="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-2xl border border-[#d4a574]/35 bg-[#d4a574]/8 py-2.5 text-[12px] font-black text-[#e8b86d] disabled:opacity-50"
+                  className="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-2xl border border-[#8ec8ff]/35 bg-[#8ec8ff]/8 py-2.5 text-[12px] font-black text-[#8ec8ff] disabled:opacity-50"
                 >
-                  <Wand2 className="h-4 w-4" /> فاجئني باتجاه آخر
+                  <Wand2 className="h-4 w-4" /> {t('motion.page.surprise')}
                 </button>
                 <BestPracticeHints draft={draft} slot={slot} />
-                <StudioCard title={t('najeIdent.visionTitle')} hint={t('najeIdent.visionHint')}>
-                  <FieldLabel>{t('najeIdent.visionLabel')}</FieldLabel>
+                <StudioCard title={t('motion.page.visionTitle')} hint={t('motion.page.visionHint')}>
+                  <FieldLabel>{t('motion.page.visionLabel')}</FieldLabel>
                   <textarea
                     rows={4}
                     value={draft.vision}
                     maxLength={1200}
                     onChange={(e) => patch({ vision: e.target.value })}
-                    placeholder={t('najeIdent.visionPlaceholder')}
-                    className="w-full resize-none rounded-2xl border border-white/10 bg-black/40 p-3 text-sm text-white placeholder:text-white/30 focus:border-[#d4a574] focus:outline-none"
+                    placeholder={t('motion.page.visionPh')}
+                    className={fieldClass}
                   />
                 </StudioCard>
               </div>
 
               <div className="space-y-4 lg:sticky lg:top-3">
-                <MotionPlanView beats={beats} duration={draft.duration} />
-                <PromptPreview draft={draft} slot={slot} beats={beats} />
+                <MotionPlanView beats={beats} duration={draft.duration} slot={slot} motion={motionLabel} logo={logoLabel} cta={ctaLabel} />
+                <PromptPreview draft={draft} slot={slot} beats={beats} motion={motionLabel} logo={logoLabel} cta={ctaLabel} />
 
                 <div className="hidden space-y-2 lg:block">
-                  <p className="text-center text-[11px] text-white/45">
-                    <span className="font-black text-[#e8b86d]">{formatNumber(points)} {t('common.pointsShort')}</span>
-                    <span className="mt-0.5 block text-[10px] text-white/35">
-                      المحرك يولّد دائماً 10 ثوانٍ — الخمس ثوانٍ وخزة داخل النافذة.
+                  <p className="text-center text-[11px] text-[#93a0b5]">
+                    <span className="font-black text-[#ffb020]">
+                      {formatNumber(points)} {t('common.pointsShort')}
                     </span>
+                    <span className="mt-0.5 block text-[10px] text-[#93a0b5]">{t('motion.page.engineNote', clock)}</span>
                   </p>
                   <button
                     type="button"
                     disabled={busy || najeAd?.enabled === false}
                     onClick={() => void generate()}
-                    className="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-l from-[#d4a574] via-[#e8b86d] to-[color-mix(in_srgb,#e8b86d_70%,white)] py-3.5 text-sm font-black text-[#1a140c] shadow-[0_12px_40px_-12px_rgba(212,165,116,0.45)] disabled:opacity-50"
+                    className="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-2xl bg-[#8ec8ff] py-3.5 text-sm font-black text-[#071018] shadow-[0_12px_40px_-12px_rgba(142,200,255,0.55)] disabled:opacity-50"
                   >
                     {busy ? <NajeThinking size={22} /> : <Sparkles className="h-4 w-4" />}
                     {busy ? generateLabel() : `${generateLabel()} · ${formatNumber(points)} ${t('common.pointsShort')}`}
@@ -417,25 +442,27 @@ export default function NajeIdent() {
                   duration={draft.duration}
                   brandName={draft.brandName}
                   hasLogo={Boolean(draft.logo)}
+                  versions={versions}
+                  focusUrl={focusUrl}
+                  compareUrl={compareUrl}
+                  compareOn={compareOn}
+                  onFocus={setFocusUrl}
+                  onComparePick={setCompareUrl}
+                  onToggleCompare={() => setCompareOn((v) => !v)}
                   onRegenerate={() => void generate()}
                   onVariation={runVariation}
                 />
                 {hasResults && !busy && (
-                  <div className="rounded-2xl border border-[#d4a574]/35 bg-[#d4a574]/10 p-4">
-                    <p className="text-sm font-black text-white">هويتك الحركية جاهزة.</p>
-                    <p className="mt-1 text-[11px] leading-relaxed text-white/55">
-                      حمّل الملف من المونيتور، أو عدّل ثم ولّد نسخة. المسودة تبقى.
-                    </p>
+                  <div className="rounded-2xl border border-[#8ec8ff]/30 bg-[#8ec8ff]/10 p-4">
+                    <p className="text-sm font-black text-[#e7eef8]">{t('motion.page.readyTitle')}</p>
+                    <p className="mt-1 text-[11px] leading-relaxed text-[#93a0b5]">{t('motion.page.readyBody')}</p>
                     <div className="mt-3 flex flex-wrap gap-2">
                       <button
                         type="button"
-                        onClick={() => {
-                          setResults({});
-                          setStudioEntered(false);
-                        }}
-                        className="min-h-[44px] rounded-xl border border-white/15 px-3 text-[11px] font-black text-white/70"
+                        onClick={resetProject}
+                        className="min-h-[44px] rounded-xl border border-[#8ec8ff]/20 px-3 text-[11px] font-black text-[#e7eef8]"
                       >
-                        مشروع جديد
+                        {t('motion.page.newProject')}
                       </button>
                     </div>
                   </div>
@@ -447,15 +474,19 @@ export default function NajeIdent() {
       </div>
 
       {!showHero && (
-        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-white/10 bg-[#0b0c10]/95 p-3 backdrop-blur lg:hidden">
-          <p className="mb-2 text-center text-[10px] text-white/45">
-            التكلفة التقديرية: <span className="font-black text-[#e8b86d]">{points} نقطة</span>
+        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-[#8ec8ff]/20 bg-[#07090f]/95 p-3 backdrop-blur lg:hidden">
+          <p className="text-center text-[10px] text-[#93a0b5]">
+            {t('motion.page.costLine')}{' '}
+            <span className="font-black text-[#ffb020]">
+              {formatNumber(points)} {t('common.pointsShort')}
+            </span>
           </p>
+          <p className="mb-2 text-center text-[10px] leading-relaxed text-[#93a0b5]">{t('motion.page.engineNote', clock)}</p>
           <button
             type="button"
             disabled={busy || najeAd?.enabled === false}
             onClick={() => void generate()}
-            className="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-l from-[#d4a574] via-[#e8b86d] to-[color-mix(in_srgb,#e8b86d_70%,white)] py-3.5 text-sm font-black text-[#1a140c] disabled:opacity-50"
+            className="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-2xl bg-[#8ec8ff] py-3.5 text-sm font-black text-[#071018] disabled:opacity-50"
           >
             {busy ? <NajeThinking size={22} /> : <Sparkles className="h-4 w-4" />}
             {busy ? generateLabel() : `${generateLabel()} · ${formatNumber(points)} ${t('common.pointsShort')}`}

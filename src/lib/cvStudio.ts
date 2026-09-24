@@ -164,6 +164,8 @@ export interface CvData {
   wizardDone: boolean;
   coverLetter: string;
   linkedinAbout?: string;
+  /** Optional two-sentence professional bio. Empty until the user writes or generates it. */
+  shortBio?: string;
   summaryStyle: CvSummaryStyle;
   summaryLength: CvSummaryLength;
   photoStyle: CvPhotoStyle;
@@ -286,6 +288,40 @@ export const EMPLOYMENT_TYPES: { id: string; ar: string; en: string }[] = [
   { id: 'intern', ar: 'تدريب', en: 'Internship' },
   { id: 'freelance', ar: 'مستقل', en: 'Freelance' },
 ];
+
+export function matchEmployment(raw?: string) {
+  if (!raw) return undefined;
+  return EMPLOYMENT_TYPES.find((row) => row.id === raw || row.ar === raw || row.en === raw);
+}
+
+/** Paper label follows the document language, not the UI locale. Unknown free text is kept. */
+export function employmentLabel(raw: string | undefined, lang: CvLang): string {
+  if (!raw) return '';
+  const hit = matchEmployment(raw);
+  if (!hit) return raw;
+  return lang === 'en' ? hit.en : hit.ar;
+}
+
+export const CAREER_BREAKS: { id: string; ar: string; en: string }[] = [
+  { id: 'study', ar: 'دراسة', en: 'Study' },
+  { id: 'freelance', ar: 'عمل حر', en: 'Freelance' },
+  { id: 'family', ar: 'عائلة', en: 'Family' },
+  { id: 'travel', ar: 'سفر', en: 'Travel' },
+  { id: 'search', ar: 'بحث عن عمل', en: 'Job search' },
+  { id: 'personal', ar: 'مشروع شخصي', en: 'Personal project' },
+  { id: 'omit', ar: 'أفضل عدم الشرح', en: 'Prefer not to explain' },
+];
+
+export function careerBreakSelected(stored: string | undefined, item: { id: string; ar: string; en: string }) {
+  const s = (stored || '').trim();
+  return s === item.id || s === item.ar || s === item.en;
+}
+
+/** Omit stays the Arabic token so export keeps skipping it. Other notes follow the document language. */
+export function careerBreakValue(item: { id: string; ar: string; en: string }, lang: CvLang) {
+  if (item.id === 'omit') return 'أفضل عدم الشرح';
+  return lang === 'en' ? item.en : item.ar;
+}
 
 export const CAREER_BREAK_CHIPS = ['دراسة', 'عمل حر', 'عائلة', 'سفر', 'بحث عن عمل', 'مشروع شخصي', 'أفضل عدم الشرح'] as const;
 
@@ -523,6 +559,7 @@ export function emptyCv(): CvData {
     wizardDone: false,
     coverLetter: '',
     linkedinAbout: '',
+    shortBio: '',
     summaryStyle: 'executive',
     summaryLength: 'three',
     photoStyle: 'natural',
@@ -590,6 +627,7 @@ export interface HrTip {
   level: 'stop' | 'warn' | 'ok';
   title: string;
   body: string;
+  params?: Record<string, string | number>;
 }
 
 export function applyMarketDefaults(cv: CvData, market: CvMarket): CvData {
@@ -625,16 +663,18 @@ function hasNumber(s: string) {
   return /\d/.test(s);
 }
 
-export function atsRisk(cv: CvData): { level: 'low' | 'moderate' | 'high'; reasons: string[] } {
-  const reasons: string[] = [];
+export type AtsReasonCode = 'columns' | 'photo' | 'headline' | 'dates';
+
+export function atsRisk(cv: CvData): { level: 'low' | 'moderate' | 'high'; reasons: AtsReasonCode[] } {
+  const reasons: AtsReasonCode[] = [];
   if (cv.template === 'modern' || cv.template === 'gold') {
-    reasons.push('القوالب متعددة الأعمدة أو المزخرفة تُقرأ بترتيب خاطئ في كثير من الأنظمة.');
+    reasons.push('columns');
   }
   if (cv.showPhoto && (cv.market === 'ats' || cv.market === 'jadarat')) {
-    reasons.push('الصورة والعمر يعيقان التحليل الآلي وقد تُحذف بيانات التواصل إن وُضعت بجانبها.');
+    reasons.push('photo');
   }
-  if (!cv.headline.trim()) reasons.push('بدون مسمّى واضح يفشل تصنيف الملف.');
-  if (cv.experiences.some((e) => (e.title || e.company) && !e.start)) reasons.push('تواريخ ناقصة تُربك ترتيب الخبرة.');
+  if (!cv.headline.trim()) reasons.push('headline');
+  if (cv.experiences.some((e) => (e.title || e.company) && !e.start)) reasons.push('dates');
   let level: 'low' | 'moderate' | 'high' = 'low';
   if (reasons.length >= 2) level = 'high';
   else if (reasons.length === 1) level = 'moderate';
@@ -715,25 +755,50 @@ export function jobAlignment(cv: CvData): {
   return { qualifications: { strong, partial, missing }, experience };
 }
 
-export function gpaAdvice(gpa: string, scale: '4' | '5' | '100'): { suggestHide: boolean; line: string } {
+export function gpaAdvice(gpa: string, scale: '4' | '5' | '100'): {
+  suggestHide: boolean;
+  line: string;
+  code: 'unknown' | 'low' | 'strong' | 'mid';
+  n: string;
+  scale: string;
+} {
   const n = parseFloat(String(gpa).replace(',', '.'));
   if (!Number.isFinite(n) || n <= 0) {
-    return { suggestHide: false, line: 'أظهر المعدل إن كان يدعم ملفك لهذه الوظيفة؛ أخفه إن كان ضعيفاً نسبةً لسوقك. القرار لك.' };
+    return {
+      suggestHide: false,
+      line: 'أظهر المعدل إن كان يدعم ملفك لهذه الوظيفة؛ أخفه إن كان ضعيفاً نسبةً لسوقك. القرار لك.',
+      code: 'unknown',
+      n: '',
+      scale,
+    };
   }
   const ratio = scale === '4' ? n / 4 : scale === '5' ? n / 5 : n / 100;
+  const shown = String(n);
   if (ratio < 0.62) {
     return {
       suggestHide: true,
       line: `اقتراح فقط: ${n}/${scale} قد لا يدعم ملفك في سوق تنافسي — يمكنك إخفاءه. لن نُخفيه نيابةً عنك.`,
+      code: 'low',
+      n: shown,
+      scale,
     };
   }
   if (ratio >= 0.8) {
     return {
       suggestHide: false,
       line: `${n}/${scale} رقم واضح — إبقاؤه يساعد إن كان الدور أكاديمياً أو حديث تخرج.`,
+      code: 'strong',
+      n: shown,
+      scale,
     };
   }
-  return { suggestHide: false, line: 'المعدل في النطاق المتوسط. أظهره إن طُلب أو إن كان سوقك يقرأه، وإلا أخفه.' };
+  return {
+    suggestHide: false,
+    line: 'المعدل في النطاق المتوسط. أظهره إن طُلب أو إن كان سوقك يقرأه، وإلا أخفه.',
+    code: 'mid',
+    n: shown,
+    scale,
+  };
 }
 
 export function dateFlags(cv: CvData): HrTip[] {
@@ -749,6 +814,7 @@ export function dateFlags(cv: CvData): HrTip[] {
         level: 'warn',
         title: 'تاريخ نهاية مع «ما زلت هنا»',
         body: `${label}: أزل تاريخ النهاية أو ألغِ الخيار. الاثنان معاً يربكان المسح.`,
+        params: { label },
       });
     }
     if (s != null && en != null && en < s) {
@@ -757,6 +823,7 @@ export function dateFlags(cv: CvData): HrTip[] {
         level: 'warn',
         title: 'تاريخ النهاية قبل البداية',
         body: `${label}: راجع الشهر/السنة — النهاية أقدم من البداية.`,
+        params: { label },
       });
     }
   });
@@ -785,6 +852,7 @@ export function duplicateFlags(cv: CvData): HrTip[] {
       level: 'warn',
       title: 'مهارة مكرّرة',
       body: `«${skillDups[0]}» وردت مرتين. أبقِ واحدة.`,
+      params: { name: skillDups[0] },
     });
   }
   if (countDupKeys(cv.courses.map((c) => `${c.name} ${c.issuer}`)).length) {
@@ -1081,6 +1149,7 @@ export function scoreCv(cv: CvData): { score: number; tips: HrTip[] } {
       level: 'warn',
       title: 'مهارة خبير بلا دليل',
       body: `«${experts[0].name}» معلّمة خبير. أين استخدمتها؟ اربطها بخبرة أو مشروع — اختياري لكن أقوى.`,
+      params: { name: experts[0].name },
     });
   }
 
@@ -1130,6 +1199,7 @@ export function hydrateCv(raw: Partial<CvData> | null | undefined): CvData {
     skillsList: Array.isArray(raw.skillsList) ? raw.skillsList : [],
     careerBreak: typeof raw.careerBreak === 'string' ? raw.careerBreak : '',
     linkedinAbout: typeof raw.linkedinAbout === 'string' ? raw.linkedinAbout : '',
+    shortBio: typeof raw.shortBio === 'string' ? raw.shortBio : '',
     atsMode: Boolean(raw.atsMode),
     summaryStyle: SUMMARY_STYLES.some((s) => s.id === (raw as CvData).summaryStyle) ? (raw as CvData).summaryStyle : base.summaryStyle,
     summaryLength: SUMMARY_LENGTHS.some((s) => s.id === (raw as CvData).summaryLength) ? (raw as CvData).summaryLength : base.summaryLength,
@@ -1184,6 +1254,7 @@ export function atsRiskLabel(level: 'low' | 'moderate' | 'high'): string {
 export const TIP_JUMP: Record<string, { tab: 'build' | 'coach'; anchor: string }> = {
   name: { tab: 'build', anchor: 'cv-sec-identity' },
   headline: { tab: 'build', anchor: 'cv-sec-identity' },
+  title: { tab: 'build', anchor: 'cv-sec-identity' },
   contact: { tab: 'build', anchor: 'cv-sec-contact' },
   city: { tab: 'build', anchor: 'cv-sec-contact' },
   summary: { tab: 'build', anchor: 'cv-sec-identity' },
@@ -1440,20 +1511,28 @@ export function mergeCvPatch(base: CvData, patch: Record<string, unknown> | Part
   return next;
 }
 
-export function patchPreviewLines(patch: Partial<CvData> | Record<string, unknown>): string[] {
-  const lines: string[] = [];
+export function patchPreviewLines(patch: Partial<CvData> | Record<string, unknown>): { key: string; value: string }[] {
+  const lines: { key: string; value: string }[] = [];
   const p = patch as any;
-  if (p.fullName) lines.push(`الاسم: ${p.fullName}`);
-  if (p.headline) lines.push(`المسمّى: ${p.headline}`);
-  if (p.summary) lines.push(`ملخص: ${String(p.summary).slice(0, 140)}`);
-  if (p.email || p.phone) lines.push(`تواصل: ${[p.email, p.phone].filter(Boolean).join(' · ')}`);
-  if (p.city) lines.push(`مدينة: ${p.city}`);
-  if (p.skills) lines.push(`مهارات: ${p.skills}`);
-  if (Array.isArray(p.experiences)) p.experiences.forEach((e: any) => lines.push(`خبرة: ${e?.title || ''} — ${e?.company || ''}`));
-  if (Array.isArray(p.education)) p.education.forEach((e: any) => lines.push(`تعليم: ${e?.field || ''} — ${e?.school || ''}`));
-  if (Array.isArray(p.courses)) p.courses.forEach((e: any) => lines.push(`دورة: ${e?.name || ''}`));
-  if (Array.isArray(p.certificates)) p.certificates.forEach((e: any) => lines.push(`شهادة: ${e?.name || ''}`));
-  if (Array.isArray(p.projects)) p.projects.forEach((e: any) => lines.push(`مشروع: ${e?.name || ''}`));
-  if (Array.isArray(p.languages)) p.languages.forEach((e: any) => lines.push(`لغة: ${e?.name || ''}`));
-  return lines.filter((l) => l.replace(/.*:\s*/, '').trim()).slice(0, 12);
+  const push = (key: string, value: unknown) => {
+    const text = String(value ?? '').trim();
+    if (text && text !== '—') lines.push({ key, value: text });
+  };
+  push('cv.line.name', p.fullName);
+  push('cv.line.headline', p.headline);
+  if (p.summary) push('cv.line.summary', String(p.summary).slice(0, 140));
+  if (p.email || p.phone) push('cv.line.contact', [p.email, p.phone].filter(Boolean).join(' · '));
+  push('cv.line.city', p.city);
+  push('cv.line.skills', p.skills);
+  if (Array.isArray(p.experiences)) {
+    p.experiences.forEach((e: any) => push('cv.line.exp', [e?.title, e?.company].filter(Boolean).join(' — ')));
+  }
+  if (Array.isArray(p.education)) {
+    p.education.forEach((e: any) => push('cv.line.edu', [e?.field, e?.school].filter(Boolean).join(' — ')));
+  }
+  if (Array.isArray(p.courses)) p.courses.forEach((e: any) => push('cv.line.course', e?.name));
+  if (Array.isArray(p.certificates)) p.certificates.forEach((e: any) => push('cv.line.cert', e?.name));
+  if (Array.isArray(p.projects)) p.projects.forEach((e: any) => push('cv.line.project', e?.name));
+  if (Array.isArray(p.languages)) p.languages.forEach((e: any) => push('cv.line.lang', e?.name));
+  return lines.slice(0, 12);
 }

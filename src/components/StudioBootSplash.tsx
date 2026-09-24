@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import NajeThinking from './NajeThinking';
+import { useI18n } from '../i18n';
 
 /** Brief pulsing-N overlay shown whenever a studio route mounts. */
 export function StudioBootSplash({
@@ -10,6 +11,7 @@ export function StudioBootSplash({
   duration?: number;
 }) {
   const [show, setShow] = useState(true);
+  const { t } = useI18n();
   useEffect(() => {
     const t = window.setTimeout(() => setShow(false), duration);
     return () => window.clearTimeout(t);
@@ -23,7 +25,7 @@ export function StudioBootSplash({
     >
       <NajeThinking size={64} />
       <span className={`mt-3 text-xs font-black ${dark ? 'text-[#e8b86d]' : 'text-indigo-600 dark:text-indigo-300'}`}>
-        ناجي يفكّر…
+        {t('shared.thinking')}
       </span>
     </div>
   );
