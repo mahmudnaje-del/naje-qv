@@ -1,6 +1,6 @@
 import React from 'react';
 import { Target } from 'lucide-react';
-import { CvData, jobKeywordCoverage } from '../../lib/cvStudio';
+import { CvData, jobAlignment, jobKeywordCoverage } from '../../lib/cvStudio';
 import { Box, ghostGoldBtn, inputCls } from './cvUi';
 
 export function CvJobMatch({
@@ -13,6 +13,7 @@ export function CvJobMatch({
   onAddSkill: (keyword: string) => void;
 }) {
   const { hit, missing, ratio, keys, strong, partial } = jobKeywordCoverage(cv);
+  const align = jobAlignment(cv);
   const ready = cv.jobPosting.trim().length >= 20;
 
   return (
@@ -76,6 +77,20 @@ export function CvJobMatch({
                   </button>
                 ))}
               </div>
+            </div>
+          )}
+          {(align.experience.relevant.length > 0 || align.experience.partial.length > 0 || align.experience.none.length > 0) && (
+            <div className="space-y-1 text-[10px] leading-relaxed text-white/55">
+              <p className="font-black text-white/70">محاذاة الخبرات مع الإعلان — تداخل لفظي فقط</p>
+              {align.experience.relevant.map((x) => (
+                <p key={x}>ذات صلة: {x}</p>
+              ))}
+              {align.experience.partial.map((x) => (
+                <p key={x}>جزئياً: {x}</p>
+              ))}
+              {align.experience.none.map((x) => (
+                <p key={x}>غير ظاهرة في كلمات الإعلان: {x}</p>
+              ))}
             </div>
           )}
         </div>

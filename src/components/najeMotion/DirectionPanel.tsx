@@ -1,13 +1,17 @@
 import React, { useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 import {
+  ALPHA_HONESTY,
   BACKDROPS,
   CAMERAS,
   INTENSITIES,
   LIGHTS,
   LOGO_BEHAVIORS,
+  LOGO_FINISHES,
+  LOGO_POSITIONS,
   MOTIONS,
   OUTRO_CTAS,
+  OUTRO_LAYOUTS,
   SOUND_HONESTY,
   SOUND_OPTIONS,
   TEXT_ANIMS,
@@ -64,9 +68,23 @@ export function DirectionPanel({
           </Chip>
         ))}
       </ChipRow>
-      <ChipRow title="الخلفية">
+      <ChipRow title="الخلفية" hint={ALPHA_HONESTY}>
         {BACKDROPS.map((x) => (
           <Chip key={x.id} active={draft.bgStyle === x.id} onClick={() => onChange({ bgStyle: x.id })}>
+            {x.ar}
+          </Chip>
+        ))}
+      </ChipRow>
+      <ChipRow title="موضع الشعار">
+        {LOGO_POSITIONS.map((x) => (
+          <Chip key={x.id} active={draft.logoPosition === x.id} onClick={() => onChange({ logoPosition: x.id })}>
+            {x.ar}
+          </Chip>
+        ))}
+      </ChipRow>
+      <ChipRow title="تشطيب الشعار">
+        {LOGO_FINISHES.map((x) => (
+          <Chip key={x.id} active={draft.logoFinish === x.id} onClick={() => onChange({ logoFinish: x.id })}>
             {x.ar}
           </Chip>
         ))}
@@ -101,6 +119,13 @@ export function DirectionPanel({
               placeholder="نص الدعوة كما يجب أن يُكتب"
             />
           )}
+          <ChipRow title="تخطيط الأوترو">
+            {OUTRO_LAYOUTS.map((x) => (
+              <Chip key={x.id} active={draft.outroLayout === x.id} onClick={() => onChange({ outroLayout: x.id })}>
+                {x.ar}
+              </Chip>
+            ))}
+          </ChipRow>
         </>
       )}
       <p className="rounded-xl border border-white/8 bg-black/25 px-3 py-2 text-[10px] leading-relaxed text-white/40">

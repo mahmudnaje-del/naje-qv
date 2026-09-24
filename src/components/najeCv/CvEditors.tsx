@@ -12,6 +12,7 @@ import {
   DEGREE_LABELS,
   DegreeLevel,
   EMPLOYMENT_TYPES,
+  gpaAdvice,
 } from '../../lib/cvStudio';
 import { chipOff, chipOn, inputCls } from './cvUi';
 
@@ -151,8 +152,8 @@ export function EducationEditor({
           </select>
         </div>
         {item.gpa.trim() ? (
-          <p className="col-span-2 text-[10px] leading-relaxed text-white/45">
-            أظهر المعدل إن كان يدعم ملفك لهذه الوظيفة؛ أخفه إن كان ضعيفاً نسبةً لسوقك.
+          <p className={`col-span-2 text-[10px] leading-relaxed ${gpaAdvice(item.gpa, item.gpaScale).suggestHide ? 'text-amber-200' : 'text-white/45'}`}>
+            {gpaAdvice(item.gpa, item.gpaScale).line}
           </p>
         ) : null}
         <label className="col-span-2 flex items-center gap-2 text-[11px] text-white/60">

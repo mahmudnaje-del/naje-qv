@@ -6,11 +6,25 @@ import {
   LANG_LEVELS,
   bulletsOf,
   rangeLabel,
+  skillsNamesString,
 } from './cvStudio';
 
+function fileSlug(s: string, max = 40) {
+  return (s || '')
+    .trim()
+    .replace(/\s+/g, '_')
+    .replace(/[^\p{L}\p{N}_-]+/gu, '')
+    .slice(0, max);
+}
+
 function fileBase(cv: CvData) {
-  const n = (cv.fullName || 'CV_By_Naje').replace(/\s+/g, '_').slice(0, 48);
-  return `CV_By_Naje_${n}`;
+  const name = fileSlug(cv.fullName || 'CV', 40) || 'CV';
+  const role = fileSlug(cv.targetRole || cv.headline, 32);
+  return role ? `${name}_${role}` : name;
+}
+
+export function coverFileBase(cv: CvData) {
+  return `${fileBase(cv)}_CoverLetter`;
 }
 
 export async function exportCvPdf(sheet: HTMLElement, cv: CvData): Promise<Blob> {
@@ -44,9 +58,16 @@ export async function exportCvPdf(sheet: HTMLElement, cv: CvData): Promise<Blob>
 
 function esc(s: string) {
   return s
-    .replace(/&/g, '&')
-    .replace(/</g, '<')
-    .replace(/>/g, '>');
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+function xmlEsc(s: string) {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
 }
 
 export function cvToHtml(cv: CvData) {
@@ -62,15 +83,20 @@ export function cvToHtml(cv: CvData) {
       const lis = bulletsOf(e.bullets)
         .map((b) => `<li>${esc(b)}</li>`)
         .join('');
-      return `<p><b>${esc(e.title)}</b> — ${esc(e.company)} <span style="color:#555">${esc(
+      const type = e.employmentType ? ` · ${esc(e.employmentType)}` : '';
+      return `<p><b>${esc(e.title)}</b> — ${esc(e.company)}${type} <span style="color:#555">${esc(
         rangeLabel(e.start, e.end, e.current, cv.lang)
       )}</span></p>${lis ? `<ul>${lis}</ul>` : ''}`;
     })
     .join('');
+  const gapNote =
+    cv.careerBreak && cv.careerBreak !== 'أفضل عدم الشرح'
+      ? `<p style="color:#555;font-size:12px">${ar ? 'فترة: ' : 'Note: '}${esc(cv.careerBreak)}</p>`
+      : '';
   const edu = cv.education
     .filter((e) => e.school || e.field)
     .map((e) => {
-      const gpa = e.gpa ? ` · GPA ${esc(e.gpa)}/${e.gpaScale}` : '';
+      const gpa = e.gpa && e.showGpa !== false ? ` · GPA ${esc(e.gpa)}/${e.gpaScale}` : '';
       return `<p><b>${esc(DEGREE_LABELS[e.degreeLevel][cv.lang])} ${esc(e.field)}</b><br/>${esc(e.school)}${
         e.year ? ` · ${esc(e.year)}` : ''
       }${gpa}${e.honors ? ` · ${esc(e.honors)}` : ''}</p>`;
@@ -93,12 +119,28 @@ export function cvToHtml(cv: CvData) {
     .filter((l) => l.name)
     .map((l) => `${esc(l.name)} (${esc(LANG_LEVELS.find((x) => x.id === l.level)?.[cv.lang] || l.level)})`)
     .join(' · ');
-  const skills = cv.skills
+  const skills = skillsNamesString(cv.skillsList, cv.skills)
     .split(/[,،\n]/)
     .map((s) => s.trim())
     .filter(Boolean)
     .map(esc)
     .join(' · ');
+  const projects = cv.projects
+    .filter((p) => p.name)
+    .map((p) => `<p><b>${esc(p.name)}</b>${p.role ? ` — ${esc(p.role)}` : ''}${p.year ? ` · ${esc(p.year)}` : ''}${p.detail ? `<br/>${esc(p.detail)}` : ''}</p>`)
+    .join('');
+  const pubs = cv.publications
+    .filter((p) => p.title)
+    .map((p) => `<p><b>${esc(p.title)}</b>${p.venue ? ` — ${esc(p.venue)}` : ''}${p.year ? ` · ${esc(p.year)}` : ''}${p.doi ? ` · DOI ${esc(p.doi)}` : ''}</p>`)
+    .join('');
+  const ach = cv.achievements
+    .filter((a) => a.title)
+    .map((a) => `<p><b>${esc(a.title)}</b>${a.org ? ` — ${esc(a.org)}` : ''}${a.year ? ` · ${esc(a.year)}` : ''}${a.detail ? ` · ${esc(a.detail)}` : ''}</p>`)
+    .join('');
+  const custom = cv.customSections
+    .filter((s) => s.title.trim() || s.body.trim())
+    .map((s) => h(s.title || (ar ? 'قسم إضافي' : 'Additional'), s.body ? `<p>${esc(s.body)}</p>` : ''))
+    .join('');
   const personal = [
     cv.nationality && `${ar ? 'الجنسية' : 'Nationality'}: ${esc(cv.nationality)}`,
     cv.visa && `${ar ? 'الإقامة' : 'Visa'}: ${esc(cv.visa)}`,
@@ -108,22 +150,29 @@ export function cvToHtml(cv: CvData) {
   ]
     .filter(Boolean)
     .join(' · ');
+  const contact = [cv.city, cv.country, cv.phone, cv.email, cv.linkedin, cv.portfolio, cv.github].filter((x): x is string => Boolean(x)).map(esc).join(' · ');
 
   return `<!DOCTYPE html><html lang="${cv.lang}" dir="${dir}"><head><meta charset="utf-8"/><title>${esc(
     cv.fullName || 'CV By Naje'
   )}</title></head><body style="font-family:Cairo,Arial,Tahoma,sans-serif;color:#111;max-width:720px;margin:24px auto;line-height:1.45">
   <h1 style="margin:0;font-size:26px">${esc(cv.fullName || '')}</h1>
   <p style="margin:4px 0 8px;color:#6a5420;font-weight:700">${esc(cv.headline || '')}</p>
-  <p style="font-size:12px;color:#444">${[cv.city, cv.country, cv.phone, cv.email, cv.linkedin].filter(Boolean).map(esc).join(' · ')}</p>
+  <p style="font-size:12px;color:#444">${contact}</p>
   ${h(ar ? 'الملخص المهني' : 'Professional Summary', cv.summary ? `<p>${esc(cv.summary)}</p>` : '')}
   ${cv.showPersonal ? h(ar ? 'بيانات شخصية' : 'Personal', personal ? `<p>${personal}</p>` : '') : ''}
-  ${h(ar ? 'الخبرات العملية' : 'Work Experience', exp)}
+  ${h(ar ? 'الخبرات العملية' : 'Work Experience', exp + gapNote)}
   ${h(ar ? 'التعليم' : 'Education', edu)}
   ${h(ar ? 'المهارات' : 'Skills', skills ? `<p>${skills}</p>` : '')}
+  ${h(ar ? 'المشاريع' : 'Projects', projects)}
   ${h(ar ? 'الدورات التدريبية' : 'Training', courses)}
   ${h(ar ? 'الشهادات' : 'Certifications', certs)}
   ${h(ar ? 'اللغات' : 'Languages', langs ? `<p>${langs}</p>` : '')}
+  ${h(ar ? 'الإنجازات' : 'Achievements', ach)}
+  ${h(ar ? 'الأبحاث والمنشورات' : 'Publications', pubs)}
   ${h(ar ? 'التطوع' : 'Volunteer', cv.volunteer ? `<p>${esc(cv.volunteer)}</p>` : '')}
+  ${h(ar ? 'الخدمة الوطنية' : 'National Service', cv.military ? `<p>${esc(cv.military)}</p>` : '')}
+  ${custom}
+  ${h(ar ? 'المراجع' : 'References', cv.references ? `<p>${esc(cv.references)}</p>` : '')}
   <p style="margin-top:28px;font-size:10px;color:#999">CV By Naje · سيرتك الذاتية بواسطة ناجي</p>
   </body></html>`;
 }
@@ -156,8 +205,8 @@ export async function exportCvDocx(cv: CvData): Promise<Blob> {
         `<w:p><w:pPr><w:bidi w:val="${rtl === 'rtl' ? '1' : '0'}"/><w:jc w:val="${rtl === 'rtl' ? 'right' : 'left'}"/></w:pPr><w:r><w:rPr><w:sz w:val="${size}"/>${
           bold ? '<w:b/>' : ''
         }<w:rtl w:val="${rtl === 'rtl' ? '1' : '0'}"/></w:rPr><w:t xml:space="preserve">${text
-          .replace(/&/g, '&')
-          .replace(/</g, '<')}</w:t></w:r></w:p>`
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')}</w:t></w:r></w:p>`
       );
     };
     p(cv.fullName || 'CV', true, 36);

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { ArrowUp, FileText, Paperclip, X } from 'lucide-react';
+import { ArrowUp, FileText, Paperclip, Square, X } from 'lucide-react';
 import { toast } from '../../toastStore';
 import { cn } from '../../lib/utils';
 import {
@@ -18,7 +18,9 @@ interface PromptComposerProps {
   value: string;
   onChange: (value: string) => void;
   onSend: () => void;
+  onStop?: () => void;
   disabled?: boolean;
+  busy?: boolean;
   placeholder?: string;
   attachments: PromptAttachment[];
   onAttachmentsChange: (files: PromptAttachment[]) => void;
@@ -44,11 +46,21 @@ function readAsText(file: File): Promise<string> {
   });
 }
 
+async function extractDocxText(file: File): Promise<string> {
+  const mod = await import('mammoth');
+  const mammoth = (mod as { default?: unknown } & Record<string, unknown>).default || mod;
+  const extract = (mammoth as { extractRawText?: (input: { arrayBuffer: ArrayBuffer }) => Promise<{ value: string }> }).extractRawText;
+  if (!extract) throw new Error('تعذر تحميل قارئ Word');
+  const result = await extract({ arrayBuffer: await file.arrayBuffer() });
+  return String(result?.value || '').trim();
+}
 async function toAttachment(file: File): Promise<PromptAttachment> {
   const mime = resolveAttachMime(file);
   const kind = attachmentKind(mime, file.name);
-  const data = await readAsDataUrl(file);
-  const textContent = kind === 'text' ? await readAsText(file) : undefined;
+  const data = kind === 'docx' ? '' : await readAsDataUrl(file);
+  let textContent: string | undefined;
+  if (kind === 'text') textContent = await readAsText(file);
+  if (kind === 'docx') textContent = await extractDocxText(file);
   return {
     id: uid('f'),
     name: file.name,
@@ -64,7 +76,9 @@ export function PromptComposer({
   value,
   onChange,
   onSend,
+  onStop,
   disabled,
+  busy,
   placeholder = 'احكيلي شو بدك تعمل...',
   attachments,
   onAttachmentsChange,
@@ -81,7 +95,7 @@ export function PromptComposer({
     el.style.height = `${Math.min(el.scrollHeight, 168)}px`;
   }, [value]);
 
-  const canSend = !disabled && Boolean(value.trim() || attachments.length);
+  const canSend = !disabled && !busy && Boolean(value.trim() || attachments.length);
   const hasImage = attachments.some((f) => f.kind === 'image');
 
   const addFiles = async (list: FileList | File[]) => {
@@ -174,7 +188,7 @@ export function PromptComposer({
           dir="rtl"
           rows={1}
           value={value}
-          disabled={disabled}
+          disabled={disabled || busy}
           placeholder={placeholder}
           aria-label="فكرتك"
           onChange={(e) => onChange(e.target.value)}
@@ -191,14 +205,14 @@ export function PromptComposer({
           type="file"
           className="hidden"
           multiple
-          accept="image/png,image/jpeg,image/webp,application/pdf,text/plain,.png,.jpg,.jpeg,.webp,.pdf,.txt"
+          accept="image/png,image/jpeg,image/webp,application/pdf,text/plain,.png,.jpg,.jpeg,.webp,.pdf,.txt,.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
           onChange={(e) => {
             if (e.target.files) void addFiles(e.target.files);
           }}
         />
         <button
           type="button"
-          disabled={disabled}
+          disabled={disabled || busy}
           onClick={() => fileRef.current?.click()}
           aria-label="إرفاق ملف"
           className={cn(
@@ -208,18 +222,29 @@ export function PromptComposer({
         >
           <Paperclip className="h-4 w-4" strokeWidth={2.4} />
         </button>
-        <button
-          type="button"
-          disabled={!canSend}
-          onClick={onSend}
-          aria-label="إرسال"
-          className={cn(
-            'mb-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-indigo-600 text-white transition',
-            'hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-40',
-          )}
-        >
-          <ArrowUp className="h-4 w-4" strokeWidth={2.6} />
-        </button>
+        {busy && onStop ? (
+          <button
+            type="button"
+            onClick={onStop}
+            aria-label="إيقاف"
+            className="mb-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-rose-600 text-white transition hover:bg-rose-500"
+          >
+            <Square className="h-3.5 w-3.5" fill="currentColor" strokeWidth={2.6} />
+          </button>
+        ) : (
+          <button
+            type="button"
+            disabled={!canSend}
+            onClick={onSend}
+            aria-label="إرسال"
+            className={cn(
+              'mb-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-indigo-600 text-white transition',
+              'hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-40',
+            )}
+          >
+            <ArrowUp className="h-4 w-4" strokeWidth={2.6} />
+          </button>
+        )}
       </div>
     </div>
   );

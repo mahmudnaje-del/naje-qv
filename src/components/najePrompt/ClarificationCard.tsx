@@ -32,7 +32,7 @@ export function ClarificationCard({
   return (
     <div className="rounded-3xl border border-indigo-500/20 bg-indigo-500/5 p-4">
       <p className="text-[10px] font-black tracking-wide text-indigo-600 dark:text-indigo-300">
-        نقطة واحدة بس
+        قبل ما أبدأ…
       </p>
       <p className="mt-1.5 text-sm font-black leading-relaxed text-naje-ink">{question.q}</p>
       {why ? (
@@ -65,7 +65,7 @@ export function ClarificationCard({
                 submit(draft);
               }
             }}
-            placeholder="أو اكتب جوابك…"
+            placeholder="اكتب إجابة أخرى..."
             className="flex-1 rounded-2xl border border-zinc-200 bg-white px-3 py-2 text-sm text-naje-ink placeholder:text-zinc-400 focus:border-indigo-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-950"
           />
           <button

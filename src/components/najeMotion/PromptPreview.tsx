@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 import {
   composeMotionPrompt,
+  designExplanation,
   najeUnderstood,
   type IdentSlot,
   type MotionBeat,
@@ -39,6 +40,7 @@ export function PromptPreview({
       }
     >
       <p className="text-[13px] font-bold leading-relaxed text-white">{summary}</p>
+      <p className="mt-2 text-[11px] leading-relaxed text-white/50">{designExplanation(draft, slot)}</p>
       {open && (
         <div className="mt-3 space-y-3">
           <ol className="space-y-1.5">

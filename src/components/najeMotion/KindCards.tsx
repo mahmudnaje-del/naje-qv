@@ -67,6 +67,9 @@ export function KindCards({
               )}
             </span>
             <div className={`font-black ${hero ? 'text-base' : 'text-sm'}`}>{k.ar}</div>
+            {hero && (
+              <div className="mt-0.5 text-[10px] font-bold tracking-wide text-[#e8b86d]/80">{k.en}</div>
+            )}
             <div className="mt-0.5 text-[10px] leading-relaxed text-white/45">{k.hint}</div>
           </button>
         );
@@ -88,6 +91,7 @@ export function KindCards({
               </span>
             </span>
             <div className="text-base font-black text-white">{p.ar}</div>
+            <div className="mt-0.5 text-[10px] font-bold tracking-wide text-[#e8b86d]/80">{p.en}</div>
             <div className="mt-0.5 text-[10px] leading-relaxed text-white/45">{p.hint}</div>
           </button>
         ))}

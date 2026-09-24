@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { FileText } from 'lucide-react';
 import {
   filePreviewSrc,
@@ -10,14 +10,60 @@ interface PromptBubbleProps {
   text: string;
   files?: PromptAttachment[];
   imageIntent?: ImageIntent;
+  editable?: boolean;
+  onEdit?: (text: string) => void;
 }
 
-export function PromptBubble({ text, files, imageIntent }: PromptBubbleProps) {
+export function PromptBubble({ text, files, imageIntent, editable, onEdit }: PromptBubbleProps) {
   const attachments = files || [];
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(text);
+
+  const save = () => {
+    const next = draft.trim();
+    if (!next || !onEdit) {
+      setEditing(false);
+      setDraft(text);
+      return;
+    }
+    setEditing(false);
+    if (next !== text.trim()) onEdit(next);
+  };
+
   return (
     <div className="flex justify-start">
       <div className="max-w-[85%] space-y-2 rounded-3xl rounded-tr-md bg-indigo-600 px-4 py-2.5 text-sm font-medium leading-relaxed text-white">
-        {text ? <p className="whitespace-pre-wrap">{text}</p> : null}
+        {editing ? (
+          <div className="space-y-2">
+            <textarea
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              rows={3}
+              className="w-full rounded-xl bg-white/15 px-2 py-1.5 text-sm text-white placeholder:text-white/60 focus:outline-none"
+            />
+            <div className="flex gap-1.5">
+              <button
+                type="button"
+                onClick={save}
+                className="rounded-lg bg-white px-2.5 py-1 text-[11px] font-black text-indigo-700"
+              >
+                حدّث
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setEditing(false);
+                  setDraft(text);
+                }}
+                className="rounded-lg bg-white/15 px-2.5 py-1 text-[11px] font-black text-white"
+              >
+                إلغاء
+              </button>
+            </div>
+          </div>
+        ) : text ? (
+          <p className="whitespace-pre-wrap">{text}</p>
+        ) : null}
         {attachments.length > 0 && (
           <div className="flex flex-wrap gap-1.5">
             {attachments.map((file) => (
@@ -46,6 +92,18 @@ export function PromptBubble({ text, files, imageIntent }: PromptBubbleProps) {
             {imageIntent === 'rebuild' ? 'أعد بناء هذا' : 'استلهام'}
           </p>
         ) : null}
+        {editable && onEdit && !editing && (
+          <button
+            type="button"
+            onClick={() => {
+              setDraft(text);
+              setEditing(true);
+            }}
+            className="text-[10px] font-black text-white/80 underline-offset-2 hover:underline"
+          >
+            تعديل الرسالة
+          </button>
+        )}
       </div>
     </div>
   );

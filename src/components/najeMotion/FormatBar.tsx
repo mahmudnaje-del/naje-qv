@@ -40,12 +40,20 @@ export function FormatBar({
             9:16 شورتس/تيك توك
           </Chip>
           <Chip active={aspect === '1:1'} onClick={() => onAspect('1:1')}>
-            1:1
+            1:1 مربع
+          </Chip>
+          <Chip active={aspect === '4:5'} onClick={() => onAspect('4:5')}>
+            4:5 إنستغرام
           </Chip>
         </ChipRow>
         {aspect === '1:1' && (
           <p className="text-[10px] leading-relaxed text-white/40">
-            1:1 يُصاغ كتكوين مربع داخل إطار 9:16
+            1:1 يُصاغ كتكوين مربع داخل إطار 9:16 — المحرك لا يصدّر 1:1 أصلي.
+          </p>
+        )}
+        {aspect === '4:5' && (
+          <p className="text-[10px] leading-relaxed text-white/40">
+            4:5 يُصاغ كتكوين إنستغرام داخل إطار 9:16 — المحرك لا يصدّر 4:5 أصلي.
           </p>
         )}
         <ChipRow title="الدقة">

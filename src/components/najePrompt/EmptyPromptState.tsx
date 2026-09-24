@@ -14,7 +14,7 @@ export function EmptyPromptState({ onPick }: EmptyPromptStateProps) {
         احكي فكرتك… ناجي يفهمها
       </h2>
       <p className="mt-2 max-w-sm text-center text-sm font-bold leading-relaxed text-naje-muted">
-        احكيلي شو بدك تعمل، حتى لو باللهجة وبدون ترتيب.
+        لا تحتاج أن تعرف كيف تكتب Prompt. فقط احكِ لناجي ماذا تريد — حتى باللهجة وبدون ترتيب.
       </p>
       <p className="mt-1.5 text-center text-[11px] font-medium text-naje-muted">
         ناجي يسأل فقط إذا نقص شيء يغيّر الناتج

@@ -163,6 +163,7 @@ export interface CvData {
   targetCountry: CvCountry;
   wizardDone: boolean;
   coverLetter: string;
+  linkedinAbout?: string;
   summaryStyle: CvSummaryStyle;
   summaryLength: CvSummaryLength;
   photoStyle: CvPhotoStyle;
@@ -286,7 +287,7 @@ export const EMPLOYMENT_TYPES: { id: string; ar: string; en: string }[] = [
   { id: 'freelance', ar: 'مستقل', en: 'Freelance' },
 ];
 
-export const CAREER_BREAK_CHIPS = ['دراسة', 'عمل حر', 'عائلة', 'أفضل عدم الشرح'] as const;
+export const CAREER_BREAK_CHIPS = ['دراسة', 'عمل حر', 'عائلة', 'سفر', 'بحث عن عمل', 'مشروع شخصي', 'أفضل عدم الشرح'] as const;
 
 export const ACCENT_PRESETS: { id: string; hex: string; ar: string }[] = [
   { id: 'gold', hex: '#c4a35a', ar: 'ذهبي' },
@@ -521,6 +522,7 @@ export function emptyCv(): CvData {
     targetCountry: 'SA',
     wizardDone: false,
     coverLetter: '',
+    linkedinAbout: '',
     summaryStyle: 'executive',
     summaryLength: 'three',
     photoStyle: 'natural',
@@ -671,17 +673,244 @@ export function jobKeywordCoverage(cv: CvData): {
   return { keys: uniq, hit, missing, strong, partial, ratio: uniq.length ? hit.length / uniq.length : 0 };
 }
 
-export function completeness(cv: CvData): { id: string; ar: string; ok: boolean; optional?: boolean }[] {
+/** Honest overlap only: titles/keywords vs the pasted posting. Not a neural matcher. */
+export function jobAlignment(cv: CvData): {
+  qualifications: { strong: string[]; partial: string[]; missing: string[] };
+  experience: { relevant: string[]; partial: string[]; none: string[] };
+} {
+  const empty = {
+    qualifications: { strong: [] as string[], partial: [] as string[], missing: [] as string[] },
+    experience: { relevant: [] as string[], partial: [] as string[], none: [] as string[] },
+  };
+  const posting = cv.jobPosting.trim();
+  if (posting.length < 20) return empty;
+  const kw = jobKeywordCoverage(cv);
+  const eduHay = cv.education
+    .map((e) => `${DEGREE_LABELS[e.degreeLevel].ar} ${DEGREE_LABELS[e.degreeLevel].en} ${e.field} ${e.school}`)
+    .join(' ')
+    .toLowerCase();
+  const certHay = cv.certificates.map((c) => `${c.name} ${c.issuer}`).join(' ').toLowerCase();
+  const courseHay = cv.courses.map((c) => `${c.name} ${c.gained}`).join(' ').toLowerCase();
+  const qualHay = `${eduHay} ${certHay}`;
+  const credentialish =
+    /bachelor|master|phd|degree|certif|license|licence|pmp|aws|cfa|cisco|ielts|toefl|شهادة|بكالوريوس|ماجستير|دكتوراه|رخصة|مؤهل|دبلوم/i;
+  const strong = kw.keys.filter((k) => qualHay.includes(k));
+  const partial = kw.keys.filter((k) => !qualHay.includes(k) && courseHay.includes(k));
+  const missing = kw.missing.filter((k) => credentialish.test(k) || k.length > 6).slice(0, 8);
+  const targetHay = `${cv.targetRole} ${cv.headline} ${posting.slice(0, 280)}`.toLowerCase();
+  const targetTokens = targetHay.split(/[^\p{L}\p{N}+#]+/u).filter((w) => w.length > 3);
+  const experience = { relevant: [] as string[], partial: [] as string[], none: [] as string[] };
+  cv.experiences
+    .filter((e) => e.title.trim() || e.company.trim())
+    .forEach((e) => {
+      const label = [e.title, e.company].filter((x) => x.trim()).join(' — ');
+      const titleHay = `${e.title} ${e.company}`.toLowerCase();
+      const bulletHay = e.bullets.toLowerCase();
+      const titleHit = targetTokens.some((t) => titleHay.includes(t));
+      const bulletHit = kw.keys.some((k) => bulletHay.includes(k));
+      if (titleHit) experience.relevant.push(label);
+      else if (bulletHit) experience.partial.push(label);
+      else experience.none.push(label);
+    });
+  return { qualifications: { strong, partial, missing }, experience };
+}
+
+export function gpaAdvice(gpa: string, scale: '4' | '5' | '100'): { suggestHide: boolean; line: string } {
+  const n = parseFloat(String(gpa).replace(',', '.'));
+  if (!Number.isFinite(n) || n <= 0) {
+    return { suggestHide: false, line: 'أظهر المعدل إن كان يدعم ملفك لهذه الوظيفة؛ أخفه إن كان ضعيفاً نسبةً لسوقك. القرار لك.' };
+  }
+  const ratio = scale === '4' ? n / 4 : scale === '5' ? n / 5 : n / 100;
+  if (ratio < 0.62) {
+    return {
+      suggestHide: true,
+      line: `اقتراح فقط: ${n}/${scale} قد لا يدعم ملفك في سوق تنافسي — يمكنك إخفاءه. لن نُخفيه نيابةً عنك.`,
+    };
+  }
+  if (ratio >= 0.8) {
+    return {
+      suggestHide: false,
+      line: `${n}/${scale} رقم واضح — إبقاؤه يساعد إن كان الدور أكاديمياً أو حديث تخرج.`,
+    };
+  }
+  return { suggestHide: false, line: 'المعدل في النطاق المتوسط. أظهره إن طُلب أو إن كان سوقك يقرأه، وإلا أخفه.' };
+}
+
+export function dateFlags(cv: CvData): HrTip[] {
+  const tips: HrTip[] = [];
+  cv.experiences.forEach((e) => {
+    if (!e.title.trim() && !e.company.trim()) return;
+    const label = e.title.trim() || e.company.trim();
+    const s = parseYm(e.start);
+    const en = parseYm(e.end);
+    if (e.current && e.end.trim()) {
+      tips.push({
+        id: `date-current-${e.id}`,
+        level: 'warn',
+        title: 'تاريخ نهاية مع «ما زلت هنا»',
+        body: `${label}: أزل تاريخ النهاية أو ألغِ الخيار. الاثنان معاً يربكان المسح.`,
+      });
+    }
+    if (s != null && en != null && en < s) {
+      tips.push({
+        id: `date-order-${e.id}`,
+        level: 'warn',
+        title: 'تاريخ النهاية قبل البداية',
+        body: `${label}: راجع الشهر/السنة — النهاية أقدم من البداية.`,
+      });
+    }
+  });
+  return tips.slice(0, 4);
+}
+
+function countDupKeys(names: string[]): string[] {
+  const map = new Map<string, number>();
+  names.forEach((n) => {
+    const k = n.trim().toLowerCase();
+    if (!k) return;
+    map.set(k, (map.get(k) || 0) + 1);
+  });
+  return [...map.entries()].filter(([, n]) => n > 1).map(([k]) => k);
+}
+
+export function duplicateFlags(cv: CvData): HrTip[] {
+  const tips: HrTip[] = [];
+  const skillNames = (cv.skillsList || []).some((s) => s.name.trim())
+    ? (cv.skillsList || []).map((s) => s.name)
+    : cv.skills.split(/[,،\n]/);
+  const skillDups = countDupKeys(skillNames);
+  if (skillDups.length) {
+    tips.push({
+      id: 'dup-skill',
+      level: 'warn',
+      title: 'مهارة مكرّرة',
+      body: `«${skillDups[0]}» وردت مرتين. أبقِ واحدة.`,
+    });
+  }
+  if (countDupKeys(cv.courses.map((c) => `${c.name} ${c.issuer}`)).length) {
+    tips.push({ id: 'dup-course', level: 'warn', title: 'دورة مكرّرة', body: 'نفس الدورة ظهرت مرتين. احذف التكرار قبل التصدير.' });
+  }
+  if (countDupKeys(cv.certificates.map((c) => c.name)).length) {
+    tips.push({ id: 'dup-cert', level: 'warn', title: 'شهادة مكرّرة', body: 'نفس الشهادة ظهرت مرتين.' });
+  }
+  if (countDupKeys(cv.projects.map((p) => p.name)).length) {
+    tips.push({ id: 'dup-proj', level: 'warn', title: 'مشروع مكرّر', body: 'نفس المشروع ظهر مرتين.' });
+  }
+  if (countDupKeys(cv.experiences.map((e) => `${e.title} ${e.company}`).filter((s) => s.trim())).length) {
+    tips.push({ id: 'dup-exp', level: 'warn', title: 'خبرة مكرّرة', body: 'وظيفة بنفس المسمّى والجهة ظهرت مرتين.' });
+  }
+  return tips;
+}
+
+export function weakPhraseFlags(cv: CvData): HrTip[] {
+  const tips: HrTip[] = [];
+  if (cv.summary.trim() && GENERIC_SUMMARY_RE.test(cv.summary)) {
+    tips.push({
+      id: 'weak-summary',
+      level: 'warn',
+      title: 'عبارة عامة في الملخص',
+      body: 'تجنّب «شغوف / محترف / ديناميكي / team player». استبدلها بما فعلت وبأي نتيجة مذكورة فعلاً.',
+    });
+  }
+  const hit = cv.experiences.some(
+    (e) => GENERIC_SUMMARY_RE.test(e.bullets) || /مسؤول عن|responsible for|hard worker|team player/i.test(e.bullets)
+  );
+  if (hit) {
+    tips.push({
+      id: 'weak-bullet',
+      level: 'warn',
+      title: 'نقاط خبرة بعبارات ضعيفة',
+      body: '«مسؤول عن» و«hard worker» لا تُمسح. فعل + ماذا فعلت + رقم إن وُجد في كلامك.',
+    });
+  }
+  return tips;
+}
+
+export type RailStatus = 'done' | 'missing' | 'optional' | 'recommended';
+
+export const RAIL_STATUS_AR: Record<RailStatus, string> = {
+  done: 'مكتمل',
+  missing: 'ناقص',
+  optional: 'اختياري',
+  recommended: 'موصى',
+};
+
+export function sectionRailStatus(cv: CvData): { id: string; ar: string; status: RailStatus }[] {
+  const ticks = completeness(cv);
+  const tickOk = (id: string) => Boolean(ticks.find((t) => t.id === id)?.ok);
+  const studentish = cv.persona === 'student' || cv.persona === 'graduate' || cv.persona === 'no_experience';
+  const langOk = cv.languages.some((l) => l.name.trim());
+  const projOk = cv.projects.some((p) => p.name.trim());
+  const extraOk =
+    cv.certificates.some((c) => c.name.trim()) ||
+    cv.courses.some((c) => c.name.trim()) ||
+    cv.publications.some((p) => p.title.trim()) ||
+    cv.customSections.some((s) => s.title.trim()) ||
+    cv.achievements.some((a) => a.title.trim());
+
+  return STUDIO_SECTIONS.map((s) => {
+    if (s.id === 'cv-sec-identity') {
+      return { id: s.id, ar: s.ar, status: tickOk('name') && tickOk('title') ? 'done' : 'missing' };
+    }
+    if (s.id === 'cv-sec-contact') {
+      return { id: s.id, ar: s.ar, status: tickOk('contact') ? 'done' : 'missing' };
+    }
+    if (s.id === 'cv-sec-market' || s.id === 'cv-sec-template') {
+      return { id: s.id, ar: s.ar, status: 'done' };
+    }
+    if (s.id === 'cv-sec-experience') {
+      if (tickOk('exp')) return { id: s.id, ar: s.ar, status: 'done' };
+      return { id: s.id, ar: s.ar, status: studentish ? 'optional' : 'missing' };
+    }
+    if (s.id === 'cv-sec-education') {
+      if (tickOk('edu')) return { id: s.id, ar: s.ar, status: 'done' };
+      return { id: s.id, ar: s.ar, status: studentish ? 'recommended' : 'missing' };
+    }
+    if (s.id === 'cv-sec-skills') {
+      return { id: s.id, ar: s.ar, status: tickOk('skills') ? 'done' : 'missing' };
+    }
+    if (s.id === 'cv-sec-languages') {
+      return { id: s.id, ar: s.ar, status: langOk ? 'done' : 'optional' };
+    }
+    if (s.id === 'cv-sec-projects') {
+      if (projOk) return { id: s.id, ar: s.ar, status: 'done' };
+      return { id: s.id, ar: s.ar, status: studentish || cv.persona === 'freelancer' ? 'recommended' : 'optional' };
+    }
+    if (s.id === 'cv-sec-extra') {
+      if (extraOk) return { id: s.id, ar: s.ar, status: 'done' };
+      if (cv.template === 'academic' || cv.persona === 'specialist') return { id: s.id, ar: s.ar, status: 'recommended' };
+      return { id: s.id, ar: s.ar, status: 'optional' };
+    }
+    return { id: s.id, ar: s.ar, status: 'optional' };
+  });
+}
+
+export function tipDestination(tipId: string): { tab: 'build' | 'coach'; anchor: string } {
+  if (TIP_JUMP[tipId]) return TIP_JUMP[tipId];
+  if (tipId.startsWith('date-') || tipId === 'dup-exp' || tipId === 'weak-bullet') return { tab: 'build', anchor: 'cv-sec-experience' };
+  if (tipId.startsWith('dup-course') || tipId === 'dup-course') return { tab: 'build', anchor: 'cv-sec-courses' };
+  if (tipId.startsWith('dup-skill') || tipId === 'skill-evidence') return { tab: 'build', anchor: 'cv-sec-skills' };
+  if (tipId.startsWith('dup-cert')) return { tab: 'build', anchor: 'cv-sec-certs' };
+  if (tipId.startsWith('dup-proj')) return { tab: 'build', anchor: 'cv-sec-projects' };
+  if (tipId.startsWith('weak')) return { tab: 'build', anchor: 'cv-sec-identity' };
+  if (tipId === 'gpa') return { tab: 'build', anchor: 'cv-sec-education' };
+  return { tab: 'build', anchor: 'cv-sec-identity' };
+}
+
+export function completeness(cv: CvData): { id: string; ar: string; ok: boolean; optional?: boolean; recommended?: boolean }[] {
+  const studentish = cv.persona === 'student' || cv.persona === 'graduate' || cv.persona === 'no_experience';
+  const skillOk = cv.skills.trim().length > 2 || Boolean((cv.skillsList || []).some((s) => s.name.trim()));
   return [
     { id: 'name', ar: 'الاسم', ok: cv.fullName.trim().length >= 3 },
     { id: 'title', ar: 'المسمّى', ok: cv.headline.trim().length >= 4 },
     { id: 'contact', ar: 'التواصل', ok: Boolean(cv.email && cv.phone) },
     { id: 'summary', ar: 'الملخص', ok: cv.summary.trim().length >= 40 },
     { id: 'exp', ar: 'الخبرة / المشاريع', ok: cv.experiences.some((e) => e.title || e.company) || cv.projects.some((p) => p.name) },
-    { id: 'edu', ar: 'التعليم', ok: cv.education.some((e) => e.school.trim()) },
-    { id: 'skills', ar: 'المهارات', ok: cv.skills.trim().length > 2 },
-    { id: 'certs', ar: 'شهادات', ok: cv.certificates.some((c) => c.name.trim()), optional: true },
-    { id: 'courses', ar: 'دورات', ok: cv.courses.some((c) => c.name.trim()), optional: true },
+    { id: 'edu', ar: 'التعليم', ok: cv.education.some((e) => e.school.trim()), recommended: studentish },
+    { id: 'skills', ar: 'المهارات', ok: skillOk },
+    { id: 'projects', ar: 'مشاريع', ok: cv.projects.some((p) => p.name.trim()), optional: true, recommended: studentish || cv.persona === 'freelancer' },
+    { id: 'certs', ar: 'شهادات', ok: cv.certificates.some((c) => c.name.trim()), optional: true, recommended: cv.persona === 'specialist' },
+    { id: 'courses', ar: 'دورات', ok: cv.courses.some((c) => c.name.trim()), optional: true, recommended: studentish },
   ];
 }
 
@@ -779,7 +1008,7 @@ export function scoreCv(cv: CvData): { score: number; tips: HrTip[] } {
     if (edu.some((e) => e.gpa.trim())) score += 3;
   } else tips.push({ id: 'edu', level: 'warn', title: 'التعليم غير مذكور', body: 'الدرجة والجهة وسنة التخرج تُمسح في الثواني الأولى مع المسمّى.' });
 
-  if (cv.skills.trim()) score += 6;
+  if (cv.skills.trim() || (cv.skillsList || []).some((s) => s.name.trim())) score += 6;
   else tips.push({ id: 'skills', level: 'warn', title: 'لا مهارات قابلة للفلترة', body: 'ATS يبحث كلمات الإعلان. ضع 8–12 مهارة حقيقية وردت في الوظيفة المستهدفة.' });
 
   if (cv.languages.some((l) => l.name.trim())) score += 3;
@@ -842,6 +1071,19 @@ export function scoreCv(cv: CvData): { score: number; tips: HrTip[] } {
       });
   }
 
+  dateFlags(cv).forEach((t) => tips.push(t));
+  duplicateFlags(cv).forEach((t) => tips.push(t));
+  weakPhraseFlags(cv).forEach((t) => tips.push(t));
+  const experts = (cv.skillsList || []).filter((s) => s.level === 'expert' && s.name.trim() && !s.evidence.trim());
+  if (experts.length) {
+    tips.push({
+      id: 'skill-evidence',
+      level: 'warn',
+      title: 'مهارة خبير بلا دليل',
+      body: `«${experts[0].name}» معلّمة خبير. أين استخدمتها؟ اربطها بخبرة أو مشروع — اختياري لكن أقوى.`,
+    });
+  }
+
   score = Math.max(8, Math.min(100, score));
   if (tips.length === 0) {
     tips.push({
@@ -851,7 +1093,7 @@ export function scoreCv(cv: CvData): { score: number; tips: HrTip[] } {
       body: 'الاسم، المسمّى، رقم في الملخص، وتواصل واضح. للآلة صدّر PDF نصّي أو Word، لا تعتمد على صورة الصفحة وحدها.',
     });
   }
-  return { score, tips: tips.slice(0, 6) };
+  return { score, tips: tips.slice(0, 8) };
 }
 
 export function bulletsOf(raw: string): string[] {
@@ -887,6 +1129,7 @@ export function hydrateCv(raw: Partial<CvData> | null | undefined): CvData {
     customSections: Array.isArray(raw.customSections) ? raw.customSections : [],
     skillsList: Array.isArray(raw.skillsList) ? raw.skillsList : [],
     careerBreak: typeof raw.careerBreak === 'string' ? raw.careerBreak : '',
+    linkedinAbout: typeof raw.linkedinAbout === 'string' ? raw.linkedinAbout : '',
     atsMode: Boolean(raw.atsMode),
     summaryStyle: SUMMARY_STYLES.some((s) => s.id === (raw as CvData).summaryStyle) ? (raw as CvData).summaryStyle : base.summaryStyle,
     summaryLength: SUMMARY_LENGTHS.some((s) => s.id === (raw as CvData).summaryLength) ? (raw as CvData).summaryLength : base.summaryLength,
@@ -962,6 +1205,15 @@ export const TIP_JUMP: Record<string, { tab: 'build' | 'coach'; anchor: string }
   visa: { tab: 'build', anchor: 'cv-sec-personal' },
   cols: { tab: 'build', anchor: 'cv-sec-template' },
   kw: { tab: 'coach', anchor: 'cv-sec-jobmatch' },
+  projects: { tab: 'build', anchor: 'cv-sec-projects' },
+  'dup-skill': { tab: 'build', anchor: 'cv-sec-skills' },
+  'dup-course': { tab: 'build', anchor: 'cv-sec-courses' },
+  'dup-cert': { tab: 'build', anchor: 'cv-sec-certs' },
+  'dup-proj': { tab: 'build', anchor: 'cv-sec-projects' },
+  'dup-exp': { tab: 'build', anchor: 'cv-sec-experience' },
+  'weak-summary': { tab: 'build', anchor: 'cv-sec-identity' },
+  'weak-bullet': { tab: 'build', anchor: 'cv-sec-experience' },
+  'skill-evidence': { tab: 'build', anchor: 'cv-sec-skills' },
 };
 
 export function cvFactsForPrompt(cv: CvData): string {
@@ -979,9 +1231,10 @@ export function cvFactsForPrompt(cv: CvData): string {
   add('الدولة', cv.country);
   add('الجنسية', cv.nationality);
   add('الإقامة', cv.visa);
-  add('المهارات', cv.skills);
+  add('المهارات', skillsNamesString(cv.skillsList, cv.skills));
   add('التطوع', cv.volunteer);
   add('الخدمة الوطنية', cv.military);
+  add('فترة مهنية', cv.careerBreak);
   cv.experiences
     .filter((e) => e.title.trim() || e.company.trim())
     .forEach((e, i) => {
@@ -1151,6 +1404,8 @@ const SCALAR_KEYS: (keyof CvData)[] = [
   'volunteer',
   'references',
   'coverLetter',
+  'linkedinAbout',
+  'careerBreak',
 ];
 
 export function mergeCvPatch(base: CvData, patch: Record<string, unknown> | Partial<CvData> | null | undefined): CvData {

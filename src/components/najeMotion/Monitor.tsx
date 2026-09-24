@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { Download, Film, RefreshCw } from 'lucide-react';
 import {
+  DIRECTOR_STEPS,
   VARIATIONS,
+  directorStepForProgress,
   motionFilename,
   slotLabelAr,
   type IdentSlot,
@@ -25,7 +27,7 @@ function visibleSlots(kind: MotionKind): IdentSlot[] {
 }
 
 function isVertical(aspect: MotionAspect, platform: MotionPlatform) {
-  return aspect === '9:16' || aspect === '1:1' || platform === 'tiktok' || platform === 'instagram';
+  return aspect === '9:16' || aspect === '1:1' || aspect === '4:5' || platform === 'tiktok' || platform === 'instagram';
 }
 
 async function downloadNamed(url: string, filename: string) {
@@ -55,6 +57,9 @@ function SafeGuides({ aspect }: { aspect: MotionAspect }) {
       <div className="absolute inset-[8%] rounded-sm border border-dashed border-[#e8b86d]/55" />
       {aspect === '1:1' && (
         <div className="absolute left-1/2 top-1/2 aspect-square w-full -translate-x-1/2 -translate-y-1/2 border border-dashed border-white/45" />
+      )}
+      {aspect === '4:5' && (
+        <div className="absolute left-1/2 top-1/2 h-[70%] w-full -translate-x-1/2 -translate-y-1/2 border border-dashed border-white/45" />
       )}
     </div>
   );
@@ -88,6 +93,22 @@ function TikTokChrome({ children }: { children: React.ReactNode }) {
       <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-3">
         <div className="h-2 w-24 rounded bg-white/30" />
         <div className="mt-1.5 h-2 w-16 rounded bg-white/20" />
+      </div>
+    </div>
+  );
+}
+
+function InstagramChrome({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="overflow-hidden rounded-xl bg-[#fafafa]">
+      <div className="flex items-center gap-2 border-b border-black/10 px-2 py-1.5">
+        <span className="h-5 w-5 rounded-full bg-gradient-to-br from-[#f9ce34] via-[#ee2a7b] to-[#6228d7]" />
+        <span className="text-[9px] font-black text-neutral-800">Instagram</span>
+      </div>
+      {children}
+      <div className="flex items-center justify-between px-3 py-1.5 text-[8px] text-neutral-500">
+        <span>♡   💬   ➤</span>
+        <span>⋯</span>
       </div>
     </div>
   );
@@ -127,7 +148,7 @@ export function Monitor({
   const slots = visibleSlots(kind);
   const hasAny = slots.some((s) => results[s]?.videoUrl);
   const currentUrl = results[activeSlot]?.videoUrl;
-  const [platformPreview, setPlatformPreview] = useState(false);
+  const [chrome, setChrome] = useState<'off' | 'youtube' | 'tiktok' | 'instagram'>('off');
   const [safeArea, setSafeArea] = useState(false);
   const vertical = isVertical(aspect, platform);
 
@@ -140,7 +161,12 @@ export function Monitor({
         {safeArea && <SafeGuides aspect={aspect} />}
       </div>
     );
-    if (!platformPreview) return inner;
+    if (chrome === 'off') return inner;
+    if (chrome === 'instagram') return <InstagramChrome>{inner}</InstagramChrome>;
+    if (chrome === 'tiktok' || (chrome === 'youtube' && vertical)) {
+      return chrome === 'tiktok' ? <TikTokChrome>{inner}</TikTokChrome> : <YouTubeChrome>{inner}</YouTubeChrome>;
+    }
+    if (chrome === 'youtube') return <YouTubeChrome>{inner}</YouTubeChrome>;
     return vertical ? <TikTokChrome>{inner}</TikTokChrome> : <YouTubeChrome>{inner}</YouTubeChrome>;
   };
 
@@ -173,10 +199,27 @@ export function Monitor({
       {busy && !currentUrl && (
         <div className="flex flex-col items-center gap-2 py-8">
           <NajeThinking size={56} />
-          <span className="text-xs font-bold text-[#e8b86d]">{stepLabel || 'ناجي يبني الهوية…'}</span>
+          <span className="text-xs font-bold text-[#e8b86d]">
+            {stepLabel || 'ناجي يُخرج تسلسل الحركة…'}
+          </span>
+          <span className="text-[10px] text-white/45">{directorStepForProgress(progress)}</span>
           {generatingSlot && (
             <span className="text-[10px] text-white/40">{slotLabelAr(generatingSlot)}</span>
           )}
+          <ol className="mt-2 w-full max-w-xs space-y-1 text-right">
+            {DIRECTOR_STEPS.map((s) => (
+              <li
+                key={s.at}
+                className={`text-[10px] ${progress >= s.at ? 'font-bold text-[#e8b86d]' : 'text-white/30'}`}
+              >
+                {progress >= s.at ? '✓ ' : '· '}
+                {s.ar}
+              </li>
+            ))}
+          </ol>
+          <p className="mt-1 max-w-xs text-center text-[9px] text-white/30">
+            مراحل إخراج مفاهيمية فوق تقدّم المهمة الحقيقي من الخادم.
+          </p>
         </div>
       )}
 
@@ -184,7 +227,7 @@ export function Monitor({
         {slots
           .filter((s) => results[s]?.videoUrl)
           .map((s) => {
-            const filename = motionFilename(brandName, s, duration);
+            const filename = motionFilename(brandName, s, duration, aspect);
             return (
               <div key={s} className="overflow-hidden rounded-2xl border border-white/8 bg-black/40">
                 <div className="flex items-center justify-between px-3 py-2 text-[11px] font-black text-white/70">
@@ -216,16 +259,22 @@ export function Monitor({
       {!busy && hasAny && (
         <div className="mt-3 space-y-2">
           <div className="flex flex-wrap gap-1.5">
-            <Chip active={platformPreview} onClick={() => setPlatformPreview((v) => !v)}>
-              معاينة المنصة
+            <Chip active={chrome === 'youtube'} onClick={() => setChrome((c) => (c === 'youtube' ? 'off' : 'youtube'))}>
+              يوتيوب
+            </Chip>
+            <Chip active={chrome === 'tiktok'} onClick={() => setChrome((c) => (c === 'tiktok' ? 'off' : 'tiktok'))}>
+              تيك توك
+            </Chip>
+            <Chip active={chrome === 'instagram'} onClick={() => setChrome((c) => (c === 'instagram' ? 'off' : 'instagram'))}>
+              إنستغرام
             </Chip>
             <Chip active={safeArea} onClick={() => setSafeArea((v) => !v)}>
               الهوامش الآمنة
             </Chip>
           </div>
-          {(platformPreview || safeArea) && (
+          {(chrome !== 'off' || safeArea) && (
             <p className="text-[10px] leading-relaxed text-white/40">
-              {platformPreview ? 'إطار المنصة للمعاينة فقط — لا يُصدَّر مع الملف. ' : ''}
+              {chrome !== 'off' ? 'إطار المنصة للمعاينة فقط — لا يُصدَّر مع الملف. ' : ''}
               {safeArea ? 'إرشاد للمونتاج — لا يُحرق في الملف.' : ''}
             </p>
           )}
@@ -247,7 +296,7 @@ export function Monitor({
           <div className="flex flex-wrap gap-1.5">
             {VARIATIONS.map((v) => (
               <Chip key={v.id} onClick={() => onVariation(v.id)}>
-                {v.ar}
+                {v.en} · {v.ar}
               </Chip>
             ))}
           </div>

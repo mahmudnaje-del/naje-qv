@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { AlertCircle, Clapperboard, Sparkles } from 'lucide-react';
+import { AlertCircle, Clapperboard, Sparkles, Wand2 } from 'lucide-react';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { useAppStore } from '../store';
 import { auth, db } from '../firebase';
@@ -13,11 +13,13 @@ import {
   applyVariation,
   composeMotionPrompt,
   computeMotionPlan,
+  directorStepForProgress,
   loadDraft,
   readPromptHandoff,
   resolveSlot,
   saveDraft,
   stripDataUrl,
+  surpriseDirection,
   type HeroPresetId,
   type IdentSlot,
   type MotionDraft,
@@ -26,6 +28,7 @@ import {
 import FeaturePaywallModal from '../components/FeaturePaywallModal';
 import NajeThinking from '../components/NajeThinking';
 import StudioBootSplash from '../components/StudioBootSplash';
+import { BestPracticeHints } from '../components/najeMotion/BestPracticeHints';
 import { BrandKit } from '../components/najeMotion/BrandKit';
 import { DirectionPanel } from '../components/najeMotion/DirectionPanel';
 import { FormatBar } from '../components/najeMotion/FormatBar';
@@ -200,10 +203,16 @@ export default function NajeIdent() {
     void generate(next);
   };
 
+  const runSurprise = () => {
+    const next = surpriseDirection(draft);
+    setDraft(next);
+    toast.success('اتجاه جديد مع بقاء الهوية مقفولة إن كانت مفعّلة');
+  };
+
   const stepLabel =
     job?.status === 'queued'
       ? t('najeIdent.queueStatus', { position: String(job?.queuePosition || '…') })
-      : job?.stepLabel || (busy ? t('najeIdent.producingIdent') : '');
+      : job?.stepLabel || (busy ? directorStepForProgress(job?.progress || 0) : '');
 
   const generateLabel = () => {
     if (busy) return stepLabel || t('najeIdent.producingIdent');
@@ -310,13 +319,31 @@ export default function NajeIdent() {
             </header>
 
             {error && (
-              <div className="flex items-center justify-between gap-3 rounded-2xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-xs text-rose-200">
-                <span className="inline-flex items-center gap-2">
-                  <AlertCircle className="h-4 w-4" /> {error}
-                </span>
-                <button type="button" onClick={() => setError(null)} className="min-h-[44px] font-bold">
-                  {t('common.close')}
-                </button>
+              <div className="rounded-2xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-xs text-rose-200">
+                <p className="inline-flex items-start gap-2">
+                  <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                  <span>
+                    {error}
+                    <span className="mt-1 block text-[10px] text-rose-100/70">
+                      المسودة محفوظة محلياً. لم يُفقد المشروع.
+                    </span>
+                  </span>
+                </p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setError(null);
+                      void generate();
+                    }}
+                    className="min-h-[44px] rounded-xl border border-rose-300/40 px-3 font-black"
+                  >
+                    إعادة المحاولة
+                  </button>
+                  <button type="button" onClick={() => setError(null)} className="min-h-[44px] font-bold text-rose-100/80">
+                    {t('common.close')}
+                  </button>
+                </div>
               </div>
             )}
 
@@ -333,6 +360,15 @@ export default function NajeIdent() {
                 <BrandKit draft={draft} onChange={patch} />
                 <StyleTemplates styleId={draft.styleId} onSelect={(id) => setDraft((prev) => applyTemplate(prev, id))} />
                 <DirectionPanel draft={draft} slot={slot} onChange={patch} />
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={runSurprise}
+                  className="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-2xl border border-[#d4a574]/35 bg-[#d4a574]/8 py-2.5 text-[12px] font-black text-[#e8b86d] disabled:opacity-50"
+                >
+                  <Wand2 className="h-4 w-4" /> فاجئني باتجاه آخر
+                </button>
+                <BestPracticeHints draft={draft} slot={slot} />
                 <StudioCard title={t('najeIdent.visionTitle')} hint={t('najeIdent.visionHint')}>
                   <FieldLabel>{t('najeIdent.visionLabel')}</FieldLabel>
                   <textarea
@@ -350,15 +386,23 @@ export default function NajeIdent() {
                 <MotionPlanView beats={beats} duration={draft.duration} />
                 <PromptPreview draft={draft} slot={slot} beats={beats} />
 
-                <button
-                  type="button"
-                  disabled={busy || najeAd?.enabled === false}
-                  onClick={() => void generate()}
-                  className="hidden min-h-[44px] w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-l from-[#d4a574] via-[#e8b86d] to-[color-mix(in_srgb,#e8b86d_70%,white)] py-3.5 text-sm font-black text-[#1a140c] shadow-[0_12px_40px_-12px_rgba(212,165,116,0.45)] disabled:opacity-50 lg:flex"
-                >
-                  {busy ? <NajeThinking size={22} /> : <Sparkles className="h-4 w-4" />}
-                  {busy ? generateLabel() : `${generateLabel()} · ${formatNumber(points)} ${t('common.pointsShort') || 'نقطة'}`}
-                </button>
+                <div className="hidden space-y-2 lg:block">
+                  <p className="text-center text-[11px] text-white/45">
+                    <span className="font-black text-[#e8b86d]">{formatNumber(points)} {t('common.pointsShort')}</span>
+                    <span className="mt-0.5 block text-[10px] text-white/35">
+                      المحرك يولّد دائماً 10 ثوانٍ — الخمس ثوانٍ وخزة داخل النافذة.
+                    </span>
+                  </p>
+                  <button
+                    type="button"
+                    disabled={busy || najeAd?.enabled === false}
+                    onClick={() => void generate()}
+                    className="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-l from-[#d4a574] via-[#e8b86d] to-[color-mix(in_srgb,#e8b86d_70%,white)] py-3.5 text-sm font-black text-[#1a140c] shadow-[0_12px_40px_-12px_rgba(212,165,116,0.45)] disabled:opacity-50"
+                  >
+                    {busy ? <NajeThinking size={22} /> : <Sparkles className="h-4 w-4" />}
+                    {busy ? generateLabel() : `${generateLabel()} · ${formatNumber(points)} ${t('common.pointsShort')}`}
+                  </button>
+                </div>
 
                 <Monitor
                   busy={busy}
@@ -376,6 +420,26 @@ export default function NajeIdent() {
                   onRegenerate={() => void generate()}
                   onVariation={runVariation}
                 />
+                {hasResults && !busy && (
+                  <div className="rounded-2xl border border-[#d4a574]/35 bg-[#d4a574]/10 p-4">
+                    <p className="text-sm font-black text-white">هويتك الحركية جاهزة.</p>
+                    <p className="mt-1 text-[11px] leading-relaxed text-white/55">
+                      حمّل الملف من المونيتور، أو عدّل ثم ولّد نسخة. المسودة تبقى.
+                    </p>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setResults({});
+                          setStudioEntered(false);
+                        }}
+                        className="min-h-[44px] rounded-xl border border-white/15 px-3 text-[11px] font-black text-white/70"
+                      >
+                        مشروع جديد
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </>
@@ -384,6 +448,9 @@ export default function NajeIdent() {
 
       {!showHero && (
         <div className="fixed inset-x-0 bottom-0 z-30 border-t border-white/10 bg-[#0b0c10]/95 p-3 backdrop-blur lg:hidden">
+          <p className="mb-2 text-center text-[10px] text-white/45">
+            التكلفة التقديرية: <span className="font-black text-[#e8b86d]">{points} نقطة</span>
+          </p>
           <button
             type="button"
             disabled={busy || najeAd?.enabled === false}
@@ -391,7 +458,7 @@ export default function NajeIdent() {
             className="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-l from-[#d4a574] via-[#e8b86d] to-[color-mix(in_srgb,#e8b86d_70%,white)] py-3.5 text-sm font-black text-[#1a140c] disabled:opacity-50"
           >
             {busy ? <NajeThinking size={22} /> : <Sparkles className="h-4 w-4" />}
-            {busy ? generateLabel() : `${generateLabel()} · ${formatNumber(points)} ${t('common.pointsShort') || 'نقطة'}`}
+            {busy ? generateLabel() : `${generateLabel()} · ${formatNumber(points)} ${t('common.pointsShort')}`}
           </button>
         </div>
       )}

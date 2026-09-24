@@ -2,12 +2,17 @@ import React, { useRef, useState } from 'react';
 import { Lock, Unlock, Upload, X } from 'lucide-react';
 import {
   AUDIENCES,
+  BRAND_VOICES,
   COLOR_PALETTES,
   INDUSTRIES,
   LANGUAGES,
+  NAME_SCRIPTS,
   PLATFORMS,
   PROJECT_TYPES,
+  autoBrandPatch,
+  generatePaletteFromPrimary,
   isHex,
+  rasterizeLogo,
   sampleLogoPalette,
   type MotionDraft,
 } from '../../lib/motionStudio';
@@ -67,9 +72,9 @@ export function BrandKit({
 
   const pickLogo = (file?: File) => {
     if (!file) return;
-    const ok = ['image/png', 'image/jpeg', 'image/webp'].includes(file.type);
+    const ok = ['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml'].includes(file.type);
     if (!ok) {
-      toast.error('الشعار: PNG أو JPG أو WEBP');
+      toast.error('الشعار: PNG أو JPG أو WEBP أو SVG');
       return;
     }
     if (file.size > 8 * 1024 * 1024) {
@@ -77,7 +82,21 @@ export function BrandKit({
       return;
     }
     const reader = new FileReader();
-    reader.onload = () => onChange({ logo: String(reader.result || '') });
+    reader.onload = async () => {
+      const raw = String(reader.result || '');
+      if (!raw) return;
+      if (file.type === 'image/svg+xml') {
+        try {
+          const png = await rasterizeLogo(raw);
+          onChange({ logo: png });
+          toast.success('حُوّل SVG إلى PNG قبل الإرسال — المحرك يستقبل صورة نقطية');
+        } catch {
+          toast.error('تعذر تحويل SVG — جرّب PNG');
+        }
+        return;
+      }
+      onChange({ logo: raw });
+    };
     reader.readAsDataURL(file);
   };
 
@@ -118,6 +137,17 @@ export function BrandKit({
           />
         </div>
         <div>
+          <FieldLabel>وصف العلامة</FieldLabel>
+          <textarea
+            rows={2}
+            value={draft.description}
+            maxLength={400}
+            onChange={(e) => onChange({ description: e.target.value })}
+            placeholder="اختياري — للنبرة فقط، لا يُكتب فقرة على الشاشة"
+            className="w-full resize-none rounded-2xl border border-white/10 bg-black/40 p-3 text-sm text-white placeholder:text-white/30 focus:border-[#d4a574] focus:outline-none"
+          />
+        </div>
+        <div>
           <FieldLabel>الموقع</FieldLabel>
           <input
             dir="ltr"
@@ -127,6 +157,17 @@ export function BrandKit({
             className="w-full rounded-2xl border border-white/10 bg-black/40 px-3 py-2.5 text-left text-sm text-white placeholder:text-white/30 focus:border-[#d4a574] focus:outline-none"
           />
           <p className="mt-1 text-[10px] text-white/35">يظهر على الشاشة فقط إن وُجد، ويُكتب كما هو حرفياً.</p>
+        </div>
+        <div>
+          <FieldLabel>حسابات التواصل</FieldLabel>
+          <StudioInput
+            value={draft.socials}
+            onChange={(v) => onChange({ socials: v })}
+            placeholder="اختياري: @channel · instagram.com/brand"
+          />
+          <p className="mt-1 text-[10px] text-white/35">
+            لا تُرسم أيقونات لمنصات لم تُذكر. اتركه فارغاً إن لم ترد حسابات على الشاشة.
+          </p>
         </div>
 
         <ChipRow title="المنصة">
@@ -177,6 +218,22 @@ export function BrandKit({
           ))}
         </ChipRow>
 
+        <ChipRow title="كتابة الاسم">
+          {NAME_SCRIPTS.map((x) => (
+            <Chip key={x.id} active={draft.nameScript === x.id} onClick={() => onChange({ nameScript: x.id })}>
+              {x.ar}
+            </Chip>
+          ))}
+        </ChipRow>
+
+        <ChipRow title="صوت العلامة">
+          {BRAND_VOICES.map((x) => (
+            <Chip key={x.id} active={draft.brandVoice === x.id} onClick={() => onChange({ brandVoice: x.id })}>
+              {x.ar}
+            </Chip>
+          ))}
+        </ChipRow>
+
         <div>
           <FieldLabel>الشعار</FieldLabel>
           <button
@@ -189,14 +246,14 @@ export function BrandKit({
             ) : (
               <>
                 <Upload className="mb-1 h-5 w-5 text-[#e8b86d]" />
-                <span className="text-[11px] font-bold text-white/60">أرفق الشعار PNG / JPG / WEBP</span>
+                <span className="text-[11px] font-bold text-white/60">أرفق الشعار PNG / JPG / WEBP / SVG</span>
               </>
             )}
           </button>
           <input
             ref={fileRef}
             type="file"
-            accept="image/png,image/jpeg,image/webp"
+            accept="image/png,image/jpeg,image/webp,image/svg+xml"
             className="hidden"
             onChange={(e) => {
               pickLogo(e.target.files?.[0]);
@@ -211,7 +268,7 @@ export function BrandKit({
                 disabled={sampling}
                 className="min-h-[44px] rounded-xl border border-[#d4a574]/40 bg-[#d4a574]/10 px-3 py-1.5 text-[11px] font-bold text-[#e8b86d] disabled:opacity-50"
               >
-                {sampling ? 'يقرأ اللوحة…' : 'اعتبار الألوان من الشعار'}
+                {sampling ? 'يقرأ اللوحة…' : 'استخراج من الشعار'}
               </button>
               <button
                 type="button"
@@ -270,6 +327,28 @@ export function BrandKit({
               );
             })}
           </div>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => onChange(generatePaletteFromPrimary(draft.primary))}
+              className="min-h-[44px] rounded-xl border border-white/10 px-3 py-1.5 text-[11px] font-bold text-white/70"
+            >
+              ولّد لوحة من الأساسي
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                onChange(autoBrandPatch(draft));
+                toast.success('اقتُرح أسلوب وحركة وصوت من المجال — راجع قبل الإنتاج');
+              }}
+              className="min-h-[44px] rounded-xl border border-[#d4a574]/40 bg-[#d4a574]/10 px-3 py-1.5 text-[11px] font-bold text-[#e8b86d]"
+            >
+              اقترح الهوية تلقائياً
+            </button>
+          </div>
+          <p className="mt-1.5 text-[10px] text-white/35">
+            توليد اللوحة حساب HSL من اللون الأساسي. الاقتراح التلقائي يملأ الأسلوب والحركة من المجال — ليس نموذجاً بصرياً.
+          </p>
         </div>
 
         <div>
