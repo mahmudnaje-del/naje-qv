@@ -1,5 +1,5 @@
 /**
- * NAJI AD — Global Avatar Registry (150 entries)
+ * NAJI AD — Global Avatar Registry (165 entries)
  * 41 peoples, max 4 adults each, unique names, culture-accurate looks.
  * Casting deck is interleaved by people + skin family so the first swipe is diverse.
  * Preview stills live at /public/avatars/{id}.jpg
@@ -3932,7 +3932,398 @@ export const AVATAR_REGISTRY: Record<string, NajiAvatar> = {
     ageGroup: 'senior_56_65',
     hasVisibleDisability: false,
     isGroup: false,
+  },
+  'NAJI-151': {
+    id: 'NAJI-151',
+    name: 'Rami',
+    age: 23,
+    genderPresentation: 'masculine',
+    visualRegion: 'MENA / West Asia — Levantine (Levantine young man)',
+    skin: 'olive skin tone, warm undertone, natural realistic texture',
+    face: 'oval face, short trimmed beard',
+    eyes: 'dark brown eyes',
+    hair: 'short dark hair, slightly tousled',
+    body: 'lean build',
+    clothing: 'black hoodie, backpack strap',
+    profession: 'graphic design student',
+    personality: ['calm', 'present'],
+    environment: 'city street',
+    lighting: 'open daylight',
+    camera: 'close-up head-and-shoulders, 85mm',
+    expression: 'direct calm gaze',
+    advertisingUse: ['Lifestyle Brands', 'Education', 'Retail'],
+    culturalNotes: 'Levantine adult, individual first. Still matches the casting photo.',
+    aiImagePrompt: 'Premium commercial advertising portrait of a fictional 23-year-old Levantine young man named as a talent stand-in. olive skin tone, warm undertone, natural realistic texture. oval face, short trimmed beard. dark brown eyes. short dark hair, slightly tousled. lean build. Wearing black hoodie, backpack strap. Expression: direct calm gaze. Photographed close-up head-and-shoulders, 85mm, open daylight, set in city street. Levantine features, individual first. 100% photorealistic live-action photograph of a real adult human, shot on a full-frame cinema camera, natural skin texture with visible pores and subtle realistic imperfections, authentic lighting, high-end commercial advertising portrait. Not illustration, not CGI, not cartoon, no beauty-filter over-smoothing. Vertical 3:4 portrait, head-and-shoulders to waist-up, face large and clearly visible. Fictional advertising talent, not a celebrity, not based on any real public figure.',
+    placeholderGradient: ['#6b4a32', '#e4c49a'],
+    ageGroup: 'young_adult',
+    hasVisibleDisability: false,
+    isGroup: false,
+  },
+  'NAJI-152': {
+    id: 'NAJI-152',
+    name: 'Lina',
+    age: 22,
+    genderPresentation: 'feminine',
+    visualRegion: 'MENA / West Asia — Levantine (Levantine young woman)',
+    skin: 'light olive skin, warm undertone, natural realistic texture',
+    face: 'soft oval face',
+    eyes: 'brown eyes',
+    hair: 'covered by a taupe hijab',
+    body: 'slim build',
+    clothing: 'taupe hijab and a beige coat',
+    profession: 'architecture intern',
+    personality: ['warm', 'present'],
+    environment: 'plant-filled interior',
+    lighting: 'soft window light',
+    camera: 'close-up head-and-shoulders, 85mm',
+    expression: 'gentle smile',
+    advertisingUse: ['Lifestyle Brands', 'Education', 'Retail'],
+    culturalNotes: 'Levantine adult, individual first. Still matches the casting photo.',
+    aiImagePrompt: 'Premium commercial advertising portrait of a fictional 22-year-old Levantine young woman named as a talent stand-in. light olive skin, warm undertone, natural realistic texture. soft oval face. brown eyes. covered by a taupe hijab. slim build. Wearing taupe hijab and a beige coat. Expression: gentle smile. Photographed close-up head-and-shoulders, 85mm, soft window light, set in plant-filled interior. Levantine features, individual first. 100% photorealistic live-action photograph of a real adult human, shot on a full-frame cinema camera, natural skin texture with visible pores and subtle realistic imperfections, authentic lighting, high-end commercial advertising portrait. Not illustration, not CGI, not cartoon, no beauty-filter over-smoothing. Vertical 3:4 portrait, head-and-shoulders to waist-up, face large and clearly visible. Fictional advertising talent, not a celebrity, not based on any real public figure.',
+    placeholderGradient: ['#6b4a32', '#e4c49a'],
+    ageGroup: 'young_adult',
+    hasVisibleDisability: false,
+    isGroup: false,
+  },
+  'NAJI-153': {
+    id: 'NAJI-153',
+    name: 'Karim',
+    age: 28,
+    genderPresentation: 'masculine',
+    visualRegion: 'MENA / West Asia — Levantine (Levantine man)',
+    skin: 'olive skin tone, warm undertone, natural realistic texture',
+    face: 'oval face, full short beard',
+    eyes: 'dark brown eyes',
+    hair: 'dark curly hair',
+    body: 'medium build',
+    clothing: 'black collar shirt',
+    profession: 'photographer',
+    personality: ['steady', 'present'],
+    environment: 'stone courtyard',
+    lighting: 'soft daylight',
+    camera: 'close-up head-and-shoulders, 85mm',
+    expression: 'calm closed-mouth look',
+    advertisingUse: ['Lifestyle Brands', 'Education', 'Retail'],
+    culturalNotes: 'Levantine adult, individual first. Still matches the casting photo.',
+    aiImagePrompt: 'Premium commercial advertising portrait of a fictional 28-year-old Levantine man named as a talent stand-in. olive skin tone, warm undertone, natural realistic texture. oval face, full short beard. dark brown eyes. dark curly hair. medium build. Wearing black collar shirt. Expression: calm closed-mouth look. Photographed close-up head-and-shoulders, 85mm, soft daylight, set in stone courtyard. Levantine features, individual first. 100% photorealistic live-action photograph of a real adult human, shot on a full-frame cinema camera, natural skin texture with visible pores and subtle realistic imperfections, authentic lighting, high-end commercial advertising portrait. Not illustration, not CGI, not cartoon, no beauty-filter over-smoothing. Vertical 3:4 portrait, head-and-shoulders to waist-up, face large and clearly visible. Fictional advertising talent, not a celebrity, not based on any real public figure.',
+    placeholderGradient: ['#6b4a32', '#e4c49a'],
+    ageGroup: 'adult_26_35',
+    hasVisibleDisability: false,
+    isGroup: false,
+  },
+  'NAJI-154': {
+    id: 'NAJI-154',
+    name: 'Huda',
+    age: 25,
+    genderPresentation: 'feminine',
+    visualRegion: 'MENA / West Asia — Levantine (Levantine young woman)',
+    skin: 'light olive skin, warm undertone, natural realistic texture',
+    face: 'oval face',
+    eyes: 'dark brown eyes',
+    hair: 'covered by a black hijab',
+    body: 'slim build',
+    clothing: 'black hijab and black top',
+    profession: 'pharmacist',
+    personality: ['kind', 'present'],
+    environment: 'bright interior by a window',
+    lighting: 'soft side light',
+    camera: 'close-up head-and-shoulders, 85mm',
+    expression: 'slight smile',
+    advertisingUse: ['Lifestyle Brands', 'Education', 'Retail'],
+    culturalNotes: 'Levantine adult, individual first. Still matches the casting photo.',
+    aiImagePrompt: 'Premium commercial advertising portrait of a fictional 25-year-old Levantine young woman named as a talent stand-in. light olive skin, warm undertone, natural realistic texture. oval face. dark brown eyes. covered by a black hijab. slim build. Wearing black hijab and black top. Expression: slight smile. Photographed close-up head-and-shoulders, 85mm, soft side light, set in bright interior by a window. Levantine features, individual first. 100% photorealistic live-action photograph of a real adult human, shot on a full-frame cinema camera, natural skin texture with visible pores and subtle realistic imperfections, authentic lighting, high-end commercial advertising portrait. Not illustration, not CGI, not cartoon, no beauty-filter over-smoothing. Vertical 3:4 portrait, head-and-shoulders to waist-up, face large and clearly visible. Fictional advertising talent, not a celebrity, not based on any real public figure.',
+    placeholderGradient: ['#6b4a32', '#e4c49a'],
+    ageGroup: 'young_adult',
+    hasVisibleDisability: false,
+    isGroup: false,
+  },
+  'NAJI-155': {
+    id: 'NAJI-155',
+    name: 'Ziad',
+    age: 30,
+    genderPresentation: 'masculine',
+    visualRegion: 'MENA / West Asia — Levantine (Levantine man)',
+    skin: 'olive skin tone, warm undertone, natural realistic texture',
+    face: 'oval face, short beard',
+    eyes: 'dark brown eyes',
+    hair: 'short dark hair under a red-and-white keffiyeh',
+    body: 'medium build',
+    clothing: 'white thobe and red-and-white keffiyeh',
+    profession: 'civil engineer',
+    personality: ['grounded', 'present'],
+    environment: 'stone terrace in daylight',
+    lighting: 'open daylight',
+    camera: 'close-up head-and-shoulders, 85mm',
+    expression: 'steady direct gaze',
+    advertisingUse: ['Lifestyle Brands', 'Education', 'Retail'],
+    culturalNotes: 'Levantine adult, individual first. Still matches the casting photo.',
+    aiImagePrompt: 'Premium commercial advertising portrait of a fictional 30-year-old Levantine man named as a talent stand-in. olive skin tone, warm undertone, natural realistic texture. oval face, short beard. dark brown eyes. short dark hair under a red-and-white keffiyeh. medium build. Wearing white thobe and red-and-white keffiyeh. Expression: steady direct gaze. Photographed close-up head-and-shoulders, 85mm, open daylight, set in stone terrace in daylight. Levantine features, individual first. 100% photorealistic live-action photograph of a real adult human, shot on a full-frame cinema camera, natural skin texture with visible pores and subtle realistic imperfections, authentic lighting, high-end commercial advertising portrait. Not illustration, not CGI, not cartoon, no beauty-filter over-smoothing. Vertical 3:4 portrait, head-and-shoulders to waist-up, face large and clearly visible. Fictional advertising talent, not a celebrity, not based on any real public figure.',
+    placeholderGradient: ['#6b4a32', '#e4c49a'],
+    ageGroup: 'adult_26_35',
+    hasVisibleDisability: false,
+    isGroup: false,
+  },
+  'NAJI-156': {
+    id: 'NAJI-156',
+    name: 'Maya',
+    age: 21,
+    genderPresentation: 'feminine',
+    visualRegion: 'MENA / West Asia — Levantine (Levantine young woman)',
+    skin: 'light olive skin, warm undertone, natural realistic texture',
+    face: 'round-oval face',
+    eyes: 'brown eyes',
+    hair: 'covered by an olive-green hijab',
+    body: 'slim build',
+    clothing: 'olive-green hijab',
+    profession: 'literature student',
+    personality: ['bright', 'present'],
+    environment: 'stone wall interior',
+    lighting: 'soft daylight',
+    camera: 'close-up head-and-shoulders, 85mm',
+    expression: 'small smile',
+    advertisingUse: ['Lifestyle Brands', 'Education', 'Retail'],
+    culturalNotes: 'Levantine adult, individual first. Still matches the casting photo.',
+    aiImagePrompt: 'Premium commercial advertising portrait of a fictional 21-year-old Levantine young woman named as a talent stand-in. light olive skin, warm undertone, natural realistic texture. round-oval face. brown eyes. covered by an olive-green hijab. slim build. Wearing olive-green hijab. Expression: small smile. Photographed close-up head-and-shoulders, 85mm, soft daylight, set in stone wall interior. Levantine features, individual first. 100% photorealistic live-action photograph of a real adult human, shot on a full-frame cinema camera, natural skin texture with visible pores and subtle realistic imperfections, authentic lighting, high-end commercial advertising portrait. Not illustration, not CGI, not cartoon, no beauty-filter over-smoothing. Vertical 3:4 portrait, head-and-shoulders to waist-up, face large and clearly visible. Fictional advertising talent, not a celebrity, not based on any real public figure.',
+    placeholderGradient: ['#6b4a32', '#e4c49a'],
+    ageGroup: 'young_adult',
+    hasVisibleDisability: false,
+    isGroup: false,
+  },
+  'NAJI-157': {
+    id: 'NAJI-157',
+    name: 'Omar',
+    age: 32,
+    genderPresentation: 'masculine',
+    visualRegion: 'MENA / West Asia — Levantine (Levantine man)',
+    skin: 'olive skin tone, warm undertone, natural realistic texture',
+    face: 'oval face, short beard, thin metal glasses',
+    eyes: 'brown eyes',
+    hair: 'short dark hair',
+    body: 'lean build',
+    clothing: 'black t-shirt',
+    profession: 'software engineer',
+    personality: ['thoughtful', 'present'],
+    environment: 'bookshelf interior',
+    lighting: 'soft indoor light',
+    camera: 'close-up head-and-shoulders, 85mm',
+    expression: 'thoughtful look',
+    advertisingUse: ['Lifestyle Brands', 'Education', 'Retail'],
+    culturalNotes: 'Levantine adult, individual first. Still matches the casting photo.',
+    aiImagePrompt: 'Premium commercial advertising portrait of a fictional 32-year-old Levantine man named as a talent stand-in. olive skin tone, warm undertone, natural realistic texture. oval face, short beard, thin metal glasses. brown eyes. short dark hair. lean build. Wearing black t-shirt. Expression: thoughtful look. Photographed close-up head-and-shoulders, 85mm, soft indoor light, set in bookshelf interior. Levantine features, individual first. 100% photorealistic live-action photograph of a real adult human, shot on a full-frame cinema camera, natural skin texture with visible pores and subtle realistic imperfections, authentic lighting, high-end commercial advertising portrait. Not illustration, not CGI, not cartoon, no beauty-filter over-smoothing. Vertical 3:4 portrait, head-and-shoulders to waist-up, face large and clearly visible. Fictional advertising talent, not a celebrity, not based on any real public figure.',
+    placeholderGradient: ['#6b4a32', '#e4c49a'],
+    ageGroup: 'adult_26_35',
+    hasVisibleDisability: false,
+    isGroup: false,
+  },
+  'NAJI-158': {
+    id: 'NAJI-158',
+    name: 'Dana',
+    age: 24,
+    genderPresentation: 'feminine',
+    visualRegion: 'MENA / West Asia — Levantine (Levantine young woman)',
+    skin: 'light olive skin, warm undertone, natural realistic texture',
+    face: 'oval face',
+    eyes: 'hazel-brown eyes',
+    hair: 'covered by a white hijab',
+    body: 'slim build',
+    clothing: 'white hijab and a light beige jacket',
+    profession: 'journalist',
+    personality: ['open', 'present'],
+    environment: 'hill city skyline',
+    lighting: 'late daylight',
+    camera: 'close-up head-and-shoulders, 85mm',
+    expression: 'soft smile',
+    advertisingUse: ['Lifestyle Brands', 'Education', 'Retail'],
+    culturalNotes: 'Levantine adult, individual first. Still matches the casting photo.',
+    aiImagePrompt: 'Premium commercial advertising portrait of a fictional 24-year-old Levantine young woman named as a talent stand-in. light olive skin, warm undertone, natural realistic texture. oval face. hazel-brown eyes. covered by a white hijab. slim build. Wearing white hijab and a light beige jacket. Expression: soft smile. Photographed close-up head-and-shoulders, 85mm, late daylight, set in hill city skyline. Levantine features, individual first. 100% photorealistic live-action photograph of a real adult human, shot on a full-frame cinema camera, natural skin texture with visible pores and subtle realistic imperfections, authentic lighting, high-end commercial advertising portrait. Not illustration, not CGI, not cartoon, no beauty-filter over-smoothing. Vertical 3:4 portrait, head-and-shoulders to waist-up, face large and clearly visible. Fictional advertising talent, not a celebrity, not based on any real public figure.',
+    placeholderGradient: ['#6b4a32', '#e4c49a'],
+    ageGroup: 'young_adult',
+    hasVisibleDisability: false,
+    isGroup: false,
+  },
+  'NAJI-159': {
+    id: 'NAJI-159',
+    name: 'Sami',
+    age: 29,
+    genderPresentation: 'masculine',
+    visualRegion: 'MENA / West Asia — Levantine (Levantine man)',
+    skin: 'olive skin tone, warm undertone, natural realistic texture',
+    face: 'oval face, short beard',
+    eyes: 'dark brown eyes',
+    hair: 'short dark hair, dark scarf at the neck',
+    body: 'medium build',
+    clothing: 'black jacket and dark scarf',
+    profession: 'chef',
+    personality: ['focused', 'present'],
+    environment: 'hill city overlook',
+    lighting: 'open daylight',
+    camera: 'close-up head-and-shoulders, 85mm',
+    expression: 'serious calm look',
+    advertisingUse: ['Lifestyle Brands', 'Education', 'Retail'],
+    culturalNotes: 'Levantine adult, individual first. Still matches the casting photo.',
+    aiImagePrompt: 'Premium commercial advertising portrait of a fictional 29-year-old Levantine man named as a talent stand-in. olive skin tone, warm undertone, natural realistic texture. oval face, short beard. dark brown eyes. short dark hair, dark scarf at the neck. medium build. Wearing black jacket and dark scarf. Expression: serious calm look. Photographed close-up head-and-shoulders, 85mm, open daylight, set in hill city overlook. Levantine features, individual first. 100% photorealistic live-action photograph of a real adult human, shot on a full-frame cinema camera, natural skin texture with visible pores and subtle realistic imperfections, authentic lighting, high-end commercial advertising portrait. Not illustration, not CGI, not cartoon, no beauty-filter over-smoothing. Vertical 3:4 portrait, head-and-shoulders to waist-up, face large and clearly visible. Fictional advertising talent, not a celebrity, not based on any real public figure.',
+    placeholderGradient: ['#6b4a32', '#e4c49a'],
+    ageGroup: 'adult_26_35',
+    hasVisibleDisability: false,
+    isGroup: false,
+  },
+  'NAJI-160': {
+    id: 'NAJI-160',
+    name: 'Hanan',
+    age: 26,
+    genderPresentation: 'feminine',
+    visualRegion: 'MENA / West Asia — Levantine (Levantine woman)',
+    skin: 'olive skin tone, warm undertone, natural realistic texture',
+    face: 'oval face',
+    eyes: 'dark brown eyes',
+    hair: 'covered by a black hijab',
+    body: 'slim build',
+    clothing: 'black hijab and a shoulder with light embroidery',
+    profession: 'primary teacher',
+    personality: ['warm', 'present'],
+    environment: 'quiet interior',
+    lighting: 'soft window light',
+    camera: 'close-up head-and-shoulders, 85mm',
+    expression: 'slight smile',
+    advertisingUse: ['Lifestyle Brands', 'Education', 'Retail'],
+    culturalNotes: 'Levantine adult, individual first. Still matches the casting photo.',
+    aiImagePrompt: 'Premium commercial advertising portrait of a fictional 26-year-old Levantine woman named as a talent stand-in. olive skin tone, warm undertone, natural realistic texture. oval face. dark brown eyes. covered by a black hijab. slim build. Wearing black hijab and a shoulder with light embroidery. Expression: slight smile. Photographed close-up head-and-shoulders, 85mm, soft window light, set in quiet interior. Levantine features, individual first. 100% photorealistic live-action photograph of a real adult human, shot on a full-frame cinema camera, natural skin texture with visible pores and subtle realistic imperfections, authentic lighting, high-end commercial advertising portrait. Not illustration, not CGI, not cartoon, no beauty-filter over-smoothing. Vertical 3:4 portrait, head-and-shoulders to waist-up, face large and clearly visible. Fictional advertising talent, not a celebrity, not based on any real public figure.',
+    placeholderGradient: ['#6b4a32', '#e4c49a'],
+    ageGroup: 'adult_26_35',
+    hasVisibleDisability: false,
+    isGroup: false,
+  },
+  'NAJI-161': {
+    id: 'NAJI-161',
+    name: 'Adam',
+    age: 27,
+    genderPresentation: 'masculine',
+    visualRegion: 'MENA / West Asia — Levantine (Levantine man)',
+    skin: 'light olive skin, warm undertone, natural realistic texture',
+    face: 'oval face, short beard',
+    eyes: 'brown eyes',
+    hair: 'short dark curly hair',
+    body: 'lean build',
+    clothing: 'white collar shirt',
+    profession: 'medical student',
+    personality: ['steady', 'present'],
+    environment: 'hill city skyline',
+    lighting: 'daylight',
+    camera: 'close-up head-and-shoulders, 85mm',
+    expression: 'calm direct look',
+    advertisingUse: ['Lifestyle Brands', 'Education', 'Retail'],
+    culturalNotes: 'Levantine adult, individual first. Still matches the casting photo.',
+    aiImagePrompt: 'Premium commercial advertising portrait of a fictional 27-year-old Levantine man named as a talent stand-in. light olive skin, warm undertone, natural realistic texture. oval face, short beard. brown eyes. short dark curly hair. lean build. Wearing white collar shirt. Expression: calm direct look. Photographed close-up head-and-shoulders, 85mm, daylight, set in hill city skyline. Levantine features, individual first. 100% photorealistic live-action photograph of a real adult human, shot on a full-frame cinema camera, natural skin texture with visible pores and subtle realistic imperfections, authentic lighting, high-end commercial advertising portrait. Not illustration, not CGI, not cartoon, no beauty-filter over-smoothing. Vertical 3:4 portrait, head-and-shoulders to waist-up, face large and clearly visible. Fictional advertising talent, not a celebrity, not based on any real public figure.',
+    placeholderGradient: ['#6b4a32', '#e4c49a'],
+    ageGroup: 'adult_26_35',
+    hasVisibleDisability: false,
+    isGroup: false,
+  },
+  'NAJI-162': {
+    id: 'NAJI-162',
+    name: 'Farah',
+    age: 23,
+    genderPresentation: 'feminine',
+    visualRegion: 'MENA / West Asia — Levantine (Levantine young woman)',
+    skin: 'light olive skin, warm undertone, natural realistic texture',
+    face: 'soft oval face',
+    eyes: 'brown eyes',
+    hair: 'covered by a dusty-rose hijab',
+    body: 'slim build',
+    clothing: 'dusty-rose hijab',
+    profession: 'interior designer',
+    personality: ['gentle', 'present'],
+    environment: 'plant-filled room',
+    lighting: 'soft daylight',
+    camera: 'close-up head-and-shoulders, 85mm',
+    expression: 'gentle smile',
+    advertisingUse: ['Lifestyle Brands', 'Education', 'Retail'],
+    culturalNotes: 'Levantine adult, individual first. Still matches the casting photo.',
+    aiImagePrompt: 'Premium commercial advertising portrait of a fictional 23-year-old Levantine young woman named as a talent stand-in. light olive skin, warm undertone, natural realistic texture. soft oval face. brown eyes. covered by a dusty-rose hijab. slim build. Wearing dusty-rose hijab. Expression: gentle smile. Photographed close-up head-and-shoulders, 85mm, soft daylight, set in plant-filled room. Levantine features, individual first. 100% photorealistic live-action photograph of a real adult human, shot on a full-frame cinema camera, natural skin texture with visible pores and subtle realistic imperfections, authentic lighting, high-end commercial advertising portrait. Not illustration, not CGI, not cartoon, no beauty-filter over-smoothing. Vertical 3:4 portrait, head-and-shoulders to waist-up, face large and clearly visible. Fictional advertising talent, not a celebrity, not based on any real public figure.',
+    placeholderGradient: ['#6b4a32', '#e4c49a'],
+    ageGroup: 'young_adult',
+    hasVisibleDisability: false,
+    isGroup: false,
+  },
+  'NAJI-163': {
+    id: 'NAJI-163',
+    name: 'Bassel',
+    age: 31,
+    genderPresentation: 'masculine',
+    visualRegion: 'MENA / West Asia — Levantine (Levantine man)',
+    skin: 'olive skin tone, warm undertone, natural realistic texture',
+    face: 'oval face, short beard',
+    eyes: 'dark brown eyes',
+    hair: 'short dark hair',
+    body: 'medium build',
+    clothing: 'black hoodie, backpack strap',
+    profession: 'filmmaker',
+    personality: ['quiet', 'present'],
+    environment: 'hill city skyline',
+    lighting: 'daylight',
+    camera: 'close-up head-and-shoulders, 85mm',
+    expression: 'serious look',
+    advertisingUse: ['Lifestyle Brands', 'Education', 'Retail'],
+    culturalNotes: 'Levantine adult, individual first. Still matches the casting photo.',
+    aiImagePrompt: 'Premium commercial advertising portrait of a fictional 31-year-old Levantine man named as a talent stand-in. olive skin tone, warm undertone, natural realistic texture. oval face, short beard. dark brown eyes. short dark hair. medium build. Wearing black hoodie, backpack strap. Expression: serious look. Photographed close-up head-and-shoulders, 85mm, daylight, set in hill city skyline. Levantine features, individual first. 100% photorealistic live-action photograph of a real adult human, shot on a full-frame cinema camera, natural skin texture with visible pores and subtle realistic imperfections, authentic lighting, high-end commercial advertising portrait. Not illustration, not CGI, not cartoon, no beauty-filter over-smoothing. Vertical 3:4 portrait, head-and-shoulders to waist-up, face large and clearly visible. Fictional advertising talent, not a celebrity, not based on any real public figure.',
+    placeholderGradient: ['#6b4a32', '#e4c49a'],
+    ageGroup: 'adult_26_35',
+    hasVisibleDisability: false,
+    isGroup: false,
+  },
+  'NAJI-164': {
+    id: 'NAJI-164',
+    name: 'Rania',
+    age: 27,
+    genderPresentation: 'feminine',
+    visualRegion: 'MENA / West Asia — Levantine (Levantine woman)',
+    skin: 'light olive skin, warm undertone, natural realistic texture',
+    face: 'oval face',
+    eyes: 'brown eyes',
+    hair: 'covered by a light grey hijab',
+    body: 'slim build',
+    clothing: 'light grey hijab and a grey coat',
+    profession: 'lawyer',
+    personality: ['composed', 'present'],
+    environment: 'window-lit interior',
+    lighting: 'soft window light',
+    camera: 'close-up head-and-shoulders, 85mm',
+    expression: 'soft smile',
+    advertisingUse: ['Lifestyle Brands', 'Education', 'Retail'],
+    culturalNotes: 'Levantine adult, individual first. Still matches the casting photo.',
+    aiImagePrompt: 'Premium commercial advertising portrait of a fictional 27-year-old Levantine woman named as a talent stand-in. light olive skin, warm undertone, natural realistic texture. oval face. brown eyes. covered by a light grey hijab. slim build. Wearing light grey hijab and a grey coat. Expression: soft smile. Photographed close-up head-and-shoulders, 85mm, soft window light, set in window-lit interior. Levantine features, individual first. 100% photorealistic live-action photograph of a real adult human, shot on a full-frame cinema camera, natural skin texture with visible pores and subtle realistic imperfections, authentic lighting, high-end commercial advertising portrait. Not illustration, not CGI, not cartoon, no beauty-filter over-smoothing. Vertical 3:4 portrait, head-and-shoulders to waist-up, face large and clearly visible. Fictional advertising talent, not a celebrity, not based on any real public figure.',
+    placeholderGradient: ['#6b4a32', '#e4c49a'],
+    ageGroup: 'adult_26_35',
+    hasVisibleDisability: false,
+    isGroup: false,
+  },
+  'NAJI-165': {
+    id: 'NAJI-165',
+    name: 'Jad',
+    age: 34,
+    genderPresentation: 'masculine',
+    visualRegion: 'MENA / West Asia — Levantine (Levantine man)',
+    skin: 'olive skin tone, warm undertone, natural realistic texture',
+    face: 'oval face, full trimmed beard',
+    eyes: 'dark brown eyes',
+    hair: 'dark wavy hair',
+    body: 'solid medium build',
+    clothing: 'olive jacket over a black shirt',
+    profession: 'architect',
+    personality: ['assured', 'present'],
+    environment: 'window-lit interior',
+    lighting: 'soft side light',
+    camera: 'close-up head-and-shoulders, 85mm',
+    expression: 'serious assured look',
+    advertisingUse: ['Lifestyle Brands', 'Education', 'Retail'],
+    culturalNotes: 'Levantine adult, individual first. Still matches the casting photo.',
+    aiImagePrompt: 'Premium commercial advertising portrait of a fictional 34-year-old Levantine man named as a talent stand-in. olive skin tone, warm undertone, natural realistic texture. oval face, full trimmed beard. dark brown eyes. dark wavy hair. solid medium build. Wearing olive jacket over a black shirt. Expression: serious assured look. Photographed close-up head-and-shoulders, 85mm, soft side light, set in window-lit interior. Levantine features, individual first. 100% photorealistic live-action photograph of a real adult human, shot on a full-frame cinema camera, natural skin texture with visible pores and subtle realistic imperfections, authentic lighting, high-end commercial advertising portrait. Not illustration, not CGI, not cartoon, no beauty-filter over-smoothing. Vertical 3:4 portrait, head-and-shoulders to waist-up, face large and clearly visible. Fictional advertising talent, not a celebrity, not based on any real public figure.',
+    placeholderGradient: ['#6b4a32', '#e4c49a'],
+    ageGroup: 'adult_26_35',
+    hasVisibleDisability: false,
+    isGroup: false,
   }
+
 };
 
 export const AVATAR_REGIONS: string[] = [
@@ -4023,62 +4414,85 @@ export function skinFamily(avatar: NajiAvatar): string {
   return 'fair';
 }
 
-/** Spread peoples so the first swipe mixes continents and skin families; neighbors never share a people. */
+const FRESH_LEVANT_IDS = new Set([
+  'NAJI-151', 'NAJI-152', 'NAJI-153', 'NAJI-154', 'NAJI-155',
+  'NAJI-156', 'NAJI-157', 'NAJI-158', 'NAJI-159', 'NAJI-160',
+  'NAJI-161', 'NAJI-162', 'NAJI-163', 'NAJI-164', 'NAJI-165',
+]);
+
+function genderSlot(avatar: NajiAvatar): 'm' | 'f' | 'x' {
+  const g = avatar.genderPresentation.toLowerCase();
+  if (g.startsWith('masc')) return 'm';
+  if (g.startsWith('fem')) return 'f';
+  return 'x';
+}
+
+function takeDifferentCulture(pool: NajiAvatar[], lastCulture: string): NajiAvatar | undefined {
+  const idx = lastCulture ? pool.findIndex((a) => cultureKey(a) !== lastCulture) : 0;
+  if (idx < 0) return pool.shift();
+  return pool.splice(idx, 1)[0];
+}
+
+/** Alternate women and men, and spread whichever group is larger so it never clumps at the end. */
+function alternateGender(avatars: NajiAvatar[], start: 'm' | 'f'): NajiAvatar[] {
+  const m = avatars.filter((a) => genderSlot(a) === 'm');
+  const f = avatars.filter((a) => genderSlot(a) === 'f');
+  const x = avatars.filter((a) => genderSlot(a) === 'x');
+  const majorKey: 'm' | 'f' = m.length >= f.length ? 'm' : 'f';
+  const major = majorKey === 'm' ? m : f;
+  const minor = majorKey === 'm' ? f : m;
+  const out: NajiAvatar[] = [];
+  let lastC = '';
+
+  const pushFrom = (pool: NajiAvatar[]) => {
+    const picked = takeDifferentCulture(pool, lastC);
+    if (!picked) return;
+    out.push(picked);
+    lastC = cultureKey(picked);
+  };
+
+  if (start !== majorKey && minor.length) pushFrom(minor);
+
+  const gaps = Math.max(minor.length, 1);
+  const extra = Math.max(0, major.length - minor.length);
+  const base = Math.floor(extra / gaps);
+  let rem = extra % gaps;
+
+  if (!minor.length) {
+    while (major.length) pushFrom(major);
+  } else {
+    while (minor.length) {
+      const majorsHere = 1 + base + (rem > 0 ? 1 : 0);
+      if (rem > 0) rem -= 1;
+      for (let k = 0; k < majorsHere && major.length; k++) pushFrom(major);
+      pushFrom(minor);
+    }
+    while (major.length) pushFrom(major);
+  }
+
+  while (x.length) pushFrom(x);
+  return out;
+}
+
+/**
+ * Arabic / MENA casting stills lead, already mixed woman-man.
+ * The rest of MENA follows, then the world, each run alternating gender
+ * so the deck never opens as all women then all men.
+ */
 export function interleaveDiverseAvatars(avatars: NajiAvatar[]): NajiAvatar[] {
   if (avatars.length <= 1) return avatars.slice();
 
-  const buckets = new Map<string, NajiAvatar[]>();
-  for (const av of avatars) {
-    const k = cultureKey(av);
-    const list = buckets.get(k);
-    if (list) list.push(av);
-    else buckets.set(k, [av]);
-  }
+  const fresh = avatars
+    .filter((a) => FRESH_LEVANT_IDS.has(a.id))
+    .sort((a, b) => a.id.localeCompare(b.id));
+  const rest = avatars.filter((a) => !FRESH_LEVANT_IDS.has(a.id));
+  const mena = rest.filter((a) => a.visualRegion.startsWith('MENA / West Asia'));
+  const world = rest.filter((a) => !a.visualRegion.startsWith('MENA / West Asia'));
 
-  const rotation = [
-    ...PEOPLE_ROTATION.filter((r) => buckets.has(r)),
-    ...[...buckets.keys()].filter((k) => !PEOPLE_ROTATION.includes(k)),
-  ];
-
-  const result: NajiAvatar[] = [];
-  let cursor = 0;
-  while (result.length < avatars.length) {
-    const last = result[result.length - 1];
-    const lastC = last ? cultureKey(last) : '';
-    const lastSkin = last ? skinFamily(last) : '';
-    let picked: NajiAvatar | undefined;
-
-    // Prefer different people AND different skin family.
-    for (let pass = 0; pass < 2 && !picked; pass++) {
-      for (let step = 0; step < rotation.length; step++) {
-        const k = rotation[(cursor + step) % rotation.length];
-        const list = buckets.get(k);
-        if (!list?.length) continue;
-        if (k === lastC) continue;
-        let idx = 0;
-        if (pass === 0 && lastSkin) {
-          idx = list.findIndex((a) => skinFamily(a) !== lastSkin);
-          if (idx < 0) continue;
-        }
-        picked = list.splice(idx, 1)[0];
-        cursor = (cursor + step + 1) % rotation.length;
-        break;
-      }
-    }
-
-    if (!picked) {
-      for (const k of rotation) {
-        const list = buckets.get(k);
-        if (list?.length) {
-          picked = list.shift();
-          break;
-        }
-      }
-    }
-
-    if (!picked) break;
-    result.push(picked);
-  }
-
-  return result;
+  const lastFresh = fresh[fresh.length - 1];
+  const menaStart: 'm' | 'f' = lastFresh && genderSlot(lastFresh) === 'm' ? 'f' : 'm';
+  const menaMixed = alternateGender(mena, fresh.length ? menaStart : 'm');
+  const last = menaMixed[menaMixed.length - 1] || lastFresh;
+  const worldStart: 'm' | 'f' = last && genderSlot(last) === 'm' ? 'f' : 'm';
+  return [...fresh, ...menaMixed, ...alternateGender(world, worldStart)];
 }
