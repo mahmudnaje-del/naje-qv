@@ -6,6 +6,7 @@ import { applyThemeToDocument } from './lib/themes';
 import { lazyWithRetry } from './lib/lazyRetry';
 import Auth from './pages/Auth';
 import Dashboard from './pages/Dashboard';
+import Home from './pages/Home';
 import Projects from './pages/Projects';
 import Chat from './pages/Chat';
 import Profile from './pages/Profile';
@@ -54,14 +55,9 @@ export default function App() {
 
   if (loadingAuth) {
     return (
-      <div 
-        className="min-h-screen flex flex-col items-center justify-center gap-3 bg-naje-canvas"
-        dir={isRtl ? 'rtl' : 'ltr'}
-      >
+      <div className="min-h-screen flex flex-col items-center justify-center gap-3 bg-naje-canvas" dir={isRtl ? 'rtl' : 'ltr'}>
         <NajeThinking size={56} />
-        <span className="text-xs font-black text-indigo-600 dark:text-indigo-300">
-          {t('chat.thinkingStatus') || 'ناجي يفكّر…'}
-        </span>
+        <span className="text-xs font-black text-indigo-600 dark:text-indigo-300">{t('chat.thinkingStatus') || 'ناجي يفكّر…'}</span>
       </div>
     );
   }
@@ -70,24 +66,16 @@ export default function App() {
     <AppErrorBoundary>
       <ErrorBoundary>
         <BrowserRouter>
-        <Suspense fallback={
-          <div className="min-h-screen flex items-center justify-center bg-naje-canvas">
-            <NajeThinking size={48} />
-          </div>
-        }>
+        <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-naje-canvas"><NajeThinking size={48} /></div>}>
           <Routes>
             <Route path="/auth" element={!user ? <Auth /> : <Navigate to="/" />} />
             <Route path="/auth/action" element={<AuthAction />} />
-
-            {/* Public legal / compliance — never nest under the auth layout */}
             <Route path="/Terms-of-Service" element={<TermsOfService />} />
             <Route path="/Privacy-Policy" element={<PrivacyPolicy />} />
             <Route path="/Sitemap" element={<Sitemap />} />
             <Route path="/delete-account-request" element={<DeleteAccountRequest />} />
-
-            {/* Authenticated product */}
             <Route path="/" element={user ? <Dashboard /> : <Navigate to="/auth" />}>
-              <Route index element={<Projects />} />
+              <Route index element={<Home />} />
               <Route path="chat/:chatId" element={<Chat />} />
               <Route path="naje-agent-core" element={<NajeAgent />} />
               <Route path="al-nassaj" element={<Navigate to="/naje-agent-core" replace />} />
@@ -112,7 +100,6 @@ export default function App() {
               <Route path="favorites" element={<Favorites />} />
               <Route path="projects" element={<Projects />} />
             </Route>
-
             <Route path="/naje-admin-ai" element={user?.isAdmin ? <Admin /> : <Navigate to="/" />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
