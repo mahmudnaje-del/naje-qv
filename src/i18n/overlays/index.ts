@@ -7,10 +7,16 @@ import { cvPack } from './cv';
 import { motionPack } from './motion';
 import { promptPack } from './prompt';
 import { welcomePack } from './welcome';
+import { promptTenPack } from './promptTen';
+import { studioTenPack } from './studioTen';
 import type { LocalePack } from './types';
+import { ALL_OVERLAY_LOCALES } from './types';
+import { completePack } from './complete';
 
-export const OVERLAY_PACKS: LocalePack[] = [
+const RAW_PACKS: LocalePack[] = [
   welcomePack,
+  promptTenPack,
+  studioTenPack,
   cvPack,
   motionPack,
   promptPack,
@@ -19,6 +25,8 @@ export const OVERLAY_PACKS: LocalePack[] = [
   appShellPack,
   appToolsPack,
 ];
+
+export const OVERLAY_PACKS: LocalePack[] = RAW_PACKS.map(completePack);
 
 export function lookupOverlay(locale: SupportedLocale, key: string): string | undefined {
   const order: SupportedLocale[] = locale === 'ar' ? ['ar'] : [locale, 'en', 'ar'];
@@ -31,17 +39,29 @@ export function lookupOverlay(locale: SupportedLocale, key: string): string | un
   return undefined;
 }
 
-/** Missing keys in core non-Arabic locales, compared with Arabic overlay strings. */
+/** Missing keys in every non-Arabic locale, compared with Arabic overlay strings. */
 export function overlayParityGaps(): string[] {
   const gaps: string[] = [];
-  const names = ['welcome', 'cv', 'motion', 'prompt', 'appChat', 'appCreative', 'appShell', 'appTools'] as const;
+  const names = [
+    'welcome',
+    'promptTen',
+    'studioTen',
+    'cv',
+    'motion',
+    'prompt',
+    'appChat',
+    'appCreative',
+    'appShell',
+    'appTools',
+  ] as const;
   OVERLAY_PACKS.forEach((pack, i) => {
     const arKeys = Object.keys(pack.ar || {});
-    for (const locale of ['en', 'es', 'fr', 'de', 'pt'] as const) {
+    for (const locale of ALL_OVERLAY_LOCALES) {
+      if (locale === 'ar') continue;
       for (const key of arKeys) {
         const value = pack[locale]?.[key];
         if (typeof value !== 'string' || !value.trim()) {
-          gaps.push(`${names[i]}:${locale}:${key}`);
+          gaps.push(`${names[i] || i}:${locale}:${key}`);
         }
       }
     }
