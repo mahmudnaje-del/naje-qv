@@ -1,40 +1,44 @@
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
-import { Sparkles, Image as ImageIcon, Film, FileText, ArrowLeft, ArrowRight, Check, Play, Zap, ShieldCheck, Layers, Rocket } from 'lucide-react';
+import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
+import {
+  Sparkles, ArrowLeft, ArrowRight, Rocket,
+  Bot, Wand2, Palette, Clapperboard, Film, FileBadge, Code2, BookOpen,
+} from 'lucide-react';
 import { db } from '../firebase';
 import { doc, updateDoc } from 'firebase/firestore';
 import { useAppStore } from '../store';
 import { useI18n } from '../i18n';
 import { toast } from '../toastStore';
+import LanguageSelector from './LanguageSelector';
+
+const STUDIO_CHIPS = [
+  { id: 'agent', icon: Bot },
+  { id: 'prompt', icon: Wand2 },
+  { id: 'creative', icon: Palette },
+  { id: 'ad', icon: Clapperboard },
+  { id: 'motion', icon: Film },
+  { id: 'cv', icon: FileBadge },
+  { id: 'dev', icon: Code2 },
+  { id: 'source', icon: BookOpen },
+] as const;
 
 export default function OnboardingWizard() {
   const { user, setUser } = useAppStore();
   const { t, isRtl } = useI18n();
+  const reduce = useReducedMotion();
   const [currentStep, setCurrentStep] = useState(0);
-  const [direction, setDirection] = useState(1); // 1 = forward, -1 = backward
+  const [direction, setDirection] = useState(1);
   const [loading, setLoading] = useState(false);
 
-  // If user already completed onboarding, or if there's no user, don't show
-  if (!user || user.hasCompletedOnboarding) {
-    return null;
-  }
+  if (!user || user.hasCompletedOnboarding) return null;
 
   const handleComplete = async () => {
     if (loading || !user) return;
     try {
       setLoading(true);
-
-      // Persist to Firestore first
-      await updateDoc(doc(db, 'users', user.uid), {
-        hasCompletedOnboarding: true
-      });
-
-      // Optimistically update local state after successful persistence
+      await updateDoc(doc(db, 'users', user.uid), { hasCompletedOnboarding: true });
       setUser({ ...user, hasCompletedOnboarding: true });
-      try {
-        localStorage.setItem('naje_onboarding_done_' + user.uid, 'true');
-      } catch (_) {}
-
+      try { localStorage.setItem('naje_onboarding_done_' + user.uid, 'true'); } catch {}
       toast.success(t('onboarding.completedToast'));
     } catch (err) {
       console.error('Error completing onboarding:', err);
@@ -44,266 +48,122 @@ export default function OnboardingWizard() {
     }
   };
 
-  const handleNext = () => {
-    if (currentStep < steps.length - 1) {
-      setDirection(1);
-      setCurrentStep((prev) => prev + 1);
-    } else {
-      handleComplete();
-    }
-  };
-
-  const handlePrev = () => {
-    if (currentStep > 0) {
-      setDirection(-1);
-      setCurrentStep((prev) => prev - 1);
-    }
-  };
-
   const steps = [
     {
-      title: t('onboarding.step1Title'),
-      subtitle: t('onboarding.welcomeSubtitle'),
-      icon: <Sparkles className="w-8 h-8 sm:w-10 sm:h-10 text-indigo-500" />,
-      accentColor: 'indigo',
-      content: (
-        <div className="space-y-3 text-start">
-          <p className="text-xs sm:text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
-            {t('onboarding.step1Desc')}
-          </p>
-          <div className="p-3 sm:p-4 bg-indigo-500/10 dark:bg-indigo-500/15 border border-indigo-500/20 rounded-2xl flex items-start gap-3">
-            <div className="p-2 bg-indigo-500/20 rounded-xl mt-0.5 shrink-0">
-              <Zap className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-            </div>
-            <div>
-              <h4 className="text-xs font-extrabold text-gray-900 dark:text-white">
-                {t('onboarding.step1CardTitle')}
-              </h4>
-              <p className="text-[11px] text-gray-600 dark:text-gray-300 mt-1 leading-relaxed">
-                {t('onboarding.step1CardDesc')}
-              </p>
-            </div>
-          </div>
+      title: t('welcome.title'),
+      subtitle: t('welcome.lead'),
+      body: (
+        <div className="space-y-4 text-start">
+          <p className="text-xs sm:text-sm text-white/70 leading-relaxed">{t('welcome.tagline')}</p>
+          <LanguageSelector variant="card" />
         </div>
-      )
+      ),
     },
     {
       title: t('onboarding.step2Title'),
       subtitle: t('onboarding.step2Desc'),
-      icon: <Layers className="w-8 h-8 sm:w-10 sm:h-10 text-pink-500" />,
-      accentColor: 'pink',
-      content: (
-        <div className="grid grid-cols-1 gap-2.5 text-start">
-          <div className="p-2.5 sm:p-3 border border-gray-200 dark:border-gray-800 bg-gray-50/80 dark:bg-gray-900/50 rounded-xl flex items-start gap-2.5">
-            <div className="p-2 bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 rounded-lg mt-0.5 shrink-0"><FileText className="w-4 h-4" /></div>
-            <div>
-              <h4 className="text-xs font-bold text-gray-900 dark:text-white">
-                {t('onboarding.step2Item1Title')}
-              </h4>
-              <p className="text-[11px] text-gray-600 dark:text-gray-300 mt-0.5 leading-tight">
-                {t('onboarding.step2Item1Desc')}
-              </p>
+      body: (
+        <div className="grid grid-cols-1 gap-2 text-start max-h-[42vh] overflow-y-auto pr-1">
+          {STUDIO_CHIPS.map(({ id, icon: Icon }) => (
+            <div key={id} className="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-3">
+              <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/10 text-indigo-200">
+                <Icon className="w-4 h-4" />
+              </div>
+              <div className="min-w-0">
+                <h4 className="text-xs font-bold text-white">{t(`welcome.card.${id}.name`)}</h4>
+                <p className="text-[11px] text-white/60 leading-relaxed mt-0.5">{t(`welcome.card.${id}.desc`)}</p>
+              </div>
             </div>
-          </div>
-          <div className="p-2.5 sm:p-3 border border-gray-200 dark:border-gray-800 bg-gray-50/80 dark:bg-gray-900/50 rounded-xl flex items-start gap-2.5">
-            <div className="p-2 bg-purple-500/15 text-purple-600 dark:text-purple-400 rounded-lg mt-0.5 shrink-0"><ImageIcon className="w-4 h-4" /></div>
-            <div>
-              <h4 className="text-xs font-bold text-gray-900 dark:text-white">
-                {t('onboarding.step2Item2Title')}
-              </h4>
-              <p className="text-[11px] text-gray-600 dark:text-gray-300 mt-0.5 leading-tight">
-                {t('onboarding.step2Item2Desc')}
-              </p>
-            </div>
-          </div>
-          <div className="p-2.5 sm:p-3 border border-gray-200 dark:border-gray-800 bg-gray-50/80 dark:bg-gray-900/50 rounded-xl flex items-start gap-2.5">
-            <div className="p-2 bg-pink-500/15 text-pink-600 dark:text-pink-400 rounded-lg mt-0.5 shrink-0"><Film className="w-4 h-4" /></div>
-            <div>
-              <h4 className="text-xs font-bold text-gray-900 dark:text-white">
-                {t('onboarding.step2Item3Title')}
-              </h4>
-              <p className="text-[11px] text-gray-600 dark:text-gray-300 mt-0.5 leading-tight">
-                {t('onboarding.step2Item3Desc')}
-              </p>
-            </div>
-          </div>
+          ))}
         </div>
-      )
+      ),
     },
     {
-      title: t('onboarding.step3Title'),
-      subtitle: t('onboarding.step3Desc'),
-      icon: <ShieldCheck className="w-8 h-8 sm:w-10 sm:h-10 text-emerald-500" />,
-      accentColor: 'emerald',
-      content: (
-        <div className="space-y-3 text-start">
-          <p className="text-xs sm:text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
-            {t('onboarding.step3Desc')}
-          </p>
-          <div className="p-3 sm:p-4 bg-emerald-500/10 dark:bg-emerald-500/15 border border-emerald-500/20 rounded-2xl space-y-1.5">
-            <h4 className="text-xs font-extrabold text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span>{t('onboarding.step3CardTitle')}</span>
-            </h4>
-            <p className="text-[11px] text-gray-600 dark:text-gray-300 leading-relaxed">
-              {t('onboarding.step3CardDesc')}
-            </p>
-          </div>
+      title: t('onboarding.step1CardTitle'),
+      subtitle: t('welcome.tagline'),
+      body: (
+        <div className="rounded-2xl border border-emerald-400/20 bg-emerald-500/10 p-4 text-start">
+          <p className="text-xs text-white/75 leading-relaxed">{t('onboarding.step1CardDesc')}</p>
         </div>
-      )
-    }
+      ),
+    },
   ];
 
   const step = steps[currentStep];
   const NextArrow = isRtl ? ArrowLeft : ArrowRight;
   const PrevArrow = isRtl ? ArrowRight : ArrowLeft;
-
-  // Motion variants for smooth slide animation
-  const slideVariants = {
-    enter: (dir: number) => ({
-      x: dir > 0 ? (isRtl ? -50 : 50) : (isRtl ? 50 : -50),
-      opacity: 0,
-      scale: 0.96
-    }),
-    center: {
-      x: 0,
-      opacity: 1,
-      scale: 1,
-      transition: {
-        x: { type: 'spring' as const, stiffness: 300, damping: 28 },
-        opacity: { duration: 0.25 },
-        scale: { duration: 0.25 }
-      }
-    },
-    exit: (dir: number) => ({
-      x: dir < 0 ? (isRtl ? -50 : 50) : (isRtl ? 50 : -50),
-      opacity: 0,
-      scale: 0.96,
-      transition: {
-        x: { type: 'spring' as const, stiffness: 300, damping: 28 },
-        opacity: { duration: 0.2 }
-      }
-    })
-  };
+  const offset = isRtl ? -1 : 1;
 
   return (
-    <div 
-      className="fixed inset-0 z-[99999] bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 overflow-y-auto font-sans"
-      dir={isRtl ? 'rtl' : 'ltr'}
-    >
+    <div className="fixed inset-0 z-[99999] bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 overflow-y-auto" dir={isRtl ? 'rtl' : 'ltr'}>
       <motion.div
-        initial={{ opacity: 0, scale: 0.92, y: 15 }}
+        initial={reduce ? false : { opacity: 0, scale: 0.94, y: 16 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.92, y: 15 }}
-        transition={{ type: 'spring', stiffness: 280, damping: 24 }}
-        className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] sm:max-h-[85vh] my-auto"
+        className="relative w-full max-w-lg overflow-hidden rounded-3xl border border-white/10 bg-[#0b0d14] text-white shadow-2xl max-h-[90vh] flex flex-col"
       >
-        {/* Top Progress bar */}
-        <div className="h-2 w-full bg-gray-100 dark:bg-gray-800 flex relative overflow-hidden">
+        <div className="pointer-events-none absolute -top-24 -start-10 h-56 w-56 rounded-full bg-indigo-600/30 blur-3xl" />
+        <div className="h-1.5 w-full bg-white/10 flex">
           {steps.map((_, idx) => (
-            <div key={idx} className="h-full flex-1 relative bg-gray-200 dark:bg-gray-800">
+            <div key={idx} className="h-full flex-1">
               {idx <= currentStep && (
-                <motion.div
-                  layoutId={`step-bar-${idx}`}
-                  className="h-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 w-full"
-                  transition={{ duration: 0.3 }}
-                />
+                <div className="h-full w-full bg-gradient-to-r from-indigo-500 via-violet-500 to-amber-400" />
               )}
             </div>
           ))}
         </div>
-
-        {/* Animated Content Body */}
-        <div className="p-5 sm:p-8 flex-1 overflow-y-auto custom-scrollbar flex flex-col items-center text-center">
+        <div className="relative p-5 sm:p-7 flex-1 overflow-y-auto">
           <AnimatePresence mode="wait" custom={direction}>
             <motion.div
               key={currentStep}
-              custom={direction}
-              variants={slideVariants}
-              initial="enter"
-              animate="center"
-              exit="exit"
-              className="w-full flex flex-col items-center"
+              initial={reduce ? false : { opacity: 0, x: direction * 28 * offset }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={reduce ? { opacity: 0 } : { opacity: 0, x: direction * -28 * offset }}
+              transition={{ duration: 0.28 }}
             >
-              <div className="mb-4 sm:mb-5 p-3.5 sm:p-4 rounded-2xl bg-gray-50 dark:bg-gray-800/60 border border-gray-100 dark:border-gray-700/50 shadow-inner">
-                {step.icon}
+              <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-white/8 border border-white/10">
+                <Sparkles className="w-6 h-6 text-indigo-300" />
               </div>
-
-              <h2 className="text-lg sm:text-2xl font-black text-gray-900 dark:text-white mb-1.5 text-center leading-snug">
-                {step.title}
-              </h2>
-
-              <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mb-5 max-w-sm text-center leading-relaxed">
-                {step.subtitle}
-              </p>
-
-              <div className="w-full text-start">
-                {step.content}
-              </div>
+              <h2 className="text-xl sm:text-2xl font-black leading-tight">{step.title}</h2>
+              <p className="mt-2 text-xs sm:text-sm text-white/60 leading-relaxed">{step.subtitle}</p>
+              <div className="mt-5">{step.body}</div>
             </motion.div>
           </AnimatePresence>
         </div>
-
-        {/* Action Footer */}
-        <div className="p-4 sm:p-6 border-t border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/50 flex items-center justify-between gap-2 shrink-0">
-          {/* Main Action Button */}
-          {currentStep === steps.length - 1 ? (
-            <button
-              onClick={handleComplete}
-              disabled={loading}
-              className="px-5 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs sm:text-sm font-black rounded-xl transition shadow-lg shadow-indigo-500/25 cursor-pointer flex items-center gap-2 active:scale-95 disabled:opacity-50"
-            >
-              <span>{loading ? t('termsModal.acceptingBtn') : t('onboarding.finishBtn')}</span>
-              {loading ? (
-                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              ) : (
-                <Rocket className="w-4 h-4" />
-              )}
-            </button>
-          ) : (
-            <button
-              onClick={handleNext}
-              className="px-5 sm:px-6 py-2.5 sm:py-3 bg-indigo-600 hover:bg-indigo-500 text-white text-xs sm:text-sm font-black rounded-xl transition shadow-lg shadow-indigo-500/20 cursor-pointer flex items-center gap-2 active:scale-95"
-            >
-              <span>{t('onboarding.nextBtn')}</span>
-              <NextArrow className="w-4 h-4" />
-            </button>
-          )}
-
-          {/* Dots Indicator */}
-          <div className="flex items-center gap-1.5">
-            {steps.map((_, idx) => (
-              <button
-                key={idx}
-                onClick={() => {
-                  setDirection(idx > currentStep ? 1 : -1);
-                  setCurrentStep(idx);
-                }}
-                className={`h-2 rounded-full transition-all cursor-pointer ${
-                  idx === currentStep ? 'bg-indigo-600 w-5 sm:w-6' : 'bg-gray-300 dark:bg-gray-700 w-2 hover:bg-gray-400'
-                }`}
-                aria-label={`Step ${idx + 1}`}
-              />
-            ))}
-          </div>
-
-          {/* Secondary Action / Skip */}
+        <div className="relative p-4 sm:p-5 border-t border-white/10 flex items-center justify-between gap-2">
           {currentStep > 0 ? (
             <button
-              onClick={handlePrev}
-              className="px-3.5 sm:px-4 py-2 sm:py-2.5 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-xl transition text-xs font-extrabold cursor-pointer flex items-center gap-1.5 active:scale-95"
+              type="button"
+              onClick={() => { setDirection(-1); setCurrentStep((p) => p - 1); }}
+              className="px-3 py-2 text-xs font-bold text-white/70 hover:text-white flex items-center gap-1"
             >
               <PrevArrow className="w-4 h-4" />
-              <span>{t('onboarding.prevBtn')}</span>
+              {t('onboarding.prevBtn')}
             </button>
           ) : (
-            <button
-              onClick={handleComplete}
-              className="px-3 py-2 text-xs font-bold text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 transition cursor-pointer"
-            >
+            <button type="button" onClick={handleComplete} className="px-3 py-2 text-xs font-bold text-white/45 hover:text-white">
               {t('common.cancel')}
             </button>
           )}
+          <button
+            type="button"
+            onClick={() => currentStep < steps.length - 1
+              ? (setDirection(1), setCurrentStep((p) => p + 1))
+              : handleComplete()}
+            disabled={loading}
+            className="px-5 py-2.5 rounded-xl bg-white text-gray-950 text-xs font-black flex items-center gap-2 disabled:opacity-50"
+          >
+            {currentStep === steps.length - 1 ? (
+              <>
+                {loading ? t('termsModal.acceptingBtn') : t('onboarding.finishBtn')}
+                <Rocket className="w-4 h-4" />
+              </>
+            ) : (
+              <>
+                {t('onboarding.nextBtn')}
+                <NextArrow className="w-4 h-4" />
+              </>
+            )}
+          </button>
         </div>
       </motion.div>
     </div>
