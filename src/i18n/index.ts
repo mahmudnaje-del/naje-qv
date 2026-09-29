@@ -5,12 +5,16 @@ import { es } from './locales/es';
 import { fr } from './locales/fr';
 import { de } from './locales/de';
 import { pt } from './locales/pt';
+import { tr } from './locales/tr';
+import { id } from './locales/id';
+import { ja } from './locales/ja';
+import { ru } from './locales/ru';
 import { useAppStore } from '../store';
 import { lookupOverlay } from './overlays';
 
 export * from './types';
 
-export const SUPPORTED_LOCALES: readonly SupportedLocale[] = ['ar', 'en', 'es', 'fr', 'de', 'pt'] as const;
+export const SUPPORTED_LOCALES: readonly SupportedLocale[] = ['ar', 'en', 'es', 'fr', 'de', 'pt', 'tr', 'id', 'ja', 'ru'] as const;
 
 export const LOCALES_META: Record<SupportedLocale, LocaleMeta> = {
   ar: { code: 'ar', name: 'Arabic', nativeName: 'العربية', dir: 'rtl', flag: '🇸🇦' },
@@ -19,6 +23,10 @@ export const LOCALES_META: Record<SupportedLocale, LocaleMeta> = {
   fr: { code: 'fr', name: 'French', nativeName: 'Français', dir: 'ltr', flag: '🇫🇷' },
   de: { code: 'de', name: 'German', nativeName: 'Deutsch', dir: 'ltr', flag: '🇩🇪' },
   pt: { code: 'pt', name: 'Portuguese', nativeName: 'Português', dir: 'ltr', flag: '🇵🇹' },
+  tr: { code: 'tr', name: 'Turkish', nativeName: 'Türkçe', dir: 'ltr', flag: '🇹🇷' },
+  id: { code: 'id', name: 'Indonesian', nativeName: 'Bahasa Indonesia', dir: 'ltr', flag: '🇮🇩' },
+  ja: { code: 'ja', name: 'Japanese', nativeName: '日本語', dir: 'ltr', flag: '🇯🇵' },
+  ru: { code: 'ru', name: 'Russian', nativeName: 'Русский', dir: 'ltr', flag: '🇷🇺' },
 };
 
 export const DICTIONARIES: Record<SupportedLocale, TranslationSchema> = {
@@ -28,6 +36,10 @@ export const DICTIONARIES: Record<SupportedLocale, TranslationSchema> = {
   fr,
   de,
   pt,
+  tr,
+  id,
+  ja,
+  ru,
 };
 
 export function getDirection(locale: SupportedLocale): Direction {
@@ -65,10 +77,6 @@ export function applyLocaleToDocument(locale: SupportedLocale): void {
   document.body.dir = dir;
 }
 
-/**
- * Access nested dictionary value with dot notation and parameter interpolation.
- * Falls back to Arabic if the key is missing in the chosen locale.
- */
 export function translate(
   keyPath: string,
   params?: Record<string, string | number>,
@@ -76,7 +84,7 @@ export function translate(
 ): string {
   const dict = DICTIONARIES[locale] || DICTIONARIES.ar;
   const parts = keyPath.split('.');
-  
+
   let current: any = dict;
   for (const part of parts) {
     if (current && typeof current === 'object' && part in current) {
@@ -92,7 +100,6 @@ export function translate(
     if (over) current = over;
   }
 
-  // Fallback to Arabic schema, then Arabic overlay, then the key path.
   if (typeof current !== 'string') {
     let fallback: any = DICTIONARIES.ar;
     for (const part of parts) {
@@ -116,7 +123,7 @@ export function translate(
   let text: string = current;
   if (params && typeof text === 'string') {
     for (const [k, v] of Object.entries(params)) {
-      text = text.replace(new RegExp(`\\{\\{${k}\\}\\}`, 'g'), String(v));
+      text = text.replace(new RegExp('\\{\\{' + k + '\\}\\}', 'g'), String(v));
     }
   }
 
@@ -125,9 +132,6 @@ export function translate(
 
 export const t = translate;
 
-/**
- * Locale-aware date and time formatting via standard Intl API
- */
 export function formatLocaleDate(
   date: Date | number | string,
   locale: SupportedLocale = 'ar',
@@ -143,9 +147,6 @@ export function formatLocaleDate(
   }
 }
 
-/**
- * Locale-aware number formatting via standard Intl API
- */
 export function formatLocaleNumber(
   num: number,
   locale: SupportedLocale = 'ar',
@@ -159,9 +160,6 @@ export function formatLocaleNumber(
   }
 }
 
-/**
- * Convenient React hook to consume and control i18n
- */
 export function useI18n() {
   const language = useAppStore((state) => state.language);
   const setLanguage = useAppStore((state) => state.setLanguage);
@@ -192,7 +190,6 @@ export function useI18n() {
   };
 }
 
-/** Catalog labels that store ar/en (and optionally the other locales). Non-Arabic UI prefers English over leftover Arabic. */
 export function pickLocaleLabel(
   locale: SupportedLocale,
   labels: Partial<Record<SupportedLocale, string>> & { ar: string }
