@@ -9,6 +9,8 @@ import { promptPack } from './prompt';
 import { welcomePack } from './welcome';
 import { promptTenPack } from './promptTen';
 import { studioTenPack } from './studioTen';
+import { creativeTenPack } from './creativeTen';
+import { toolsTenPack } from './toolsTen';
 import type { LocalePack } from './types';
 import { ALL_OVERLAY_LOCALES } from './types';
 import { completePack } from './complete';
@@ -17,6 +19,8 @@ const RAW_PACKS: LocalePack[] = [
   welcomePack,
   promptTenPack,
   studioTenPack,
+  creativeTenPack,
+  toolsTenPack,
   cvPack,
   motionPack,
   promptPack,
@@ -46,6 +50,8 @@ export function overlayParityGaps(): string[] {
     'welcome',
     'promptTen',
     'studioTen',
+    'creativeTen',
+    'toolsTen',
     'cv',
     'motion',
     'prompt',
@@ -67,4 +73,12 @@ export function overlayParityGaps(): string[] {
     }
   });
   return gaps;
+}
+
+/** Keys that exist in English but the given locale still equals English after completePack. */
+export function englishFallbackKeys(locale: SupportedLocale, pack: LocalePack): string[] {
+  if (locale === 'en') return [];
+  const en = pack.en || {};
+  const loc = pack[locale] || {};
+  return Object.keys(en).filter((key) => loc[key] === en[key]);
 }

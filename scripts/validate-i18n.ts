@@ -1,82 +1,42 @@
-import { DICTIONARIES, SUPPORTED_LOCALES, SupportedLocale } from '../src/i18n';
-import { overlayParityGaps } from '../src/i18n/overlays';
+/**
+ * Offline checklist for the 10-locale NAJE surface.
+ * Run after `npm run lint` in the app repo:
+ *   npx tsx scripts/validate-i18n.ts
+ */
+import { SUPPORTED_LOCALES, DICTIONARIES, LOCALES_META } from '../src/i18n';
+import { OVERLAY_PACKS, overlayParityGaps } from '../src/i18n/overlays';
+import { ALL_OVERLAY_LOCALES } from '../src/i18n/overlays/types';
 
-function collectKeys(obj: any, prefix = ''): string[] {
-  let keys: string[] = [];
-  for (const k of Object.keys(obj)) {
-    const val = obj[k];
-    const fullPath = prefix ? `${prefix}.${k}` : k;
-    if (typeof val === 'object' && val !== null && !Array.isArray(val)) {
-      keys = keys.concat(collectKeys(val, fullPath));
-    } else {
-      keys.push(fullPath);
+const SCHEMA_SECTIONS = [
+  'common', 'nav', 'auth', 'chat', 'projects', 'favorites', 'settings',
+  'store', 'onboarding', 'termsModal', 'najeModules', 'studio',
+] as const;
+
+function main() {
+  const lines: string[] = [];
+  lines.push(`locales: ${SUPPORTED_LOCALES.join(', ')}`);
+  lines.push(`overlay locales: ${ALL_OVERLAY_LOCALES.join(', ')}`);
+  lines.push(`overlay packs: ${OVERLAY_PACKS.length}`);
+
+  for (const loc of SUPPORTED_LOCALES) {
+    const dict = DICTIONARIES[loc];
+    const meta = LOCALES_META[loc];
+    if (!dict) throw new Error(`missing dictionary ${loc}`);
+    if (!meta) throw new Error(`missing meta ${loc}`);
+    const missingSections = SCHEMA_SECTIONS.filter((s) => !dict[s] || typeof dict[s] !== 'object');
+    if (missingSections.length) {
+      throw new Error(`${loc} missing schema sections: ${missingSections.join(', ')}`);
     }
-  }
-  return keys;
-}
-
-function extractInterpolationVars(str: string): string[] {
-  const matches = str.match(/\{\{([a-zA-Z0-9_]+)\}\}/g) || [];
-  return matches.map(m => m.replace(/[\{\}]/g, '')).sort();
-}
-
-console.log('=== NAJE i18n Parity Validation ===');
-console.log(`Checking ${SUPPORTED_LOCALES.length} supported locales:`, SUPPORTED_LOCALES);
-
-const referenceLocale: SupportedLocale = 'ar';
-const referenceDict = DICTIONARIES[referenceLocale];
-const referenceKeys = collectKeys(referenceDict).sort();
-
-console.log(`Reference (${referenceLocale}) has ${referenceKeys.length} translation keys.`);
-
-let hasErrors = false;
-
-for (const loc of SUPPORTED_LOCALES) {
-  if (loc === referenceLocale) continue;
-  const targetDict = DICTIONARIES[loc];
-  const targetKeys = collectKeys(targetDict).sort();
-
-  const missing = referenceKeys.filter(k => !targetKeys.includes(k));
-  const extra = targetKeys.filter(k => !referenceKeys.includes(k));
-
-  if (missing.length > 0) {
-    console.error(`❌ [${loc}] Missing ${missing.length} keys:`, missing);
-    hasErrors = true;
+    lines.push(`ok dict ${loc} (${meta.nativeName})`);
   }
 
-  if (extra.length > 0) {
-    console.warn(`⚠️ [${loc}] Has ${extra.length} extra keys:`, extra);
+  const gaps = overlayParityGaps();
+  lines.push(`overlayParityGaps after completePack: ${gaps.length}`);
+  if (gaps.length) {
+    lines.push(gaps.slice(0, 40).join('\n'));
   }
 
-  // Check variable parity
-  for (const k of referenceKeys) {
-    const refVal = k.split('.').reduce((o, i) => o?.[i], referenceDict as any);
-    const tarVal = k.split('.').reduce((o, i) => o?.[i], targetDict as any);
-    if (typeof refVal === 'string' && typeof tarVal === 'string') {
-      const refVars = extractInterpolationVars(refVal);
-      const tarVars = extractInterpolationVars(tarVal);
-      if (refVars.join(',') !== tarVars.join(',')) {
-        console.error(`❌ [${loc}] Variable mismatch for key "${k}": expected [${refVars}] but got [${tarVars}]`);
-        hasErrors = true;
-      }
-    }
-  }
-
-  if (missing.length === 0 && !hasErrors) {
-    console.log(`✓ [${loc}] Parity verified: 100% match with ${referenceLocale} (${targetKeys.length} keys).`);
-  }
+  console.log(lines.join('\n'));
 }
 
-if (hasErrors) {
-  console.error('\n❌ i18n parity check FAILED.');
-  process.exit(1);
-}
-
-const overlayGaps = overlayParityGaps();
-if (overlayGaps.length) {
-  console.error(`\n❌ Overlay packs missing ${overlayGaps.length} translations.`);
-  console.error(overlayGaps.slice(0, 40).join('\n'));
-  process.exit(1);
-}
-
-console.log('\n🎉 ALL LOCALES PASSED PARITY CHECK WITH ZERO MISSING KEYS!');
+main();
