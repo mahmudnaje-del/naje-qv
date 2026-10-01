@@ -418,7 +418,7 @@ export default function NajeAd() {
         />
 
         <p className="px-1 text-[11px] leading-relaxed text-white/50">
-          أومني يمدّد 10 ثوانٍ كل مرة حتى 40، وما يرجّع 20 ثانية من طلب 10+10. فيو لقطة 4 أو 6 أو 8، والمدة الأطول تتدمج بمقاطع منفصلة.
+          ناجي أد على Gemini Omni 1.1. كل طلب يطلع حوالي 10 ثوانٍ، والتمديد يكمل نفس المشهد +10 حتى 40 ثانية. طلب 20 أو 30 أو 40 ما يرجّع المدة دفعة واحدة، ولا ندمج فيو هنا.
         </p>
 
         <SmokeChatWrapper className="w-full" chatType="video">

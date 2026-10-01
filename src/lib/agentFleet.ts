@@ -92,13 +92,13 @@ export function dispatchSpecialists(userText: string): DispatchDecision {
   let strategy: DispatchDecision['video']['strategy'] = 'single_clip';
   let noteAr = 'لقطة واحدة ضمن 4 أو 6 أو 8 ثوانٍ.';
   if (requestedSec && requestedSec > VIDEO_CLIP_POLICY.stitchRequiredAboveSeconds) {
-    ids.add('stitch');
-    if (requestedSec <= VIDEO_CLIP_POLICY.omniMaxSeconds && /أومني|omni|تمديد/.test(text)) {
+    const adOmni = /إعلان|اعلان|ناجي أد|naje ad|أومني|omni|تمديد/.test(text);
+    if (adOmni || requestedSec <= VIDEO_CLIP_POLICY.omniMaxSeconds) {
       strategy = 'omni_extend';
-      noteAr = `أومني يمدّد المشهد 10 ثوانٍ في كل طلب حتى ${VIDEO_CLIP_POLICY.omniMaxSeconds}، ولا يرجع 20 ثانية من طلب 10+10 واحد.`;
+      noteAr = `ناجي أد على أومني 1.1: لقطة حوالي 10 ثوانٍ، ثم تمديد نفس المشهد +10 حتى ${VIDEO_CLIP_POLICY.omniMaxSeconds}. ليس ردًا واحدًا بـ ${requestedSec} ثانية، وليس دمج فيو.`;
     } else {
       strategy = 'veo_stitch';
-      noteAr = `فيو لا يرجع ${requestedSec} ثانية في رد واحد. نولّد لقطات 4/6/8 ثم ندمجها بـ ffmpeg.`;
+      noteAr = `خارج ناجي أد: فيو لقطة 4/6/8 ثم دمج. ناجي أد نفسه أومني فقط.`;
     }
   }
 
