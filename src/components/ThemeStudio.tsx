@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Check, Lock, Moon, Sun, Palette, Coins } from 'lucide-react';
+import { Check, Lock, Moon, Sun, Palette } from 'lucide-react';
+import NajeCreditIcon from './NajeCreditIcon';
 import { useAppStore } from '../store';
 import { useI18n } from '../i18n';
 import { db } from '../firebase';
@@ -224,7 +225,7 @@ export default function ThemeStudio() {
                 onClick={confirmUnlock}
                 className="flex-1 py-2.5 rounded-xl text-xs font-bold bg-indigo-600 text-white flex items-center justify-center gap-1.5 cursor-pointer shadow-md shadow-indigo-600/25"
               >
-                {busy ? <NajeSpinner className="w-4 h-4" /> : <Coins className="w-3.5 h-3.5" />}
+                {busy ? <NajeSpinner className="w-4 h-4" /> : <NajeCreditIcon className="w-4 h-4 shrink-0" />}
                 <span>{t('themeStudio.unlockBtn', { cost: THEME_UNLOCK_COST })}</span>
               </button>
             </div>

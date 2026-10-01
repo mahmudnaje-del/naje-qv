@@ -5,6 +5,7 @@ import { cn } from '../../lib/utils';
 import NajeSelect from '../NajeSelect';
 import { usePricingConfig } from '../../hooks/usePricingConfig';
 import { useI18n } from '../../i18n';
+import NajeCreditIcon from '../NajeCreditIcon';
 
 export function buildVideoChatPayload(state: any) {
   return {
@@ -112,8 +113,10 @@ export function VideoSettingsPanel({
         <div className="flex items-center gap-1.5 text-xs text-indigo-700 dark:text-indigo-300 font-medium">
           <AlertCircle className="w-4 h-4 text-indigo-600 dark:text-indigo-400 flex-shrink-0" />
           <span>
-            {t('shared.instantCost')} <strong className="text-indigo-600 dark:text-indigo-400 font-bold font-mono text-sm">
-              {getCalculatedCost()}
+            {t('shared.instantCost')}{' '}
+            <strong className="text-indigo-600 dark:text-indigo-400 font-bold font-mono text-sm inline-flex items-center gap-1">
+              <NajeCreditIcon className="w-3.5 h-3.5 shrink-0" />
+              <span>{getCalculatedCost()}</span>
             </strong> {t('common.pointsShort')} {files.length > 0 && <span className="text-[11px] text-gray-500 dark:text-gray-400 font-normal">{t('shared.sourceImages', { count: files.length })}</span>}
           </span>
         </div>

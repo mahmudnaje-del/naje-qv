@@ -1,10 +1,10 @@
-import { useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { useRef, useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion, useReducedMotion } from 'motion/react';
 import {
   Bot, Wand2, Palette, Clapperboard, Film, FileBadge,
   Code2, BookOpen, Image as ImageIcon, FileText, Brain,
-  ArrowUpRight, Sparkles,
+  ChevronRight, Loader2, Sparkles,
 } from 'lucide-react';
 import { useI18n } from '../i18n';
 import { useAppStore } from '../store';
@@ -31,11 +31,28 @@ function setSpotlight(el: HTMLElement, clientX: number, clientY: number) {
 
 export default function WelcomeStudioDeck() {
   const { t, isRtl } = useI18n();
+  const navigate = useNavigate();
+  const [loadingStudio, setLoadingStudio] = useState<string | null>(null);
   const user = useAppStore((s) => s.user);
   const setNewChatModalOpen = useAppStore((s) => s.setNewChatModalOpen);
   const reduce = useReducedMotion();
   const name = user?.displayName?.trim();
   const sectionRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    setLoadingStudio(null);
+  }, []);
+
+  const handleCardClick = (to: string, id: string, isAction: boolean, e: React.MouseEvent) => {
+    if (isAction) {
+      setNewChatModalOpen(true);
+      return;
+    }
+    e.preventDefault();
+    if (loadingStudio) return;
+    setLoadingStudio(id);
+    navigate(to);
+  };
 
   return (
     <section
@@ -118,7 +135,13 @@ export default function WelcomeStudioDeck() {
                   <div className={`flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br ${studio.accent} text-white shadow-lg transition-transform duration-300 group-hover:scale-110 group-hover:-rotate-3`}>
                     <Icon className="w-5 h-5" />
                   </div>
-                  <ArrowUpRight className="w-4 h-4 text-white/30 group-hover:text-white group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition" />
+                  <div className="w-6 h-6 flex items-center justify-center">
+                    {loadingStudio === studio.id ? (
+                      <Loader2 className="w-4.5 h-4.5 text-white animate-spin" />
+                    ) : (
+                      <ChevronRight className="w-4.5 h-4.5 text-white/40 group-hover:text-white transition-all duration-200 rtl:rotate-180 group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5" />
+                    )}
+                  </div>
                 </div>
                 <div className="relative mt-4">
                   <h3 className="text-sm font-bold tracking-tight">{t(`welcome.card.${studio.id}.name`)}</h3>
@@ -129,7 +152,7 @@ export default function WelcomeStudioDeck() {
               </>
             );
 
-            const cls = `group relative snap-center min-w-[78%] sm:min-w-0 shrink-0 overflow-hidden rounded-3xl border border-white/10 bg-white/[0.035] p-4 sm:p-5 text-start backdrop-blur-xl transition duration-300 hover:-translate-y-1 hover:border-white/25 block h-full w-full ${featured ? 'sm:min-h-[168px]' : ''}`;
+            const cls = `group relative snap-center min-w-[78%] sm:min-w-0 shrink-0 overflow-hidden rounded-3xl border border-white/10 bg-white/[0.035] p-4 sm:p-5 text-start backdrop-blur-xl transition duration-300 hover:-translate-y-1 hover:border-white/25 block h-full w-full cursor-pointer ${featured ? 'sm:min-h-[168px]' : ''} ${loadingStudio === studio.id ? 'ring-2 ring-white/50 border-white/40 bg-white/[0.08]' : ''}`;
 
             const onMove = (e: React.MouseEvent<HTMLElement>) => {
               if (reduce) return;
@@ -148,7 +171,12 @@ export default function WelcomeStudioDeck() {
                     {inner}
                   </button>
                 ) : (
-                  <Link to={studio.to} onMouseMove={onMove} className={cls}>
+                  <Link
+                    to={studio.to}
+                    onClick={(e) => handleCardClick(studio.to, studio.id, false, e)}
+                    onMouseMove={onMove}
+                    className={cls}
+                  >
                     {inner}
                   </Link>
                 )}

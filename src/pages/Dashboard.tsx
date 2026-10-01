@@ -13,16 +13,9 @@ import najeToolkit from '../assets/icons/naje-toolkit.svg';
 import najeWalletCoins from '../assets/icons/naje-wallet-coins.svg';
 
 function NajePageLoader() {
-  const { t } = useI18n();
   return (
-    <div className="flex-1 flex flex-col items-center justify-center min-h-[60vh] w-full p-6 bg-naje-canvas">
-      <div className="flex flex-col items-center justify-center gap-4 p-8 rounded-3xl bg-white/80 dark:bg-gray-900/60 border border-gray-200/80 dark:border-gray-800/80 backdrop-blur-xl shadow-2xl shadow-purple-500/5 max-w-sm w-full text-center">
-        <NajeThinking size={56} />
-        <div className="flex flex-col items-center gap-1.5 mt-1">
-          <span className="text-sm font-extrabold text-gray-900 dark:text-white">{t('shell.preparingPage')}</span>
-          <span className="text-xs text-purple-600 dark:text-purple-400 font-bold">{t('shell.preparingPageHint')}</span>
-        </div>
-      </div>
+    <div className="flex-1 flex items-center justify-center min-h-[60vh] w-full p-6 bg-naje-canvas">
+      <NajeThinking size={56} />
     </div>
   );
 }
@@ -33,7 +26,7 @@ import {
   LogOut, User, Folder, Star, Info, Menu, PanelRight, X, Plus, Sparkles,
   ChevronDown, ChevronRight, ChevronLeft, MessageSquare, Image as ImageIcon, Film, Layout, Mic2,
   FileText, Shield, Download, ExternalLink, Calendar, Compass, Layers, AlertCircle,
-  Pencil, Trash2, Bot, Coins, Code2, BookOpen, Clapperboard
+  Pencil, Trash2, Bot, Code2, BookOpen, Clapperboard, Palette, MoreVertical, Pin, PinOff
 } from 'lucide-react';
 import { collection, query, where, orderBy, onSnapshot, addDoc, deleteDoc, doc, setDoc, getDocs, updateDoc } from 'firebase/firestore';
 import { cn } from '../lib/utils';
@@ -42,8 +35,8 @@ import { toast } from '../toastStore';
 import NotificationDropdown from '../components/NotificationDropdown';
 import EmailVerificationBanner from '../components/EmailVerificationBanner';
 import BalanceTopDropdown from '../components/BalanceTopDropdown';
-import LanguageSelector from '../components/LanguageSelector';
 import { useI18n, translate } from '../i18n';
+import { getChatTypeConfig } from '../lib/chatTypeConfig';
 
 function tr(key: string, params?: Record<string, string | number>) {
   return translate(key, params, useAppStore.getState().language || 'ar');
@@ -265,6 +258,69 @@ export default function Dashboard() {
   const [isRenamingChat, setIsRenamingChat] = useState(false);
   const [isDeletingChat, setIsDeletingChat] = useState(false);
 
+  // 3-dots chat menu state
+  const [chatMenuOpenId, setChatMenuOpenId] = useState<string | null>(null);
+
+  // Assign/Move Chat to Project State
+  const [assignProjectChat, setAssignProjectChat] = useState<any | null>(null);
+  const [assignProjectSelectedId, setAssignProjectSelectedId] = useState<string>('none');
+  const [isAssigningProject, setIsAssigningProject] = useState(false);
+
+  // Click outside to close 3-dots chat menu
+  useEffect(() => {
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (chatMenuOpenId) {
+        const target = e.target as HTMLElement;
+        if (!target.closest('[data-chat-menu]')) {
+          setChatMenuOpenId(null);
+        }
+      }
+    };
+    if (chatMenuOpenId) {
+      window.addEventListener('mousedown', handleOutsideClick);
+    }
+    return () => {
+      window.removeEventListener('mousedown', handleOutsideClick);
+    };
+  }, [chatMenuOpenId]);
+
+  const handleTogglePinChat = async (chat: any) => {
+    try {
+      const willPin = !chat.isPinned;
+      await updateDoc(doc(db, 'chats', chat.id), { isPinned: willPin });
+      setChatMenuOpenId(null);
+      toast.success(
+        willPin 
+          ? (t('shell.chatPinnedSuccess') || 'تم تثبيت المحادثة في الأعلى')
+          : (t('shell.chatUnpinnedSuccess') || 'تم إلغاء تثبيت المحادثة')
+      );
+    } catch (err) {
+      console.error("Error toggling pin status:", err);
+      toast.error(t('shell.pinError') || 'فشل تحديث حالة التثبيت');
+    }
+  };
+
+  const handleAssignProject = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!assignProjectChat) return;
+    try {
+      setIsAssigningProject(true);
+      const newProjectId = assignProjectSelectedId === 'none' ? '' : assignProjectSelectedId;
+      await updateDoc(doc(db, 'chats', assignProjectChat.id), { projectId: newProjectId });
+      toast.success(
+        newProjectId 
+          ? (t('shell.chatAssignedSuccess') || 'تم نقل الدردشة إلى المشروع بنجاح')
+          : (t('shell.chatRemovedFromProject') || 'تمت إزالة الدردشة من المشروع')
+      );
+      setAssignProjectChat(null);
+    } catch (err) {
+      console.error("Error assigning chat to project:", err);
+      toast.error(t('shell.assignProjectError') || 'حدث خطأ أثناء نقل المحادثة');
+    } finally {
+      setIsAssigningProject(false);
+    }
+  };
+
   const handleRenameChat = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!renameChatId || !renameChatTitle.trim()) return;
@@ -424,7 +480,14 @@ export default function Dashboard() {
   const filteredChats = activeProjectId 
     ? uniqueChats.filter((c: any) => c.projectId === activeProjectId)
     : uniqueChats;
-  const recentChats = filteredChats.slice(0, 10);
+
+  // Sort: Pinned chats first, then newest createdAt
+  const sortedChats = [...filteredChats].sort((a: any, b: any) => {
+    if (a.isPinned && !b.isPinned) return -1;
+    if (!a.isPinned && b.isPinned) return 1;
+    return (b.createdAt || 0) - (a.createdAt || 0);
+  });
+  const recentChats = sortedChats.slice(0, 15);
 
   const sidebarContent = (
     <div className="flex flex-col h-full bg-transparent text-slate-800 dark:text-slate-100 overflow-hidden font-sans">
@@ -468,7 +531,10 @@ export default function Dashboard() {
                 <span className="text-[9px] text-slate-500 dark:text-slate-400 truncate flex items-center gap-1 mt-0.5 leading-tight">
                   <span>{user?.email}</span>
                   <span>•</span>
-                  <span className="text-purple-600 dark:text-purple-400 font-extrabold font-sans bg-purple-50 dark:bg-purple-950/60 px-1.5 py-0.5 rounded border border-purple-100 dark:border-purple-900/40 leading-none">{Number((user?.balance || 0).toFixed(2))} {t('common.pointsShort')}</span>
+                  <span className="text-purple-600 dark:text-purple-400 font-extrabold font-sans bg-purple-50 dark:bg-purple-950/60 px-1.5 py-0.5 rounded border border-purple-100 dark:border-purple-900/40 leading-none inline-flex items-center gap-1">
+                    <img src={najeWalletCoins} alt="credit" className="w-3 h-3 object-contain shrink-0" />
+                    <span>{Number((user?.balance || 0).toFixed(2))} {t('common.pointsShort')}</span>
+                  </span>
                 </span>
               </div>
             </div>
@@ -544,9 +610,6 @@ export default function Dashboard() {
               <Code2 className="w-4 h-4 text-sky-500" />
               <span>{t('nav.najeDeveloper')}</span>
             </div>
-            <span className="text-[9px] bg-sky-500/10 text-sky-600 dark:text-sky-400 font-extrabold px-1.5 py-0.5 rounded border border-sky-500/20">
-              $10
-            </span>
           </button>
 
           <button 
@@ -567,9 +630,6 @@ export default function Dashboard() {
               <BookOpen className="w-4 h-4 text-emerald-500" />
               <span>{t('nav.najeSource')}</span>
             </div>
-            <span className="text-[9px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-extrabold px-1.5 py-0.5 rounded border border-emerald-500/20">
-              $5
-            </span>
           </button>
 
           <Link 
@@ -768,72 +828,184 @@ export default function Dashboard() {
                   (c.type === 'najeSource' && location.pathname.includes('naje-source') && location.search.includes(c.id)) ||
                   (c.type === 'agent' && (location.pathname.includes('naje-agent') || location.pathname.includes('agent')) && location.search.includes(c.id));
                 return (
-                  <div key={c.id} className="relative group w-full">
+                  <div 
+                    key={c.id} 
+                    className={cn(
+                      "relative group w-full",
+                      chatMenuOpenId === c.id ? "z-50" : "z-0"
+                    )} 
+                    data-chat-menu
+                  >
                     <Link 
                       to={targetUrl}
                       onClick={() => { setSidebarOpen(false); setUserGalleriesOpen('none'); }}
                       className={cn(
-                        "w-full h-11 md:h-10 flex items-center justify-between pl-14 pr-3 rounded-xl text-xs font-bold transition-all border border-transparent truncate",
+                        "w-full h-11 md:h-10 flex items-center justify-between rtl:pl-9 rtl:pr-3 ltr:pr-9 ltr:pl-3 rounded-xl text-xs font-bold transition-all border border-transparent truncate",
                         isActive 
                           ? "bg-white dark:bg-purple-950/45 text-purple-950 dark:text-purple-200 border border-purple-300 dark:border-purple-500/40 shadow-md shadow-purple-500/10 font-extrabold" 
                           : "text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-900/60"
                       )}
                     >
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        {c.type === 'image' ? (
-                          <ImageIcon className="w-3.5 h-3.5 flex-shrink-0 text-purple-600 dark:text-purple-400" />
-                        ) : c.type === 'design' ? (
-                          <Sparkles className="w-3.5 h-3.5 flex-shrink-0 text-amber-500" />
-                        ) : c.type === 'video' ? (
-                          <Film className="w-3.5 h-3.5 flex-shrink-0 text-pink-600 dark:text-pink-400" />
-                        ) : c.type === 'ui' ? (
-                          <Layout className="w-3.5 h-3.5 flex-shrink-0 text-amber-600 dark:text-amber-400" />
-                        ) : c.type === 'voice' ? (
-                          <Mic2 className="w-3.5 h-3.5 flex-shrink-0 text-emerald-600 dark:text-emerald-400" />
-                        ) : c.type === 'najeDeveloper' ? (
-                          <Code2 className="w-3.5 h-3.5 flex-shrink-0 text-sky-500" />
-                        ) : c.type === 'najeSource' ? (
-                          <BookOpen className="w-3.5 h-3.5 flex-shrink-0 text-emerald-500" />
-                        ) : c.type === 'agent' ? (
-                          <Bot className="w-3.5 h-3.5 flex-shrink-0 text-purple-600 dark:text-purple-400" />
-                        ) : (
-                          <FileText className="w-3.5 h-3.5 flex-shrink-0 text-indigo-600 dark:text-indigo-400" />
-                        )}
-                        <div className="flex flex-col min-w-0 text-start">
-                          <span className="truncate leading-tight text-slate-900 dark:text-white font-extrabold">{c.title}</span>
-                          {projName && (
-                            <span className="text-[9px] text-purple-750 dark:text-purple-300 font-extrabold truncate mt-0.5 opacity-90">
-                              {projName} · Qelva Ai
-                            </span>
-                          )}
-                        </div>
-                      </div>
+                      {(() => {
+                        const meta = getChatTypeConfig(c.type);
+                        const IconComponent = meta.icon;
+                        return (
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <div 
+                              className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0 border shadow-2xs"
+                              style={{
+                                backgroundColor: meta.bgTint,
+                                color: meta.color,
+                                borderColor: meta.borderTint
+                              }}
+                            >
+                              <IconComponent className="w-3.5 h-3.5" style={{ color: meta.color }} />
+                            </div>
+                            <div className="flex flex-col min-w-0 text-start">
+                              <div className="flex items-center gap-1.5 min-w-0">
+                                {c.isPinned && (
+                                  <span title={t('shell.pinnedChat') || 'مثبتة'}>
+                                    <Pin className="w-3 h-3 text-amber-500 fill-amber-500 shrink-0" />
+                                  </span>
+                                )}
+                                <span className="truncate leading-tight text-slate-900 dark:text-white font-extrabold">{c.title}</span>
+                              </div>
+                              <div className="flex items-center gap-1 mt-0.5 min-w-0">
+                                <span 
+                                  className="text-[8.5px] font-black px-1.5 py-0.5 rounded-sm shrink-0"
+                                  style={{
+                                    backgroundColor: meta.bgTint,
+                                    color: meta.color
+                                  }}
+                                >
+                                  {meta.nameAr}
+                                </span>
+                                {projName && (
+                                  <span className="text-[9px] text-purple-750 dark:text-purple-300 font-extrabold truncate opacity-90">
+                                    · {projName}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })()}
                     </Link>
 
-                    <div className="absolute left-2 top-1/2 -translate-y-1/2 flex items-center gap-1 md:opacity-0 md:group-hover:opacity-100 opacity-100 transition-opacity p-1 bg-white dark:bg-[#121620] border border-slate-200 dark:border-slate-800 shadow-md rounded-lg">
+                    {/* 3 Vertical Dots Menu Button */}
+                    <div className="absolute rtl:left-1.5 ltr:right-1.5 top-1/2 -translate-y-1/2 z-30">
                       <button 
+                        type="button"
                         onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
-                          setRenameChatId(c.id);
-                          setRenameChatTitle(c.title);
+                          setChatMenuOpenId(chatMenuOpenId === c.id ? null : c.id);
                         }}
-                        className="p-1 text-slate-500 dark:text-slate-400 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition cursor-pointer"
-                        title={t('shell.rename')}
+                        className={cn(
+                          "p-1.5 rounded-lg transition cursor-pointer",
+                          chatMenuOpenId === c.id
+                            ? "bg-purple-100 dark:bg-purple-900/60 text-purple-600 dark:text-purple-300 opacity-100 shadow-sm"
+                            : chatMenuOpenId !== null
+                            ? "opacity-0 pointer-events-none"
+                            : "text-slate-400 hover:text-slate-800 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 opacity-80 hover:opacity-100"
+                        )}
+                        title={t('common.options') || 'خيارات الدردشة'}
                       >
-                        <Pencil className="w-3 h-3" />
+                        <MoreVertical className="w-3.5 h-3.5" />
                       </button>
-                      <button 
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          setDeleteChatId(c.id);
-                        }}
-                        className="p-1 text-slate-500 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition cursor-pointer"
-                        title={t('shell.deleteChat')}
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </button>
+
+                      {/* Backdrop for click outside */}
+                      {chatMenuOpenId === c.id && (
+                        <div 
+                          className="fixed inset-0 z-40 bg-transparent" 
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setChatMenuOpenId(null);
+                          }} 
+                        />
+                      )}
+
+                      {/* Dropdown Menu */}
+                      <AnimatePresence>
+                        {chatMenuOpenId === c.id && (
+                          <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: -4 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: -4 }}
+                            transition={{ duration: 0.12 }}
+                            onClick={(e) => e.stopPropagation()}
+                            className="absolute rtl:left-0 ltr:right-0 top-full mt-1.5 w-56 bg-white dark:bg-[#11141c] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl p-1.5 z-50 flex flex-col gap-0.5 text-start"
+                          >
+                            {/* 1. تثبيت الدردشة / إلغاء التثبيت */}
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleTogglePinChat(c);
+                              }}
+                              className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-purple-50 dark:hover:bg-purple-950/40 hover:text-purple-600 dark:hover:text-purple-400 rounded-xl transition text-start cursor-pointer"
+                            >
+                              <Pin className={cn("w-3.5 h-3.5 shrink-0", c.isPinned ? "text-amber-500 fill-amber-500" : "text-slate-400")} />
+                              <span>{c.isPinned ? t('shell.unpinChat') : t('shell.pinChat')}</span>
+                            </button>
+
+                            {/* 2. تعديل أسم الدردشة */}
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setRenameChatId(c.id);
+                                setRenameChatTitle(c.title);
+                                setChatMenuOpenId(null);
+                              }}
+                              className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-purple-50 dark:hover:bg-purple-950/40 hover:text-purple-600 dark:hover:text-purple-400 rounded-xl transition text-start cursor-pointer"
+                            >
+                              <Pencil className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                              <span>{t('shell.renameChat')}</span>
+                            </button>
+
+                            {/* 3. إضافة الدردشة إلى مشروع / نقل الدردشة من المشروع إلى مشروع آخر */}
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setAssignProjectChat(c);
+                                setAssignProjectSelectedId(c.projectId || 'none');
+                                setChatMenuOpenId(null);
+                              }}
+                              className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-purple-50 dark:hover:bg-purple-950/40 hover:text-purple-600 dark:hover:text-purple-400 rounded-xl transition text-start cursor-pointer"
+                            >
+                              <Folder className="w-3.5 h-3.5 text-purple-500 shrink-0" />
+                              <span className="truncate">
+                                {c.projectId 
+                                  ? t('shell.moveChatProject') 
+                                  : t('shell.addChatToProject')}
+                              </span>
+                            </button>
+
+                            <div className="my-1 border-t border-slate-100 dark:border-slate-800/80" />
+
+                            {/* 4. حذف الدردشة */}
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setDeleteChatId(c.id);
+                                setChatMenuOpenId(null);
+                              }}
+                              className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-xl transition text-start cursor-pointer"
+                            >
+                              <Trash2 className="w-3.5 h-3.5 text-red-500 shrink-0" />
+                              <span>{t('shell.deleteChat')}</span>
+                            </button>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                     </div>
                   </div>
                 );
@@ -857,7 +1029,7 @@ export default function Dashboard() {
           )}
         >
           <div className="flex items-center gap-2.5">
-            <Coins className="w-4 h-4 text-amber-500" />
+            <img src={najeWalletCoins} alt="store" className="w-4 h-4 object-contain shrink-0" />
             <span>{t('nav.store')}</span>
           </div>
           <span className="text-[9px] bg-amber-500/15 text-amber-600 dark:text-amber-400 font-bold px-1.5 py-0.5 rounded border border-amber-500/25">
@@ -1078,46 +1250,119 @@ export default function Dashboard() {
           )}
         </AnimatePresence>
 
-        {/* Global Top Header (visible on all screens when NOT in a Chat view or specialized custom headers) */}
+        {/* Global Top Header / Dedicated Studio Headers */}
         {!location.pathname.includes('/chat') && 
          !location.pathname.includes('naje-developer') && 
          !location.pathname.includes('naje-source') && 
-         !location.pathname.includes('naje-agent') && (
-          <header className={`flex items-center justify-between px-3 sm:px-4 py-2 sm:py-2.5 flex-shrink-0 z-30 h-12 sm:h-14 ${location.pathname.includes('/creative') ? 'bg-[#030303] naje-creative-studio' : location.pathname.includes('naje-cv') ? 'bg-[#0b1220] naje-cv-studio' : location.pathname.includes('naje-ident') ? 'bg-[#07090f] naje-motion-studio' : location.pathname.includes('naje-ad') ? 'bg-[#0b0c10] naje-ad-studio' : 'naje-glass-card-lg rounded-none border-t-0 border-r-0 border-l-0'}`}>
-            <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-              {/* Hamburger Menu (Mobile only) */}
-              <button 
-                onClick={() => setSidebarOpen(!sidebarOpen)}
-                className={`p-1.5 rounded-xl transition flex items-center justify-center cursor-pointer ${location.pathname.includes('/creative') || location.pathname.includes('naje-ad') || location.pathname.includes('naje-ident') || location.pathname.includes('naje-cv') ? 'text-slate-300 hover:text-white hover:bg-white/10' : 'text-gray-800 dark:text-purple-100 dark:hover:text-white hover:text-gray-900 hover:bg-white dark:hover:bg-gray-900'}`}
-                title={sidebarOpen ? t('nav.collapseSidebar') : t('nav.expandSidebar')}
-              >
-                <PanelRight className="w-5 h-5" />
-              </button>
-              
-              {/* Brand Logo & Name */}
-              <Link to="/" onClick={() => { setActiveProjectId(null); setUserGalleriesOpen('none'); }} className="flex items-center gap-2 group shrink-0">
-                <NajeLogo size="md" className="group-hover:scale-105 transition-all shrink-0" />
-                <span className={`font-extrabold text-sm whitespace-nowrap shrink-0 transition-colors ${location.pathname.includes('/creative') || location.pathname.includes('naje-ad') || location.pathname.includes('naje-ident') || location.pathname.includes('naje-cv') ? 'text-white group-hover:text-amber-400' : 'text-gray-900 dark:text-white group-hover:text-indigo-600 dark:text-indigo-400'}`}>{t('nav.brandTitle')}</span>
-              </Link>
-            </div>
-            
-            {/* User Name + Balance + Language + New Chat Button */}
-            <div className="flex items-center gap-2 sm:gap-3">
-              <LanguageSelector variant="compact" />
-              <NotificationDropdown />
-              <BalanceTopDropdown isCreativeMode={location.pathname.includes('/creative') || location.pathname.includes('naje-ad') || location.pathname.includes('naje-ident') || location.pathname.includes('naje-cv')} />
+         !location.pathname.includes('naje-agent') && (() => {
+          const p = location.pathname;
+          let studio = null;
+          if (p.includes('naje-ad')) {
+            studio = {
+              title: t('studio.adStudio'),
+              icon: Clapperboard,
+              iconBg: 'bg-gradient-to-br from-[#d4a574]/25 to-[#d4a574]/10 border-[#d4a574]/40 text-[#e8b86d] shadow-[0_0_15px_rgba(212,165,116,0.25)]',
+              headerBg: 'bg-[#090a0e] border-b border-[#d4a574]/25 shadow-[0_4px_30px_rgba(0,0,0,0.7)] backdrop-blur-xl',
+              btnBorder: 'text-[#e8b86d] border-[#d4a574]/25',
+              actionClass: 'bg-[#d4a574] hover:bg-[#e8b86d] text-[#1a140c] shadow-[0_8px_18px_-8px_rgba(212,165,116,0.55)]',
+              isCreative: true,
+            };
+          } else if (p.includes('naje-ident')) {
+            studio = {
+              title: t('shell.projects.motionStudio'),
+              icon: Film,
+              iconBg: 'bg-gradient-to-br from-[#8ec8ff]/25 to-[#8ec8ff]/10 border-[#8ec8ff]/40 text-[#8ec8ff] shadow-[0_0_15px_rgba(142,200,255,0.25)]',
+              headerBg: 'bg-[#06080e] border-b border-[#8ec8ff]/25 shadow-[0_4px_30px_rgba(0,0,0,0.7)] backdrop-blur-xl',
+              btnBorder: 'text-[#8ec8ff] border-[#8ec8ff]/25',
+              actionClass: 'bg-[#8ec8ff] hover:bg-[#c5e4ff] text-[#071018] shadow-[0_8px_18px_-8px_rgba(142,200,255,0.55)]',
+              isCreative: true,
+            };
+          } else if (p.includes('naje-cv')) {
+            studio = {
+              title: t('shell.projects.cvTitle'),
+              icon: FileText,
+              iconBg: 'bg-gradient-to-br from-[#c4a35a]/25 to-[#c4a35a]/10 border-[#c4a35a]/40 text-[#e8c36a] shadow-[0_0_15px_rgba(196,163,90,0.25)]',
+              headerBg: 'bg-[#090e18] border-b border-[#c4a35a]/25 shadow-[0_4px_30px_rgba(0,0,0,0.7)] backdrop-blur-xl',
+              btnBorder: 'text-[#e8c36a] border-[#c4a35a]/25',
+              actionClass: 'bg-[#c4a35a] hover:bg-[#e8c36a] text-[#1a140c] shadow-[0_8px_18px_-8px_rgba(196,163,90,0.55)]',
+              isCreative: true,
+            };
+          } else if (p.includes('/creative') || p.includes('creative-studio')) {
+            studio = {
+              title: t('shell.projects.creativeTitle'),
+              icon: Palette,
+              iconBg: 'bg-gradient-to-br from-amber-500/25 to-amber-500/10 border-amber-500/40 text-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.25)]',
+              headerBg: 'bg-[#030303] border-b border-amber-500/25 shadow-[0_4px_30px_rgba(0,0,0,0.7)] backdrop-blur-xl',
+              btnBorder: 'text-amber-400 border-amber-500/25',
+              actionClass: 'bg-amber-600 hover:bg-amber-500 text-white shadow-amber-500/15',
+              isCreative: true,
+            };
+          } else if (p.includes('naje-prompt')) {
+            studio = {
+              title: t('nav.promptStudio') || 'استوديو هندسة الأوامر',
+              icon: Sparkles,
+              iconBg: 'bg-gradient-to-br from-purple-500/25 to-purple-500/10 border-purple-500/40 text-purple-400 shadow-[0_0_15px_rgba(168,85,247,0.25)]',
+              headerBg: 'bg-[#0b0c16] border-b border-purple-500/25 shadow-[0_4px_30px_rgba(0,0,0,0.7)] backdrop-blur-xl',
+              btnBorder: 'text-purple-400 border-purple-500/25',
+              actionClass: 'bg-purple-600 hover:bg-purple-500 text-white shadow-purple-500/15',
+              isCreative: false,
+            };
+          }
 
-              {/* Top Bar "+ دردشة جديدة" Button */}
-              <button 
-                onClick={() => setNewChatModalOpen(true)}
-                className={`p-2 rounded-xl transition cursor-pointer flex items-center justify-center shadow-lg active:scale-[0.98] ${location.pathname.includes('naje-cv') ? 'bg-[#c4a35a] hover:bg-[#e8c36a] text-[#1a140c] shadow-[0_8px_18px_-8px_rgba(196,163,90,0.55)]' : location.pathname.includes('naje-ident') ? 'bg-[#8ec8ff] hover:bg-[#c5e4ff] text-[#071018] shadow-[0_8px_18px_-8px_rgba(142,200,255,0.55)]' : location.pathname.includes('naje-ad') ? 'bg-[#d4a574] hover:bg-[#e8b86d] text-[#1a140c] shadow-[0_8px_18px_-8px_rgba(212,165,116,0.55)]' : location.pathname.includes('/creative') ? 'bg-amber-600 hover:bg-amber-500 text-white shadow-amber-500/15' : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-500/15'}`}
-                title={t('nav.newChatSpace')}
-              >
-                <Plus className="w-4 h-4" />
-              </button>
-            </div>
-          </header>
-        )}
+          const StudioIcon = studio?.icon;
+
+          return (
+            <header className={`flex items-center justify-between gap-3 sm:gap-6 px-2.5 sm:px-5 py-1.5 sm:py-2 flex-shrink-0 z-30 h-13 sm:h-14 ${studio ? studio.headerBg : 'naje-glass-card-lg rounded-none border-t-0 border-r-0 border-l-0'}`}>
+              {studio && StudioIcon ? (
+                <div className="flex items-center gap-2 sm:gap-3 shrink-0 min-w-0">
+                  <button 
+                    onClick={() => setSidebarOpen(!sidebarOpen)}
+                    className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl transition flex items-center justify-center cursor-pointer shrink-0 hover:text-white hover:bg-white/10 border ${studio.btnBorder}`}
+                    title={sidebarOpen ? t('nav.collapseSidebar') : t('nav.expandSidebar')}
+                  >
+                    <PanelRight className="w-4.5 h-4.5 sm:w-5 sm:h-5" />
+                  </button>
+                  <div className="flex items-center gap-2">
+                    <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl border flex items-center justify-center shrink-0 ${studio.iconBg}`}>
+                      <StudioIcon className="w-4.5 h-4.5 sm:w-5 sm:h-5" />
+                    </div>
+                    <span className="font-black text-xs sm:text-base text-white whitespace-nowrap tracking-tight">
+                      {studio.title}
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0 min-w-0">
+                  <button 
+                    onClick={() => setSidebarOpen(!sidebarOpen)}
+                    className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl transition flex items-center justify-center cursor-pointer shrink-0 text-gray-800 dark:text-purple-100 dark:hover:text-white hover:text-gray-900 hover:bg-white dark:hover:bg-gray-900"
+                    title={sidebarOpen ? t('nav.collapseSidebar') : t('nav.expandSidebar')}
+                  >
+                    <PanelRight className="w-4.5 h-4.5 sm:w-5 sm:h-5" />
+                  </button>
+                  <Link to="/" onClick={() => { setActiveProjectId(null); setUserGalleriesOpen('none'); }} className="flex items-center gap-1.5 sm:gap-2 group shrink-0">
+                    <span className="sm:hidden shrink-0"><NajeLogo size="sm" className="group-hover:scale-105 transition-all" /></span>
+                    <span className="hidden sm:inline-flex shrink-0"><NajeLogo size="md" className="group-hover:scale-105 transition-all" /></span>
+                    <span className="font-black text-xs sm:text-sm whitespace-nowrap shrink-0 transition-colors text-gray-900 dark:text-white group-hover:text-indigo-600 dark:text-indigo-400">{t('nav.brandTitle')}</span>
+                  </Link>
+                </div>
+              )}
+
+              <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+                <NotificationDropdown />
+                <BalanceTopDropdown isCreativeMode={studio ? studio.isCreative : false} />
+
+                <button 
+                  onClick={() => setNewChatModalOpen(true)}
+                  className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl transition cursor-pointer flex items-center justify-center shadow-md active:scale-[0.96] shrink-0 ${studio ? studio.actionClass : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-500/15'}`}
+                  title={t('nav.newChatSpace')}
+                >
+                  <Plus className="w-4 h-4" />
+                </button>
+              </div>
+            </header>
+          );
+        })()}
         
         {/* Actual Routed Page Outlet with Instant NajeThinking Loading Fallback */}
         <div className="flex-1 relative z-0 flex flex-col overflow-hidden">
@@ -1259,9 +1504,8 @@ export default function Dashboard() {
                       {creatingChatType === 'voice' ? <NajeSpinner className="w-5 h-5" /> : <Mic2 className="w-5 h-5" />}
                     </div>
                     <div className="flex flex-col text-start sm:text-center">
-                      <span className="text-xs font-bold text-gray-900 dark:text-white group-hover:text-emerald-500 transition-colors flex items-center gap-1.5 justify-start sm:justify-center">
-                        <span>{creatingChatType === 'voice' ? t('shell.preparingStudio') : t('shell.voiceStudioTitle')}</span>
-                        <span className="text-[9px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-1.5 py-0.2 rounded border border-emerald-500/20 font-sans">{t('shell.badgeNew')}</span>
+                      <span className="text-xs font-bold text-gray-900 dark:text-white group-hover:text-emerald-500 transition-colors">
+                        {creatingChatType === 'voice' ? t('shell.preparingStudio') : t('shell.voiceStudioTitle')}
                       </span>
                       <span className="text-[10px] text-gray-800 dark:text-gray-400 mt-0.5">{t('shell.voiceStudioDesc')}</span>
                     </div>
@@ -1280,9 +1524,8 @@ export default function Dashboard() {
                       {creatingChatType === 'najeDeveloper' ? <NajeSpinner className="w-5 h-5" /> : <Code2 className="w-5 h-5" />}
                     </div>
                     <div className="flex flex-col text-start sm:text-center">
-                      <span className="text-xs font-bold text-gray-900 dark:text-white group-hover:text-sky-500 transition-colors flex items-center gap-1.5 justify-start sm:justify-center">
-                        <span>{creatingChatType === 'najeDeveloper' ? t('shell.preparingDeveloper') : t('nav.najeDeveloper')}</span>
-                        <span className="text-[9px] bg-sky-500/10 text-sky-600 dark:text-sky-400 px-1.5 py-0.2 rounded border border-sky-500/20 font-sans">{t('shell.badgeInnovator')}</span>
+                      <span className="text-xs font-bold text-gray-900 dark:text-white group-hover:text-sky-500 transition-colors">
+                        {creatingChatType === 'najeDeveloper' ? t('shell.preparingDeveloper') : t('nav.najeDeveloper')}
                       </span>
                       <span className="text-[10px] text-gray-800 dark:text-gray-400 mt-0.5">{t('shell.developerDesc')}</span>
                     </div>
@@ -1301,9 +1544,8 @@ export default function Dashboard() {
                       {creatingChatType === 'najeSource' ? <NajeSpinner className="w-5 h-5" /> : <BookOpen className="w-5 h-5" />}
                     </div>
                     <div className="flex flex-col text-start sm:text-center">
-                      <span className="text-xs font-bold text-gray-900 dark:text-white group-hover:text-emerald-500 transition-colors flex items-center gap-1.5 justify-start sm:justify-center">
-                        <span>{creatingChatType === 'najeSource' ? t('shell.preparingSource') : t('nav.najeSource')}</span>
-                        <span className="text-[9px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-1.5 py-0.2 rounded border border-emerald-500/20 font-sans">{t('shell.badgeSpark')}</span>
+                      <span className="text-xs font-bold text-gray-900 dark:text-white group-hover:text-emerald-500 transition-colors">
+                        {creatingChatType === 'najeSource' ? t('shell.preparingSource') : t('nav.najeSource')}
                       </span>
                       <span className="text-[10px] text-gray-800 dark:text-gray-400 mt-0.5">{t('shell.sourceDesc')}</span>
                     </div>
@@ -1322,9 +1564,8 @@ export default function Dashboard() {
                       {creatingChatType === 'agent' ? <NajeSpinner className="w-5 h-5" /> : <Bot className="w-5 h-5" />}
                     </div>
                     <div className="flex flex-col text-start sm:text-center">
-                      <span className="text-xs font-bold text-gray-900 dark:text-white group-hover:text-purple-500 transition-colors flex items-center gap-1.5 justify-start sm:justify-center">
-                        <span>{creatingChatType === 'agent' ? t('shell.preparingAgent') : t('shell.agentTitle')}</span>
-                        <span className="text-[9px] bg-purple-500/10 text-purple-600 dark:text-purple-400 px-1.5 py-0.2 rounded border border-purple-500/20 font-sans font-bold">{t('shell.badgeStrongest')}</span>
+                      <span className="text-xs font-bold text-gray-900 dark:text-white group-hover:text-purple-500 transition-colors">
+                        {creatingChatType === 'agent' ? t('shell.preparingAgent') : t('shell.agentTitle')}
                       </span>
                       <span className="text-[10px] text-gray-800 dark:text-gray-400 mt-0.5">{t('shell.agentDesc')}</span>
                     </div>
@@ -1498,6 +1739,86 @@ export default function Dashboard() {
                 </button>
               </div>
             </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ========================================================
+         ASSIGN / MOVE CHAT TO PROJECT MODAL
+         ======================================================== */}
+      <AnimatePresence>
+        {assignProjectChat && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-white dark:bg-black/60 backdrop-blur-sm" onClick={() => setAssignProjectChat(null)} />
+            <motion.form 
+              onSubmit={handleAssignProject}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="relative bg-white dark:bg-[#0d0f12] border border-gray-200 dark:border-gray-900 rounded-2xl p-6 w-full max-w-[420px] shadow-2xl flex flex-col gap-4 text-start z-10"
+            >
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center flex-shrink-0">
+                  <Folder className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-extrabold text-gray-900 dark:text-white">
+                    {assignProjectChat.projectId 
+                      ? t('shell.moveChatProjectTitle')
+                      : t('shell.addChatProjectTitle')}
+                  </h3>
+                  <p className="text-xs text-gray-800 dark:text-gray-400 mt-1 leading-relaxed">
+                    {t('shell.assignProjectModalDesc')}
+                  </p>
+                </div>
+              </div>
+
+              {/* Chat details card */}
+              <div className="p-3 bg-gray-50 dark:bg-gray-950/80 border border-gray-200 dark:border-gray-900 rounded-xl text-xs">
+                <span className="text-[10px] text-gray-500 dark:text-gray-400 font-bold block mb-1">{t('chat.title') || 'اسم المحادثة'}</span>
+                <span className="font-extrabold text-gray-900 dark:text-white truncate block">{assignProjectChat.title}</span>
+                {assignProjectChat.projectId && (
+                  <div className="mt-2 pt-2 border-t border-gray-200/60 dark:border-gray-800 text-[11px] text-purple-600 dark:text-purple-400 font-bold flex items-center gap-1.5">
+                    <Folder className="w-3.5 h-3.5" />
+                    <span>{projects.find(p => p.id === assignProjectChat.projectId)?.name || t('shell.projectFallback')}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Project selector dropdown */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[11px] font-extrabold text-gray-700 dark:text-gray-300">
+                  {t('shell.selectDestinationProject')}
+                </label>
+                <NajeSelect
+                  value={assignProjectSelectedId}
+                  onChange={(val) => setAssignProjectSelectedId(val)}
+                  options={[
+                    { value: 'none', label: t('shell.noProjectOption') },
+                    ...projects.map(p => ({ value: p.id, label: p.name }))
+                  ]}
+                  className="w-full text-gray-900 dark:text-gray-300"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 mt-2">
+                <button 
+                  type="button" 
+                  onClick={() => setAssignProjectChat(null)}
+                  className="px-4 py-2 bg-white dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-900 dark:text-gray-300 rounded-xl text-xs font-bold transition cursor-pointer focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none"
+                >
+                  {t('common.cancel')}
+                </button>
+                <button 
+                  type="submit"
+                  disabled={isAssigningProject}
+                  className="px-5 py-2 bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1.5 shadow-lg shadow-purple-500/20"
+                >
+                  {isAssigningProject && <NajeSpinner className="w-3.5 h-3.5" />}
+                  <span>{t('common.save') || 'حفظ التغييرات'}</span>
+                </button>
+              </div>
+            </motion.form>
           </div>
         )}
       </AnimatePresence>

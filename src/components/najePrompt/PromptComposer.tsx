@@ -15,6 +15,8 @@ import {
   type PromptAttachment,
 } from '../../lib/najePromptEngine';
 import { engineMessageKey } from './promptLabels';
+import SmokeChatWrapper from '../chat/SmokeChatWrapper';
+import { useLivePlaceholder, PROMPT_STUDIO_PHRASES } from '../../hooks/useLivePlaceholder';
 
 interface PromptComposerProps {
   value: string;
@@ -90,7 +92,8 @@ export function PromptComposer({
   const { t, isRtl } = useI18n();
   const ref = useRef<HTMLTextAreaElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
-  const hint = placeholder || t('prompt.composer.placeholder');
+  const dynamicPlaceholder = useLivePlaceholder(PROMPT_STUDIO_PHRASES);
+  const hint = placeholder || dynamicPlaceholder || t('prompt.composer.placeholder');
 
   useEffect(() => {
     const el = ref.current;
@@ -134,10 +137,11 @@ export function PromptComposer({
   };
 
   return (
-    <div
-      className="rounded-3xl border border-zinc-200 bg-white p-2 shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
-      dir={isRtl ? 'rtl' : 'ltr'}
-    >
+    <SmokeChatWrapper className="w-full" chatType="najePrompt">
+      <div
+        className="rounded-3xl border border-zinc-200 bg-white p-2 shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
+        dir={isRtl ? 'rtl' : 'ltr'}
+      >
       {attachments.length > 0 && (
         <div className="flex flex-wrap gap-1.5 px-2 pt-1.5">
           {attachments.map((file) => (
@@ -255,6 +259,7 @@ export function PromptComposer({
         )}
       </div>
     </div>
+    </SmokeChatWrapper>
   );
 }
 

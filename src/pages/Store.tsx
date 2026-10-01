@@ -31,6 +31,7 @@ import {
 } from '../components/PaymentBadges';
 import { useI18n } from '../i18n';
 import LanguageSelector from '../components/LanguageSelector';
+import NajeCreditIcon from '../components/NajeCreditIcon';
 
 declare global {
   interface Window {
@@ -404,8 +405,9 @@ export default function Store() {
             <span className="text-xs text-gray-600 dark:text-gray-400">
               {t('store.balanceLabel')}:
             </span>
-            <span className="text-sm font-extrabold text-gray-900 dark:text-white font-mono">
-              {Number((user.balance || 0).toFixed(2))} {t('store.pointsUnit')}
+            <span className="text-sm font-extrabold text-gray-900 dark:text-white font-mono flex items-center gap-1.5">
+              <NajeCreditIcon className="w-4 h-4" />
+              <span>{Number((user.balance || 0).toFixed(2))} {t('store.pointsUnit')}</span>
             </span>
           </div>
         )}
@@ -472,7 +474,8 @@ export default function Store() {
                 </div>
               </div>
 
-              <div className="flex items-baseline gap-2 mb-1">
+              <div className="flex items-center gap-2 mb-1">
+                <NajeCreditIcon className="w-6 h-6 shrink-0" />
                 <span className="text-3xl font-extrabold text-zinc-900 dark:text-white font-mono">{pkg.points}</span>
                 <span className="text-xs font-semibold text-amber-700 dark:text-amber-400">
                   {t('store.pointsUnit')}
@@ -521,8 +524,9 @@ export default function Store() {
               <p className="text-lg font-bold text-zinc-900 dark:text-white flex items-center gap-2 flex-wrap">
                 <span>{selectedContent?.name}</span>
                 <span className="text-zinc-400">•</span>
-                <span className="text-amber-700 dark:text-amber-300 font-mono font-black">
-                  {selectedPackage?.points} {t('store.pointsUnit')}
+                <span className="text-amber-700 dark:text-amber-300 font-mono font-black inline-flex items-center gap-1.5">
+                  <NajeCreditIcon className="w-4 h-4 shrink-0" />
+                  <span>{selectedPackage?.points} {t('store.pointsUnit')}</span>
                 </span>
                 <span className="text-zinc-400">•</span>
                 <span className="text-amber-700 dark:text-amber-400 font-mono font-extrabold text-xl">
@@ -711,8 +715,9 @@ export default function Store() {
 
                   <div className="flex items-center justify-between text-gray-300">
                     <span>{t('shell.store.creativeBalance')}</span>
-                    <span className="font-bold text-amber-400 font-mono">
-                      +{selectedPackage?.points} {t('store.pointsUnit')}
+                    <span className="font-bold text-amber-400 font-mono inline-flex items-center gap-1.5">
+                      <NajeCreditIcon className="w-4 h-4 shrink-0" />
+                      <span>+{selectedPackage?.points} {t('store.pointsUnit')}</span>
                     </span>
                   </div>
 

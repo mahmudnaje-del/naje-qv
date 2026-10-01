@@ -27,6 +27,7 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 
 import { registerForPushNotifications, disablePushNotifications } from '../lib/pushNotifications';
 import LanguageSelector from '../components/LanguageSelector';
+import NajeCreditIcon from '../components/NajeCreditIcon';
 import { useI18n } from '../i18n';
 
 export default function Profile() {
@@ -469,8 +470,8 @@ export default function Profile() {
             {/* Balance Card */}
             <div className="bg-naje-card border border-purple-200 dark:border-gray-900 rounded-2xl p-6 sm:p-8 shadow-lg">
               <div className="flex items-center gap-4 mb-6">
-                <div className="w-12 h-12 bg-indigo-50 dark:bg-indigo-500/10 rounded-xl flex items-center justify-center text-indigo-600 dark:text-indigo-400 ring-1 ring-indigo-500/25">
-                  <CreditCard className="w-6 h-6" />
+                <div className="w-12 h-12 bg-amber-500/10 dark:bg-amber-500/10 rounded-xl flex items-center justify-center p-2 ring-1 ring-amber-500/25">
+                  <NajeCreditIcon className="w-full h-full object-contain" />
                 </div>
                 <div>
                   <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-0.5">{t('shell.profile.balanceTitle')}</h2>
@@ -478,8 +479,12 @@ export default function Profile() {
                 </div>
               </div>
               
-              <div className="text-4xl sm:text-5xl font-extrabold text-gray-900 dark:text-white mb-8 flex items-baseline gap-2">
-                {Number((user?.balance || 0).toFixed(2))} <span className="text-lg text-indigo-600 dark:text-indigo-400 font-semibold">{t('recharge.pointsUnit')}</span>
+              <div className="text-4xl sm:text-5xl font-extrabold text-gray-900 dark:text-white mb-8 flex items-center gap-3">
+                <NajeCreditIcon className="w-9 h-9 sm:w-12 sm:h-12 shrink-0" />
+                <div className="flex items-baseline gap-2">
+                  <span>{Number((user?.balance || 0).toFixed(2))}</span>
+                  <span className="text-lg text-amber-500 font-semibold">{t('recharge.pointsUnit')}</span>
+                </div>
               </div>
 
               <form onSubmit={handleRedeem} className="space-y-4">

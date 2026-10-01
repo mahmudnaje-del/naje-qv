@@ -8,8 +8,9 @@ import {
   Shield, Plus, Key, Users, BarChart3, Settings, Download, UserPlus, ShieldAlert, 
   AlertTriangle, Ban, Send, Bell, Sparkles, CheckCircle, Gift, ThumbsUp, ThumbsDown, MessageSquare,
   Power, AlertOctagon, CheckCircle2, Search, UserCheck, Lock, Unlock, Copy, ArrowRight, UserX, Cpu, DollarSign, Layers, RefreshCw,
-  Trash2, Filter, Activity, Mic2, Coins, X, Minus
+  Trash2, Filter, Activity, Mic2, X, Minus
 } from 'lucide-react';
+import NajeCreditIcon from '../components/NajeCreditIcon';
 import NajeErrorCard from '../components/NajeErrorCard';
 import { useAppStore } from '../store';
 import { toast, useToastStore } from '../toastStore';
@@ -1193,7 +1194,7 @@ export default function Admin() {
                       onClick={() => handleOpenBalanceModal(u)} 
                       className="text-[11px] font-bold bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 px-3 py-2 rounded-xl flex items-center gap-1 transition cursor-pointer"
                     >
-                      <Coins className="w-3.5 h-3.5" /> {t('tools.admin.adjustBalance')}
+                      <NajeCreditIcon className="w-3.5 h-3.5 shrink-0" /> {t('tools.admin.adjustBalance')}
                     </button>
 
                     {user?.canAddAdmins && u.uid !== user.uid && (
@@ -1274,7 +1275,7 @@ export default function Admin() {
                           className="text-[11px] font-bold bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 px-2.5 py-1 rounded-lg flex items-center gap-1 transition cursor-pointer"
                           title={t('tools.admin.adjustBalanceTitle')}
                         >
-                          <Coins className="w-3 h-3" /> {t('tools.admin.balanceShort')}
+                          <NajeCreditIcon className="w-3 h-3 shrink-0" /> {t('tools.admin.balanceShort')}
                         </button>
 
                         {user?.canAddAdmins && u.uid !== user.uid && (
@@ -1835,8 +1836,8 @@ export default function Admin() {
             </button>
 
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-2xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
-                <Coins className="w-5 h-5" />
+              <div className="w-10 h-10 rounded-2xl bg-amber-500/10 flex items-center justify-center p-2">
+                <NajeCreditIcon className="w-full h-full object-contain" />
               </div>
               <div>
                 <h3 className="text-base font-black text-gray-900 dark:text-white">{t('tools.admin.balanceTitle')}</h3>

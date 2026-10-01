@@ -18,6 +18,8 @@ import { toast } from '../../toastStore';
 import { useAppStore } from '../../store';
 import { useI18n } from '../../i18n';
 import { fetchWithRetry } from '../../lib/fetchWithRetry';
+import SmokeChatWrapper from './SmokeChatWrapper';
+import { useLivePlaceholder, UI_CHAT_PHRASES } from '../../hooks/useLivePlaceholder';
 
 interface UiChatPanelProps {
   messages: Message[];
@@ -97,6 +99,7 @@ export default function UiChatPanel({
   setActiveHistoryContent,
 }: UiChatPanelProps) {
   const { isRtl, t } = useI18n();
+  const dynamicPlaceholder = useLivePlaceholder(UI_CHAT_PHRASES);
   // Guard against infinite auto-repair loops (same runtime error re-firing forever).
   const autoRepairCountRef = React.useRef(0);
   const lastRepairSigRef = React.useRef<string>('');
@@ -231,8 +234,12 @@ export default function UiChatPanel({
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Fixed Docked Input Form for UI Pane */}
-        <div className="p-2 sm:p-3 bg-[#FAF9FC]/95 dark:bg-[#0d0f12]/95 border-t border-gray-200/80 dark:border-gray-800/80 w-full shrink-0 z-30 pb-safe backdrop-blur-xl shadow-[0_-4px_20px_rgba(0,0,0,0.06)] dark:shadow-[0_-4px_25px_rgba(0,0,0,0.5)]">
+        {/* Fixed Docked Input Form for UI Pane with Full-Boundary Fluid Waves */}
+        <SmokeChatWrapper
+          variant="dock"
+          chatType="ui"
+          className="p-2 sm:p-3 bg-[#FAF9FC]/95 dark:bg-[#0d0f12]/95 border-t border-gray-200/80 dark:border-gray-800/80 w-full shrink-0 z-30 pb-safe backdrop-blur-xl shadow-[0_-4px_20px_rgba(0,0,0,0.06)] dark:shadow-[0_-4px_25px_rgba(0,0,0,0.5)]"
+        >
           <form onSubmit={handleSend} className="w-full max-w-4xl mx-auto p-2.5 sm:p-3 rounded-2xl border border-gray-200/80 dark:border-gray-800/80 shadow-lg bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl flex flex-col gap-2 relative transition-all duration-200">
             {/* Mode & Model Tier Toggle Bar */}
             <div className="flex flex-wrap items-center justify-between gap-2 pb-1 text-xs">
@@ -333,7 +340,7 @@ export default function UiChatPanel({
                     handleSend(e); 
                   } 
                 }}
-                placeholder={selectedUiElement ? t('chatui.editElementPlaceholder') : t('chat.inputPlaceholder')}
+                placeholder={selectedUiElement ? t('chatui.editElementPlaceholder') : (dynamicPlaceholder || t('chat.inputPlaceholder'))}
                 className="flex-1 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl px-3 py-2 text-xs focus:border-indigo-500 outline-none resize-none min-h-[38px] max-h-[100px] text-gray-900 dark:text-white"
                 rows={1}
               />
@@ -361,7 +368,7 @@ export default function UiChatPanel({
               )}
             </div>
           </form>
-        </div>
+        </SmokeChatWrapper>
       </div>
 
       {/* Middle Pane: Live Preview */}

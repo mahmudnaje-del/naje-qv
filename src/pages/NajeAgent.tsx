@@ -14,7 +14,7 @@ import {
   FolderTree, FileCode, MonitorPlay, Copy, Archive, CheckCheck,
   MessageSquare, HelpCircle, ArrowUpRight, Cpu, Wrench, Star,
   PanelRight, PanelLeft, Upload, Paperclip, Link2, Plus, Trash2, BookOpen,
-  FolderOpen, FileSpreadsheet, Share2, Tag, Megaphone, CheckSquare
+  FolderOpen, FileSpreadsheet, Share2, Tag, Megaphone, CheckSquare, ArrowUp
 } from 'lucide-react';
 import { useI18n } from '../i18n';
 import NajeSpinner from '../components/NajeSpinner';
@@ -34,6 +34,7 @@ import { formatProfessionalError } from '../utils/errorFormatter';
 import NajeErrorCard from '../components/NajeErrorCard';
 import FeaturePaywallModal from '../components/FeaturePaywallModal';
 import { hasFeatureAccess } from '../lib/featureAccess';
+import SmokeChatWrapper from '../components/chat/SmokeChatWrapper';
 
 export interface AgentSourceItem {
   id: string;
@@ -68,6 +69,81 @@ const INITIAL_GREETING: AgentChatMessage = {
   content: 'أهلاً بك! أنا وكيل ناجي (Naje Agent) — نظام الوكلاء المتعددين لبناء الهوية البصرية، صياغة الإعلانات، وهندسة المشاريع المتكاملة. يمكنك رفع ملفاتك ومصادرك في تبويب "المصادر" ليعتمد عليها وكيل الهوية ووكيل الإعلانات مباشرة أثناء بناء مشروعك. صف فكرتك وسنتولى التخطيط والتنفيذ خطوة بخطوة.',
   timestamp: Date.now()
 };
+
+const AGENT_PROMPT_PHRASES = [
+  'يبني هويتك البصرية بينما يجهز موقعك…',
+  'وكيل يحلل مصادرك ووكيل يبتكر حملتك الإعلانية…',
+  'ينسق نصوصك التسويقية ويهندس كود مشروعك البرمجي…',
+  'وكيل ينتج فيديوهاتك السينمائية ووكيل يصمم علامتك…',
+  'يدير منظومة وكلائك الأذكياء في خط إنتاج متزامن…',
+  'صف فكرتك وسيتولى فريق وكلائك التخطيط والتنفيذ خطوة بخطوة…'
+];
+
+function useLivePlaceholder(phrases: string[], typingSpeed = 40, pauseTime = 2400, deletingSpeed = 20) {
+  const [text, setText] = useState('');
+  const [index, setIndex] = useState(0);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  useEffect(() => {
+    const current = phrases[index % phrases.length];
+    let timer: number;
+
+    if (!isDeleting) {
+      if (text.length < current.length) {
+        timer = window.setTimeout(() => {
+          setText(current.slice(0, text.length + 1));
+        }, typingSpeed);
+      } else {
+        timer = window.setTimeout(() => {
+          setIsDeleting(true);
+        }, pauseTime);
+      }
+    } else {
+      if (text.length > 0) {
+        timer = window.setTimeout(() => {
+          setText(current.slice(0, text.length - 1));
+        }, deletingSpeed);
+      } else {
+        setIsDeleting(false);
+        setIndex((prev) => (prev + 1) % phrases.length);
+      }
+    }
+
+    return () => clearTimeout(timer);
+  }, [text, index, isDeleting, phrases, typingSpeed, pauseTime, deletingSpeed]);
+
+  return text;
+}
+
+function StreamingWelcomeText({ fullText }: { fullText: string }) {
+  const [displayedText, setDisplayedText] = useState('');
+  const [isTyping, setIsTyping] = useState(true);
+
+  useEffect(() => {
+    let index = 0;
+    const interval = window.setInterval(() => {
+      index += 2;
+      if (index >= fullText.length) {
+        setDisplayedText(fullText);
+        setIsTyping(false);
+        clearInterval(interval);
+      } else {
+        setDisplayedText(fullText.slice(0, index));
+      }
+    }, 18);
+
+    return () => clearInterval(interval);
+  }, [fullText]);
+
+  return (
+    <span>
+      {displayedText}
+      {isTyping && (
+        <span className="inline-block w-1.5 h-3.5 ms-1 bg-purple-500 animate-pulse align-middle" />
+      )}
+    </span>
+  );
+}
 
 const SUGGESTED_PROMPT_KEYS = [
   'tools.agent.suggest1',
@@ -108,6 +184,7 @@ export default function NajeAgent() {
   const [activeMission, setActiveMission] = useState<AgentMission | null>(null);
   const [messages, setMessages] = useState<AgentChatMessage[]>([INITIAL_GREETING]);
   const [inputText, setInputText] = useState('');
+  const dynamicPlaceholder = useLivePlaceholder(AGENT_PROMPT_PHRASES);
   const [isSendingChat, setIsSendingChat] = useState(false);
   const [activeProposal, setActiveProposal] = useState<AgentPlanProposal | null>(null);
   const [showAgentPaywall, setShowAgentPaywall] = useState(false);
@@ -846,7 +923,11 @@ export default function NajeAgent() {
                           ? 'bg-purple-600 text-white shadow-sm rounded-tr-sm'
                           : 'bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 shadow-sm text-gray-800 dark:text-gray-200 rounded-tl-sm'
                       }`}>
-                        {msg.id === 'msg_welcome' ? t('tools.agent.greeting') : msg.content}
+                        {msg.id === 'msg_welcome' ? (
+                          <StreamingWelcomeText fullText={t('tools.agent.greeting')} />
+                        ) : (
+                          msg.content
+                        )}
                       </div>
                     )}
 
@@ -1045,38 +1126,41 @@ export default function NajeAgent() {
                   </div>
                 )}
 
-                <form 
-                  onSubmit={(e) => { e.preventDefault(); handleSendMessage(); }}
-                  className="flex items-center gap-2"
-                >
-                  {/* Direct Attachment Button (Adds directly to Sources) */}
-                  <button
-                    type="button"
-                    onClick={() => chatAttachmentInputRef.current?.click()}
-                    className="p-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition cursor-pointer shrink-0"
-                    title={t('tools.agent.attachTitle')}
+                <SmokeChatWrapper chatType="agent">
+                  <form 
+                    onSubmit={(e) => { e.preventDefault(); handleSendMessage(); }}
+                    className="flex items-center gap-2 bg-white/90 dark:bg-gray-900/90 backdrop-blur-md p-1.5 rounded-2xl border border-gray-200/80 dark:border-gray-800 shadow-sm"
                   >
-                    <Paperclip className="w-4 h-4" />
-                  </button>
+                    {/* Direct Attachment Button (Adds directly to Sources) */}
+                    <button
+                      type="button"
+                      onClick={() => chatAttachmentInputRef.current?.click()}
+                      className="p-2.5 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition cursor-pointer shrink-0"
+                      title={t('tools.agent.attachTitle')}
+                    >
+                      <Paperclip className="w-4 h-4" />
+                    </button>
 
-                  <input
-                    type="text"
-                    value={inputText}
-                    onChange={(e) => setInputText(e.target.value)}
-                    placeholder={sources.length > 0 ? t('tools.agent.placeholderWithSources') : t('tools.agent.placeholderEmpty')}
-                    disabled={isSendingChat}
-                    className="flex-1 bg-gray-50 dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl px-4 py-2.5 text-xs sm:text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500/30"
-                  />
+                    <input
+                      type="text"
+                      value={inputText}
+                      onChange={(e) => setInputText(e.target.value)}
+                      placeholder={dynamicPlaceholder || (sources.length > 0 ? t('tools.agent.placeholderWithSources') : t('tools.agent.placeholderEmpty'))}
+                      disabled={isSendingChat}
+                      className="flex-1 bg-gray-50 dark:bg-gray-900/80 border border-gray-200/80 dark:border-gray-800 rounded-xl px-4 py-2.5 text-xs sm:text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500/30 transition-all"
+                    />
 
-                  <button
-                    type="submit"
-                    disabled={!inputText.trim() || isSendingChat}
-                    className="px-4 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 disabled:opacity-50 text-white rounded-xl text-xs sm:text-sm font-bold shadow-sm transition cursor-pointer flex items-center gap-1.5 shrink-0"
-                  >
-                    {isSendingChat ? <NajeSpinner className="w-4 h-4" /> : <Send className="w-4 h-4" />}
-                    <span className="hidden sm:inline">{t('tools.agent.send')}</span>
-                  </button>
-                </form>
+                    <button
+                      type="submit"
+                      disabled={!inputText.trim() || isSendingChat}
+                      className="w-10 h-10 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 disabled:opacity-40 text-white rounded-xl shadow-sm transition cursor-pointer flex items-center justify-center shrink-0 active:scale-95"
+                      title={t('tools.agent.send')}
+                      aria-label={t('tools.agent.send')}
+                    >
+                      {isSendingChat ? <NajeSpinner className="w-4 h-4" /> : <ArrowUp className="w-5 h-5 stroke-[2.5]" />}
+                    </button>
+                  </form>
+                </SmokeChatWrapper>
               </div>
             </div>
           </div>

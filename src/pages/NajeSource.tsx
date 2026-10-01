@@ -20,6 +20,8 @@ import FeaturePaywallModal from '../components/FeaturePaywallModal';
 import { hasFeatureAccess } from '../lib/featureAccess';
 import { readNajeSse } from '../lib/sseRead';
 import { useI18n } from '../i18n';
+import SmokeChatWrapper from '../components/chat/SmokeChatWrapper';
+import { useLivePlaceholder, SOURCE_PHRASES } from '../hooks/useLivePlaceholder';
 
 type Tab = 'sources' | 'chat';
 type SourceItem = { id: string; type: string; title: string; url?: string; excerpt?: string };
@@ -48,6 +50,7 @@ export default function NajeSource() {
   const [allowWeb, setAllowWeb] = useState(false);
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [input, setInput] = useState('');
+  const dynamicPlaceholder = useLivePlaceholder(SOURCE_PHRASES);
   const [attachedImages, setAttachedImages] = useState<string[]>([]);
   const [sending, setSending] = useState(false);
   const [adding, setAdding] = useState(false);
@@ -784,7 +787,8 @@ export default function NajeSource() {
               onChange={handleImageSelect}
             />
 
-            <form onSubmit={(e) => { e.preventDefault(); send(); }} className="flex items-end gap-2">
+            <SmokeChatWrapper className="w-full" chatType="najeSource">
+            <form onSubmit={(e) => { e.preventDefault(); send(); }} className="flex items-end gap-2 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md p-1.5 rounded-2xl border border-gray-200/80 dark:border-gray-800 shadow-sm">
               <button 
                 type="button" 
                 onClick={() => chatImageRef.current?.click()}
@@ -800,7 +804,7 @@ export default function NajeSource() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 rows={1}
-                placeholder={items.length === 0 ? t('tools.source.placeholderEmpty') : t('tools.source.placeholderReady')}
+                placeholder={dynamicPlaceholder || (items.length === 0 ? t('tools.source.placeholderEmpty') : t('tools.source.placeholderReady'))}
                 disabled={sending || items.length === 0}
                 className="flex-1 min-h-[44px] max-h-[130px] overflow-y-auto resize-none rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 disabled:opacity-50 transition-colors leading-relaxed"
                 onKeyDown={(e) => {
@@ -821,6 +825,7 @@ export default function NajeSource() {
                 {sending ? <NajeSpinner className="w-4 h-4" /> : <ArrowUp className="w-5 h-5 stroke-[2.5]" />}
               </button>
             </form>
+            </SmokeChatWrapper>
           </div>
         </div>
       )}

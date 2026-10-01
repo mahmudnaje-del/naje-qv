@@ -16,7 +16,6 @@ import {
   AlertCircle,
   ArrowLeft,
   ArrowRight,
-  Coins,
 } from 'lucide-react';
 
 interface BalanceTopDropdownProps {
@@ -165,16 +164,16 @@ export const BalanceTopDropdown: React.FC<BalanceTopDropdownProps> = ({ isCreati
         aria-expanded={isOpen}
         aria-haspopup="true"
         title={t('recharge.dropdownTitle')}
-        className={`sm:hidden flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1.5 rounded-full border transition-all duration-200 cursor-pointer active:scale-95 ${
+        className={`sm:hidden h-8 flex items-center gap-1.5 text-[11.5px] font-bold px-2.5 rounded-full border transition-all duration-200 cursor-pointer active:scale-95 shrink-0 ${
           isCreativeMode
             ? 'bg-amber-500/10 border-amber-500/20 text-amber-400'
             : 'bg-indigo-50 dark:bg-indigo-500/10 border-indigo-500/20 text-indigo-600 dark:text-indigo-400'
         } ${isOpen ? 'ring-2 ring-amber-400/60' : ''}`}
       >
-        <img src={najeWalletCoins} alt="wallet" className="w-3.5 h-3.5 object-contain" />
-        <span className="font-sans font-bold">{formattedBalance}</span>
+        <img src={najeWalletCoins} alt="wallet" className="w-3.5 h-3.5 object-contain shrink-0" />
+        <span className="font-sans font-extrabold tracking-tight">{formattedBalance}</span>
         <ChevronDown
-          className={`w-3 h-3 transition-transform duration-200 ${isOpen ? 'rotate-180 text-amber-500' : ''}`}
+          className={`w-3 h-3 transition-transform duration-200 shrink-0 ${isOpen ? 'rotate-180 text-amber-500' : ''}`}
         />
       </button>
 
@@ -193,8 +192,8 @@ export const BalanceTopDropdown: React.FC<BalanceTopDropdownProps> = ({ isCreati
             {/* Header: Balance Display */}
             <div className="flex items-center justify-between pb-3 mb-3 border-b border-gray-100 dark:border-gray-800/80">
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500 shrink-0">
-                  <Coins className="w-5 h-5" />
+                <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0 p-1.5">
+                  <img src={najeWalletCoins} alt="credits" className="w-full h-full object-contain" />
                 </div>
                 <div>
                   <span className="text-[11px] text-gray-500 dark:text-gray-400 block font-medium">

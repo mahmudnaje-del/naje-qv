@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { ChevronDown, Check, Cpu, Film, SlidersHorizontal, Image as ImageIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
@@ -72,6 +73,59 @@ export const MODEL_TIER_INFO: Record<ModelTier, { label: string; hint: string }>
   max:  { label: MODEL_TIERS.max.label, hint: MODEL_TIERS.max.hint },
 };
 
+function useDropdownPortalCoords(
+  open: boolean,
+  containerRef: React.RefObject<HTMLDivElement | null>,
+  dropDirection: 'up' | 'down' = 'up'
+) {
+  const [coords, setCoords] = useState<{
+    top?: number;
+    bottom?: number;
+    right?: number;
+    width?: number;
+  }>({});
+
+  useEffect(() => {
+    if (!open || !containerRef.current) return;
+    const updatePosition = () => {
+      if (!containerRef.current) return;
+      const rect = containerRef.current.getBoundingClientRect();
+      const menuWidth = Math.min(window.innerWidth - 24, 320);
+
+      // In RTL, align right edge of menu with right edge of button
+      let right = window.innerWidth - rect.right;
+      if (right + menuWidth > window.innerWidth - 12) {
+        right = Math.max(12, window.innerWidth - menuWidth - 12);
+      }
+      if (right < 12) right = 12;
+
+      if (dropDirection === 'up') {
+        setCoords({
+          bottom: Math.max(12, window.innerHeight - rect.top + 8),
+          right,
+          width: menuWidth
+        });
+      } else {
+        setCoords({
+          top: Math.max(12, rect.bottom + 8),
+          right,
+          width: menuWidth
+        });
+      }
+    };
+
+    updatePosition();
+    window.addEventListener('resize', updatePosition);
+    window.addEventListener('scroll', updatePosition, true);
+    return () => {
+      window.removeEventListener('resize', updatePosition);
+      window.removeEventListener('scroll', updatePosition, true);
+    };
+  }, [open, dropDirection, containerRef]);
+
+  return coords;
+}
+
 interface NajeModelTierSelectorProps {
   value: ModelTier;
   onChange: (tier: ModelTier) => void;
@@ -89,13 +143,19 @@ export default function NajeModelTierSelector({
 }: NajeModelTierSelectorProps) {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const coords = useDropdownPortalCoords(open, containerRef, dropDirection);
 
   const currentTier = MODEL_TIERS[value] || MODEL_TIERS.core;
   const CurrentIcon = currentTier.icon;
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      if (
+        containerRef.current && !containerRef.current.contains(target) &&
+        menuRef.current && !menuRef.current.contains(target)
+      ) {
         setOpen(false);
       }
     }
@@ -135,25 +195,33 @@ export default function NajeModelTierSelector({
         <ChevronDown className={cn("w-2.5 h-2.5 sm:w-3 sm:h-3 text-gray-500 transition-transform duration-200 shrink-0", open && "rotate-180 text-indigo-600 dark:text-indigo-400")} />
       </button>
 
-      {/* Pop-up Menu */}
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            initial={{ opacity: 0, y: dropDirection === 'up' ? 8 : -8, scale: 0.96 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: dropDirection === 'up' ? 8 : -8, scale: 0.96 }}
-            transition={{ duration: 0.16, ease: "easeOut" }}
-            role="listbox"
-            className={cn(
-              "absolute z-50 w-72 sm:w-80 p-1.5 rounded-2xl shadow-2xl backdrop-blur-xl",
-              "bg-white/95 dark:bg-gray-900/95 border border-gray-200/90 dark:border-gray-800/90",
-              "flex flex-col gap-1 ring-1 ring-black/5 dark:ring-white/10",
-              dropDirection === 'up' 
-                ? "bottom-full mb-2 right-0 origin-bottom-right" 
-                : "top-full mt-2 right-0 origin-top-right",
-              "max-w-[calc(100vw-32px)]"
-            )}
-          >
+      {/* Pop-up Menu using Portal */}
+      {typeof document !== 'undefined' && createPortal(
+        <AnimatePresence>
+          {open && (
+            <motion.div
+              ref={menuRef}
+              initial={{ opacity: 0, y: dropDirection === 'up' ? 8 : -8, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: dropDirection === 'up' ? 8 : -8, scale: 0.96 }}
+              transition={{ duration: 0.16, ease: "easeOut" }}
+              role="listbox"
+              style={{
+                position: 'fixed',
+                zIndex: 999999,
+                top: coords.top,
+                bottom: coords.bottom,
+                right: coords.right,
+                width: coords.width || 300,
+                maxWidth: 'calc(100vw - 24px)'
+              }}
+              className={cn(
+                "p-1.5 rounded-2xl shadow-2xl backdrop-blur-2xl",
+                "bg-white/95 dark:bg-gray-900/95 border border-gray-200/90 dark:border-gray-800/90",
+                "flex flex-col gap-1 ring-1 ring-black/5 dark:ring-white/10"
+              )}
+              dir="rtl"
+            >
             {/* Header info */}
             <div className="px-3 py-1.5 border-b border-gray-100 dark:border-gray-800/60 flex items-center justify-between text-[11px] font-semibold text-gray-500 dark:text-gray-400">
               <span className="flex items-center gap-1">
@@ -229,7 +297,9 @@ export default function NajeModelTierSelector({
             </div>
           </motion.div>
         )}
-      </AnimatePresence>
+      </AnimatePresence>,
+      document.body
+    )}
     </div>
   );
 }
@@ -294,6 +364,8 @@ export function NajeImageModelSelector({
 }) {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const coords = useDropdownPortalCoords(open, containerRef, dropDirection);
   const pricing = usePricingConfig();
 
   const dynamicImageModels: Record<ImageModelType, ImageModelConfig> = useMemo(() => ({
@@ -331,7 +403,11 @@ export function NajeImageModelSelector({
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      if (
+        containerRef.current && !containerRef.current.contains(target) &&
+        menuRef.current && !menuRef.current.contains(target)
+      ) {
         setOpen(false);
       }
     }
@@ -371,25 +447,33 @@ export function NajeImageModelSelector({
         <ChevronDown className={cn("w-2.5 h-2.5 sm:w-3 sm:h-3 text-indigo-400 transition-transform duration-200 shrink-0", open && "rotate-180 text-indigo-600 dark:text-indigo-300")} />
       </button>
 
-      {/* Pop-up Menu */}
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            initial={{ opacity: 0, y: dropDirection === 'up' ? 8 : -8, scale: 0.96 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: dropDirection === 'up' ? 8 : -8, scale: 0.96 }}
-            transition={{ duration: 0.16, ease: "easeOut" }}
-            role="listbox"
-            className={cn(
-              "absolute z-50 w-72 sm:w-80 p-1.5 rounded-2xl shadow-2xl backdrop-blur-xl",
-              "bg-white/95 dark:bg-gray-900/95 border border-gray-200/90 dark:border-gray-800/90",
-              "flex flex-col gap-1 ring-1 ring-black/5 dark:ring-white/10",
-              dropDirection === 'up' 
-                ? "bottom-full mb-2 right-0 origin-bottom-right" 
-                : "top-full mt-2 right-0 origin-top-right",
-              "max-w-[calc(100vw-32px)]"
-            )}
-          >
+      {/* Pop-up Menu using Portal */}
+      {typeof document !== 'undefined' && createPortal(
+        <AnimatePresence>
+          {open && (
+            <motion.div
+              ref={menuRef}
+              initial={{ opacity: 0, y: dropDirection === 'up' ? 8 : -8, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: dropDirection === 'up' ? 8 : -8, scale: 0.96 }}
+              transition={{ duration: 0.16, ease: "easeOut" }}
+              role="listbox"
+              style={{
+                position: 'fixed',
+                zIndex: 999999,
+                top: coords.top,
+                bottom: coords.bottom,
+                right: coords.right,
+                width: coords.width || 300,
+                maxWidth: 'calc(100vw - 24px)'
+              }}
+              className={cn(
+                "p-1.5 rounded-2xl shadow-2xl backdrop-blur-2xl",
+                "bg-white/95 dark:bg-gray-900/95 border border-gray-200/90 dark:border-gray-800/90",
+                "flex flex-col gap-1 ring-1 ring-black/5 dark:ring-white/10"
+              )}
+              dir="rtl"
+            >
             {/* Header info */}
             <div className="px-3 py-1.5 border-b border-gray-100 dark:border-gray-800/60 flex items-center justify-between text-[11px] font-semibold text-gray-500 dark:text-gray-400">
               <span className="flex items-center gap-1">

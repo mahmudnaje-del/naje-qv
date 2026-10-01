@@ -1,8 +1,10 @@
 import type { SupportedLocale } from '../types';
 import type { LocalePack } from './types';
 
+type CvLocale = 'ar' | 'en' | 'es' | 'fr' | 'de' | 'pt';
+
 /** CV By Naje visible UI. Keys start with `cv.`. */
-const TABLE: Record<string, Record<SupportedLocale, string>> = {
+const TABLE: Record<string, Record<CvLocale, string>> = {
   "cv.accent.burgundy": { ar: "خمري", en: "Burgundy", es: "Burdeos", fr: "Bordeaux", de: "Bordeaux", pt: "Bordô" },
   "cv.accent.charcoal": { ar: "فحمي", en: "Charcoal", es: "Carbón", fr: "Anthracite", de: "Anthrazit", pt: "Carvão" },
   "cv.accent.gold": { ar: "ذهبي", en: "Gold", es: "Oro", fr: "Or", de: "Gold", pt: "Ouro" },
@@ -520,7 +522,7 @@ const TABLE: Record<string, Record<SupportedLocale, string>> = {
   "cv.folio.page": { ar: "ورقة واحدة", en: "One sheet", es: "Una hoja", fr: "Une feuille", de: "Ein Blatt", pt: "Uma folha" },
 };
 
-function pick(locale: SupportedLocale): Record<string, string> {
+function pick(locale: CvLocale): Record<string, string> {
   const out: Record<string, string> = {};
   for (const key of Object.keys(TABLE)) out[key] = TABLE[key][locale];
   return out;

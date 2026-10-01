@@ -151,7 +151,7 @@ export default function AdminAuditLogView() {
                     {entry.targetUserId && (
                       <span>{t('tools.admin.target', { id: entry.targetUserId })}</span>
                     )}
-                    <span>{entry.timestamp ? new Date(entry.timestamp).toLocaleString('ar-SA') : ''}</span>
+                    <span>{entry.timestamp ? new Date(entry.timestamp).toLocaleString('ar-u-nu-latn') : ''}</span>
 
                     <button
                       onClick={() => setExpandedId(isExpanded ? null : entry.id)}

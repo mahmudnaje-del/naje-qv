@@ -170,7 +170,7 @@ export function CastingRoom({
           centerIndex={centerIndex}
           onCenterIndexChange={setCenterIndex}
           onUserSwipe={onUserSwipe}
-          showHand={showHint && centerIndex === 0}
+          showHand={false}
           handLabel={t('adui.swipeLibrary')}
           frameClassName="h-[318px] sm:h-[358px]"
           renderCard={(c, isCenter) => {
@@ -195,10 +195,14 @@ export function CastingRoom({
                     {customPreview ? (
                       <img src={customPreview} alt={t('adui.attachedAlt')} className="h-full w-full object-cover object-top" />
                     ) : (
-                      <>
-                        <Upload className="mb-2 h-8 w-8 text-[var(--naje-accent-2)]" />
-                        <span className="px-3 text-center text-[11px] font-bold text-white/70">{t('adui.uploadTalent')}</span>
-                      </>
+                      <div className="flex flex-col items-center justify-center text-center px-2.5 py-2 gap-2">
+                        <div className="w-10 h-10 rounded-2xl bg-[var(--naje-accent)]/15 flex items-center justify-center text-[var(--naje-accent-2)] shadow-sm">
+                          <Upload className="h-5 w-5" />
+                        </div>
+                        <span className="text-[11.5px] font-black text-white leading-snug">
+                          أرفع شخصيتك او مرر لمشاهده شخصيات ناجي
+                        </span>
+                      </div>
                     )}
                   </div>
                 </div>

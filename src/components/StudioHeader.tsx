@@ -14,6 +14,8 @@ export interface StudioHeaderProps {
   iconColorClass?: string;
   iconBgClass?: string;
   badgeClass?: string;
+  iconStyle?: React.CSSProperties;
+  badgeStyle?: React.CSSProperties;
   theme?: 'dark' | 'canvas' | 'cinema' | 'navy' | 'purple';
   actions?: React.ReactNode;
   showBalance?: boolean;
@@ -29,6 +31,8 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
   iconColorClass = 'text-indigo-600 dark:text-indigo-400',
   iconBgClass = 'bg-indigo-500/10 border-indigo-500/20',
   badgeClass = 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20',
+  iconStyle,
+  badgeStyle,
   theme = 'canvas',
   actions,
   showBalance = true,
@@ -78,9 +82,10 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
         <div
           className={cn(
             'w-8 h-8 rounded-xl flex items-center justify-center shrink-0 border transition-transform shadow-xs',
-            iconBgClass,
-            iconColorClass
+            !iconStyle && iconBgClass,
+            !iconStyle && iconColorClass
           )}
+          style={iconStyle}
         >
           <Icon className="w-4 h-4" />
         </div>
@@ -94,8 +99,9 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
               <span
                 className={cn(
                   'hidden sm:inline-flex text-[9px] font-black px-1.5 py-0.5 rounded-full border whitespace-nowrap shrink-0',
-                  badgeClass
+                  !badgeStyle && badgeClass
                 )}
+                style={badgeStyle}
               >
                 {badge}
               </span>

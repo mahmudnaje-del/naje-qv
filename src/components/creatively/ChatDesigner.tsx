@@ -42,6 +42,8 @@ import { formatProfessionalError } from '../../utils/errorFormatter';
 import NajeErrorCard from '../NajeErrorCard';
 import { useAppStore } from '../../store';
 import { useI18n } from '../../i18n';
+import SmokeChatWrapper from '../chat/SmokeChatWrapper';
+import { useLivePlaceholder, IMAGE_DESIGNER_PHRASES } from '../../hooks/useLivePlaceholder';
 
 const safeLocalStorage = {
   getItem: (key: string): string | null => {
@@ -300,6 +302,7 @@ export function ChatDesigner({
   const [clearConfirm, setClearConfirm] = useState(false);
   
   const [input, setInput] = useState('');
+  const dynamicPlaceholder = useLivePlaceholder(IMAGE_DESIGNER_PHRASES);
   const [useCreativePro, setUseCreativePro] = useState(false);
   const [showModelMenu, setShowModelMenu] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -1392,6 +1395,7 @@ export function ChatDesigner({
                     {/* Chat Text Input Section */}
                     <div className="p-4 bg-gradient-to-t from-black/85 via-black/45 to-transparent pt-6 shrink-0">
                       <div className="max-w-4xl mx-auto w-full">
+                        <SmokeChatWrapper className="w-full" chatType="image">
                         <form onSubmit={handleSubmit} className="relative flex flex-col w-full relative">
                           <div className="flex items-center justify-between mb-2 px-1 relative z-20">
                              <div className="relative">
@@ -1538,7 +1542,7 @@ export function ChatDesigner({
                               onKeyDown={handleKeyDown}
                               disabled={isLoading}
                               rows={1}
-                              placeholder={t('creative.m152')}
+                              placeholder={dynamicPlaceholder || t('creative.m152')}
                               className="w-full bg-white/[0.03] hover:bg-white/[0.05] border border-white/5 focus:border-white/10 focus:bg-white/[0.08] rounded-[24px] py-3.5 ltr:pl-12 ltr:pr-14 rtl:pr-12 rtl:pl-14 text-white placeholder-slate-500 focus:outline-none transition-all disabled:opacity-50 resize-none shadow-sm backdrop-blur-3xl text-sm md:text-base custom-scrollbar max-h-[120px] font-light"
                               style={{ minHeight: '50px' }}
                             />
@@ -1552,6 +1556,7 @@ export function ChatDesigner({
                           </div>
                           </div>
                         </form>
+                        </SmokeChatWrapper>
                         <div className="text-center mt-2">
                           <span className="text-[9px] text-slate-500 uppercase tracking-widest font-mono">
                             {t('creative.m151')}

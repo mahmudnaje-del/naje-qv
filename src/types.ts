@@ -83,6 +83,7 @@ export type ChatSession = {
   type: ChatType;
   title: string;
   createdAt: number;
+  isPinned?: boolean;
 };
 
 export type Chat = ChatSession;

@@ -139,28 +139,28 @@ export function CastBoard({
           centerIndex={centerIndex}
           onCenterIndexChange={setCenterIndex}
           onUserSwipe={() => setHint(false)}
-          showHand={hint}
+          showHand={false}
           handLabel={t('adui.swipeBoard')}
-          frameClassName="h-[318px] sm:h-[370px]"
+          frameClassName="h-[340px] sm:h-[385px]"
           renderCard={(item, isCenter) => {
             if (item.type === 'add') {
               return (
                 <div
-                  className="w-[40vw] max-w-[10.75rem] overflow-hidden rounded-2xl border border-dashed border-[var(--naje-accent)]/55 bg-gradient-to-b from-[#2a1c12] to-[#120e0c] p-2.5 shadow-[0_20px_50px_-24px_rgba(212,165,116,0.55)] sm:max-w-[12.5rem]"
+                  className="w-[78vw] max-w-[17.5rem] overflow-hidden rounded-2xl border-2 border-[var(--naje-accent)]/65 bg-gradient-to-b from-[#261810] via-[#161210] to-[#0c0a09] p-3 shadow-[0_20px_50px_-20px_rgba(212,165,116,0.45)] sm:max-w-[18.5rem]"
                 >
-                  <div className="mb-2 flex items-center justify-center gap-2 rounded-xl bg-black/25 py-1.5">
-                    <span className="h-1 w-7 rounded-full bg-[var(--naje-accent)]/80" />
-                    <span className="inline-flex items-center gap-1 text-[10px] font-black text-[var(--naje-accent-2)]">
+                  <div className="mb-2.5 flex items-center justify-center gap-2 rounded-xl bg-black/45 border border-white/10 py-1.5 px-3">
+                    <span className="h-1 w-6 rounded-full bg-[var(--naje-accent)]" />
+                    <span className="inline-flex items-center gap-1.5 text-xs font-black text-[var(--naje-accent-2)]">
                       <Plus className="h-3.5 w-3.5" /> {t('adui.addSwipe')}
                     </span>
-                    <span className="h-1 w-7 rounded-full bg-[var(--naje-accent)]/80" />
+                    <span className="h-1 w-6 rounded-full bg-[var(--naje-accent)]" />
                   </div>
                   {isCenter ? (
-                    <div data-no-drag className="max-h-[230px] space-y-2 overflow-y-auto overscroll-contain touch-pan-y pe-0.5">
+                    <div data-no-drag className="max-h-[250px] sm:max-h-[285px] space-y-3 overflow-y-auto overscroll-contain touch-pan-y pe-1 scrollbar-thin">
                       {SCENE_ADD_GROUPS.map((group, gi) => (
                         <div key={group.title}>
-                          <p className="mb-1 text-[9px] font-black tracking-wide text-white/35">{t(GROUP_KEYS[gi] || group.title)}</p>
-                          <div className="grid grid-cols-2 gap-1">
+                          <p className="mb-1.5 text-[10.5px] font-extrabold tracking-wide text-amber-200/90">{t(GROUP_KEYS[gi] || group.title)}</p>
+                          <div className="grid grid-cols-2 gap-1.5">
                             {group.ids.map((id) => {
                               const opt = optionMeta(id);
                               if (!opt) return null;
@@ -172,10 +172,12 @@ export function CastBoard({
                                     e.stopPropagation();
                                     addCard(id);
                                   }}
-                                  className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-black/35 px-1.5 py-1.5 text-start hover:border-[var(--naje-accent)]/45"
+                                  className="flex items-center gap-2 rounded-xl border border-white/15 bg-black/55 px-2.5 py-2 text-start hover:border-[var(--naje-accent)] hover:bg-black/80 transition-all active:scale-[0.97]"
                                 >
-                                  <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: opt.accent }} />
-                                  <span className="min-w-0 truncate text-[10px] font-black text-white">{t(`adui.kind.${id}`)}</span>
+                                  <span className="h-2 w-2 shrink-0 rounded-full shadow-[0_0_6px_currentColor]" style={{ background: opt.accent, color: opt.accent }} />
+                                  <span className="min-w-0 text-[11px] font-bold text-slate-100 leading-snug break-words">
+                                    {t(`adui.kind.${id}`)}
+                                  </span>
                                 </button>
                               );
                             })}
@@ -209,7 +211,7 @@ export function CastBoard({
 
             return (
               <div
-                    className="w-[40vw] max-w-[10.75rem] overflow-hidden rounded-2xl border bg-[#12141c] p-2 sm:max-w-[12.5rem]"
+                className="w-[64vw] max-w-[14.5rem] overflow-hidden rounded-2xl border bg-[#12141c] p-2.5 sm:max-w-[15.5rem]"
                 style={{ borderColor: isCenter ? accent : 'rgba(255,255,255,0.1)' }}
               >
                 <div className="mb-1.5 flex items-center justify-between gap-2">

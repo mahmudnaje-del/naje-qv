@@ -140,7 +140,7 @@ export function formatLocaleDate(
   try {
     const d = typeof date === 'string' || typeof date === 'number' ? new Date(date) : date;
     if (isNaN(d.getTime())) return String(date);
-    const intlLocale = locale === 'ar' ? 'ar-SA' : locale;
+    const intlLocale = locale === 'ar' ? 'ar-u-nu-latn' : locale;
     return new Intl.DateTimeFormat(intlLocale, options || { dateStyle: 'medium' }).format(d);
   } catch {
     return String(date);
@@ -153,7 +153,7 @@ export function formatLocaleNumber(
   options?: Intl.NumberFormatOptions
 ): string {
   try {
-    const intlLocale = locale === 'ar' ? 'ar-SA' : locale;
+    const intlLocale = locale === 'ar' ? 'ar-u-nu-latn' : locale;
     return new Intl.NumberFormat(intlLocale, options).format(num);
   } catch {
     return String(num);

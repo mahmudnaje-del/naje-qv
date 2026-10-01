@@ -186,12 +186,12 @@ export default function NotificationDropdown() {
       {/* Bell Icon Trigger */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="relative p-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl transition hover:bg-white dark:hover:bg-gray-800 cursor-pointer text-gray-800 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400"
+        className="relative w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl transition hover:bg-white dark:hover:bg-gray-800 cursor-pointer text-gray-800 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 shrink-0"
         title={t('notifications.title')}
       >
         <Bell className="w-4 h-4" />
         {unreadCount > 0 && (
-          <span className="absolute top-1.5 end-1.5 w-4 h-4 bg-rose-600 text-[9px] font-extrabold text-white rounded-full flex items-center justify-center animate-pulse">
+          <span className="absolute -top-1 -end-1 w-4 h-4 bg-rose-600 text-[9px] font-extrabold text-white rounded-full flex items-center justify-center animate-pulse">
             {unreadCount}
           </span>
         )}

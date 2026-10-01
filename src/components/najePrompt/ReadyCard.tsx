@@ -10,6 +10,7 @@ import {
   type Understanding,
 } from '../../lib/najePromptEngine';
 import { useI18n } from '../../i18n';
+import NajeCreditIcon from '../NajeCreditIcon';
 import { REFINE_LABEL_KEYS, STUDIO_LABEL_KEYS, bestForKey } from './promptLabels';
 import UnderstandingPanel from './UnderstandingPanel';
 
@@ -158,8 +159,9 @@ export function ReadyCard({
         <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-3">
           <p className="text-start text-[12px] font-bold leading-relaxed text-naje-ink">{t('prompt.ready.creditNotice')}</p>
           {typeof balance === 'number' && (
-            <p className="mt-1 text-start text-[11px] font-bold text-naje-muted">
-              {t('prompt.ready.balance', { balance: formatNumber(balance) })}
+            <p className="mt-1 text-start text-[11px] font-bold text-naje-muted inline-flex items-center gap-1.5">
+              <NajeCreditIcon className="w-3.5 h-3.5 shrink-0" />
+              <span>{t('prompt.ready.balance', { balance: formatNumber(balance) })}</span>
             </p>
           )}
           <div className="mt-2 flex flex-wrap gap-1.5">

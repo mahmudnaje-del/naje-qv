@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../../lib/utils';
 import { 
@@ -24,6 +24,15 @@ import { ImageSettingsPanel } from './ImageChatPanel';
 import { VideoSettingsPanel } from './VideoChatPanel';
 import { VoiceSettingsPanel } from './VoiceChatPanel';
 import { Message, Chat } from '../../types';
+import SmokeChatWrapper from './SmokeChatWrapper';
+import { 
+  useLivePlaceholder, 
+  TEXT_CHAT_PHRASES, 
+  IMAGE_CHAT_PHRASES, 
+  VIDEO_CHAT_PHRASES, 
+  VOICE_CHAT_PHRASES 
+} from '../../hooks/useLivePlaceholder';
+import { getChatTypeConfig } from '../../lib/chatTypeConfig';
 import najePersonaDesignerData from '../../assets/icons/naje-persona-designer-data.svg';
 import najeDocument from '../../assets/icons/naje-document.svg';
 import najeChartBars from '../../assets/icons/naje-chart-bars.svg';
@@ -314,6 +323,9 @@ export default function TextChatPanel({
   const [showInfographicModal, setShowInfographicModal] = useState(false);
   const [dismissedInfographicChip, setDismissedInfographicChip] = useState(false);
 
+  const chatMeta = useMemo(() => getChatTypeConfig(chat?.type), [chat?.type]);
+  const dynamicPlaceholder = useLivePlaceholder(chatMeta.phrases);
+
   const textFeatures = [
     { id: '1', icon: najeDocument, title: 'توليد مستندات وشرائح باذخة', desc: 'صياغة ملفات Word، PDF، وسلايدات برزنتيشن منسقة وجاهزة بالكامل.', prompt: 'اكتب لي تقرير شامل عن الذكاء الاصطناعي التوليدي في 5 صفحات' },
     { id: '2', icon: najePersonaDesignerData, title: 'إنفوجرافيك مرئي احترافي — «المصمم»', desc: 'تصميم إنفوجرافيك عالي الدقة لإبراز الإحصائيات والمقارنات والخطط.', prompt: 'صمم إنفوجرافيك شبكة إحصائيات احترافي لأهم مؤشرات الأداء والنمو' },
@@ -348,31 +360,47 @@ export default function TextChatPanel({
           {/* Welcome Screen Header */}
           {messages.length === 0 && (
             <div className="w-full flex flex-col items-center justify-center text-center py-6 sm:py-8 relative overflow-hidden">
-              {/* Ambient Background Glows */}
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-72 h-72 bg-gradient-to-tr from-indigo-500/10 to-purple-500/10 dark:from-indigo-500/5 dark:to-purple-500/5 rounded-full blur-3xl pointer-events-none" />
+              {/* Ambient Background Glow in Signature Fixed Color */}
+              <div 
+                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-72 h-72 rounded-full blur-3xl pointer-events-none opacity-20 transition-all duration-700" 
+                style={{ backgroundColor: chatMeta.color }}
+              />
               
-              {/* Pulsing AI Cosmic Composition */}
-              <div className="relative mb-5">
-                <div className="absolute inset-0 bg-indigo-500/20 dark:bg-indigo-500/10 rounded-full blur-2xl animate-pulse scale-110" />
-                <div className="relative w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 rounded-3xl flex items-center justify-center text-white shadow-xl shadow-indigo-500/20 border border-white/10">
-                  <Sparkles className="w-8 h-8 sm:w-10 sm:h-10 animate-pulse" />
-                </div>
-                <div className="absolute -bottom-2 -right-2 w-7 h-7 sm:w-8 sm:h-8 bg-emerald-500 rounded-xl border-2 border-white dark:border-[#0c0d10] flex items-center justify-center text-white shadow-md">
-                  <Zap className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              {/* Pulsing AI Signature Composition */}
+              <div className="relative mb-4">
+                <div 
+                  className="absolute inset-0 rounded-3xl blur-2xl animate-pulse scale-110 opacity-35" 
+                  style={{ backgroundColor: chatMeta.color }}
+                />
+                <div 
+                  className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-3xl flex items-center justify-center text-white shadow-xl border border-white/20 transition-all duration-500"
+                  style={{ 
+                    backgroundColor: chatMeta.color,
+                    boxShadow: `0 12px 30px -6px ${chatMeta.color}80`
+                  }}
+                >
+                  <chatMeta.icon className="w-8 h-8 sm:w-10 sm:h-10 text-white animate-pulse" />
                 </div>
               </div>
 
-              <h3 className="text-xl sm:text-3xl font-extrabold text-gray-900 dark:text-white mb-2 tracking-tight">
-                {t('studio.welcomeGreeting', { name: user?.displayName?.split(' ')[0] || '' })}
+              {/* Signature Fixed Color Badge */}
+              <div 
+                className="px-3.5 py-1 rounded-full text-xs font-black inline-flex items-center gap-1.5 shadow-xs mb-2.5 transition-all"
+                style={{ 
+                  backgroundColor: chatMeta.bgTint, 
+                  color: chatMeta.color, 
+                  border: `1.5px solid ${chatMeta.borderTint}` 
+                }}
+              >
+                <chatMeta.icon className="w-3.5 h-3.5" />
+                <span>{chatMeta.nameAr}</span>
+              </div>
+
+              <h3 className="text-xl sm:text-2xl font-black text-gray-900 dark:text-white mb-2 tracking-tight">
+                {chatMeta.emptyTitle}
               </h3>
-              <p className="text-xs sm:text-sm text-gray-800 dark:text-gray-400 max-w-md mx-auto leading-relaxed opacity-80">
-                {chat?.type === 'text'
-                  ? t('studio.welcomeTextDesc')
-                  : chat?.type === 'voice'
-                  ? t('studio.welcomeVoiceDesc')
-                  : chat?.type === 'image'
-                  ? t('studio.welcomeImageDesc')
-                  : t('studio.welcomeVideoDesc')}
+              <p className="text-xs sm:text-sm text-gray-700 dark:text-gray-300 max-w-lg mx-auto leading-relaxed">
+                {chatMeta.emptySubtitle}
               </p>
             </div>
           )}
@@ -518,30 +546,59 @@ export default function TextChatPanel({
             </div>
           )}
 
-          {/* Text Features Quick Suggestions */}
-          {chat.type === 'text' && messages.length === 0 && (
+          {/* Distinct Tailored Feature Cards for EVERY Chat Type */}
+          {messages.length === 0 && chatMeta.featureCards && chatMeta.featureCards.length > 0 && (
             <div className="mb-6 text-start w-full">
-              <h3 className="text-gray-800 dark:text-gray-400 text-sm font-semibold mb-3 ps-1">{t('chatui.featuresAvailable')}</h3>
+              <div className="flex items-center justify-between mb-3 px-1">
+                <h3 className="text-gray-900 dark:text-gray-200 text-xs sm:text-sm font-black flex items-center gap-2">
+                  <span 
+                    className="w-2.5 h-2.5 rounded-full inline-block shrink-0 shadow-xs" 
+                    style={{ backgroundColor: chatMeta.color }} 
+                  />
+                  <span>نماذج وأفكار مقترحة لـ {chatMeta.nameAr}</span>
+                </h3>
+                <span className="text-[11px] font-semibold text-gray-500 dark:text-gray-400">انقر لتجربة فورية</span>
+              </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                {textFeatures.map(feat => (
+                {chatMeta.featureCards.map(feat => (
                   <button
                     key={feat.id}
+                    type="button"
                     onClick={() => {
                       setInput(feat.prompt);
                       executeSubmission(feat.prompt);
                     }}
-                    className="p-3.5 sm:p-4 rounded-2xl text-start transition border bg-[#f2f0f5] dark:bg-gray-900/80 dark:hover:bg-gray-800 border-purple-200/60 dark:border-gray-800 hover:border-purple-300 hover:bg-purple-100/10 flex flex-col gap-1 cursor-pointer group w-full shadow-sm"
+                    className="p-3.5 sm:p-4 rounded-2xl text-start transition-all border bg-white dark:bg-gray-900/90 hover:shadow-lg flex flex-col justify-between gap-2 cursor-pointer group w-full active:scale-[0.99]"
+                    style={{ borderColor: `${chatMeta.color}35` }}
                   >
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-xl bg-purple-50 dark:bg-purple-950/40 border border-purple-200/50 dark:border-purple-800/50 flex items-center justify-center shrink-0">
-                        <img src={feat.icon} alt="" className="w-4 h-4 object-contain" />
+                    <div>
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-black text-sm text-gray-900 dark:text-white group-hover:opacity-90">
+                          {feat.title}
+                        </span>
+                        {feat.badge && (
+                          <span 
+                            className="text-[10px] font-black px-2 py-0.5 rounded-md shrink-0 shadow-2xs"
+                            style={{ 
+                              backgroundColor: chatMeta.bgTint, 
+                              color: chatMeta.color, 
+                              border: `1px solid ${chatMeta.borderTint}` 
+                            }}
+                          >
+                            {feat.badge}
+                          </span>
+                        )}
                       </div>
-                      <span className="font-bold text-sm text-gray-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">{t(`chatui.feat.${feat.id}.title`)}</span>
+                      <div className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed mt-1">
+                        {feat.desc}
+                      </div>
                     </div>
-                    <div className="text-xs text-gray-700 dark:text-gray-400 leading-relaxed mt-1">{t(`chatui.feat.${feat.id}.desc`)}</div>
-                    <div className="text-[10px] text-indigo-600 dark:text-indigo-400/80 font-semibold mt-2 border-t border-gray-200/60 dark:border-gray-800/40 pt-1.5 flex items-center gap-1">
-                      <span>{t('chatui.quickTry')}</span>
-                      <span className="text-gray-800 dark:text-gray-400 font-normal truncate">"{feat.prompt}"</span>
+                    <div 
+                      className="text-[11px] font-medium pt-2 border-t border-gray-100 dark:border-gray-800/80 flex items-center gap-1.5"
+                      style={{ color: chatMeta.color }}
+                    >
+                      <span className="font-black shrink-0">تجربة سريعة:</span>
+                      <span className="text-gray-700 dark:text-gray-300 truncate font-normal">"{feat.prompt}"</span>
                     </div>
                   </button>
                 ))}
@@ -700,9 +757,13 @@ export default function TextChatPanel({
         </div>
       </div>
 
-      {/* Fixed Docked Bottom Input Box */}
+      {/* Fixed Docked Bottom Input Box with Full-Boundary Fluid Waves */}
       {chat.type !== 'ui' && (
-        <div className="shrink-0 w-full bg-[#FAF9FC]/95 dark:bg-[#0d0f12]/95 backdrop-blur-xl border-t border-gray-200/80 dark:border-gray-800/80 p-2 sm:p-3 md:p-4 z-30 pb-6 sm:pb-3 md:pb-4 pb-safe shadow-[0_-4px_20px_rgba(0,0,0,0.06)] dark:shadow-[0_-4px_25px_rgba(0,0,0,0.5)]">
+        <SmokeChatWrapper
+          variant="dock"
+          chatType={chat?.type}
+          className="shrink-0 w-full bg-[#FAF9FC]/95 dark:bg-[#0d0f12]/95 backdrop-blur-xl border-t border-gray-200/80 dark:border-gray-800/80 p-2 sm:p-3 md:p-4 z-30 pb-6 sm:pb-3 md:pb-4 pb-safe shadow-[0_-4px_20px_rgba(0,0,0,0.06)] dark:shadow-[0_-4px_25px_rgba(0,0,0,0.5)]"
+        >
           <form onSubmit={handleSend} className="w-full max-w-4xl mx-auto flex flex-col gap-2.5 relative transition-all duration-200">
             
             {/* Info Packet Card placed directly above the send button/input box */}
@@ -1341,16 +1402,18 @@ export default function TextChatPanel({
                     placeholder={
                       docType !== 'none'
                         ? ""
-                        : chat.type === 'voice'
-                          ? (voiceMode === 'single'
-                              ? t('studio.writeVoiceScriptPlaceholder')
-                              : t('chatui.dialoguePlaceholder', {
-                                  line1: `${speaker1Name || t('chatui.sampleName1')}: ${t('chatui.lineHello1')}`,
-                                  line2: `${speaker2Name || t('chatui.sampleName2')}: ${t('chatui.lineHello2')}`,
-                                }))
-                          : chat.type === 'text'
-                            ? t('chat.inputPlaceholder')
-                            : (chat.type === 'image' ? t('chatui.describeImage') : t('chatui.describeVideo'))
+                        : dynamicPlaceholder || (
+                            chat.type === 'voice'
+                              ? (voiceMode === 'single'
+                                  ? t('studio.writeVoiceScriptPlaceholder')
+                                  : t('chatui.dialoguePlaceholder', {
+                                      line1: `${speaker1Name || t('chatui.sampleName1')}: ${t('chatui.lineHello1')}`,
+                                      line2: `${speaker2Name || t('chatui.sampleName2')}: ${t('chatui.lineHello2')}`,
+                                    }))
+                              : chat.type === 'text'
+                                ? t('chat.inputPlaceholder')
+                                : (chat.type === 'image' ? t('chatui.describeImage') : t('chatui.describeVideo'))
+                          )
                     }
                     className="w-full bg-transparent border-none py-1 sm:py-2 text-gray-900 dark:text-white outline-none resize-none min-h-[34px] sm:min-h-[40px] max-h-[80px] sm:max-h-[120px] overflow-y-auto leading-normal px-1 sm:px-2 text-xs sm:text-sm focus:ring-0 transition-[height] duration-150 ease-out scrollbar-none my-auto"
                     rows={1}
@@ -1393,7 +1456,7 @@ export default function TextChatPanel({
               </div>
             </div>
           </form>
-        </div>
+        </SmokeChatWrapper>
       )}
 
       <BrandKitFormModal

@@ -5,6 +5,7 @@ import { useAppStore } from '../store';
 import { Project, ChatSession, ProjectClassification, getClassificationLabel } from '../types';
 import ProjectMemoryManager from '../components/ProjectMemoryManager';
 import NajeSpinner from '../components/NajeSpinner';
+import NajeThinking from '../components/NajeThinking';
 import najeEmptyProject from '../assets/icons/naje-empty-project.svg';
 import najeEmptyChat from '../assets/icons/naje-empty-chat.svg';
 import najeBrandMemory from '../assets/icons/naje-brand-memory.svg';
@@ -13,9 +14,11 @@ import najeDocument from '../assets/icons/naje-document.svg';
 import { 
   Plus, Folder, ArrowLeft, Download, FileText, 
   Sparkles, Image as ImageIcon, Film, Star, ExternalLink, Calendar, Compass, X, AlertCircle, Trash2, Pencil,
-  ChevronDown, Layout, Mic2, MessageSquare, MessageSquareText, Code2, BookOpen, Bot, Clapperboard, Palette, ArrowUpRight
+  ChevronDown, Layout, Mic2, MessageSquare, MessageSquareText, Code2, BookOpen, Bot, Clapperboard, Palette, ArrowUpRight,
+  ChevronRight, Loader2
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
+import { cn } from '../lib/utils';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import { exportProjectPDF } from '../utils/pdfExport';
@@ -23,6 +26,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import { toast } from '../toastStore';
 import { getDoc as getLocalDoc } from '../lib/idb';
 import { useI18n } from '../i18n';
+import WelcomeStudioDeck from '../components/WelcomeStudioDeck';
+import { getChatTypeConfig } from '../lib/chatTypeConfig';
 
 function ProjectMediaThumb({ m }: { m: any }) {
   const { t } = useI18n();
@@ -114,6 +119,7 @@ export default function Projects() {
   const { t, isRtl } = useI18n();
   const navigate = useNavigate();
   const [enteringStudio, setEnteringStudio] = useState(false);
+  const [loadingStudio, setLoadingStudio] = useState<string | null>(null);
   
   const [projects, setProjects] = useState<Project[]>([]);
   const [chats, setChats] = useState<ChatSession[]>([]);
@@ -416,25 +422,31 @@ export default function Projects() {
     }
   }, [loading, activeProjectId, projects, setActiveProjectId]);
 
+  useEffect(() => {
+    setLoadingStudio(null);
+  }, []);
+
+  const handleStudioClick = (path: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    if (loadingStudio) return;
+    setLoadingStudio(path);
+    navigate(path);
+  };
+
   if (loading) {
     return (
       <div className="flex-1 flex items-center justify-center bg-naje-canvas">
-        <div className="flex flex-col items-center gap-3">
-          <NajeSpinner className="w-8 h-8" />
-          <span className="text-gray-800 dark:text-gray-400 text-sm font-medium">{t('shell.projects.loadingStudio')}</span>
-        </div>
+        <NajeThinking size={56} />
       </div>
     );
   }
-
-
 
   const activeProject = projects.find(p => p.id === activeProjectId);
   const activeProjectChats = chats.filter(c => c.projectId === activeProjectId);
   const latestCreations = allMediaMessages.slice(0, 4);
 
   return (
-    <div className="flex-1 overflow-y-auto p-6 sm:p-8 pb-32 sm:pb-8 max-w-[760px] mx-auto w-full font-sans scrollbar-thin">
+    <div className="flex-1 overflow-y-auto p-6 sm:p-8 pb-32 sm:pb-8 max-w-5xl mx-auto w-full font-sans scrollbar-thin">
       
       <AnimatePresence>
         {(!activeProjectId || !activeProject) ? (
@@ -478,122 +490,67 @@ export default function Projects() {
 
             {/* Quick Creation Shortcuts Grid */}
             <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-4 xl:grid-cols-8 gap-3">
-              <button
-                onClick={() => handleDirectCreateChat('text')}
-                disabled={directCreatingType !== null}
-                className="p-3.5 bg-white dark:bg-[#11141c] hover:bg-purple-50/50 dark:hover:bg-[#181d2a] border border-slate-200/80 dark:border-slate-800 rounded-2xl flex flex-col items-center text-center gap-2 transition cursor-pointer group shadow-sm hover:shadow-md hover:border-purple-300 dark:hover:border-purple-800 active:scale-95 disabled:opacity-60"
-                title={t('shell.projects.openText')}
-              >
-                <div className="w-9 h-9 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center group-hover:scale-110 transition-transform">
-                  {directCreatingType === 'text' ? <NajeSpinner className="w-4 h-4" /> : <MessageSquare className="w-4 h-4" />}
-                </div>
-                <span className="text-xs font-extrabold text-slate-900 dark:text-white">{t('shell.projects.textChat')}</span>
-              </button>
-
-              <button
-                onClick={() => handleDirectCreateChat('voice')}
-                disabled={directCreatingType !== null}
-                className="p-3.5 bg-white dark:bg-[#11141c] hover:bg-emerald-50/50 dark:hover:bg-[#12221b] border border-emerald-500/30 dark:border-emerald-500/20 rounded-2xl flex flex-col items-center text-center gap-2 transition cursor-pointer group shadow-sm hover:shadow-md hover:border-emerald-400 active:scale-95 disabled:opacity-60"
-                title={t('shell.projects.openVoice')}
-              >
-                <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center group-hover:scale-110 transition-transform relative">
-                  {directCreatingType === 'voice' ? (
-                    <NajeSpinner className="w-4 h-4" />
-                  ) : (
-                    <>
-                      <Mic2 className="w-4 h-4" />
-                      <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-                    </>
-                  )}
-                </div>
-                <span className="text-xs font-extrabold text-slate-900 dark:text-white flex items-center gap-1">
-                  <span>{t('shell.projects.voiceGen')}</span>
-                </span>
-              </button>
-
-              <button
-                onClick={() => handleDirectCreateChat('image')}
-                disabled={directCreatingType !== null}
-                className="p-3.5 bg-white dark:bg-[#11141c] hover:bg-pink-50/50 dark:hover:bg-[#22131e] border border-slate-200/80 dark:border-slate-800 rounded-2xl flex flex-col items-center text-center gap-2 transition cursor-pointer group shadow-sm hover:shadow-md hover:border-pink-300 dark:hover:border-pink-800 active:scale-95 disabled:opacity-60"
-                title={t('shell.projects.openImage')}
-              >
-                <div className="w-9 h-9 rounded-xl bg-pink-500/10 text-pink-600 dark:text-pink-400 flex items-center justify-center group-hover:scale-110 transition-transform">
-                  {directCreatingType === 'image' ? <NajeSpinner className="w-4 h-4" /> : <ImageIcon className="w-4 h-4" />}
-                </div>
-                <span className="text-xs font-extrabold text-slate-900 dark:text-white">{t('shell.projects.imageGen')}</span>
-              </button>
-
-              <button
-                onClick={() => handleDirectCreateChat('video')}
-                disabled={directCreatingType !== null}
-                className="p-3.5 bg-white dark:bg-[#11141c] hover:bg-sky-50/50 dark:hover:bg-[#111f2c] border border-slate-200/80 dark:border-slate-800 rounded-2xl flex flex-col items-center text-center gap-2 transition cursor-pointer group shadow-sm hover:shadow-md hover:border-sky-300 dark:hover:border-sky-800 active:scale-95 disabled:opacity-60"
-                title={t('shell.projects.openVideo')}
-              >
-                <div className="w-9 h-9 rounded-xl bg-sky-500/10 text-sky-400 flex items-center justify-center group-hover:scale-110 transition-transform">
-                  {directCreatingType === 'video' ? <NajeSpinner className="w-4 h-4" /> : <Film className="w-4 h-4" />}
-                </div>
-                <span className="text-xs font-extrabold text-slate-900 dark:text-white">{t('shell.projects.videoGen')}</span>
-              </button>
-
-              <button
-                onClick={() => handleDirectCreateChat('ui')}
-                disabled={directCreatingType !== null}
-                className="p-3.5 bg-white dark:bg-[#11141c] hover:bg-amber-50/50 dark:hover:bg-[#251d12] border border-slate-200/80 dark:border-slate-800 rounded-2xl flex flex-col items-center text-center gap-2 transition cursor-pointer group shadow-sm hover:shadow-md hover:border-amber-300 dark:hover:border-amber-800 active:scale-95 disabled:opacity-60"
-                title={t('shell.projects.openUi')}
-              >
-                <div className="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center group-hover:scale-110 transition-transform">
-                  {directCreatingType === 'ui' ? <NajeSpinner className="w-4 h-4" /> : <Layout className="w-4 h-4" />}
-                </div>
-                <span className="text-xs font-extrabold text-slate-900 dark:text-white">{t('shell.projects.uiDesign')}</span>
-              </button>
-
-              <button
-                onClick={() => handleDirectCreateChat('najeDeveloper')}
-                disabled={directCreatingType !== null}
-                className="p-3.5 bg-white dark:bg-[#11141c] hover:bg-sky-50/50 dark:hover:bg-[#0c1e33] border border-sky-500/30 dark:border-sky-500/20 rounded-2xl flex flex-col items-center text-center gap-2 transition cursor-pointer group shadow-sm hover:shadow-md hover:border-sky-400 active:scale-95 disabled:opacity-60"
-                title={t('shell.projects.openDev')}
-              >
-                <div className="w-9 h-9 rounded-xl bg-sky-500/10 text-sky-500 flex items-center justify-center group-hover:scale-110 transition-transform">
-                  {directCreatingType === 'najeDeveloper' ? <NajeSpinner className="w-4 h-4" /> : <Code2 className="w-4 h-4" />}
-                </div>
-                <span className="text-xs font-extrabold text-slate-900 dark:text-white">{t('nav.najeDeveloper')}</span>
-              </button>
-
-              <button
-                onClick={() => handleDirectCreateChat('najeSource')}
-                disabled={directCreatingType !== null}
-                className="p-3.5 bg-white dark:bg-[#11141c] hover:bg-emerald-50/50 dark:hover:bg-[#0d231a] border border-emerald-500/30 dark:border-emerald-500/20 rounded-2xl flex flex-col items-center text-center gap-2 transition cursor-pointer group shadow-sm hover:shadow-md hover:border-emerald-400 active:scale-95 disabled:opacity-60"
-                title={t('shell.projects.openSource')}
-              >
-                <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center group-hover:scale-110 transition-transform">
-                  {directCreatingType === 'najeSource' ? <NajeSpinner className="w-4 h-4" /> : <BookOpen className="w-4 h-4" />}
-                </div>
-                <span className="text-xs font-extrabold text-slate-900 dark:text-white">{t('nav.najeSource')}</span>
-              </button>
-
-              <button
-                onClick={() => handleDirectCreateChat('agent')}
-                disabled={directCreatingType !== null}
-                className="p-3.5 bg-white dark:bg-[#11141c] hover:bg-purple-50/50 dark:hover:bg-[#1f1330] border border-purple-500/30 dark:border-purple-500/20 rounded-2xl flex flex-col items-center text-center gap-2 transition cursor-pointer group shadow-sm hover:shadow-md hover:border-purple-400 active:scale-95 disabled:opacity-60"
-                title={t('shell.projects.openAgent')}
-              >
-                <div className="w-9 h-9 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center group-hover:scale-110 transition-transform">
-                  {directCreatingType === 'agent' ? <NajeSpinner className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
-                </div>
-                <span className="text-xs font-extrabold text-slate-900 dark:text-white">{t('shell.projects.agentName')}</span>
-              </button>
-
-              <button
-                onClick={() => handleDirectCreateChat('najePrompt')}
-                disabled={directCreatingType !== null}
-                className="p-3.5 bg-white dark:bg-[#11141c] hover:bg-violet-50/50 dark:hover:bg-[#1b1528] border border-violet-500/30 dark:border-violet-500/20 rounded-2xl flex flex-col items-center text-center gap-2 transition cursor-pointer group shadow-sm hover:shadow-md hover:border-violet-400 active:scale-95 disabled:opacity-60"
-                title={t('shell.projects.openPrompt')}
-              >
-                <div className="w-9 h-9 rounded-xl bg-violet-500/10 text-violet-500 flex items-center justify-center group-hover:scale-110 transition-transform">
-                  {directCreatingType === 'najePrompt' ? <NajeSpinner className="w-4 h-4" /> : <MessageSquareText className="w-4 h-4" />}
-                </div>
-                <span className="text-xs font-extrabold text-slate-900 dark:text-white">{t('nav.najePrompt')}</span>
-              </button>
+              {([
+                { type: 'text', title: t('shell.projects.textChat'), tooltip: t('shell.projects.openText'), icon: MessageSquare },
+                { type: 'voice', title: t('shell.projects.voiceGen'), tooltip: t('shell.projects.openVoice'), icon: Mic2, isVoice: true },
+                { type: 'image', title: t('shell.projects.imageGen'), tooltip: t('shell.projects.openImage'), icon: ImageIcon },
+                { type: 'video', title: t('shell.projects.videoGen'), tooltip: t('shell.projects.openVideo'), icon: Film },
+                { type: 'ui', title: t('shell.projects.uiDesign'), tooltip: t('shell.projects.openUi'), icon: Layout },
+                { type: 'najeDeveloper', title: t('nav.najeDeveloper'), tooltip: t('shell.projects.openDev'), icon: Code2 },
+                { type: 'najeSource', title: t('nav.najeSource'), tooltip: t('shell.projects.openSource'), icon: BookOpen },
+                { type: 'agent', title: t('shell.projects.agentName'), tooltip: t('shell.projects.openAgent'), icon: Bot },
+                { type: 'najePrompt', title: t('nav.najePrompt'), tooltip: t('shell.projects.openPrompt'), icon: MessageSquareText },
+              ] as const).map(item => {
+                const meta = getChatTypeConfig(item.type);
+                const IconComponent = item.icon;
+                const isCreating = directCreatingType === item.type;
+                return (
+                  <button
+                    key={item.type}
+                    onClick={() => handleDirectCreateChat(item.type as any)}
+                    disabled={directCreatingType !== null}
+                    className="p-3.5 bg-white dark:bg-[#11141c] rounded-2xl flex flex-col items-center text-center gap-2 transition-all cursor-pointer group shadow-xs hover:shadow-md active:scale-95 disabled:opacity-60 border"
+                    style={{
+                      borderColor: `${meta.color}30`
+                    }}
+                    onMouseEnter={(e) => {
+                      (e.currentTarget as HTMLElement).style.borderColor = meta.color;
+                      (e.currentTarget as HTMLElement).style.boxShadow = `0 8px 20px -4px ${meta.color}30`;
+                    }}
+                    onMouseLeave={(e) => {
+                      (e.currentTarget as HTMLElement).style.borderColor = `${meta.color}30`;
+                      (e.currentTarget as HTMLElement).style.boxShadow = '';
+                    }}
+                    title={item.tooltip}
+                  >
+                    <div 
+                      className="w-9 h-9 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform relative border shadow-2xs"
+                      style={{
+                        backgroundColor: meta.bgTint,
+                        color: meta.color,
+                        borderColor: meta.borderTint
+                      }}
+                    >
+                      {isCreating ? (
+                        <NajeSpinner className="w-4 h-4" />
+                      ) : (
+                        <>
+                          <IconComponent className="w-4 h-4" style={{ color: meta.color }} />
+                          {'isVoice' in item && item.isVoice && (
+                            <span 
+                              className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full animate-pulse" 
+                              style={{ backgroundColor: meta.color }}
+                            />
+                          )}
+                        </>
+                      )}
+                    </div>
+                    <span className="text-xs font-black text-slate-900 dark:text-white flex items-center gap-1">
+                      <span>{item.title}</span>
+                    </span>
+                  </button>
+                );
+              })}
             </div>
 
             {/* Specialized Naje Studios Suite */}
@@ -608,19 +565,26 @@ export default function Projects() {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                 <Link
                   to="/naje-ad"
-                  className="group p-4 bg-white/70 dark:bg-slate-900/60 hover:bg-sky-50/50 dark:hover:bg-sky-950/20 border border-slate-200/80 dark:border-slate-800 hover:border-sky-500/40 rounded-2xl transition duration-200 shadow-sm flex flex-col justify-between"
+                  onClick={(e) => handleStudioClick('/naje-ad', e)}
+                  className={cn(
+                    "group p-4 bg-white/70 dark:bg-slate-900/60 hover:bg-sky-50/50 dark:hover:bg-sky-950/20 border border-slate-200/80 dark:border-slate-800 hover:border-sky-500/40 rounded-2xl transition duration-200 shadow-sm flex flex-col justify-between cursor-pointer active:scale-[0.98]",
+                    loadingStudio === '/naje-ad' && "ring-2 ring-sky-500/50 border-sky-500/60 bg-sky-50/40 dark:bg-sky-950/30"
+                  )}
                 >
                   <div className="flex items-start justify-between">
                     <div className="w-10 h-10 rounded-xl bg-sky-500/10 text-sky-600 dark:text-sky-400 flex items-center justify-center group-hover:scale-105 transition-transform">
                       <Clapperboard className="w-5 h-5" />
                     </div>
-                    <ArrowUpRight className="w-4 h-4 text-slate-600 dark:text-slate-400 group-hover:text-sky-500 transition-colors" />
+                    <div className="w-7 h-7 rounded-xl flex items-center justify-center bg-slate-100/70 dark:bg-slate-800/70 group-hover:bg-sky-500/10 transition-colors">
+                      {loadingStudio === '/naje-ad' ? (
+                        <Loader2 className="w-4 h-4 text-sky-500 animate-spin" />
+                      ) : (
+                        <ChevronRight className="w-4.5 h-4.5 text-slate-500 dark:text-slate-400 group-hover:text-sky-500 transition-all duration-200 rtl:rotate-180 group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5" />
+                      )}
+                    </div>
                   </div>
                   <div className="mt-3">
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-xs font-black text-slate-900 dark:text-white">{t('shell.projects.adEngine')}</h3>
-                      <span className="text-[9px] font-bold bg-sky-500/10 text-sky-700 dark:text-sky-400 px-1.5 py-0.5 rounded-full">Omni 1.1</span>
-                    </div>
+                    <h3 className="text-xs font-black text-slate-900 dark:text-white">{t('shell.projects.adEngine')}</h3>
                     <p className="text-[11px] text-slate-700 dark:text-slate-400 mt-1 leading-relaxed">
                       {t('shell.projects.adEngineDesc')}
                     </p>
@@ -629,19 +593,26 @@ export default function Projects() {
 
                 <Link
                   to="/naje-ident"
-                  className="group p-4 bg-white/70 dark:bg-slate-900/60 hover:bg-amber-50/50 dark:hover:bg-amber-950/20 border border-slate-200/80 dark:border-slate-800 hover:border-amber-500/40 rounded-2xl transition duration-200 shadow-sm flex flex-col justify-between"
+                  onClick={(e) => handleStudioClick('/naje-ident', e)}
+                  className={cn(
+                    "group p-4 bg-white/70 dark:bg-slate-900/60 hover:bg-amber-50/50 dark:hover:bg-amber-950/20 border border-slate-200/80 dark:border-slate-800 hover:border-amber-500/40 rounded-2xl transition duration-200 shadow-sm flex flex-col justify-between cursor-pointer active:scale-[0.98]",
+                    loadingStudio === '/naje-ident' && "ring-2 ring-amber-500/50 border-amber-500/60 bg-amber-50/40 dark:bg-amber-950/30"
+                  )}
                 >
                   <div className="flex items-start justify-between">
                     <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center group-hover:scale-105 transition-transform">
                       <Film className="w-5 h-5" />
                     </div>
-                    <ArrowUpRight className="w-4 h-4 text-slate-600 dark:text-slate-400 group-hover:text-amber-500 transition-colors" />
+                    <div className="w-7 h-7 rounded-xl flex items-center justify-center bg-slate-100/70 dark:bg-slate-800/70 group-hover:bg-amber-500/10 transition-colors">
+                      {loadingStudio === '/naje-ident' ? (
+                        <Loader2 className="w-4 h-4 text-amber-500 animate-spin" />
+                      ) : (
+                        <ChevronRight className="w-4.5 h-4.5 text-slate-500 dark:text-slate-400 group-hover:text-amber-500 transition-all duration-200 rtl:rotate-180 group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5" />
+                      )}
+                    </div>
                   </div>
                   <div className="mt-3">
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-xs font-black text-slate-900 dark:text-white">{t('shell.projects.motionStudio')}</h3>
-                      <span className="text-[9px] font-bold bg-amber-500/10 text-amber-700 dark:text-amber-400 px-1.5 py-0.5 rounded-full">{t('shell.projects.introOutro')}</span>
-                    </div>
+                    <h3 className="text-xs font-black text-slate-900 dark:text-white">{t('shell.projects.motionStudio')}</h3>
                     <p className="text-[11px] text-slate-700 dark:text-slate-400 mt-1 leading-relaxed">
                       {t('shell.projects.motionDesc')}
                     </p>
@@ -650,19 +621,26 @@ export default function Projects() {
 
                 <Link
                   to="/naje-cv"
-                  className="group p-4 bg-white/70 dark:bg-slate-900/60 hover:bg-indigo-50/50 dark:hover:bg-indigo-950/20 border border-slate-200/80 dark:border-slate-800 hover:border-indigo-500/40 rounded-2xl transition duration-200 shadow-sm flex flex-col justify-between"
+                  onClick={(e) => handleStudioClick('/naje-cv', e)}
+                  className={cn(
+                    "group p-4 bg-white/70 dark:bg-slate-900/60 hover:bg-indigo-50/50 dark:hover:bg-indigo-950/20 border border-slate-200/80 dark:border-slate-800 hover:border-indigo-500/40 rounded-2xl transition duration-200 shadow-sm flex flex-col justify-between cursor-pointer active:scale-[0.98]",
+                    loadingStudio === '/naje-cv' && "ring-2 ring-indigo-500/50 border-indigo-500/60 bg-indigo-50/40 dark:bg-indigo-950/30"
+                  )}
                 >
                   <div className="flex items-start justify-between">
                     <div className="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center group-hover:scale-105 transition-transform">
                       <FileText className="w-5 h-5" />
                     </div>
-                    <ArrowUpRight className="w-4 h-4 text-slate-600 dark:text-slate-400 group-hover:text-indigo-500 transition-colors" />
+                    <div className="w-7 h-7 rounded-xl flex items-center justify-center bg-slate-100/70 dark:bg-slate-800/70 group-hover:bg-indigo-500/10 transition-colors">
+                      {loadingStudio === '/naje-cv' ? (
+                        <Loader2 className="w-4 h-4 text-indigo-500 animate-spin" />
+                      ) : (
+                        <ChevronRight className="w-4.5 h-4.5 text-slate-500 dark:text-slate-400 group-hover:text-indigo-500 transition-all duration-200 rtl:rotate-180 group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5" />
+                      )}
+                    </div>
                   </div>
                   <div className="mt-3">
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-xs font-black text-slate-900 dark:text-white">{t('shell.projects.cvTitle')}</h3>
-                      <span className="text-[9px] font-bold bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 px-1.5 py-0.5 rounded-full">{t('shell.projects.atsGulf')}</span>
-                    </div>
+                    <h3 className="text-xs font-black text-slate-900 dark:text-white">{t('shell.projects.cvTitle')}</h3>
                     <p className="text-[11px] text-slate-700 dark:text-slate-400 mt-1 leading-relaxed">
                       {t('shell.projects.cvDesc')}
                     </p>
@@ -671,19 +649,26 @@ export default function Projects() {
 
                 <Link
                   to="/creative-studio"
-                  className="group p-4 bg-white/70 dark:bg-slate-900/60 hover:bg-purple-50/50 dark:hover:bg-purple-950/20 border border-slate-200/80 dark:border-slate-800 hover:border-purple-500/40 rounded-2xl transition duration-200 shadow-sm flex flex-col justify-between"
+                  onClick={(e) => handleStudioClick('/creative-studio', e)}
+                  className={cn(
+                    "group p-4 bg-white/70 dark:bg-slate-900/60 hover:bg-purple-50/50 dark:hover:bg-purple-950/20 border border-slate-200/80 dark:border-slate-800 hover:border-purple-500/40 rounded-2xl transition duration-200 shadow-sm flex flex-col justify-between cursor-pointer active:scale-[0.98]",
+                    loadingStudio === '/creative-studio' && "ring-2 ring-purple-500/50 border-purple-500/60 bg-purple-50/40 dark:bg-purple-950/30"
+                  )}
                 >
                   <div className="flex items-start justify-between">
                     <div className="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center group-hover:scale-105 transition-transform">
                       <Palette className="w-5 h-5" />
                     </div>
-                    <ArrowUpRight className="w-4 h-4 text-slate-600 dark:text-slate-400 group-hover:text-purple-500 transition-colors" />
+                    <div className="w-7 h-7 rounded-xl flex items-center justify-center bg-slate-100/70 dark:bg-slate-800/70 group-hover:bg-purple-500/10 transition-colors">
+                      {loadingStudio === '/creative-studio' ? (
+                        <Loader2 className="w-4 h-4 text-purple-500 animate-spin" />
+                      ) : (
+                        <ChevronRight className="w-4.5 h-4.5 text-slate-500 dark:text-slate-400 group-hover:text-purple-500 transition-all duration-200 rtl:rotate-180 group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5" />
+                      )}
+                    </div>
                   </div>
                   <div className="mt-3">
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-xs font-black text-slate-900 dark:text-white">{t('shell.projects.creativeTitle')}</h3>
-                      <span className="text-[9px] font-bold bg-purple-500/10 text-purple-700 dark:text-purple-400 px-1.5 py-0.5 rounded-full">Brand Studio</span>
-                    </div>
+                    <h3 className="text-xs font-black text-slate-900 dark:text-white">{t('shell.projects.creativeTitle')}</h3>
                     <p className="text-[11px] text-slate-700 dark:text-slate-400 mt-1 leading-relaxed">
                       {t('shell.projects.creativeDesc')}
                     </p>
@@ -691,6 +676,9 @@ export default function Projects() {
                 </Link>
               </div>
             </div>
+
+            {/* Welcome Studio Deck - placed below chats & studios */}
+            <WelcomeStudioDeck />
 
             {/* Quick stats panel */}
             <div className="grid grid-cols-3 gap-4">

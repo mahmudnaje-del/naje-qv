@@ -55,9 +55,8 @@ export default function App() {
 
   if (loadingAuth) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-3 bg-naje-canvas" dir={isRtl ? 'rtl' : 'ltr'}>
-        <NajeThinking size={56} />
-        <span className="text-xs font-black text-indigo-600 dark:text-indigo-300">{t('chat.thinkingStatus') || 'ناجي يفكّر…'}</span>
+      <div className="min-h-screen flex items-center justify-center bg-naje-canvas" dir={isRtl ? 'rtl' : 'ltr'}>
+        <NajeThinking size={64} />
       </div>
     );
   }

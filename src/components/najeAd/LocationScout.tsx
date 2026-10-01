@@ -141,7 +141,7 @@ export function LocationScout({
           centerIndex={centerIndex}
           onCenterIndexChange={setCenterIndex}
           onUserSwipe={onUserSwipe}
-          showHand={showHint && centerIndex === 0}
+          showHand={false}
           handLabel={t('adui.swipePlaces')}
           frameClassName="h-[300px] sm:h-[340px]"
           renderCard={(c, isCenter) => {
@@ -166,10 +166,14 @@ export function LocationScout({
                     {customPreview ? (
                       <img src={customPreview} alt={t('adui.placeAlt')} className="h-full w-full object-cover" />
                     ) : (
-                      <>
-                        <Upload className="mb-1 h-7 w-7 text-[var(--naje-accent)]" />
-                        <span className="text-[11px] font-bold text-white/70">{t('adui.uploadPlace')}</span>
-                      </>
+                      <div className="flex flex-col items-center justify-center text-center px-2.5 py-2 gap-2">
+                        <div className="w-10 h-10 rounded-2xl bg-[var(--naje-accent)]/15 flex items-center justify-center text-[var(--naje-accent)] shadow-sm">
+                          <Upload className="h-5 w-5" />
+                        </div>
+                        <span className="text-[11.5px] font-black text-white leading-snug">
+                          أرفع موقعك او مرر لمشاهدة مواقع ناجي
+                        </span>
+                      </div>
                     )}
                   </div>
                 </div>

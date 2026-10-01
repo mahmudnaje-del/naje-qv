@@ -22,6 +22,7 @@ import {
   mergeBeatSlots,
 } from '../lib/omniAd';
 import FeaturePaywallModal from '../components/FeaturePaywallModal';
+import NajeCreditIcon from '../components/NajeCreditIcon';
 import { CastingRoom } from '../components/najeAd/CastingRoom';
 import { LocationScout } from '../components/najeAd/LocationScout';
 import { StyleGallery } from '../components/najeAd/StyleGallery';
@@ -30,6 +31,8 @@ import { ProControlGrid } from '../components/najeAd/ProControlGrid';
 import NajeThinking from '../components/NajeThinking';
 import StudioBootSplash from '../components/StudioBootSplash';
 import { useI18n, translate } from '../i18n';
+import SmokeChatWrapper from '../components/chat/SmokeChatWrapper';
+import { useLivePlaceholder, AD_STUDIO_PHRASES } from '../hooks/useLivePlaceholder';
 
 function stripDataUrl(dataUrl: string | null | undefined): string | undefined {
   if (!dataUrl) return undefined;
@@ -77,6 +80,7 @@ export default function NajeAd() {
   const [beatInterval, setBeatInterval] = useState<BeatInterval | null>(null);
   const [beatSlots, setBeatSlots] = useState<BeatSlot[]>([]);
   const [prompt, setPrompt] = useState('');
+  const dynamicPlaceholder = useLivePlaceholder(AD_STUDIO_PHRASES);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeJobId, setActiveJobId] = useState<string | null>(null);
@@ -276,23 +280,11 @@ export default function NajeAd() {
       <StudioBootSplash dark />
       <FeaturePaywallModal isOpen={showPaywall} onClose={() => setShowPaywall(false)} feature="najeAd" />
       <div className="mx-auto max-w-6xl space-y-3 sm:space-y-5">
-        <header className="sticky top-0 z-20 rounded-2xl border border-white/8 bg-[radial-gradient(1200px_circle_at_100%_-20%,rgba(212,165,116,0.22),transparent_45%),linear-gradient(180deg,#16120e,#0b0c10)] p-3 shadow-2xl sm:rounded-[28px] sm:p-5">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <div className="mb-1.5 inline-flex items-center gap-2 rounded-full border border-[var(--naje-accent)]/30 bg-[var(--naje-accent)]/10 px-2.5 py-0.5 text-[10px] font-black tracking-[0.14em] text-[var(--naje-accent-2)]">
-                <Clapperboard className="h-3.5 w-3.5" /> NAJE AD · {NAJE_VIDEO_PRO_LABEL}
-              </div>
-              <h1 className="pt-0.5 text-xl font-black leading-snug tracking-tight text-white sm:text-2xl">{t('studio.adStudio')}</h1>
-              <p className="mt-1 hidden max-w-xl text-xs leading-relaxed text-white/50 sm:block">
-                {t('adui.subtitle', { label: NAJE_VIDEO_PRO_LABEL })}
-              </p>
-            </div>
-            <div className="rounded-2xl border border-white/10 bg-black/30 px-3 py-1.5 text-start sm:px-4 sm:py-2">
-              <div className="text-[10px] text-white/40">{t('studio.balance')}</div>
-              <div className="font-mono text-base font-black text-[var(--naje-accent-2)] sm:text-lg">{t('adui.pointsValue', { n: (user?.balance ?? 0).toLocaleString() })}</div>
-            </div>
-          </div>
-        </header>
+        <div className="flex flex-wrap items-center justify-between gap-2 px-1.5 py-1">
+          <p className="text-xs text-white/60 font-medium leading-relaxed">
+            {t('adui.subtitle', { label: NAJE_VIDEO_PRO_LABEL })}
+          </p>
+        </div>
 
         {errorMessage && (
           <div className="flex items-center justify-between gap-3 rounded-2xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-xs text-rose-200">
@@ -425,13 +417,14 @@ export default function NajeAd() {
           resolutionMultiplier={resMul}
         />
 
+        <SmokeChatWrapper className="w-full" chatType="video">
         <form onSubmit={handleGenerate} className="space-y-3 rounded-2xl border border-white/8 bg-[#0e1016] p-3 sm:rounded-[28px] sm:p-5">
           <label className="block text-xs font-black text-white">{t('adui.scriptLabel')}</label>
           <textarea
             rows={4}
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
-            placeholder={t('adui.scriptPlaceholder')}
+            placeholder={dynamicPlaceholder || t('adui.scriptPlaceholder')}
             className="w-full resize-none rounded-2xl border border-white/10 bg-black/40 p-4 text-sm text-white placeholder:text-white/30 focus:border-[var(--naje-accent)] focus:outline-none"
           />
           <button
@@ -443,6 +436,7 @@ export default function NajeAd() {
             {isSubmitting ? stepLabel || t('adui.producing') : t('adui.produceCta', { points })}
           </button>
         </form>
+        </SmokeChatWrapper>
 
         {(isSubmitting || videoUrl) && (
           <section className="space-y-3 rounded-2xl border border-white/8 bg-naje-elevated p-3 sm:rounded-[28px] sm:p-4">

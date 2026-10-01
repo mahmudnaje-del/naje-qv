@@ -5,6 +5,7 @@ import { auth } from '../firebase';
 import { toast } from '../toastStore';
 import { ShieldCheck, Sparkles, CheckCircle, AlertCircle, RefreshCw, CreditCard, Lock, Zap } from 'lucide-react';
 import { NajeSpinner } from './NajeSpinner';
+import NajeCreditIcon from './NajeCreditIcon';
 import {
   VisaBadge,
   MastercardBadge,
@@ -330,10 +331,13 @@ export const PayPalRechargeSection: React.FC = () => {
                 )}
 
                 <div>
-                  <div className="flex items-baseline justify-between mb-1">
-                    <span className="text-2xl font-extrabold text-white tracking-tight">
-                      {formatNumber(pkg.points)}
-                    </span>
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-1.5">
+                      <NajeCreditIcon className="w-5 h-5 shrink-0" />
+                      <span className="text-2xl font-extrabold text-white tracking-tight">
+                        {formatNumber(pkg.points)}
+                      </span>
+                    </div>
                     <span className="text-xs font-semibold text-amber-400">
                       {t('common.pointsShort') || 'نقطة'}
                     </span>

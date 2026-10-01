@@ -68,4 +68,5 @@ export { default as najeTierMax } from './naje-tier-max.svg';
 export { default as najeToolkit } from './naje-toolkit.svg';
 export { default as najeUploadAttach } from './naje-upload-attach.svg';
 export { default as najeWalletCoins } from './naje-wallet-coins.svg';
+export { default as najeCreditCoins } from './naje-wallet-coins.svg';
 export { default as najeWarning } from './naje-warning.svg';

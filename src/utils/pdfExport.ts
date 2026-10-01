@@ -46,7 +46,7 @@ const sanitizeOklchInClonedDoc = (clonedDoc: Document) => {
 
 // Helper to format date
 const formatDate = (timestamp: number) => {
-  return new Date(timestamp).toLocaleString('ar-EG', {
+  return new Date(timestamp).toLocaleString('ar-u-nu-latn', {
     year: 'numeric',
     month: 'long',
     day: 'numeric',

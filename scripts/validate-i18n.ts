@@ -37,6 +37,7 @@ function main() {
   }
 
   console.log(lines.join('\n'));
+  process.exit(0);
 }
 
 main();

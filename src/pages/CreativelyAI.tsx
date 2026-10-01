@@ -18,6 +18,7 @@ import { auth } from "../firebase";
 import { formatProfessionalError } from "../utils/errorFormatter";
 import NajeErrorCard from "../components/NajeErrorCard";
 import FeaturePaywallModal from "../components/FeaturePaywallModal";
+import NajeCreditIcon from "../components/NajeCreditIcon";
 import { hasFeatureAccess } from "../lib/featureAccess";
 import { useI18n } from "../i18n";
 
@@ -3116,12 +3117,15 @@ if (currentScreen === 'welcome') {
 
           <div className="mt-4 flex flex-col sm:flex-row items-center justify-between gap-4 w-full bg-slate-900/80 border border-amber-500/30 p-4 rounded-xl">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center text-amber-400 font-bold">
-                <Sparkles className="w-5 h-5" />
+              <div className="w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center p-2">
+                <NajeCreditIcon className="w-full h-full object-contain" />
               </div>
               <div>
                 <p className="text-xs text-slate-400">{t('creative.balanceLabel')}</p>
-                <p className="text-lg font-extrabold text-amber-400">{t('creative.pointsValue', { n: balance.toFixed(2) })}</p>
+                <p className="text-lg font-extrabold text-amber-400 flex items-center gap-1.5">
+                  <NajeCreditIcon className="w-4 h-4 shrink-0" />
+                  <span>{t('creative.pointsValue', { n: balance.toFixed(2) })}</span>
+                </p>
               </div>
             </div>
             <p className="text-xs text-slate-300 text-center sm:text-start">{t('creative.pointsAuto')}</p>

@@ -26,6 +26,7 @@ import {
   type MotionKind,
 } from '../lib/motionStudio';
 import FeaturePaywallModal from '../components/FeaturePaywallModal';
+import NajeCreditIcon from '../components/NajeCreditIcon';
 import NajeThinking from '../components/NajeThinking';
 import StudioBootSplash from '../components/StudioBootSplash';
 import { BestPracticeHints } from '../components/najeMotion/BestPracticeHints';
@@ -279,10 +280,13 @@ export default function NajeIdent() {
         {showHero ? (
           <>
             <div className="flex justify-end">
-              <div className="rounded-2xl border border-[#8ec8ff]/18 bg-black/30 px-3 py-1.5 text-end sm:px-4 sm:py-2">
-                <div className="text-[10px] text-[#93a0b5]">{t('motion.page.balance')}</div>
-                <div className="font-mono text-base font-black text-[#ffb020] sm:text-lg">
-                  {formatNumber(user?.balance ?? 0)} {t('common.pointsShort')}
+              <div className="rounded-2xl border border-[#8ec8ff]/18 bg-black/30 px-3 py-1.5 text-end sm:px-4 sm:py-2 flex items-center gap-2.5">
+                <NajeCreditIcon className="w-5 h-5 shrink-0" />
+                <div>
+                  <div className="text-[10px] text-[#93a0b5]">{t('motion.page.balance')}</div>
+                  <div className="font-mono text-base font-black text-[#ffb020] sm:text-lg">
+                    {formatNumber(user?.balance ?? 0)} {t('common.pointsShort')}
+                  </div>
                 </div>
               </div>
             </div>
@@ -314,10 +318,13 @@ export default function NajeIdent() {
                   <p className="mt-1 max-w-xl text-xs leading-relaxed text-[#93a0b5]">{t('motion.page.subtitle')}</p>
                   <p className="mt-1.5 text-[11px] font-bold text-[#8ec8ff]">{t('motion.page.tagline')}</p>
                 </div>
-                <div className="rounded-2xl border border-[#8ec8ff]/18 bg-black/30 px-3 py-1.5 text-end sm:px-4 sm:py-2">
-                  <div className="text-[10px] text-[#93a0b5]">{t('motion.page.balance')}</div>
-                  <div className="font-mono text-base font-black text-[#ffb020] sm:text-lg">
-                    {formatNumber(user?.balance ?? 0)} {t('common.pointsShort')}
+                <div className="rounded-2xl border border-[#8ec8ff]/18 bg-black/30 px-3 py-1.5 text-end sm:px-4 sm:py-2 flex items-center gap-2.5">
+                  <NajeCreditIcon className="w-5 h-5 shrink-0" />
+                  <div>
+                    <div className="text-[10px] text-[#93a0b5]">{t('motion.page.balance')}</div>
+                    <div className="font-mono text-base font-black text-[#ffb020] sm:text-lg">
+                      {formatNumber(user?.balance ?? 0)} {t('common.pointsShort')}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -410,8 +417,9 @@ export default function NajeIdent() {
                 />
                 <div className="hidden space-y-2 lg:block">
                   <p className="text-center text-[11px] text-[#93a0b5]">
-                    <span className="font-black text-[#ffb020]">
-                      {formatNumber(points)} {t('common.pointsShort')}
+                    <span className="font-black text-[#ffb020] inline-flex items-center gap-1">
+                      <NajeCreditIcon className="w-3.5 h-3.5 shrink-0" />
+                      <span>{formatNumber(points)} {t('common.pointsShort')}</span>
                     </span>
                     <span className="mt-0.5 block text-[10px] text-[#93a0b5]">{t('motion.page.engineNote', clock)}</span>
                   </p>

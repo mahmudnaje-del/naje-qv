@@ -102,7 +102,7 @@ html, body, #root {
 }
 
 @utility naje-glass-card-lg {
-  @apply bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm rounded-3xl;
+  @apply bg-white/80 dark:bg-[#0c0d12]/80 backdrop-blur-xl border border-zinc-200/80 dark:border-zinc-800/80 shadow-sm rounded-3xl;
 }
 
 /* Focus Mode: Hide the selected button */
@@ -346,3 +346,102 @@ html:not(.dark) .naje-chroma :is(.bg-white\/\[0\.04\], .bg-white\/5, .bg-white\/
 }
 
 @keyframes najeShimmer { 0% { transform: translateX(0); } 100% { transform: translateX(400%); } }
+
+/* ── Internal Fluid Wave Animations (Strictly contained inside chat boxes) ── */
+@keyframes fluidWaveMoveLeft {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+@keyframes fluidWaveMoveRight {
+  0% {
+    transform: translate3d(-50%, 0, 0);
+  }
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes fluidWavePulseSurge {
+  0%, 100% {
+    opacity: 0.35;
+    transform: scale(0.98);
+  }
+  50% {
+    opacity: 0.85;
+    transform: scale(1.05);
+  }
+}
+
+/* ── Unified Fluid Wave Chat Frame (Strictly contained inside the frame boundaries) ── */
+.smoke-chat-frame {
+  position: relative;
+  overflow: hidden !important;
+  contain: paint !important;
+  isolation: isolate !important;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.smoke-chat-frame.smoke-chat-card {
+  border-radius: 1.5rem !important;
+  clip-path: inset(0 round 1.5rem) !important;
+  -webkit-clip-path: inset(0 round 1.5rem) !important;
+  -webkit-mask-image: -webkit-radial-gradient(white, black) !important;
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1.5px solid rgba(228, 228, 231, 0.85);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.04);
+}
+
+.dark .smoke-chat-frame.smoke-chat-card {
+  background: rgba(12, 13, 18, 0.88);
+  border: 1.5px solid rgba(39, 39, 42, 0.85);
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.45);
+}
+
+.smoke-chat-frame.smoke-chat-dock {
+  width: 100% !important;
+  clip-path: inset(0) !important;
+  -webkit-clip-path: inset(0) !important;
+}
+
+.fluid-wave-slow {
+  animation: fluidWaveMoveLeft 10s linear infinite;
+  will-change: transform;
+}
+
+.fluid-wave-fast {
+  animation: fluidWaveMoveLeft 2.4s cubic-bezier(0.25, 0.1, 0.25, 1) infinite;
+  will-change: transform;
+}
+
+.fluid-wave-counter-slow {
+  animation: fluidWaveMoveRight 12s linear infinite;
+  will-change: transform;
+}
+
+.fluid-wave-counter-fast {
+  animation: fluidWaveMoveRight 2.8s cubic-bezier(0.25, 0.1, 0.25, 1) infinite;
+  will-change: transform;
+}
+
+.fluid-wave-crest-slow {
+  animation: fluidWaveMoveLeft 7s linear infinite;
+  will-change: transform;
+}
+
+.fluid-wave-crest-fast {
+  animation: fluidWaveMoveLeft 1.8s cubic-bezier(0.25, 0.1, 0.25, 1) infinite;
+  will-change: transform;
+}
+
+.fluid-surge-pulse {
+  animation: fluidWavePulseSurge 1.4s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+

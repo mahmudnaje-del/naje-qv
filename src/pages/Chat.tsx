@@ -49,6 +49,7 @@ import { Paintbrush, History as HistoryIcon } from 'lucide-react';
 import { fetchWithRetry } from '../lib/fetchWithRetry';
 
 import MessageBubble from '../components/chat/MessageBubble';
+import { getChatTypeConfig } from '../lib/chatTypeConfig';
 
 import UiChatPanel from '../components/chat/UiChatPanel';
 import TextChatPanel from '../components/chat/TextChatPanel';
@@ -1918,45 +1919,25 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
       </AnimatePresence>
 
       {/* Redesigned StudioHeader for Chat */}
-      <StudioHeader
-        title={chat.title}
-        subtitle={
-          chat.type === 'voice'
-            ? t('chatui.subtitleVoice')
-            : chat.type === 'ui'
-              ? t('chatui.subtitleUi')
-              : chat.type === 'text'
-                ? t('chatui.subtitleText')
-                : chat.type === 'image'
-                  ? t('chatui.subtitleImage')
-                  : t('chatui.subtitleVideo')
-        }
-        badge={
-          chat.type === 'ui'
-            ? 'UI'
-            : chat.type === 'voice'
-              ? t('chatui.badgeVoice')
-              : chat.type === 'image'
-                ? t('chatui.badgeImage')
-                : chat.type === 'video'
-                  ? t('chatui.badgeVideo')
-                  : t('chatui.badgeChat')
-        }
-        icon={
-          chat.type === 'ui'
-            ? Layout
-            : chat.type === 'voice'
-              ? Mic2
-              : chat.type === 'image'
-                ? ImageIcon
-                : chat.type === 'video'
-                  ? Film
-                  : MessageSquare
-        }
-        iconColorClass="text-indigo-600 dark:text-indigo-400"
-        iconBgClass="bg-indigo-500/10 border-indigo-500/20"
-        badgeClass="bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20"
-        actions={
+      {(() => {
+        const chatTypeMeta = getChatTypeConfig(chat.type);
+        return (
+          <StudioHeader
+            title={chat.title}
+            subtitle={chatTypeMeta.emptySubtitle}
+            badge={chatTypeMeta.nameAr}
+            icon={chatTypeMeta.icon}
+            iconStyle={{
+              backgroundColor: chatTypeMeta.bgTint,
+              color: chatTypeMeta.color,
+              borderColor: chatTypeMeta.borderTint
+            }}
+            badgeStyle={{
+              backgroundColor: chatTypeMeta.bgTint,
+              color: chatTypeMeta.color,
+              borderColor: chatTypeMeta.borderTint
+            }}
+            actions={
           chat.type === 'ui' ? (
             <div className="flex items-center gap-2">
               <div className="bg-slate-200/70 dark:bg-slate-900/90 p-1 rounded-xl flex items-center gap-1 border border-slate-300/80 dark:border-slate-800">
@@ -2034,6 +2015,8 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
           )
         }
       />
+    );
+  })()}
 
       {/* Messages / Panel Container */}
       <div className="flex-1 min-h-0 overflow-hidden flex flex-col p-0 w-full relative">

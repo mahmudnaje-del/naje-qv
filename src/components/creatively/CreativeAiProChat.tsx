@@ -49,6 +49,8 @@ import { useAppStore } from '../../store';
 import { waitForGenerationJob } from '../../lib/waitForGenerationJob';
 import { fetchWithRetry } from '../../lib/fetchWithRetry';
 import { useI18n } from '../../i18n';
+import SmokeChatWrapper from '../chat/SmokeChatWrapper';
+import { useLivePlaceholder, CREATIVE_AI_PHRASES } from '../../hooks/useLivePlaceholder';
 
 interface Message {
   id: string;
@@ -186,6 +188,7 @@ export function CreativeAiProChat({
   const [currentSessionId, setCurrentSessionId] = useState<string>('');
 
   const [input, setInput] = useState('');
+  const dynamicPlaceholder = useLivePlaceholder(CREATIVE_AI_PHRASES);
   const [useCreativePro, setUseCreativePro] = useState(false);
   const [showModelMenu, setShowModelMenu] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -1828,62 +1831,66 @@ export function CreativeAiProChat({
                </span>
             </div>
 
-            <div className="relative bg-black/60 backdrop-blur-3xl border border-white/10 rounded-2xl focus-within:border-amber-500/50 focus-within:bg-black/80 transition-all flex flex-col overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.6)] z-10 group">
-              {/* Animated glowing border effect */}
-              <div className="absolute inset-0 bg-gradient-to-r from-amber-500/0 via-amber-500/10 to-fuchsia-500/0 opacity-0 group-focus-within:opacity-100 transition-opacity duration-1000 pointer-events-none" />
-              <textarea
-                value={input}
-                onChange={(e) => {
-                  setInput(e.target.value);
-                  e.target.style.height = 'auto';
-                  e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`;
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSend();
+            <SmokeChatWrapper className="w-full" chatType="creative">
+              <div className="relative bg-black/60 backdrop-blur-3xl border border-white/10 rounded-2xl focus-within:border-amber-500/50 focus-within:bg-black/80 transition-all flex flex-col overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.6)] z-10 group">
+                {/* Animated glowing border effect */}
+                <div className="absolute inset-0 bg-gradient-to-r from-amber-500/0 via-amber-500/10 to-fuchsia-500/0 opacity-0 group-focus-within:opacity-100 transition-opacity duration-1000 pointer-events-none" />
+                <textarea
+                  value={input}
+                  onChange={(e) => {
+                    setInput(e.target.value);
+                    e.target.style.height = 'auto';
+                    e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`;
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSend();
+                    }
+                  }}
+                  placeholder={
+                    dynamicPlaceholder || (
+                      proMode === 'thinking' 
+                        ? (t('creative.m249'))
+                        : proMode === 'search'
+                        ? (t('creative.m248'))
+                        : proMode === 'image'
+                        ? (t('creative.m247'))
+                        : proMode === 'study'
+                        ? (t('creative.m246'))
+                        : (t('creative.m245'))
+                    )
                   }
-                }}
-                placeholder={
-                  proMode === 'thinking' 
-                    ? (t('creative.m249'))
-                    : proMode === 'search'
-                    ? (t('creative.m248'))
-                    : proMode === 'image'
-                    ? (t('creative.m247'))
-                    : proMode === 'study'
-                    ? (t('creative.m246'))
-                    : (t('creative.m245'))
-                }
-                className="w-full bg-transparent py-4 px-5 text-white placeholder-slate-500 focus:outline-none resize-none min-h-[56px] max-h-[120px] transition-all text-sm leading-relaxed custom-scrollbar"
-                rows={1}
-                disabled={isLoading || !activationCode || activationCode.length < 8}
-              />
-              
-              <div className="flex items-center justify-between p-2.5 bg-black/40 border-t border-white/5">
-                <div className="flex items-center gap-2">
+                  className="w-full bg-transparent py-4 px-5 text-white placeholder-slate-500 focus:outline-none resize-none min-h-[56px] max-h-[120px] transition-all text-sm leading-relaxed custom-scrollbar"
+                  rows={1}
+                  disabled={isLoading || !activationCode || activationCode.length < 8}
+                />
+                
+                <div className="flex items-center justify-between p-2.5 bg-black/40 border-t border-white/5">
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setShowAttachmentMenu(prev => !prev)}
+                      disabled={isLoading || !activationCode || activationCode.length < 8}
+                      className={`p-3 rounded-full text-amber-500 transition-all active:scale-95 disabled:opacity-50 ${
+                        showAttachmentMenu 
+                          ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' 
+                          : 'hover:bg-white/5 border border-transparent hover:border-white/5'
+                      }`}
+                      title={t('creative.m244')}
+                    >
+                      <Paperclip className="w-5 h-5" />
+                    </button>
+                  </div>
                   <button
-                    onClick={() => setShowAttachmentMenu(prev => !prev)}
-                    disabled={isLoading || !activationCode || activationCode.length < 8}
-                    className={`p-3 rounded-full text-amber-500 transition-all active:scale-95 disabled:opacity-50 ${
-                      showAttachmentMenu 
-                        ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' 
-                        : 'hover:bg-white/5 border border-transparent hover:border-white/5'
-                    }`}
-                    title={t('creative.m244')}
+                    onClick={() => handleSend()}
+                    disabled={isLoading || (!input.trim() && selectedFiles.length === 0) || !activationCode || activationCode.length < 8}
+                    className="w-12 h-12 bg-amber-500 hover:bg-amber-400 text-black rounded-full transition-all disabled:opacity-35 disabled:scale-100 disabled:cursor-not-allowed flex items-center justify-center shadow-[0_0_15px_rgba(245,158,11,0.3)] active:scale-95 group shrink-0"
                   >
-                    <Paperclip className="w-5 h-5" />
+                    {isLoading ? <NajeSpinner className="w-5 h-5" /> : <ArrowUp className="w-5 h-5 transition-transform duration-300" strokeWidth={3} />}
                   </button>
                 </div>
-                <button
-                  onClick={() => handleSend()}
-                  disabled={isLoading || (!input.trim() && selectedFiles.length === 0) || !activationCode || activationCode.length < 8}
-                  className="w-12 h-12 bg-amber-500 hover:bg-amber-400 text-black rounded-full transition-all disabled:opacity-35 disabled:scale-100 disabled:cursor-not-allowed flex items-center justify-center shadow-[0_0_15px_rgba(245,158,11,0.3)] active:scale-95 group shrink-0"
-                >
-                  {isLoading ? <NajeSpinner className="w-5 h-5" /> : <ArrowUp className="w-5 h-5 transition-transform duration-300" strokeWidth={3} />}
-                </button>
               </div>
-            </div>
+            </SmokeChatWrapper>
 
           </div>
           {/* Activation Required warning */}
