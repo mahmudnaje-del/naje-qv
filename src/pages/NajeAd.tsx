@@ -418,7 +418,7 @@ export default function NajeAd() {
         />
 
         <p className="px-1 text-[11px] leading-relaxed text-white/50">
-          ناجي أد على Gemini Omni 1.1. كل طلب يطلع حوالي 10 ثوانٍ، والتمديد يكمل نفس المشهد +10 حتى 40 ثانية. طلب 20 أو 30 أو 40 ما يرجّع المدة دفعة واحدة، ولا ندمج فيو هنا.
+          {t('adui.omniPolicy')}
         </p>
 
         <SmokeChatWrapper className="w-full" chatType="video">
@@ -463,6 +463,9 @@ export default function NajeAd() {
             )}
             {videoUrl && (
               <video src={videoUrl} controls playsInline className="w-full overflow-hidden rounded-2xl bg-black" />
+            )}
+            {activeJob?.warning && (
+              <p className="rounded-xl border border-amber-400/30 bg-amber-400/10 px-3 py-2 text-[11px] leading-relaxed text-amber-100">{activeJob.warning}</p>
             )}
             {videoUrl && !isSubmitting && (
               <div className="space-y-2">

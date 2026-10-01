@@ -397,10 +397,33 @@ export async function executeAgentTool(
         }
       });
       const output = JSON.parse(res.text || '{}');
+      const prompts = Array.isArray(output.imagePrompts) ? output.imagePrompts.slice(0, 2) : [];
+      const images: Array<{ prompt: string; url?: string }> = [];
+      for (const prompt of prompts) {
+        const text = String(prompt || '').trim();
+        if (!text) continue;
+        try {
+          const imgResponse = await ai.models.generateContent({
+            model: IMAGE_MODEL(),
+            contents: [{ role: 'user', parts: [{ text }] }],
+            config: { responseModalities: ['IMAGE'], maxOutputTokens: OUTPUT_TOKEN_LIMITS.imageCompiler }
+          });
+          const imagePart = imgResponse.candidates?.[0]?.content?.parts?.find((p: any) => p.inlineData);
+          const b64 = imagePart?.inlineData?.data;
+          images.push({ prompt: text, url: b64 ? `data:${imagePart?.inlineData?.mimeType || 'image/png'};base64,${b64}` : undefined });
+        } catch (imgErr) {
+          console.warn('[ui_director image]', imgErr);
+          images.push({ prompt: text });
+        }
+      }
+      output.images = images;
+      output.font = output.font || 'Tajawal';
+      output.engine = 'ui_director+image_studio';
       const artifact: AgentArtifact = {
         id: `artifact_ui_${Date.now()}`,
         type: 'text',
-        title: `مخطط واجهة: ${output.pageTitle || brandContext?.brandName || 'صفحة'}`,
+        title: `واجهة: ${output.pageTitle || brandContext?.brandName || 'صفحة'}`,
+        previewUrl: images.find((img) => img.url)?.url,
         data: output,
         createdAt: Date.now()
       };
