@@ -35,6 +35,8 @@ import NajeErrorCard from '../components/NajeErrorCard';
 import FeaturePaywallModal from '../components/FeaturePaywallModal';
 import { hasFeatureAccess } from '../lib/featureAccess';
 import SmokeChatWrapper from '../components/chat/SmokeChatWrapper';
+import { FleetStrip } from '../components/FleetStrip';
+import { dispatchSpecialists, type DispatchDecision } from '../lib/agentFleet';
 
 export interface AgentSourceItem {
   id: string;
@@ -183,6 +185,7 @@ export default function NajeAgent() {
   const [missions, setMissions] = useState<AgentMission[]>([]);
   const [activeMission, setActiveMission] = useState<AgentMission | null>(null);
   const [messages, setMessages] = useState<AgentChatMessage[]>([INITIAL_GREETING]);
+  const [fleetById, setFleetById] = useState<Record<string, DispatchDecision>>({});
   const [inputText, setInputText] = useState('');
   const dynamicPlaceholder = useLivePlaceholder(AGENT_PROMPT_PHRASES);
   const [isSendingChat, setIsSendingChat] = useState(false);
@@ -394,6 +397,8 @@ export default function NajeAgent() {
       timestamp: Date.now()
     };
 
+    const decision = dispatchSpecialists(text);
+    setFleetById((prev) => ({ ...prev, [userMessage.id]: decision }));
     const newMessages = [...messages, userMessage];
     setMessages(newMessages);
     setInputText('');
@@ -930,6 +935,7 @@ export default function NajeAgent() {
                         )}
                       </div>
                     )}
+                    {msg.role === 'user' && fleetById[msg.id] && <FleetStrip decision={fleetById[msg.id]} />}
 
                     {/* Clarification Question Card */}
                     {msg.question && (

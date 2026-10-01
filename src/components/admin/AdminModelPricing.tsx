@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { ModelEndpoint } from '../../types';
 import { calculateMarginPercentage, POINT_USD_VALUE, SEED_ENDPOINTS } from '../../lib/modelRegistry';
+import { GEMINI_LIST_USD_PER_1M, VEO_LIST_USD_PER_SECOND } from '../../lib/usageMeter';
 import { auth } from '../../firebase';
 import { useI18n } from '../../i18n';
 
@@ -369,7 +370,7 @@ export const AdminModelPricing: React.FC<AdminModelPricingProps> = () => {
               </div>
             </div>
             <p className="text-gray-300 text-xs font-medium max-w-3xl leading-relaxed">
-              {t('tools.admin.pricingDesc')}
+              {t('tools.admin.pricingDesc')} أسعار القائمة: فلاش لايت {GEMINI_LIST_USD_PER_1M['gemini-2.5-flash-lite'].input}/{GEMINI_LIST_USD_PER_1M['gemini-2.5-flash-lite'].output}، فلاش {GEMINI_LIST_USD_PER_1M['gemini-2.5-flash'].input}/{GEMINI_LIST_USD_PER_1M['gemini-2.5-flash'].output}، برو 3.1 {GEMINI_LIST_USD_PER_1M['gemini-3.1-pro-preview'].input}/{GEMINI_LIST_USD_PER_1M['gemini-3.1-pro-preview'].output} لكل مليون. الخصم من usageMetadata. نقطة = ${POINT_USD_VALUE}.
             </p>
           </div>
 

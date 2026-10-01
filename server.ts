@@ -11117,9 +11117,14 @@ app.post("/api/agent/chat-turn", async (req, res) => {
     }
 
     const pricing = await getPricing(token);
-    const { processAgentChatTurn } = await import("./src/lib/agentPlanner");
-    const result = await processAgentChatTurn(messages, pricing, projectContext);
-    return res.json({ success: true, result });
+    const { processAgentChatTurn, takeLastAgentUsage } = await import("./src/lib/agentPlanner");
+    const { dispatchSpecialists } = await import("./src/lib/agentFleet");
+    const lastUser = [...messages].reverse().find((m: any) => m?.role === 'user')?.content || '';
+    const dispatch = dispatchSpecialists(String(lastUser || ''));
+    const result = await processAgentChatTurn(messages, pricing, { ...(projectContext || {}), dispatch });
+    const usage = takeLastAgentUsage();
+    const bill = await chargeForTextModelUsage(uid, dispatch.modelId || 'gemini-3.5-flash-lite', usage, isUserAdmin).catch(() => null);
+    return res.json({ success: true, result, dispatch, usage: bill });
   } catch (err: any) {
     if (err?.code?.startsWith?.('auth/')) {
       return res.status(401).json({ error: "جلسة الدخول غير صالحة، يرجى تسجيل الدخول مجدداً." });
@@ -11984,16 +11989,21 @@ ${codeCtx}
       if (!sources.length) return res.status(400).json({ error: 'أضف مصدراً واحداً على الأقل.' });
 
       const sourceBlock = sources.map((s, i) => `# مصدر ${i + 1}: ${s.title}${s.url ? ` (${s.url})` : ''}\n${s.content}`).join('\n\n');
+      const fleetNote = String(req.body?.fleetNote || '').slice(0, 500);
       const system = `أنت «ناجي من مصادرك». ممنوع الاختلاق. تجيب فقط مما في المصادر أدناه.
 إذا ما لقيت الجواب في المصادر:
 ${allowWeb ? '- ابدأ حرفياً: «لم أجد في المصادر، وبحثت في الإنترنت والنتيجة:» ثم لخّص نتيجة البحث مع الروابط.' : '- أجب حرفياً فقط: «لم أجد في المصادر.» بلا أي إضافة.'}
 لا تخلط رأيك. إن اقتبست، اذكر رقم المصدر.
+${fleetNote ? `\nتوجيه الموزّع: ${fleetNote}` : ''}
 
 المصادر:
 ${sourceBlock}`;
 
       const ai = createGenAIClient();
-      const modelId = resolveEngineModel(await getModelEndpointId('text_core', getNajeModel('core'), auth.token));
+      const wantLite = /لايت|lite|مسودة|اختصر/.test(promptText);
+      const modelId = resolveEngineModel(
+        await getModelEndpointId(wantLite ? 'text_lite' : 'text_core', getNajeModel(wantLite ? 'lite' : 'core'), auth.token)
+      );
       const contents: any[] = [];
       for (const h of history) {
         const role = h.role === 'assistant' || h.role === 'model' ? 'model' : 'user';

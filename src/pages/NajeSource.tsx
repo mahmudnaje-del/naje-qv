@@ -21,6 +21,8 @@ import { hasFeatureAccess } from '../lib/featureAccess';
 import { readNajeSse } from '../lib/sseRead';
 import { useI18n } from '../i18n';
 import SmokeChatWrapper from '../components/chat/SmokeChatWrapper';
+import { FleetStrip } from '../components/FleetStrip';
+import { dispatchBrief, dispatchSpecialists } from '../lib/agentFleet';
 import { useLivePlaceholder, SOURCE_PHRASES } from '../hooks/useLivePlaceholder';
 
 type Tab = 'sources' | 'chat';
@@ -52,6 +54,7 @@ export default function NajeSource() {
   const [input, setInput] = useState('');
   const dynamicPlaceholder = useLivePlaceholder(SOURCE_PHRASES);
   const [attachedImages, setAttachedImages] = useState<string[]>([]);
+  const [fleetNote, setFleetNote] = useState('');
   const [sending, setSending] = useState(false);
   const [adding, setAdding] = useState(false);
   const [pasteText, setPasteText] = useState('');
@@ -352,6 +355,7 @@ export default function NajeSource() {
           prompt,
           images: currentImages,
           allowWeb,
+          fleetNote: dispatchBrief(prompt),
           history: messages.map(m => ({ role: m.role, content: m.content })).slice(-10)
         })
       });
@@ -788,6 +792,7 @@ export default function NajeSource() {
             />
 
             <SmokeChatWrapper className="w-full" chatType="najeSource">
+            {input.trim() && <FleetStrip decision={dispatchSpecialists(input)} />}
             <form onSubmit={(e) => { e.preventDefault(); send(); }} className="flex items-end gap-2 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md p-1.5 rounded-2xl border border-gray-200/80 dark:border-gray-800 shadow-sm">
               <button 
                 type="button" 
@@ -802,7 +807,10 @@ export default function NajeSource() {
               <textarea
                 ref={textareaRef}
                 value={input}
-                onChange={(e) => setInput(e.target.value)}
+                onChange={(e) => {
+                  setInput(e.target.value);
+                  setFleetNote(e.target.value.trim() ? dispatchBrief(e.target.value) : '');
+                }}
                 rows={1}
                 placeholder={dynamicPlaceholder || (items.length === 0 ? t('tools.source.placeholderEmpty') : t('tools.source.placeholderReady'))}
                 disabled={sending || items.length === 0}

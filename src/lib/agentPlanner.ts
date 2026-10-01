@@ -8,6 +8,13 @@ import { dispatchBrief } from './agentFleet.ts';
 import { getNajeModel, resolveEngineModel } from './modelEnvConfig.ts';
 
 const ai = createGenAIClient();
+let lastAgentUsage: any = null;
+
+export function takeLastAgentUsage() {
+  const usage = lastAgentUsage;
+  lastAgentUsage = null;
+  return usage;
+}
 
 /**
  * Native Gemini Function Declarations for Conversational Agent Turn Reasoning
@@ -184,6 +191,8 @@ ${fleetNote}
         } as any
       }
     });
+
+    lastAgentUsage = (res as any).usageMetadata || null;
 
     // Check for function calls in response
     const functionCall =

@@ -417,6 +417,10 @@ export default function NajeAd() {
           resolutionMultiplier={resMul}
         />
 
+        <p className="px-1 text-[11px] leading-relaxed text-white/50">
+          أومني يمدّد 10 ثوانٍ كل مرة حتى 40، وما يرجّع 20 ثانية من طلب 10+10. فيو لقطة 4 أو 6 أو 8، والمدة الأطول تتدمج بمقاطع منفصلة.
+        </p>
+
         <SmokeChatWrapper className="w-full" chatType="video">
         <form onSubmit={handleGenerate} className="space-y-3 rounded-2xl border border-white/8 bg-[#0e1016] p-3 sm:rounded-[28px] sm:p-5">
           <label className="block text-xs font-black text-white">{t('adui.scriptLabel')}</label>
