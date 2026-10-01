@@ -547,7 +547,9 @@ export function NajeImageModelSelector({
             </div>
           </motion.div>
         )}
-      </AnimatePresence>
+        </AnimatePresence>,
+        document.body
+      )}
     </div>
   );
 }

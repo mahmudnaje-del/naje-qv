@@ -36,6 +36,7 @@ import NotificationDropdown from '../components/NotificationDropdown';
 import EmailVerificationBanner from '../components/EmailVerificationBanner';
 import BalanceTopDropdown from '../components/BalanceTopDropdown';
 import { useI18n, translate } from '../i18n';
+import { OmniverseCommandBar } from '../components/OmniverseCommandBar';
 import { getChatTypeConfig } from '../lib/chatTypeConfig';
 
 function tr(key: string, params?: Record<string, string | number>) {
@@ -1076,6 +1077,7 @@ export default function Dashboard() {
   return (
     <div className="h-screen h-[100dvh] bg-naje-canvas text-naje-ink flex overflow-hidden">
       <TermsConsentModal />
+      <OmniverseCommandBar onCreateChat={handleCreateNewChat} />
       {/* 1. Sidebar - Desktop (Right-hand persistent in RTL) */}
       <motion.aside 
         initial={false}

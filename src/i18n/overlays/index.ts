@@ -11,6 +11,7 @@ import { promptTenPack } from './promptTen';
 import { studioTenPack } from './studioTen';
 import { creativeTenPack } from './creativeTen';
 import { toolsTenPack } from './toolsTen';
+import { omniversePack } from './omniverse';
 import type { LocalePack } from './types';
 import { ALL_OVERLAY_LOCALES } from './types';
 import { completePack } from './complete';
@@ -21,6 +22,7 @@ const RAW_PACKS: LocalePack[] = [
   studioTenPack,
   creativeTenPack,
   toolsTenPack,
+  omniversePack,
   cvPack,
   motionPack,
   promptPack,
@@ -52,6 +54,7 @@ export function overlayParityGaps(): string[] {
     'studioTen',
     'creativeTen',
     'toolsTen',
+    'omniverse',
     'cv',
     'motion',
     'prompt',
