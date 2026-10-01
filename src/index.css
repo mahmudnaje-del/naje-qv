@@ -69,6 +69,56 @@ html {
   --color-violet-700: color-mix(in srgb, var(--naje-p) 72%, black);
   --color-fuchsia-600: var(--naje-p);
   --color-fuchsia-700: color-mix(in srgb, var(--naje-p) 72%, black);
+  --color-emerald-500: var(--naje-p);
+  --color-emerald-600: color-mix(in srgb, var(--naje-p) 88%, black);
+  --color-emerald-700: color-mix(in srgb, var(--naje-p) 72%, black);
+  --color-teal-500: var(--naje-p);
+  --color-teal-600: color-mix(in srgb, var(--naje-p) 88%, black);
+  --color-sky-500: var(--naje-p);
+  --color-sky-600: color-mix(in srgb, var(--naje-p) 88%, black);
+  --color-blue-500: var(--naje-p);
+  --color-blue-600: color-mix(in srgb, var(--naje-p) 88%, black);
+  --color-cyan-500: var(--naje-p);
+  --color-cyan-600: color-mix(in srgb, var(--naje-p) 88%, black);
+  --color-pink-500: var(--naje-p);
+  --color-pink-600: color-mix(in srgb, var(--naje-p) 88%, black);
+  --color-rose-500: var(--naje-p);
+  --color-rose-600: color-mix(in srgb, var(--naje-p) 88%, black);
+  --color-rose-700: color-mix(in srgb, var(--naje-p) 72%, black);
+}
+
+/* Studios keep their own accent, not the app theme, including buttons. */
+.naje-ad-studio,
+.naje-cv-studio,
+.naje-motion-studio,
+.naje-creative-studio {
+  --color-indigo-500: var(--naje-p);
+  --color-indigo-600: color-mix(in srgb, var(--naje-p) 88%, black);
+  --color-indigo-700: color-mix(in srgb, var(--naje-p) 72%, black);
+  --color-purple-500: var(--naje-p);
+  --color-purple-600: var(--naje-p);
+  --color-purple-700: color-mix(in srgb, var(--naje-p) 72%, black);
+  --color-violet-500: var(--naje-p);
+  --color-violet-600: var(--naje-p);
+  --color-emerald-500: var(--naje-p);
+  --color-emerald-600: color-mix(in srgb, var(--naje-p) 88%, black);
+  --color-sky-500: var(--naje-p);
+  --color-blue-500: var(--naje-p);
+  --color-pink-500: var(--naje-p);
+  --color-rose-500: var(--naje-p);
+  --color-fuchsia-600: var(--naje-p);
+}
+
+button.naje-btn,
+.naje-btn {
+  background: var(--naje-p);
+  color: var(--naje-on-accent);
+  border: 1px solid color-mix(in srgb, var(--naje-p) 70%, black);
+}
+.naje-btn-ghost {
+  background: var(--naje-accent-soft);
+  color: var(--naje-p);
+  border: 1px solid color-mix(in srgb, var(--naje-p) 35%, transparent);
 }
 
 html, body, #root {
