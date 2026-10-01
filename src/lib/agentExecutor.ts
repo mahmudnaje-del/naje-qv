@@ -359,6 +359,54 @@ export async function executeAgentTool(
       };
     }
 
+    case 'video_stitch': {
+      const { planVideoStitch } = await import('./videoStitch.ts');
+      const durationSec = Number(inputParams?.durationSeconds || inputParams?.durationSec || 20);
+      const engine = String(inputParams?.engine || 'veo') === 'omni' ? 'omni' : 'veo';
+      const plan = planVideoStitch(durationSec, engine);
+      const artifact: AgentArtifact = {
+        id: `artifact_stitch_${Date.now()}`,
+        type: 'text',
+        title: `خطة دمج ${plan.requestedSec} ثانية`,
+        data: plan,
+        createdAt: Date.now()
+      };
+      return { output: plan, artifact, pointsDeducted: calculatedPoints };
+    }
+
+    case 'ui_director': {
+      const personaCore = `مصمم واجهات. تكتب صفحة عربية واحدة، وتحدد مواضع الصور التي سيولّدها وكيل الصور، والخطوط (Tajawal أو Cairo). لا تخترع صوراً جاهزة.`;
+      const systemInstruction = buildPersonaInstruction('المصمّم', personaCore);
+      const res = await ai.models.generateContent({
+        model: LITE_MODEL(),
+        contents: `${systemInstruction}
+الطلب: ${enrichedPrompt}
+المدخلات: ${JSON.stringify(inputParams)}
+أخرج JSON:
+{
+  "pageTitle": "",
+  "font": "Tajawal",
+  "sections": [{"id": "hero", "html": "<section>...</section>", "imagePrompt": "English prompt for the image agent or empty"}],
+  "imagePrompts": ["..."]
+}`,
+        config: {
+          systemInstruction,
+          maxOutputTokens: OUTPUT_TOKEN_LIMITS.uiPlan,
+          responseMimeType: 'application/json',
+          temperature: 0.4
+        }
+      });
+      const output = JSON.parse(res.text || '{}');
+      const artifact: AgentArtifact = {
+        id: `artifact_ui_${Date.now()}`,
+        type: 'text',
+        title: `مخطط واجهة: ${output.pageTitle || brandContext?.brandName || 'صفحة'}`,
+        data: output,
+        createdAt: Date.now()
+      };
+      return { output, artifact, pointsDeducted: calculatedPoints };
+    }
+
     case 'video_director': {
       const durationSec = Number(inputParams?.durationSeconds || inputParams?.durationSec || inputParams?.duration) || 5;
       const personaCore = `منتج أفلام إعلانية محترف. لكل ثانية من مدة الفيديو المطلوبة، فكّر فعلياً: ما أقوى لحظة بصرية ممكنة بهذه الثانية تحديداً؟ ماذا يجب أن يُستبعد لتترك مجالاً لما هو أهم؟ استثمر كل ثانية بقرار إبداعي واعٍ وحافظ على اتساق الموضوع والأسلوب من الثانية الأولى للثانية الأخيرة.`;

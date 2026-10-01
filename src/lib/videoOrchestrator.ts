@@ -29,8 +29,17 @@ export const DURATION_LADDER: Record<number, number[]> = {
   12: [4, 8],
   14: [8, 6],
   16: [8, 8],
+  20: [8, 8, 4],
   24: [8, 8, 8],
   30: [8, 8, 8, 6],
+  32: [8, 8, 8, 8],
+  40: [8, 8, 8, 8, 8],
+};
+
+/** Veo generate is 4/6/8s per call. A 10+10 request does not return one 20s file. */
+export const VIDEO_CLIP_POLICY = {
+  nativeSeconds: [4, 6, 8] as const,
+  maxStitchedSeconds: 40,
 };
 
 export const SUPPORTED_TOTAL_DURATIONS = Object.keys(DURATION_LADDER).map(Number).sort((a, b) => a - b);

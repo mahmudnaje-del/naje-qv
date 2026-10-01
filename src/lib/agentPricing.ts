@@ -157,6 +157,18 @@ export function getAgentToolCost(
       return parseFloat(Number(totalCost).toFixed(2));
     }
 
+    case 'video_stitch': {
+      const clips = Array.isArray(inputParams?.clips) ? inputParams.clips.length : Number(inputParams?.clipCount || 2);
+      return parseFloat(Math.max(0.5, clips * 0.25).toFixed(2));
+    }
+
+    case 'ui_director': {
+      const images = Number(inputParams?.imagesCount || 1);
+      const uiFee = Number(p.ui?.perGeneration ?? 1.5);
+      const imageBase = Number(p.image?.base ?? 1);
+      return parseFloat((uiFee + images * imageBase).toFixed(2));
+    }
+
     case 'infographic_designer': {
       const renderFee = Number(agentPricing.infographic_designer ?? p.infographic?.renderFee ?? 0.5);
       return parseFloat(renderFee.toFixed(2));

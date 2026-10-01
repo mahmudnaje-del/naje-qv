@@ -3988,6 +3988,50 @@ app.post('/api/naje-ad/extend', async (req, res) => {
   }
 });
 
+app.post('/api/video/stitch', async (req, res) => {
+  try {
+    const auth = await requireAuth(req, res);
+    if (!auth) return;
+    const clips = Array.isArray(req.body?.clips) ? req.body.clips.slice(0, 6) : [];
+    const urls = clips.filter((u: unknown) => typeof u === 'string' && /^https:\/\/(firebasestorage\.googleapis\.com|storage\.googleapis\.com)\//.test(u));
+    if (urls.length < 2) {
+      return res.status(400).json({
+        error: 'الدمج يحتاج مقطعين على الأقل من تخزين ناجي. فيو لا يرجع 20 ثانية من طلب واحد.',
+        policy: { veoNativeSeconds: [4, 6, 8], omniExtendStep: 10, omniMax: 40 }
+      });
+    }
+    const ffmpeg = await getFfmpeg();
+    const os = await import('os');
+    const path = await import('path');
+    const fs = await import('fs/promises');
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'naje-stitch-'));
+    const files: string[] = [];
+    for (let i = 0; i < urls.length; i++) {
+      const r = await fetch(urls[i]);
+      if (!r.ok) throw new Error(`تعذر جلب المقطع ${i + 1}`);
+      const buf = Buffer.from(await r.arrayBuffer());
+      if (buf.length > 40 * 1024 * 1024) throw new Error('المقطع أكبر من 40 ميغابايت');
+      const file = path.join(dir, `clip-${i}.mp4`);
+      await fs.writeFile(file, buf);
+      files.push(file);
+    }
+    const list = path.join(dir, 'list.txt');
+    await fs.writeFile(list, files.map((f) => `file '${f.replace(/'/g, "'\\''")}'`).join('\n'));
+    const out = path.join(dir, 'out.mp4');
+    await new Promise((resolve, reject) => {
+      ffmpeg().input(list).inputOptions(['-f', 'concat', '-safe', '0']).outputOptions(['-c', 'copy']).save(out).on('end', resolve).on('error', reject);
+    });
+    const merged = await fs.readFile(out);
+    const jobId = `naje_ad_stitch_${Date.now()}`;
+    const url = await uploadNajeAdMp4(auth.uid, jobId, merged);
+    await fs.rm(dir, { recursive: true, force: true }).catch(() => null);
+    return res.json({ url, clips: urls.length, engine: 'ffmpeg-concat', note: 'دمج لقطات منفصلة. ليس رد جيميني بمدة 20 ثانية.' });
+  } catch (err: any) {
+    console.error('[video stitch]', err);
+    return res.status(500).json({ error: err?.message || 'فشل دمج المقاطع' });
+  }
+});
+
 function directorInputForChunk(job: any, chunkIndex: number, totalDuration: number): string {
   const beats: BeatSlot[] = Array.isArray(job?.beats) ? job.beats : [];
   const iv = Number(job?.beatInterval);
