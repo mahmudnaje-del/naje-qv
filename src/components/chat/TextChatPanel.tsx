@@ -1254,139 +1254,10 @@ export default function TextChatPanel({
                 </div>
               )}
 
-              {/* F. Primary Message Input Bar with Integrated Controls */}
-              <div className="relative flex items-center gap-1 sm:gap-1.5 p-1 sm:p-1.5 bg-transparent">
-                
-                {/* Left Controls inside Input Box - Grouped closely */}
-                <div className="flex items-center gap-0.5 sm:gap-1 flex-shrink-0">
-                  
-                  {/* Brand Kit Studio Button */}
-                  {(chat.type === 'design' || chat.type === 'image') && (
-                    <button 
-                      type="button" 
-                      onClick={() => setIsBrandKitModalOpen(true)} 
-                      className="w-7 h-7 sm:w-8.5 sm:h-8.5 rounded-lg sm:rounded-xl transition flex items-center justify-center cursor-pointer bg-amber-500/10 border border-amber-500/30 text-amber-500 hover:bg-amber-500/20 active:scale-95 shrink-0"
-                      title={t('studio.brandKitTooltip')}
-                    >
-                      <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                    </button>
-                  )}
-
-                  {/* Document / Visual Icons in Text Chat */}
-                  {chat.type === 'text' && (
-                    <>
-                      <button 
-                        type="button" 
-                        onClick={() => setShowInfographicModal(true)} 
-                        className="w-7 h-7 sm:w-8.5 sm:h-8.5 rounded-lg sm:rounded-xl transition flex items-center justify-center cursor-pointer text-gray-800 dark:text-gray-400 hover:text-amber-500 hover:bg-amber-500/10 active:scale-95 shrink-0"
-                        title={t('studio.infographicTooltip')}
-                      >
-                        <BarChart3 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-500" />
-                      </button>
-                    </>
-                  )}
-
-                  {/* Sliders Icon in Image Chat */}
-                  {chat.type === 'image' && (
-                    <button 
-                      type="button" 
-                      onClick={() => { setShowImageSettings(!showImageSettings); setShowDocSettings(false); setShowVideoSettings(false); }} 
-                      className={cn(
-                        "w-7 h-7 sm:w-8.5 sm:h-8.5 rounded-lg sm:rounded-xl transition flex items-center justify-center cursor-pointer active:scale-95 shrink-0",
-                        showImageSettings
-                          ? 'bg-indigo-600/10 border border-indigo-400 dark:border-indigo-500/20 text-indigo-600 dark:text-indigo-400' 
-                          : 'text-gray-800 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:bg-gray-800/60'
-                      )}
-                      title={t('studio.imageSettingsTooltip')}
-                    >
-                      <Sliders className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                    </button>
-                  )}
-
-                  {/* Sliders Icon in Video Chat */}
-                  {chat.type === 'video' && (
-                    <button 
-                      type="button" 
-                      onClick={() => { setShowVideoSettings(!showVideoSettings); setShowDocSettings(false); setShowImageSettings(false); setShowVoiceSettings(false); }} 
-                      className={cn(
-                        "w-7 h-7 sm:w-8.5 sm:h-8.5 rounded-lg sm:rounded-xl transition flex items-center justify-center cursor-pointer active:scale-95 shrink-0",
-                        showVideoSettings
-                          ? 'bg-indigo-600/10 border border-indigo-400 dark:border-indigo-500/20 text-indigo-600 dark:text-indigo-400' 
-                          : 'text-gray-800 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:bg-gray-800/60'
-                      )}
-                      title={t('studio.videoSettingsTooltip')}
-                    >
-                      <Sliders className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                    </button>
-                  )}
-
-                  {/* Sliders Icon in Voice Chat */}
-                  {chat.type === 'voice' && (
-                    <button 
-                      type="button" 
-                      onClick={() => { setShowVoiceSettings(!showVoiceSettings); setShowDocSettings(false); setShowImageSettings(false); setShowVideoSettings(false); }} 
-                      className={cn(
-                        "w-7 h-7 sm:w-8.5 sm:h-8.5 rounded-lg sm:rounded-xl transition flex items-center justify-center cursor-pointer active:scale-95 shrink-0",
-                        showVoiceSettings
-                          ? 'bg-emerald-600/10 border border-emerald-400 dark:border-emerald-500/20 text-emerald-600 dark:text-emerald-400' 
-                          : 'text-gray-800 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:bg-gray-800/60'
-                      )}
-                      title={t('studio.voiceSettingsTooltip')}
-                    >
-                      <Sliders className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                    </button>
-                  )}
-
-                  {/* Paperclip button */}
-                  {chat.type !== 'voice' && (
-                    <label className="cursor-pointer w-7 h-7 sm:w-8.5 sm:h-8.5 rounded-lg sm:rounded-xl text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800/60 transition flex items-center justify-center active:scale-95 shrink-0" title={t('studio.attachFileTooltip')}>
-                       <Paperclip className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                       <input 
-                         type="file" 
-                         multiple 
-                         className="hidden" 
-                         onChange={handleFileChange} 
-                         accept={chat.type === 'text' ? "image/*,.pdf,.doc,.docx,.txt" : "image/*"} 
-                       />
-                    </label>
-                  )}
-
-                  {/* Microphone button for Voice-to-Text / Voice Input */}
-                  <button
-                    type="button"
-                    onClick={toggleListening}
-                    className={cn(
-                      "w-7 h-7 sm:w-8.5 sm:h-8.5 rounded-lg sm:rounded-xl transition flex items-center justify-center cursor-pointer active:scale-95 shrink-0",
-                      isListening 
-                        ? "bg-rose-500 text-white animate-pulse shadow-lg shadow-rose-500/20" 
-                        : "text-gray-800 dark:text-gray-400 hover:text-gray-900 dark:text-white hover:bg-gray-100 dark:bg-gray-800/60"
-                    )}
-                    title={isListening ? t('studio.listeningNow') : t('studio.voiceTyping')}
-                  >
-                    <Mic className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                  </button>
-
-                  {/* Google Search Grounding Toggle Button */}
-                  {chat.type !== 'voice' && (
-                    <button
-                      type="button"
-                      onClick={() => setEnableSearchGrounding(prev => !prev)}
-                      className={cn(
-                        "h-7 sm:h-8.5 px-1.5 sm:px-2 rounded-lg sm:rounded-xl transition flex items-center justify-center cursor-pointer gap-1 text-xs font-bold active:scale-95 shrink-0",
-                        enableSearchGrounding 
-                          ? "bg-indigo-600 text-white shadow-sm shadow-indigo-500/30" 
-                          : "text-gray-800 dark:text-gray-400 hover:text-gray-900 dark:text-white hover:bg-gray-100 dark:bg-gray-800/60"
-                      )}
-                      title={enableSearchGrounding ? t('studio.liveSearchEnabled') : t('studio.liveSearchDisabled')}
-                    >
-                      <Globe className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
-                      <span className="hidden sm:inline text-[11px]">{enableSearchGrounding ? t('studio.liveSearch') : t('common.search')}</span>
-                    </button>
-                  )}
-                </div>
-                
-                {/* Central Text Area with dynamic height */}
-                <div className="flex-1 flex items-center min-w-0">
+              {/* F. Primary Message Input Container */}
+              <div className="flex flex-col bg-transparent">
+                {/* Textarea Area - Spacious, Natural, Full Width */}
+                <div className="px-3 pt-2 sm:px-4 sm:pt-2.5 pb-1 flex items-start">
                   <textarea
                     ref={textareaRef}
                     value={input}
@@ -1415,43 +1286,159 @@ export default function TextChatPanel({
                                 : (chat.type === 'image' ? t('chatui.describeImage') : t('chatui.describeVideo'))
                           )
                     }
-                    className="w-full bg-transparent border-none py-1 sm:py-2 text-gray-900 dark:text-white outline-none resize-none min-h-[34px] sm:min-h-[40px] max-h-[80px] sm:max-h-[120px] overflow-y-auto leading-normal px-1 sm:px-2 text-xs sm:text-sm focus:ring-0 transition-[height] duration-150 ease-out scrollbar-none my-auto"
+                    className="w-full bg-transparent border-none text-gray-900 dark:text-white outline-none resize-none min-h-[38px] sm:min-h-[44px] max-h-[140px] overflow-y-auto leading-relaxed text-xs sm:text-sm focus:ring-0 placeholder:text-gray-400 dark:placeholder:text-gray-500 scrollbar-none"
                     rows={1}
                   />
                 </div>
-                
-                {/* Right Controls Area with Send button */}
-                <div className="flex items-center flex-shrink-0">
-                  {loading ? (
-                    <button 
-                      type="button" 
-                      onClick={() => {
-                        setLoading(false);
-                        setIsJobCompleted(true);
-                      }}
-                      className="w-7.5 h-7.5 sm:w-9 sm:h-9 flex items-center justify-center bg-white dark:bg-gray-900 border border-purple-200/40 dark:border-gray-800 text-black dark:text-white rounded-lg sm:rounded-xl transition shadow-md cursor-pointer relative active:scale-95"
-                      title={t('chat.stopGeneration')}
-                    >
-                      {/* Spinning Arc */}
-                      <div className="absolute inset-1 rounded-full border-2 border-transparent border-t-black dark:border-t-white animate-spin" />
-                      {/* Stop Square */}
-                      <div className="w-2 h-2 bg-black dark:bg-white rounded-[2px]" />
-                    </button>
-                  ) : (
-                    <button 
-                      type="submit" 
-                      disabled={!input.trim() && files.length === 0} 
+
+                {/* Actions Toolbar - Tool buttons on start, Send on end */}
+                <div className="flex items-center justify-between gap-2 px-2.5 sm:px-3 pb-2 pt-0.5">
+                  {/* Left/Start Controls: Attachments, Voice, Search */}
+                  <div className="flex items-center gap-1 sm:gap-1.5 flex-shrink-0">
+                    {/* Brand Kit Studio Button */}
+                    {(chat.type === 'design' || chat.type === 'image') && (
+                      <button 
+                        type="button" 
+                        onClick={() => setIsBrandKitModalOpen(true)} 
+                        className="w-7 h-7 sm:w-8.5 sm:h-8.5 rounded-lg sm:rounded-xl transition flex items-center justify-center cursor-pointer bg-amber-500/10 border border-amber-500/30 text-amber-500 hover:bg-amber-500/20 active:scale-95 shrink-0"
+                        title={t('studio.brandKitTooltip')}
+                      >
+                        <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                      </button>
+                    )}
+
+                    {/* Sliders Icon in Image Chat */}
+                    {chat.type === 'image' && (
+                      <button 
+                        type="button" 
+                        onClick={() => { setShowImageSettings(!showImageSettings); setShowDocSettings(false); setShowVideoSettings(false); }} 
+                        className={cn(
+                          "w-7 h-7 sm:w-8.5 sm:h-8.5 rounded-lg sm:rounded-xl transition flex items-center justify-center cursor-pointer active:scale-95 shrink-0",
+                          showImageSettings
+                            ? 'bg-indigo-600/10 border border-indigo-400 dark:border-indigo-500/20 text-indigo-600 dark:text-indigo-400' 
+                            : 'text-gray-700 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800/60'
+                        )}
+                        title={t('studio.imageSettingsTooltip')}
+                      >
+                        <Sliders className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                      </button>
+                    )}
+
+                    {/* Sliders Icon in Video Chat */}
+                    {chat.type === 'video' && (
+                      <button 
+                        type="button" 
+                        onClick={() => { setShowVideoSettings(!showVideoSettings); setShowDocSettings(false); setShowImageSettings(false); setShowVoiceSettings(false); }} 
+                        className={cn(
+                          "w-7 h-7 sm:w-8.5 sm:h-8.5 rounded-lg sm:rounded-xl transition flex items-center justify-center cursor-pointer active:scale-95 shrink-0",
+                          showVideoSettings
+                            ? 'bg-indigo-600/10 border border-indigo-400 dark:border-indigo-500/20 text-indigo-600 dark:text-indigo-400' 
+                            : 'text-gray-700 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800/60'
+                        )}
+                        title={t('studio.videoSettingsTooltip')}
+                      >
+                        <Sliders className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                      </button>
+                    )}
+
+                    {/* Sliders Icon in Voice Chat */}
+                    {chat.type === 'voice' && (
+                      <button 
+                        type="button" 
+                        onClick={() => { setShowVoiceSettings(!showVoiceSettings); setShowDocSettings(false); setShowImageSettings(false); setShowVideoSettings(false); }} 
+                        className={cn(
+                          "w-7 h-7 sm:w-8.5 sm:h-8.5 rounded-lg sm:rounded-xl transition flex items-center justify-center cursor-pointer active:scale-95 shrink-0",
+                          showVoiceSettings
+                            ? 'bg-emerald-600/10 border border-emerald-400 dark:border-emerald-500/20 text-emerald-600 dark:text-emerald-400' 
+                            : 'text-gray-700 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800/60'
+                        )}
+                        title={t('studio.voiceSettingsTooltip')}
+                      >
+                        <Sliders className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                      </button>
+                    )}
+
+                    {/* Paperclip button */}
+                    {chat.type !== 'voice' && (
+                      <label className="cursor-pointer w-7 h-7 sm:w-8.5 sm:h-8.5 rounded-lg sm:rounded-xl text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800/60 transition flex items-center justify-center active:scale-95 shrink-0" title={t('studio.attachFileTooltip')}>
+                         <Paperclip className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                         <input 
+                           type="file" 
+                           multiple 
+                           className="hidden" 
+                           onChange={handleFileChange} 
+                           accept={chat.type === 'text' ? "image/*,.pdf,.doc,.docx,.txt" : "image/*"} 
+                         />
+                      </label>
+                    )}
+
+                    {/* Microphone button for Voice-to-Text / Voice Input */}
+                    <button
+                      type="button"
+                      onClick={toggleListening}
                       className={cn(
-                        "w-7.5 h-7.5 sm:w-9 sm:h-9 flex items-center justify-center rounded-lg sm:rounded-xl transition shadow-md border cursor-pointer active:scale-95",
-                        (!input.trim() && files.length === 0)
-                          ? "bg-black dark:bg-black text-gray-700 dark:text-gray-800 border-transparent cursor-not-allowed"
-                          : "bg-white dark:bg-white text-black dark:text-black border-purple-200/50 dark:border-gray-800 shadow-md"
+                        "w-7 h-7 sm:w-8.5 sm:h-8.5 rounded-lg sm:rounded-xl transition flex items-center justify-center cursor-pointer active:scale-95 shrink-0",
+                        isListening 
+                          ? "bg-rose-500 text-white animate-pulse shadow-lg shadow-rose-500/20" 
+                          : "text-gray-700 dark:text-gray-400 hover:text-gray-900 dark:text-white hover:bg-gray-100 dark:bg-gray-800/60"
                       )}
-                      title={t('chat.sendTooltip')}
+                      title={isListening ? t('studio.listeningNow') : t('studio.voiceTyping')}
                     >
-                      <ArrowUp className="w-3.5 h-3.5 sm:w-4 sm:h-4" strokeWidth={2.5} />
+                      <Mic className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                     </button>
-                  )}
+
+                    {/* Google Search Grounding Toggle Button */}
+                    {chat.type !== 'voice' && (
+                      <button
+                        type="button"
+                        onClick={() => setEnableSearchGrounding(prev => !prev)}
+                        className={cn(
+                          "h-7 sm:h-8.5 px-2 sm:px-2.5 rounded-lg sm:rounded-xl transition flex items-center justify-center cursor-pointer gap-1.5 text-xs font-bold active:scale-95 shrink-0 border",
+                          enableSearchGrounding 
+                            ? "bg-indigo-600 border-indigo-500 text-white shadow-sm shadow-indigo-500/30" 
+                            : "border-gray-200/80 dark:border-gray-800/80 text-gray-700 dark:text-gray-400 hover:text-gray-900 dark:text-white hover:bg-gray-100 dark:bg-gray-800/60"
+                        )}
+                        title={enableSearchGrounding ? t('studio.liveSearchEnabled') : t('studio.liveSearchDisabled')}
+                      >
+                        <Globe className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+                        <span className="hidden sm:inline text-[11px]">{enableSearchGrounding ? t('studio.liveSearch') : t('common.search')}</span>
+                      </button>
+                    )}
+                  </div>
+                  
+                  {/* Right Controls Area with Send button */}
+                  <div className="flex items-center flex-shrink-0 gap-1.5">
+                    {loading ? (
+                      <button 
+                        type="button" 
+                        onClick={() => {
+                          setLoading(false);
+                          setIsJobCompleted(true);
+                        }}
+                        className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center bg-gray-900 dark:bg-gray-100 text-white dark:text-black rounded-xl transition shadow-md cursor-pointer relative active:scale-95 shrink-0"
+                        title={t('chat.stopGeneration')}
+                      >
+                        {/* Spinning Arc */}
+                        <div className="absolute inset-1 rounded-full border-2 border-transparent border-t-white dark:border-t-black animate-spin" />
+                        {/* Stop Square */}
+                        <div className="w-2.5 h-2.5 bg-white dark:bg-black rounded-[2px]" />
+                      </button>
+                    ) : (
+                      <button 
+                        type="submit" 
+                        disabled={!input.trim() && files.length === 0} 
+                        className={cn(
+                          "w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-xl transition-all shadow-sm cursor-pointer active:scale-95 shrink-0",
+                          (!input.trim() && files.length === 0)
+                            ? "bg-gray-100 dark:bg-gray-800/80 text-gray-400 dark:text-gray-600 border border-gray-200/80 dark:border-gray-700/60 cursor-not-allowed"
+                            : "bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-600/30 shadow-md hover:shadow-lg hover:shadow-indigo-600/40 border border-indigo-500"
+                        )}
+                        title={t('chat.sendTooltip')}
+                      >
+                        <ArrowUp className="w-4 h-4 sm:w-4.5 sm:h-4.5" strokeWidth={2.5} />
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>

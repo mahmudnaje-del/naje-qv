@@ -38,6 +38,7 @@ import BalanceTopDropdown from '../components/BalanceTopDropdown';
 import { useI18n, translate } from '../i18n';
 import { OmniverseCommandBar } from '../components/OmniverseCommandBar';
 import { getChatTypeConfig } from '../lib/chatTypeConfig';
+import { NajeAdIcon, NajeIdentIcon, NajeCvIcon, CreativeStudioIcon } from '../components/icons/SuiteIcons';
 
 function tr(key: string, params?: Record<string, string | number>) {
   return translate(key, params, useAppStore.getState().language || 'ar');
@@ -644,7 +645,7 @@ export default function Dashboard() {
             )}
           >
             <div className="flex items-center gap-2.5">
-              <Sparkles className="w-4 h-4 text-amber-500" />
+              <CreativeStudioIcon className="w-4 h-4 shrink-0" />
               <span>{t('nav.creativeStudio')}</span>
             </div>
           </Link>
@@ -660,7 +661,7 @@ export default function Dashboard() {
             )}
           >
             <div className="flex items-center gap-2.5">
-              <Film className="w-4 h-4 text-indigo-500" />
+              <NajeAdIcon className="w-4 h-4 shrink-0" />
               <span>{t('nav.najeAd')}</span>
             </div>
           </Link>
@@ -692,7 +693,7 @@ export default function Dashboard() {
             )}
           >
             <div className="flex items-center gap-2.5">
-              <Clapperboard className="w-4 h-4 text-amber-500" />
+              <NajeIdentIcon className="w-4 h-4 shrink-0" />
               <span>{t('nav.najeMotion')}</span>
             </div>
           </Link>
@@ -708,7 +709,7 @@ export default function Dashboard() {
             )}
           >
             <div className="flex items-center gap-2.5">
-              <FileText className="w-4 h-4 text-amber-600" />
+              <NajeCvIcon className="w-4 h-4 shrink-0" />
               <span>{t('nav.najeCv')}</span>
             </div>
           </Link>
@@ -871,22 +872,13 @@ export default function Dashboard() {
                                 )}
                                 <span className="truncate leading-tight text-slate-900 dark:text-white font-extrabold">{c.title}</span>
                               </div>
-                              <div className="flex items-center gap-1 mt-0.5 min-w-0">
-                                <span 
-                                  className="text-[8.5px] font-black px-1.5 py-0.5 rounded-sm shrink-0"
-                                  style={{
-                                    backgroundColor: meta.bgTint,
-                                    color: meta.color
-                                  }}
-                                >
-                                  {meta.nameAr}
-                                </span>
-                                {projName && (
+                              {projName && (
+                                <div className="flex items-center gap-1 mt-0.5 min-w-0">
                                   <span className="text-[9px] text-purple-750 dark:text-purple-300 font-extrabold truncate opacity-90">
-                                    · {projName}
+                                    {projName}
                                   </span>
-                                )}
-                              </div>
+                                </div>
+                              )}
                             </div>
                           </div>
                         );
@@ -1060,15 +1052,6 @@ export default function Dashboard() {
           <User className="w-4 h-4 text-purple-600 dark:text-purple-400" />
           <span>{t('nav.settings')}</span>
         </Link>
-
-        {/* Legal & Account Deletion Quick Links */}
-        <div className="pt-2 px-1 flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400 border-t border-slate-200/60 dark:border-white/5">
-          <Link to="/Terms-of-Service" onClick={() => setSidebarOpen(false)} className="hover:text-purple-600 dark:hover:text-purple-400 transition">{t('nav.terms')}</Link>
-          <span>•</span>
-          <Link to="/Privacy-Policy" onClick={() => setSidebarOpen(false)} className="hover:text-purple-600 dark:hover:text-purple-400 transition">{t('nav.privacy')}</Link>
-          <span>•</span>
-          <Link to="/delete-account-request" onClick={() => setSidebarOpen(false)} className="text-red-500/90 hover:text-red-500 font-semibold transition">{t('nav.deleteAccount')}</Link>
-        </div>
       </div>
 
     </div>
@@ -1272,7 +1255,7 @@ export default function Dashboard() {
           } else if (p.includes('naje-ident')) {
             studio = {
               title: t('shell.projects.motionStudio'),
-              icon: Film,
+              icon: NajeIdentIcon,
               iconBg: 'bg-gradient-to-br from-[#8ec8ff]/25 to-[#8ec8ff]/10 border-[#8ec8ff]/40 text-[#8ec8ff] shadow-[0_0_15px_rgba(142,200,255,0.25)]',
               headerBg: 'bg-[#06080e] border-b border-[#8ec8ff]/25 shadow-[0_4px_30px_rgba(0,0,0,0.7)] backdrop-blur-xl',
               btnBorder: 'text-[#8ec8ff] border-[#8ec8ff]/25',
@@ -1598,8 +1581,8 @@ export default function Dashboard() {
                   className="w-full sm:h-[140px] min-h-[72px] h-auto px-4 py-3 sm:p-5 bg-gray-50 dark:bg-gray-900 border border-amber-500/20 hover:border-amber-500/40 rounded-xl flex flex-row sm:flex-col items-center justify-between sm:justify-center sm:text-center gap-3 sm:gap-4 transition cursor-pointer group"
                 >
                   <div className="flex flex-row sm:flex-col items-center gap-3 sm:gap-2 min-w-0 sm:w-full">
-                    <div className="w-10 h-10 rounded-full bg-amber-500/10 text-amber-500 flex items-center justify-center flex-shrink-0">
-                      <Clapperboard className="w-5 h-5" />
+                    <div className="w-10 h-10 rounded-full bg-amber-500/10 text-amber-500 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
+                      <NajeIdentIcon className="w-5 h-5" />
                     </div>
                     <div className="flex flex-col text-start sm:text-center">
                       <span className="text-xs font-bold text-gray-900 dark:text-white">{t('nav.najeMotion')}</span>
@@ -1612,11 +1595,11 @@ export default function Dashboard() {
                 <button
                   type="button"
                   onClick={() => { setNewChatModalOpen(false); navigate('/naje-cv'); }}
-                  className="w-full sm:h-[140px] min-h-[72px] h-auto px-4 py-3 sm:p-5 bg-gray-50 dark:bg-gray-900 border border-amber-600/20 hover:border-amber-600/40 rounded-xl flex flex-row sm:flex-col items-center justify-between sm:justify-center sm:text-center gap-3 sm:gap-4 transition cursor-pointer group sm:col-span-2"
+                  className="w-full sm:h-[140px] min-h-[72px] h-auto px-4 py-3 sm:p-5 bg-gray-50 dark:bg-gray-900 border border-indigo-500/20 hover:border-indigo-500/40 rounded-xl flex flex-row sm:flex-col items-center justify-between sm:justify-center sm:text-center gap-3 sm:gap-4 transition cursor-pointer group sm:col-span-2"
                 >
                   <div className="flex flex-row sm:flex-col items-center gap-3 sm:gap-2 min-w-0 sm:w-full">
-                    <div className="w-10 h-10 rounded-full bg-amber-600/10 text-amber-700 dark:text-amber-400 flex items-center justify-center flex-shrink-0">
-                      <FileText className="w-5 h-5" />
+                    <div className="w-10 h-10 rounded-full bg-indigo-500/10 text-indigo-500 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
+                      <NajeCvIcon className="w-5 h-5" />
                     </div>
                     <div className="flex flex-col text-start sm:text-center">
                       <span className="text-xs font-bold text-gray-900 dark:text-white">{t('nav.najeCv')}</span>

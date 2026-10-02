@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Command, Search } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { useI18n } from '../i18n';
 import { STUDIO_CAPABILITIES } from '../omniverse/capabilities';
 import { routeIntent } from '../omniverse/intent';
@@ -49,14 +49,6 @@ export function OmniverseCommandBar({ onCreateChat }: { onCreateChat: CreateChat
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="fixed bottom-4 end-4 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-[var(--naje-p)] text-[var(--naje-on-accent)] shadow-lg md:hidden"
-        aria-label={t('omni.open')}
-      >
-        <Command className="h-5 w-5" />
-      </button>
       {open && (
         <div className="fixed inset-0 z-[70] flex items-start justify-center bg-black/50 p-3 pt-[12vh]" onClick={() => setOpen(false)}>
           <div

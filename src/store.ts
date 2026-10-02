@@ -132,6 +132,30 @@ export const useAppStore = create<AppState>((set, get) => ({
   maintenanceDismissed: false,
   setMaintenanceDismissed: (maintenanceDismissed) => set({ maintenanceDismissed }),
   initializeAuth: () => {
+    // Safety timeout: Never leave user stuck on the full-screen loading spinner
+    const authTimeout = setTimeout(() => {
+      if (get().loadingAuth) {
+        console.warn("[Auth] Auth resolution reached 2.5s timeout - releasing loading lock");
+        const fbUser = auth.currentUser;
+        if (fbUser) {
+          set((state) => ({
+            user: state.user || ({
+              uid: fbUser.uid,
+              email: fbUser.email || '',
+              displayName: fbUser.displayName || 'User',
+              balance: 0,
+              isAdmin: false,
+              emailVerified: Boolean(fbUser.emailVerified),
+              hasAcceptedTerms: true,
+            } as unknown as UserData),
+            loadingAuth: false,
+          }));
+        } else {
+          set({ loadingAuth: false });
+        }
+      }
+    }, 2500);
+
     // Listen to system_status doc for emergency maintenance mode
     if (!statusUnsubscribe) {
       statusUnsubscribe = onSnapshot(doc(db, 'config', 'system_status'), (docSnap) => {
@@ -164,6 +188,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         const userRef = doc(db, 'users', firebaseUser.uid);
 
         userUnsubscribe = onSnapshot(userRef, async (snapshot) => {
+          clearTimeout(authTimeout);
           if (snapshot.exists()) {
             const userData = snapshot.data();
 
@@ -203,9 +228,13 @@ export const useAppStore = create<AppState>((set, get) => ({
               registerForPushNotifications(firebaseUser.uid).catch(() => {});
             }
           } else {
-            // Cached "missing" is not proof the user is new. Writing balance:5 here
-            // is what wiped real balances when Studio served a frontend-only copy.
+            // Cached "missing" is not proof the user is new.
             if (snapshot.metadata.fromCache) {
+              setTimeout(() => {
+                if (get().loadingAuth) {
+                  set({ loadingAuth: false });
+                }
+              }, 1200);
               return;
             }
 
@@ -263,6 +292,7 @@ export const useAppStore = create<AppState>((set, get) => ({
             }
           }
         }, (error) => {
+          clearTimeout(authTimeout);
           console.error("Failed to load user profile via snapshot:", error);
           set({
             user: {
@@ -277,6 +307,7 @@ export const useAppStore = create<AppState>((set, get) => ({
           });
         });
       } else {
+        clearTimeout(authTimeout);
         set({ user: null, loadingAuth: false });
       }
     });

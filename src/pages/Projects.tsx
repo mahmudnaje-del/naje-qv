@@ -28,6 +28,7 @@ import { getDoc as getLocalDoc } from '../lib/idb';
 import { useI18n } from '../i18n';
 import WelcomeStudioDeck from '../components/WelcomeStudioDeck';
 import { getChatTypeConfig } from '../lib/chatTypeConfig';
+import { NajeAdIcon, NajeIdentIcon, NajeCvIcon, CreativeStudioIcon } from '../components/icons/SuiteIcons';
 
 function ProjectMediaThumb({ m }: { m: any }) {
   const { t } = useI18n();
@@ -204,11 +205,18 @@ export default function Projects() {
   useEffect(() => {
     if (!user) return;
 
+    // Safety timeout: If projects query takes longer than 2.5s, don't leave loading spinner hanging!
+    const projTimeout = setTimeout(() => {
+      setLoading(false);
+    }, 2500);
+
     const qProjs = query(collection(db, 'projects'), where('ownerId', '==', user.uid), orderBy('createdAt', 'desc'));
     const unsubProjs = onSnapshot(qProjs, (snap) => {
+      clearTimeout(projTimeout);
       setProjects(snap.docs.map(d => ({ ...d.data(), id: d.id } as Project)));
       setLoading(false);
     }, (error) => {
+      clearTimeout(projTimeout);
       console.warn('Projects listen error:', error);
       setLoading(false);
     });
@@ -567,13 +575,13 @@ export default function Projects() {
                   to="/naje-ad"
                   onClick={(e) => handleStudioClick('/naje-ad', e)}
                   className={cn(
-                    "group p-4 bg-white/70 dark:bg-slate-900/60 hover:bg-sky-50/50 dark:hover:bg-sky-950/20 border border-slate-200/80 dark:border-slate-800 hover:border-sky-500/40 rounded-2xl transition duration-200 shadow-sm flex flex-col justify-between cursor-pointer active:scale-[0.98]",
+                    "group p-4 bg-white/80 dark:bg-slate-900/60 hover:bg-sky-50/50 dark:hover:bg-sky-950/25 border border-slate-200/80 dark:border-slate-800 hover:border-sky-500/40 rounded-2xl transition-all duration-200 shadow-xs hover:shadow-md flex flex-col justify-between cursor-pointer active:scale-[0.98]",
                     loadingStudio === '/naje-ad' && "ring-2 ring-sky-500/50 border-sky-500/60 bg-sky-50/40 dark:bg-sky-950/30"
                   )}
                 >
                   <div className="flex items-start justify-between">
-                    <div className="w-10 h-10 rounded-xl bg-sky-500/10 text-sky-600 dark:text-sky-400 flex items-center justify-center group-hover:scale-105 transition-transform">
-                      <Clapperboard className="w-5 h-5" />
+                    <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center bg-gradient-to-br from-sky-500/15 via-sky-600/10 to-blue-600/5 dark:from-sky-500/25 dark:via-sky-600/15 dark:to-transparent border border-sky-500/30 dark:border-sky-400/30 shadow-xs shadow-sky-500/10 group-hover:scale-105 group-hover:shadow-md transition-all shrink-0">
+                      <NajeAdIcon className="w-6 h-6" size={24} />
                     </div>
                     <div className="w-7 h-7 rounded-xl flex items-center justify-center bg-slate-100/70 dark:bg-slate-800/70 group-hover:bg-sky-500/10 transition-colors">
                       {loadingStudio === '/naje-ad' ? (
@@ -583,7 +591,7 @@ export default function Projects() {
                       )}
                     </div>
                   </div>
-                  <div className="mt-3">
+                  <div className="mt-3.5">
                     <h3 className="text-xs font-black text-slate-900 dark:text-white">{t('shell.projects.adEngine')}</h3>
                     <p className="text-[11px] text-slate-700 dark:text-slate-400 mt-1 leading-relaxed">
                       {t('shell.projects.adEngineDesc')}
@@ -595,13 +603,13 @@ export default function Projects() {
                   to="/naje-ident"
                   onClick={(e) => handleStudioClick('/naje-ident', e)}
                   className={cn(
-                    "group p-4 bg-white/70 dark:bg-slate-900/60 hover:bg-amber-50/50 dark:hover:bg-amber-950/20 border border-slate-200/80 dark:border-slate-800 hover:border-amber-500/40 rounded-2xl transition duration-200 shadow-sm flex flex-col justify-between cursor-pointer active:scale-[0.98]",
+                    "group p-4 bg-white/80 dark:bg-slate-900/60 hover:bg-amber-50/50 dark:hover:bg-amber-950/25 border border-slate-200/80 dark:border-slate-800 hover:border-amber-500/40 rounded-2xl transition-all duration-200 shadow-xs hover:shadow-md flex flex-col justify-between cursor-pointer active:scale-[0.98]",
                     loadingStudio === '/naje-ident' && "ring-2 ring-amber-500/50 border-amber-500/60 bg-amber-50/40 dark:bg-amber-950/30"
                   )}
                 >
                   <div className="flex items-start justify-between">
-                    <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center group-hover:scale-105 transition-transform">
-                      <Film className="w-5 h-5" />
+                    <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center bg-gradient-to-br from-amber-500/15 via-orange-500/10 to-amber-600/5 dark:from-amber-500/25 dark:via-orange-600/15 dark:to-transparent border border-amber-500/30 dark:border-amber-400/30 shadow-xs shadow-amber-500/10 group-hover:scale-105 group-hover:shadow-md transition-all shrink-0">
+                      <NajeIdentIcon className="w-6 h-6" size={24} />
                     </div>
                     <div className="w-7 h-7 rounded-xl flex items-center justify-center bg-slate-100/70 dark:bg-slate-800/70 group-hover:bg-amber-500/10 transition-colors">
                       {loadingStudio === '/naje-ident' ? (
@@ -611,7 +619,7 @@ export default function Projects() {
                       )}
                     </div>
                   </div>
-                  <div className="mt-3">
+                  <div className="mt-3.5">
                     <h3 className="text-xs font-black text-slate-900 dark:text-white">{t('shell.projects.motionStudio')}</h3>
                     <p className="text-[11px] text-slate-700 dark:text-slate-400 mt-1 leading-relaxed">
                       {t('shell.projects.motionDesc')}
@@ -623,13 +631,13 @@ export default function Projects() {
                   to="/naje-cv"
                   onClick={(e) => handleStudioClick('/naje-cv', e)}
                   className={cn(
-                    "group p-4 bg-white/70 dark:bg-slate-900/60 hover:bg-indigo-50/50 dark:hover:bg-indigo-950/20 border border-slate-200/80 dark:border-slate-800 hover:border-indigo-500/40 rounded-2xl transition duration-200 shadow-sm flex flex-col justify-between cursor-pointer active:scale-[0.98]",
+                    "group p-4 bg-white/80 dark:bg-slate-900/60 hover:bg-indigo-50/50 dark:hover:bg-indigo-950/25 border border-slate-200/80 dark:border-slate-800 hover:border-indigo-500/40 rounded-2xl transition-all duration-200 shadow-xs hover:shadow-md flex flex-col justify-between cursor-pointer active:scale-[0.98]",
                     loadingStudio === '/naje-cv' && "ring-2 ring-indigo-500/50 border-indigo-500/60 bg-indigo-50/40 dark:bg-indigo-950/30"
                   )}
                 >
                   <div className="flex items-start justify-between">
-                    <div className="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center group-hover:scale-105 transition-transform">
-                      <FileText className="w-5 h-5" />
+                    <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center bg-gradient-to-br from-indigo-500/15 via-violet-500/10 to-indigo-600/5 dark:from-indigo-500/25 dark:via-violet-600/15 dark:to-transparent border border-indigo-500/30 dark:border-indigo-400/30 shadow-xs shadow-indigo-500/10 group-hover:scale-105 group-hover:shadow-md transition-all shrink-0">
+                      <NajeCvIcon className="w-6 h-6" size={24} />
                     </div>
                     <div className="w-7 h-7 rounded-xl flex items-center justify-center bg-slate-100/70 dark:bg-slate-800/70 group-hover:bg-indigo-500/10 transition-colors">
                       {loadingStudio === '/naje-cv' ? (
@@ -639,7 +647,7 @@ export default function Projects() {
                       )}
                     </div>
                   </div>
-                  <div className="mt-3">
+                  <div className="mt-3.5">
                     <h3 className="text-xs font-black text-slate-900 dark:text-white">{t('shell.projects.cvTitle')}</h3>
                     <p className="text-[11px] text-slate-700 dark:text-slate-400 mt-1 leading-relaxed">
                       {t('shell.projects.cvDesc')}
@@ -651,13 +659,13 @@ export default function Projects() {
                   to="/creative-studio"
                   onClick={(e) => handleStudioClick('/creative-studio', e)}
                   className={cn(
-                    "group p-4 bg-white/70 dark:bg-slate-900/60 hover:bg-purple-50/50 dark:hover:bg-purple-950/20 border border-slate-200/80 dark:border-slate-800 hover:border-purple-500/40 rounded-2xl transition duration-200 shadow-sm flex flex-col justify-between cursor-pointer active:scale-[0.98]",
+                    "group p-4 bg-white/80 dark:bg-slate-900/60 hover:bg-purple-50/50 dark:hover:bg-purple-950/25 border border-slate-200/80 dark:border-slate-800 hover:border-purple-500/40 rounded-2xl transition-all duration-200 shadow-xs hover:shadow-md flex flex-col justify-between cursor-pointer active:scale-[0.98]",
                     loadingStudio === '/creative-studio' && "ring-2 ring-purple-500/50 border-purple-500/60 bg-purple-50/40 dark:bg-purple-950/30"
                   )}
                 >
                   <div className="flex items-start justify-between">
-                    <div className="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center group-hover:scale-105 transition-transform">
-                      <Palette className="w-5 h-5" />
+                    <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center bg-gradient-to-br from-purple-500/15 via-fuchsia-500/10 to-pink-600/5 dark:from-purple-500/25 dark:via-fuchsia-600/15 dark:to-transparent border border-purple-500/30 dark:border-purple-400/30 shadow-xs shadow-purple-500/10 group-hover:scale-105 group-hover:shadow-md transition-all shrink-0">
+                      <CreativeStudioIcon className="w-6 h-6" size={24} />
                     </div>
                     <div className="w-7 h-7 rounded-xl flex items-center justify-center bg-slate-100/70 dark:bg-slate-800/70 group-hover:bg-purple-500/10 transition-colors">
                       {loadingStudio === '/creative-studio' ? (
@@ -667,7 +675,7 @@ export default function Projects() {
                       )}
                     </div>
                   </div>
-                  <div className="mt-3">
+                  <div className="mt-3.5">
                     <h3 className="text-xs font-black text-slate-900 dark:text-white">{t('shell.projects.creativeTitle')}</h3>
                     <p className="text-[11px] text-slate-700 dark:text-slate-400 mt-1 leading-relaxed">
                       {t('shell.projects.creativeDesc')}

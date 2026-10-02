@@ -2895,8 +2895,16 @@ export async function startServer(existingApp?: express.Express) {
   });
   app.post(['/api/themes/unlock', '/api/theme/unlock'], handleUnlockTheme);
 
-  // Early root probe responder: ensures Cloud Run startup probes at '/' immediately return 200 with index.html
+  // Early root probe responder: ensures Cloud Run startup probes succeed immediately
   app.get('/', (req, res, next) => {
+    const isProbe = req.headers['user-agent']?.includes('GoogleHC') || req.headers['user-agent']?.includes('kube-probe');
+    if (isProbe) {
+      return res.status(200).send('OK');
+    }
+    // In dev mode, allow Vite dev middleware to handle index.html transformation with live modules
+    if (process.env.NODE_ENV !== 'production') {
+      return next();
+    }
     const earlyIndex = [
       path.join(process.cwd(), 'dist', 'index.html'),
       path.join(process.cwd(), 'index.html')
@@ -12126,7 +12134,7 @@ ${sourceBlock}`;
     path.join(appDirname, 'dist')
   ];
   const distPath = candidateDistPaths.find(p => fs.existsSync(path.join(p, 'index.html')));
-  const isProduction = process.env.NODE_ENV === 'production' || Boolean(distPath);
+  const isProduction = process.env.NODE_ENV === 'production';
   console.log(`[Static Serving] Mode: ${isProduction ? 'production' : 'development'}, distPath: ${distPath || 'none'}`);
 
   // Serve public directory as static assets (logos, manifest, etc.)
@@ -12137,13 +12145,7 @@ ${sourceBlock}`;
     res.status(404).json({ error: `API route ${req.method} ${req.originalUrl} not found` });
   });
 
-  if (distPath) {
-    app.use(express.static(distPath));
-    app.get('*', (req, res) => {
-      const indexPath = path.join(distPath, 'index.html');
-      res.sendFile(indexPath);
-    });
-  } else if (!isProduction) {
+  if (!isProduction) {
     try {
       const { createServer: createViteServer } = await import("vite");
       const vite = await createViteServer({
@@ -12151,9 +12153,40 @@ ${sourceBlock}`;
         appType: "spa",
       });
       app.use(vite.middlewares);
+      app.use('*', async (req, res, next) => {
+        const url = req.originalUrl;
+        if (url.startsWith('/api')) {
+          return next();
+        }
+        try {
+          const templatePath = path.resolve(process.cwd(), 'index.html');
+          if (fs.existsSync(templatePath)) {
+            let template = fs.readFileSync(templatePath, 'utf-8');
+            template = await vite.transformIndexHtml(url, template);
+            return res.status(200).set({ 'Content-Type': 'text/html' }).end(template);
+          }
+          next();
+        } catch (e) {
+          vite.ssrFixStacktrace(e as Error);
+          next(e);
+        }
+      });
+      console.log("[Server] Vite dev middleware & HTML transformer active");
     } catch (viteErr) {
-      console.warn("[Server] Vite dev middleware could not be loaded:", viteErr);
+      console.warn("[Server] Vite dev middleware could not be loaded, falling back:", viteErr);
+      if (distPath) {
+        app.use(express.static(distPath));
+        app.get('*', (req, res) => {
+          res.sendFile(path.join(distPath, 'index.html'));
+        });
+      }
     }
+  } else if (distPath) {
+    app.use(express.static(distPath));
+    app.get('*', (req, res) => {
+      const indexPath = path.join(distPath, 'index.html');
+      res.sendFile(indexPath);
+    });
   } else {
     app.get('*', (req, res) => {
       const rootIndex = path.join(process.cwd(), 'index.html');

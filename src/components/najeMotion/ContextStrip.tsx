@@ -1,4 +1,5 @@
 import React from 'react';
+import { Sparkles, SlidersHorizontal, Volume2, Users, Layout } from 'lucide-react';
 import {
   AUDIENCES,
   BRAND_VOICES,
@@ -21,9 +22,15 @@ export function ContextStrip({
   onChange: (patch: Partial<MotionDraft>) => void;
 }) {
   const { t, opt } = useMotionI18n();
+
   return (
-    <StudioCard title={t('motion.ctx.title')} hint={t('motion.ctx.hint')}>
-      <div className="space-y-3">
+    <StudioCard
+      title={t('motion.ctx.title')}
+      hint={t('motion.ctx.hint')}
+      icon={<SlidersHorizontal className="w-4 h-4 text-[#8ec8ff]" />}
+    >
+      <div className="space-y-4">
+        {/* Project Type */}
         <ChipRow title={t('motion.ctx.project')} scroll>
           {PROJECT_TYPES.map((x) => (
             <Chip
@@ -35,6 +42,8 @@ export function ContextStrip({
             </Chip>
           ))}
         </ChipRow>
+
+        {/* Target Audience */}
         <ChipRow title={t('motion.ctx.audience')} scroll>
           {AUDIENCES.map((x) => (
             <Chip key={x.id} active={draft.audience === x.id} onClick={() => onChange({ audience: x.id })}>
@@ -42,6 +51,8 @@ export function ContextStrip({
             </Chip>
           ))}
         </ChipRow>
+
+        {/* Brand Voice / Tone */}
         <ChipRow title={t('motion.ctx.voice')} scroll>
           {BRAND_VOICES.map((x) => (
             <Chip key={x.id} active={draft.brandVoice === x.id} onClick={() => onChange({ brandVoice: x.id })}>
@@ -49,6 +60,8 @@ export function ContextStrip({
             </Chip>
           ))}
         </ChipRow>
+
+        {/* Sound Ambience & Mood */}
         <ChipRow title={t('motion.ctx.sound')} hint={t('motion.honesty.sound')} scroll>
           {SOUND_OPTIONS.map((x) => (
             <Chip key={x.id} active={draft.sound === x.id} onClick={() => onChange({ sound: x.id })}>
@@ -56,6 +69,8 @@ export function ContextStrip({
             </Chip>
           ))}
         </ChipRow>
+
+        {/* Social Handles / Links */}
         <div>
           <FieldLabel>{t('motion.ctx.socials')}</FieldLabel>
           <StudioInput
@@ -65,6 +80,8 @@ export function ContextStrip({
           />
           <p className="mt-1 text-[10px] leading-relaxed text-[#93a0b5]">{t('motion.ctx.socialsNote')}</p>
         </div>
+
+        {/* Outro Layouts if applicable */}
         {(slot === 'outro' || draft.kind === 'outro' || draft.kind === 'both') && (
           <ChipRow title={t('motion.ctx.layout')} scroll>
             {OUTRO_LAYOUTS.map((x) => (

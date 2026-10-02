@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { AlertCircle, Clapperboard, Sparkles, Wand2 } from 'lucide-react';
+import { AlertCircle, Clapperboard, Film, Layers, Palette, Sparkles, Wand2, Sliders, ShieldCheck, Zap, ArrowLeft, RefreshCw } from 'lucide-react';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { useAppStore } from '../store';
 import { auth, db } from '../firebase';
@@ -44,6 +44,9 @@ import { Chip, FieldLabel, RegFrame, StudioCard, fieldClass } from '../component
 import { useMotionI18n } from '../components/najeMotion/i18n';
 import { usePricingConfig } from '../hooks/usePricingConfig';
 import { toast } from '../toastStore';
+import { NajeIdentIcon } from '../components/icons/SuiteIcons';
+
+type MobileSectionTab = 'brand' | 'style' | 'format' | 'plan';
 
 function stepIndex(progress: number) {
   let i = 0;
@@ -73,6 +76,7 @@ export default function NajeIdent() {
   const [paywall, setPaywall] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [studioEntered, setStudioEntered] = useState(() => Boolean(loadDraft().brandName.trim()));
+  const [mobileTab, setMobileTab] = useState<MobileSectionTab>('brand');
   const generatingSlotRef = useRef<IdentSlot | null>(null);
   const kindRef = useRef(draft.kind);
 
@@ -162,7 +166,8 @@ export default function NajeIdent() {
     const d = nextDraft || draft;
     const currentSlot = resolveSlot(d.kind, d.activePiece);
     if (!d.brandName.trim()) {
-      toast.error(t('motion.page.needName'));
+      toast.error('يرجى كتابة اسم علامتك التجارية أولاً');
+      setMobileTab('brand');
       return;
     }
     if (!hasFeatureAccess(user, 'najeAd')) {
@@ -177,6 +182,7 @@ export default function NajeIdent() {
     setBusy(true);
     setGeneratingSlot(currentSlot);
     generatingSlotRef.current = currentSlot;
+
     const token = await auth.currentUser?.getIdToken();
     if (!token) {
       setBusy(false);
@@ -232,7 +238,7 @@ export default function NajeIdent() {
   const runSurprise = () => {
     const next = surpriseDirection(draft);
     setDraft(next);
-    toast.success(t('motion.page.surpriseToast'));
+    toast.success('تم ابتكار أسلوب إخراجي ملهم لهويتك');
   };
 
   const stepLabel =
@@ -241,16 +247,16 @@ export default function NajeIdent() {
       : job?.stepLabel || (busy ? t(`motion.step.${stepIndex(job?.progress || 0)}`) : '');
 
   const generateLabel = () => {
-    if (busy) return stepLabel || t('motion.page.producing');
+    if (busy) return stepLabel || 'ناجي يقوم بالإنتاج السينمائي…';
     const piece = t(`motion.piece.${slot}`);
     const duration = formatNumber(draft.duration);
     if (draft.kind === 'both' && slot === 'intro' && !results.intro?.videoUrl) {
-      return t('motion.page.produceFirst', { duration });
+      return `إنتاج شارة البداية (${duration}ث)`;
     }
     if (draft.kind === 'both' && slot === 'outro' && results.intro?.videoUrl && !results.outro?.videoUrl) {
-      return t('motion.page.produceOutro', { duration });
+      return `إنتاج شارة النهاية (${duration}ث)`;
     }
-    return t('motion.page.producePiece', { piece, duration });
+    return `إنتاج ${piece} (${duration}ث)`;
   };
 
   const hasResults = Object.values(results).some((r) => r?.videoUrl);
@@ -268,8 +274,8 @@ export default function NajeIdent() {
 
   return (
     <div
-      className={`naje-motion-studio relative h-full overflow-y-auto bg-[#07090f] px-3 pt-4 text-[#e7eef8] sm:px-6 ${
-        showHero ? 'pb-8' : 'pb-36 lg:pb-8'
+      className={`naje-motion-studio relative min-h-full overflow-y-auto bg-[#07090f] px-3.5 pt-3.5 text-[#e7eef8] sm:px-6 sm:pt-6 ${
+        showHero ? 'pb-8' : 'pb-36 lg:pb-12'
       }`}
       dir={isRtl ? 'rtl' : 'ltr'}
     >
@@ -280,11 +286,11 @@ export default function NajeIdent() {
         {showHero ? (
           <>
             <div className="flex justify-end">
-              <div className="rounded-2xl border border-[#8ec8ff]/18 bg-black/30 px-3 py-1.5 text-end sm:px-4 sm:py-2 flex items-center gap-2.5">
+              <div className="rounded-2xl border border-[#8ec8ff]/20 bg-black/50 px-3.5 py-2 text-end flex items-center gap-2.5 shadow-md backdrop-blur-md">
                 <NajeCreditIcon className="w-5 h-5 shrink-0" />
                 <div>
                   <div className="text-[10px] text-[#93a0b5]">{t('motion.page.balance')}</div>
-                  <div className="font-mono text-base font-black text-[#ffb020] sm:text-lg">
+                  <div className="font-mono text-sm sm:text-base font-black text-[#ffb020]">
                     {formatNumber(user?.balance ?? 0)} {t('common.pointsShort')}
                   </div>
                 </div>
@@ -294,92 +300,314 @@ export default function NajeIdent() {
           </>
         ) : (
           <>
-            <RegFrame className="rounded-2xl bg-[#10151f] p-4 sm:rounded-[28px] sm:p-5">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div className="min-w-0">
-                  {!hasResults && (
-                    <button
-                      type="button"
-                      onClick={() => setStudioEntered(false)}
-                      className="mb-2 inline-flex min-h-[44px] items-center text-[11px] font-black text-[#93a0b5] hover:text-[#8ec8ff]"
-                    >
-                      {t('motion.page.back')}
-                    </button>
-                  )}
-                  <div className="mb-1.5 inline-flex min-h-[44px] items-center gap-2 rounded-full border border-[#8ec8ff]/25 bg-[#8ec8ff]/10 px-2.5 py-0.5 text-[10px] font-black tracking-[0.14em] text-[#e7eef8]">
-                    <span className="motion-tally inline-block h-2 w-2 rounded-full" aria-hidden />
-                    <Clapperboard className="h-3.5 w-3.5 text-[#8ec8ff]" />
-                    <span className="text-[#ffb020]">REC</span>
-                    NAJE MOTION
+            {/* Top Studio Control Header */}
+            <RegFrame className="rounded-2xl sm:rounded-[28px] bg-gradient-to-b from-[#111726] to-[#0a0e17] p-3.5 sm:p-5 shadow-xl shadow-black/50 border border-[#8ec8ff]/20">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2 mb-2 flex-wrap">
+                    {!hasResults && (
+                      <button
+                        type="button"
+                        onClick={() => setStudioEntered(false)}
+                        className="inline-flex min-h-[38px] items-center gap-1.5 px-3 py-1 rounded-xl bg-black/40 border border-[#8ec8ff]/20 text-xs font-black text-[#93a0b5] hover:text-[#8ec8ff] active:scale-95 transition"
+                      >
+                        <ArrowLeft className="w-3.5 h-3.5 rtl:rotate-180" />
+                        <span>العودة للرئيسية</span>
+                      </button>
+                    )}
+                    <div className="inline-flex items-center gap-1.5 rounded-full border border-[#8ec8ff]/30 bg-[#8ec8ff]/10 px-3 py-1 text-[11px] font-black tracking-wider text-[#e7eef8]">
+                      <NajeIdentIcon size={16} className="shrink-0" />
+                      <span className="motion-tally inline-block h-2 w-2 rounded-full bg-[#ffb020] animate-pulse" aria-hidden />
+                      <span className="text-[#ffb020]">NAJE IDENT</span>
+                      <span className="text-[#93a0b5] text-[10px]">· استوديو الموشن غرافيك</span>
+                    </div>
                   </div>
-                  <h1 className="text-xl font-black leading-snug tracking-tight text-[#e7eef8] sm:text-2xl">
+                  <h1 className="text-base sm:text-2xl font-black leading-snug tracking-tight text-[#e7eef8]">
                     {t('motion.page.title')}
                   </h1>
-                  <p className="mt-1 max-w-xl text-xs leading-relaxed text-[#93a0b5]">{t('motion.page.subtitle')}</p>
-                  <p className="mt-1.5 text-[11px] font-bold text-[#8ec8ff]">{t('motion.page.tagline')}</p>
+                  <p className="mt-0.5 text-xs leading-relaxed text-[#93a0b5] line-clamp-2 sm:line-clamp-none">
+                    {t('motion.page.subtitle')}
+                  </p>
                 </div>
-                <div className="rounded-2xl border border-[#8ec8ff]/18 bg-black/30 px-3 py-1.5 text-end sm:px-4 sm:py-2 flex items-center gap-2.5">
+
+                <div className="rounded-2xl border border-[#8ec8ff]/20 bg-black/50 px-3.5 py-2 text-end flex items-center gap-2.5 shadow-xs shrink-0">
                   <NajeCreditIcon className="w-5 h-5 shrink-0" />
                   <div>
                     <div className="text-[10px] text-[#93a0b5]">{t('motion.page.balance')}</div>
-                    <div className="font-mono text-base font-black text-[#ffb020] sm:text-lg">
+                    <div className="font-mono text-sm sm:text-base font-black text-[#ffb020]">
                       {formatNumber(user?.balance ?? 0)} {t('common.pointsShort')}
                     </div>
                   </div>
                 </div>
               </div>
+
+              {/* Kind Cards (Intro / Outro / Both / Logo) */}
               <div className="mt-4">
                 <KindCards value={draft.kind} onChange={selectKind} preset={presetBadge} />
               </div>
+
+              {/* Both Mode: Intro & Outro Tabs */}
               {draft.kind === 'both' && (
-                <div className="mt-3 rounded-2xl border border-[#8ec8ff]/12 bg-black/25 p-3">
-                  <p className="mb-2 text-[10px] leading-relaxed text-[#93a0b5]">{t('motion.page.bothDesc')}</p>
+                <div className="mt-3.5 rounded-2xl border border-[#8ec8ff]/15 bg-black/30 p-3">
+                  <p className="mb-2 text-[11px] leading-relaxed text-[#93a0b5]">
+                    حزمة متكاملة: يتم إنتاج شارة البداية ثم شارة النهاية بتناغم بصري كامل.
+                  </p>
                   <div className="grid grid-cols-2 gap-2">
-                    <Chip active={draft.activePiece === 'intro'} onClick={() => patch({ activePiece: 'intro' })} className="w-full justify-center py-2.5">
-                      {t('motion.page.produceIntro')}
-                      {results.intro?.videoUrl ? ` — ${t('motion.page.ready')}` : ''}
+                    <Chip
+                      active={draft.activePiece === 'intro'}
+                      onClick={() => patch({ activePiece: 'intro' })}
+                      className="w-full justify-center py-2.5 text-xs font-black"
+                    >
+                      شارة البداية (Intro)
+                      {results.intro?.videoUrl ? ' — ✓ جاهزة' : ''}
                     </Chip>
-                    <Chip active={draft.activePiece === 'outro'} onClick={() => patch({ activePiece: 'outro' })} className="w-full justify-center py-2.5">
-                      {t('motion.page.produceOutroBtn')}
-                      {results.outro?.videoUrl ? ` — ${t('motion.page.ready')}` : ''}
+                    <Chip
+                      active={draft.activePiece === 'outro'}
+                      onClick={() => patch({ activePiece: 'outro' })}
+                      className="w-full justify-center py-2.5 text-xs font-black"
+                    >
+                      شارة النهاية (Outro)
+                      {results.outro?.videoUrl ? ' — ✓ جاهزة' : ''}
                     </Chip>
                   </div>
                   {results.intro?.videoUrl && !results.outro?.videoUrl && draft.activePiece === 'intro' && (
-                    <p className="mt-2 text-[10px] font-bold text-[#ffb020]">{t('motion.page.introNext')}</p>
+                    <p className="mt-2 text-[11px] font-bold text-[#ffb020]">
+                      تم تجهيز شارة البداية بنجاح! انتقل لإنتاج شارة النهاية لإكمال الحزمة.
+                    </p>
                   )}
                 </div>
               )}
             </RegFrame>
 
+            {/* Error Notification Banner */}
             {error && (
-              <div className="rounded-2xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-xs text-rose-200">
-                <p className="inline-flex items-start gap-2">
-                  <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+              <div className="rounded-2xl border border-rose-500/40 bg-rose-500/15 p-4 text-xs text-rose-200">
+                <p className="inline-flex items-start gap-2.5">
+                  <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-rose-400" />
                   <span>
+                    <strong className="block text-sm font-bold text-white mb-0.5">تنبيه أثناء الإنتاج:</strong>
                     {error}
-                    <span className="mt-1 block text-[10px] text-rose-100/70">{t('motion.page.saved')}</span>
                   </span>
                 </p>
-                <div className="mt-2 flex flex-wrap gap-2">
+                <div className="mt-3 flex flex-wrap gap-2">
                   <button
                     type="button"
                     onClick={() => {
                       setError(null);
                       void generate();
                     }}
-                    className="min-h-[44px] rounded-xl border border-rose-300/40 px-3 font-black"
+                    className="min-h-[42px] rounded-xl bg-rose-500/30 border border-rose-400/50 px-4 text-xs font-black text-white hover:bg-rose-500/40 active:scale-95 transition"
                   >
-                    {t('common.retry')}
+                    إعادة المحاولة
                   </button>
-                  <button type="button" onClick={() => setError(null)} className="min-h-[44px] font-bold text-rose-100/80">
-                    {t('common.close')}
+                  <button
+                    type="button"
+                    onClick={() => setError(null)}
+                    className="min-h-[42px] px-3 text-xs font-bold text-rose-200/80 hover:text-white"
+                  >
+                    إغلاق
                   </button>
                 </div>
               </div>
             )}
 
-            <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
-              <div className="order-1 space-y-4 lg:sticky lg:top-3 lg:order-2">
+            {/* Mobile View: PERMANENT LIVE STAGE MOUNTED AT TOP */}
+            <div className="lg:hidden space-y-3">
+              <Monitor
+                busy={busy}
+                stepLabel={stepLabel}
+                progress={job?.progress || 0}
+                generatingSlot={generatingSlot}
+                results={results}
+                activeSlot={slot}
+                kind={draft.kind}
+                aspect={draft.aspect}
+                platform={draft.platform}
+                duration={draft.duration}
+                brandName={draft.brandName}
+                hasLogo={Boolean(draft.logo)}
+                logo={draft.logo}
+                primary={draft.primary}
+                bgColor={draft.bgColor}
+                tagline={draft.tagline}
+                versions={versions}
+                focusUrl={focusUrl}
+                compareUrl={compareUrl}
+                compareOn={compareOn}
+                onFocus={setFocusUrl}
+                onComparePick={setCompareUrl}
+                onToggleCompare={() => setCompareOn((v) => !v)}
+                onRegenerate={() => void generate()}
+                onVariation={runVariation}
+              />
+
+              {/* Ready Project Card if finished */}
+              {hasResults && !busy && (
+                <div className="rounded-2xl border border-[#8ec8ff]/30 bg-[#8ec8ff]/10 p-3.5">
+                  <p className="text-sm font-black text-[#e7eef8]">تم إخراج الشارة السينمائية بنجاح!</p>
+                  <p className="mt-1 text-xs leading-relaxed text-[#93a0b5]">
+                    يمكنك تشغيل الفيديو أعلاه، تكبيره بملء الشاشة، أو تحميله بصيغة MP4 جاهزة للمونتاج.
+                  </p>
+                  <div className="mt-2.5">
+                    <button
+                      type="button"
+                      onClick={resetProject}
+                      className="min-h-[40px] rounded-xl border border-[#8ec8ff]/30 bg-black/40 px-3.5 text-xs font-black text-[#e7eef8] active:scale-95 transition"
+                    >
+                      بدء مشروع هوية جديد
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Segmented Control Bar for Mobile Configuration */}
+              <div className="sticky top-0 z-30 -mx-3.5 px-3.5 py-2.5 bg-[#07090f]/95 backdrop-blur-md border-y border-[#8ec8ff]/20">
+                <div className="grid grid-cols-4 gap-1 p-1 bg-black/60 rounded-2xl border border-[#8ec8ff]/20">
+                  <button
+                    type="button"
+                    onClick={() => setMobileTab('brand')}
+                    className={`min-h-[42px] rounded-xl px-1 py-1.5 text-xs font-black transition-all flex flex-col items-center justify-center gap-0.5 active:scale-95 ${
+                      mobileTab === 'brand'
+                        ? 'bg-[#8ec8ff]/25 text-[#8ec8ff] shadow-sm border border-[#8ec8ff]/40'
+                        : 'text-[#93a0b5] hover:text-[#e7eef8]'
+                    }`}
+                  >
+                    <Palette className="w-3.5 h-3.5 shrink-0" />
+                    <span className="text-[11px] truncate">الهوية والألوان</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setMobileTab('style')}
+                    className={`min-h-[42px] rounded-xl px-1 py-1.5 text-xs font-black transition-all flex flex-col items-center justify-center gap-0.5 active:scale-95 ${
+                      mobileTab === 'style'
+                        ? 'bg-[#8ec8ff]/25 text-[#8ec8ff] shadow-sm border border-[#8ec8ff]/40'
+                        : 'text-[#93a0b5] hover:text-[#e7eef8]'
+                    }`}
+                  >
+                    <Sparkles className="w-3.5 h-3.5 shrink-0" />
+                    <span className="text-[11px] truncate">الأسلوب والمخرج</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setMobileTab('format')}
+                    className={`min-h-[42px] rounded-xl px-1 py-1.5 text-xs font-black transition-all flex flex-col items-center justify-center gap-0.5 active:scale-95 ${
+                      mobileTab === 'format'
+                        ? 'bg-[#8ec8ff]/25 text-[#8ec8ff] shadow-sm border border-[#8ec8ff]/40'
+                        : 'text-[#93a0b5] hover:text-[#e7eef8]'
+                    }`}
+                  >
+                    <Sliders className="w-3.5 h-3.5 shrink-0" />
+                    <span className="text-[11px] truncate">المقاس والمدة</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setMobileTab('plan')}
+                    className={`min-h-[42px] rounded-xl px-1 py-1.5 text-xs font-black transition-all flex flex-col items-center justify-center gap-0.5 active:scale-95 ${
+                      mobileTab === 'plan'
+                        ? 'bg-[#8ec8ff]/25 text-[#8ec8ff] shadow-sm border border-[#8ec8ff]/40'
+                        : 'text-[#93a0b5] hover:text-[#e7eef8]'
+                    }`}
+                  >
+                    <Layers className="w-3.5 h-3.5 shrink-0" />
+                    <span className="text-[11px] truncate">المخطط الزمني</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Mobile Active Tab Contents */}
+              <div className="space-y-4">
+                {mobileTab === 'brand' && (
+                  <div className="space-y-4">
+                    <BrandKit draft={draft} onChange={patch} />
+                    <ContextStrip draft={draft} slot={slot} onChange={patch} />
+                  </div>
+                )}
+
+                {mobileTab === 'style' && (
+                  <div className="space-y-4">
+                    <StyleTemplates styleId={draft.styleId} onSelect={(id) => setDraft((prev) => applyTemplate(prev, id))} />
+                    <DirectionPanel draft={draft} slot={slot} onChange={patch} />
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={runSurprise}
+                      className="flex min-h-[46px] w-full items-center justify-center gap-2 rounded-2xl border border-[#8ec8ff]/35 bg-[#8ec8ff]/10 py-3 text-xs font-black text-[#8ec8ff] active:scale-[0.98] disabled:opacity-50 transition"
+                    >
+                      <Wand2 className="h-4 w-4 text-[#ffb020]" />
+                      <span>{t('motion.page.surprise')}</span>
+                    </button>
+                  </div>
+                )}
+
+                {mobileTab === 'format' && (
+                  <div className="space-y-4">
+                    <FormatBar
+                      duration={draft.duration}
+                      aspect={draft.aspect}
+                      resolution={draft.resolution}
+                      onDuration={(duration) => patch({ duration })}
+                      onAspect={(aspect) => patch({ aspect })}
+                      onResolution={(resolution) => patch({ resolution })}
+                    />
+                  </div>
+                )}
+
+                {mobileTab === 'plan' && (
+                  <div className="space-y-4">
+                    <BestPracticeHints draft={draft} slot={slot} />
+                    <StudioCard title="رؤية المخرج التوليدية" hint="ملاحظات توجيهية إضافية لإثراء المشهد والحركة">
+                      <FieldLabel>الرؤية والوصف الفني:</FieldLabel>
+                      <textarea
+                        rows={3}
+                        value={draft.vision}
+                        maxLength={1200}
+                        onChange={(e) => patch({ vision: e.target.value })}
+                        placeholder="أدخل أي تفاصيل إضافية للمخرج الذكي (مثال: إظهار إشعاع ذهبي ناعم في الثانية الخامسة)..."
+                        className={fieldClass}
+                      />
+                    </StudioCard>
+                    <MotionPlanView beats={beats} duration={draft.duration} slot={slot} motion={motionLabel} logo={logoLabel} cta={ctaLabel} />
+                    <PromptPreview draft={draft} slot={slot} beats={beats} motion={motionLabel} logo={logoLabel} cta={ctaLabel} />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Desktop View: TWO-COLUMN SIDE-BY-SIDE LAYOUT */}
+            <div className="hidden lg:grid items-start gap-5 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
+              {/* Left Column: Directives, Brand, Style, Formats */}
+              <div className="space-y-4">
+                <BrandKit draft={draft} onChange={patch} />
+                <ContextStrip draft={draft} slot={slot} onChange={patch} />
+                <StyleTemplates styleId={draft.styleId} onSelect={(id) => setDraft((prev) => applyTemplate(prev, id))} />
+                <DirectionPanel draft={draft} slot={slot} onChange={patch} />
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={runSurprise}
+                  className="flex min-h-[46px] w-full items-center justify-center gap-2 rounded-2xl border border-[#8ec8ff]/35 bg-[#8ec8ff]/10 py-3 text-xs font-black text-[#8ec8ff] active:scale-[0.98] disabled:opacity-50 transition"
+                >
+                  <Wand2 className="h-4 w-4 text-[#ffb020]" />
+                  <span>{t('motion.page.surprise')}</span>
+                </button>
+                <StudioCard title="رؤية المخرج التوليدية" hint="ملاحظات توجيهية إضافية لإثراء المشهد والحركة">
+                  <FieldLabel>الرؤية والوصف الفني:</FieldLabel>
+                  <textarea
+                    rows={3}
+                    value={draft.vision}
+                    maxLength={1200}
+                    onChange={(e) => patch({ vision: e.target.value })}
+                    placeholder="أدخل أي تفاصيل إضافية للمخرج الذكي..."
+                    className={fieldClass}
+                  />
+                </StudioCard>
+              </div>
+
+              {/* Right Column: Sticky Monitor Stage, FormatBar, Plan & Produce */}
+              <div className="space-y-4 lg:sticky lg:top-3">
                 <Monitor
                   busy={busy}
                   stepLabel={stepLabel}
@@ -407,6 +635,7 @@ export default function NajeIdent() {
                   onRegenerate={() => void generate()}
                   onVariation={runVariation}
                 />
+
                 <FormatBar
                   duration={draft.duration}
                   aspect={draft.aspect}
@@ -415,102 +644,80 @@ export default function NajeIdent() {
                   onAspect={(aspect) => patch({ aspect })}
                   onResolution={(resolution) => patch({ resolution })}
                 />
-                <div className="hidden space-y-2 lg:block">
+
+                {/* Desktop Produce Action Box */}
+                <div className="space-y-2">
                   <p className="text-center text-[11px] text-[#93a0b5]">
                     <span className="font-black text-[#ffb020] inline-flex items-center gap-1">
-                      <NajeCreditIcon className="w-3.5 h-3.5 shrink-0" />
+                      <NajeCreditIcon className="w-4 h-4 shrink-0" />
                       <span>{formatNumber(points)} {t('common.pointsShort')}</span>
                     </span>
-                    <span className="mt-0.5 block text-[10px] text-[#93a0b5]">{t('motion.page.engineNote', clock)}</span>
+                    <span className="mt-0.5 block text-[10px] text-[#93a0b5]">
+                      إخراج فائق الدقة · نافذة 10 ثوانٍ سينمائية
+                    </span>
                   </p>
                   <button
                     type="button"
                     disabled={busy || najeAd?.enabled === false}
                     onClick={() => void generate()}
-                    className="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-2xl bg-[#8ec8ff] py-3.5 text-sm font-black text-[#071018] shadow-[0_12px_40px_-12px_rgba(142,200,255,0.55)] disabled:opacity-50"
+                    className="flex min-h-[50px] w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#8ec8ff] via-[#6db4ff] to-[#4da6ff] py-3.5 text-sm font-black text-[#071018] shadow-[0_12px_40px_-10px_rgba(142,200,255,0.6)] active:scale-[0.99] disabled:opacity-50 transition-all cursor-pointer"
                   >
                     {busy ? <NajeThinking size={22} /> : <Sparkles className="h-4 w-4" />}
-                    {busy ? generateLabel() : `${generateLabel()} · ${formatNumber(points)} ${t('common.pointsShort')}`}
+                    <span>{busy ? generateLabel() : `${generateLabel()} · ${formatNumber(points)} ${t('common.pointsShort')}`}</span>
                   </button>
                 </div>
+
                 {hasResults && !busy && (
                   <div className="rounded-2xl border border-[#8ec8ff]/30 bg-[#8ec8ff]/10 p-4">
-                    <p className="text-sm font-black text-[#e7eef8]">{t('motion.page.readyTitle')}</p>
-                    <p className="mt-1 text-[11px] leading-relaxed text-[#93a0b5]">{t('motion.page.readyBody')}</p>
-                    <div className="mt-3 flex flex-wrap gap-2">
+                    <p className="text-sm font-black text-[#e7eef8]">تم إخراج الشارة بنجاح!</p>
+                    <p className="mt-1 text-xs leading-relaxed text-[#93a0b5]">
+                      يمكنك معاينة الفيديو، المقارنة مع نسخ سابقة، أو تنزيل ملف MP4.
+                    </p>
+                    <div className="mt-3">
                       <button
                         type="button"
                         onClick={resetProject}
-                        className="min-h-[44px] rounded-xl border border-[#8ec8ff]/20 px-3 text-[11px] font-black text-[#e7eef8]"
+                        className="min-h-[42px] rounded-xl border border-[#8ec8ff]/30 bg-black/40 px-3.5 text-xs font-black text-[#e7eef8] hover:bg-[#8ec8ff]/20 active:scale-95 transition"
                       >
-                        {t('motion.page.newProject')}
+                        بدء مشروع هوية جديد
                       </button>
                     </div>
                   </div>
                 )}
-                <div className="hidden lg:block">
-                  <MotionPlanView beats={beats} duration={draft.duration} slot={slot} motion={motionLabel} logo={logoLabel} cta={ctaLabel} />
-                </div>
-                <div className="hidden lg:block">
-                  <PromptPreview draft={draft} slot={slot} beats={beats} motion={motionLabel} logo={logoLabel} cta={ctaLabel} />
-                </div>
-              </div>
 
-              <div className="order-2 space-y-4 lg:order-1">
-                <ContextStrip draft={draft} slot={slot} onChange={patch} />
-                <BrandKit draft={draft} onChange={patch} />
-                <StyleTemplates styleId={draft.styleId} onSelect={(id) => setDraft((prev) => applyTemplate(prev, id))} />
-                <DirectionPanel draft={draft} slot={slot} onChange={patch} />
-                <button
-                  type="button"
-                  disabled={busy}
-                  onClick={runSurprise}
-                  className="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-2xl border border-[#8ec8ff]/35 bg-[#8ec8ff]/8 py-2.5 text-[12px] font-black text-[#8ec8ff] disabled:opacity-50"
-                >
-                  <Wand2 className="h-4 w-4" /> {t('motion.page.surprise')}
-                </button>
-                <BestPracticeHints draft={draft} slot={slot} />
-                <StudioCard title={t('motion.page.visionTitle')} hint={t('motion.page.visionHint')}>
-                  <FieldLabel>{t('motion.page.visionLabel')}</FieldLabel>
-                  <textarea
-                    rows={4}
-                    value={draft.vision}
-                    maxLength={1200}
-                    onChange={(e) => patch({ vision: e.target.value })}
-                    placeholder={t('motion.page.visionPh')}
-                    className={fieldClass}
-                  />
-                </StudioCard>
-                <div className="lg:hidden">
-                  <MotionPlanView beats={beats} duration={draft.duration} slot={slot} motion={motionLabel} logo={logoLabel} cta={ctaLabel} />
-                </div>
-                <div className="lg:hidden">
-                  <PromptPreview draft={draft} slot={slot} beats={beats} motion={motionLabel} logo={logoLabel} cta={ctaLabel} />
-                </div>
+                <MotionPlanView beats={beats} duration={draft.duration} slot={slot} motion={motionLabel} logo={logoLabel} cta={ctaLabel} />
+                <PromptPreview draft={draft} slot={slot} beats={beats} motion={motionLabel} logo={logoLabel} cta={ctaLabel} />
               </div>
             </div>
           </>
         )}
       </div>
 
+      {/* Floating Action Bar on Mobile */}
       {!showHero && (
-        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-[#8ec8ff]/20 bg-[#07090f]/95 p-3 backdrop-blur lg:hidden">
-          <p className="text-center text-[10px] text-[#93a0b5]">
-            {t('motion.page.costLine')}{' '}
-            <span className="font-black text-[#ffb020]">
-              {formatNumber(points)} {t('common.pointsShort')}
-            </span>
-          </p>
-          <p className="mb-2 text-center text-[10px] leading-relaxed text-[#93a0b5]">{t('motion.page.engineNote', clock)}</p>
-          <button
-            type="button"
-            disabled={busy || najeAd?.enabled === false}
-            onClick={() => void generate()}
-            className="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-2xl bg-[#8ec8ff] py-3.5 text-sm font-black text-[#071018] disabled:opacity-50"
-          >
-            {busy ? <NajeThinking size={22} /> : <Sparkles className="h-4 w-4" />}
-            {busy ? generateLabel() : `${generateLabel()} · ${formatNumber(points)} ${t('common.pointsShort')}`}
-          </button>
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-[#8ec8ff]/25 bg-[#07090f]/95 p-3 pb-[max(14px,env(safe-area-inset-bottom))] shadow-2xl backdrop-blur-md lg:hidden">
+          <div className="mx-auto flex max-w-md items-center justify-between gap-3">
+            <div className="flex flex-col text-start min-w-0">
+              <span className="text-[11px] text-[#93a0b5] flex items-center gap-1">
+                <span>التكلفة:</span>
+                <span className="font-mono font-black text-[#ffb020]">
+                  {formatNumber(points)} {t('common.pointsShort')}
+                </span>
+              </span>
+              <span className="text-[10px] text-[#8ec8ff] font-mono truncate">
+                {clock.full}s · {draft.resolution} · {draft.aspect}
+              </span>
+            </div>
+            <button
+              type="button"
+              disabled={busy || najeAd?.enabled === false}
+              onClick={() => void generate()}
+              className="flex-1 min-h-[48px] rounded-2xl bg-gradient-to-r from-[#8ec8ff] to-[#60a5fa] px-4 py-2.5 text-xs font-black text-[#071018] shadow-lg shadow-[#8ec8ff]/30 active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer transition-all"
+            >
+              {busy ? <NajeThinking size={20} /> : <Sparkles className="h-4 w-4 shrink-0" />}
+              <span className="truncate">{generateLabel()}</span>
+            </button>
+          </div>
         </div>
       )}
     </div>
