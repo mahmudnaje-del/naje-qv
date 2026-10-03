@@ -49,16 +49,30 @@ export function resolveOpenFormat(explicit: string | undefined | null, prompt: s
 }
 
 export function creationActivity(format: OpenFormat, phase: 'read' | 'search' | 'write' | 'slide' | 'pack', slideNo?: number): string {
-  if (phase === 'read') return 'يقرأ الطلب ويحدد شكل الملف';
-  if (phase === 'search') return 'يبحث في الويب قبل ما يكتب';
-  if (phase === 'slide') return `يرسم الشريحة ${slideNo || 1} ويغذّيها بصرياً`;
-  if (phase === 'pack') return format === 'deck' ? 'يرتب العرض والمعاينة' : 'يجهّز الملف للتنزيل';
-  if (format === 'deck') return 'يكتب الشرائح والنبرة البصرية';
-  if (format === 'markdown') return 'يكتب ملف الماركداون';
-  if (format === 'csv') return 'يرتب الصفوف في جدول';
-  if (format === 'json') return 'يبني كائن JSON';
-  if (format === 'html') return 'يكتب صفحة HTML مستقلة';
-  return 'يكتب النص';
+  if (phase === 'read') return 'surface.activity.read';
+  if (phase === 'search') return 'surface.activity.search';
+  if (phase === 'slide') return `surface.activity.slide::${slideNo || 1}`;
+  if (phase === 'pack') return format === 'deck' ? 'surface.activity.packDeck' : 'surface.activity.packFile';
+  if (format === 'deck') return 'surface.activity.writeDeck';
+  if (format === 'markdown') return 'surface.activity.writeMd';
+  if (format === 'csv') return 'surface.activity.writeCsv';
+  if (format === 'json') return 'surface.activity.writeJson';
+  if (format === 'html') return 'surface.activity.writeHtml';
+  return 'surface.activity.writeTxt';
+}
+
+/** Turn a stable activity key from the stream into the active language. Plain text passes through. */
+export function localizeActivity(
+  raw: string | undefined | null,
+  t: (key: string, params?: Record<string, string | number>) => string,
+): string {
+  if (!raw) return '';
+  const cut = raw.indexOf('::');
+  const key = cut === -1 ? raw : raw.slice(0, cut);
+  const extra = cut === -1 ? '' : raw.slice(cut + 2);
+  if (!key.startsWith('surface.')) return raw;
+  const value = t(key, extra ? { n: extra } : undefined);
+  return value && value !== key ? value : raw;
 }
 
 export function wantsLiveSearch(prompt: string, format: OpenFormat): boolean {

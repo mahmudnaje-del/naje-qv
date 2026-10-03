@@ -131,8 +131,19 @@ export default function NajeReasoningIndicator({
   hasStartedContent = false,
   rawHtml = ''
 }: NajeReasoningIndicatorProps) {
-  const steps = REASONING_STEPS[chatType] || REASONING_STEPS.text;
-  const persona = PERSONA_CONFIG[chatType] || PERSONA_CONFIG.text;
+  const { t } = useI18n();
+  const tr = (key: string, fallback: string) => {
+    const value = t(key);
+    return value && value !== key ? value : fallback;
+  };
+  const baseSteps = REASONING_STEPS[chatType] || REASONING_STEPS.text;
+  const basePersona = PERSONA_CONFIG[chatType] || PERSONA_CONFIG.text;
+  const steps = baseSteps.map((step, index) => tr(`surface.reason.${chatType}.step.${index}`, step));
+  const persona = {
+    ...basePersona,
+    name: tr(`surface.reason.${chatType}.name`, basePersona.name),
+    title: tr(`surface.reason.${chatType}.title`, basePersona.title),
+  };
   const [timerStep, setTimerStep] = useState(0);
   const [expanded, setExpanded] = useState(false);
 

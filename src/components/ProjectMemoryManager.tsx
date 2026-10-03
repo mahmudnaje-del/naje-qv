@@ -199,13 +199,13 @@ export default function ProjectMemoryManager({ project, onClose }: ProjectMemory
           </div>
           <div>
             <h2 className="text-lg font-bold text-white flex items-center gap-2">
-              {isRtl ? 'ذاكرة المشروع الحية' : 'Project Live Memory'}
+              {t('surface.memory.title')}
               <span className="text-xs px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-medium">
                 {getClassificationLabel(project.classification, project.classificationOther)}
               </span>
             </h2>
             <p className="text-xs text-slate-400">
-              {isRtl ? 'المشروع:' : 'Project:'} <span className="text-slate-200 font-semibold">{project.name}</span> • {isRtl ? 'المالك:' : 'Owner:'} <span className="text-slate-200">{project.ownerDisplayName || (isRtl ? 'المستخدم' : 'User')}</span>
+              {t('surface.memory.project')} <span className="text-slate-200 font-semibold">{project.name}</span> • {t('surface.memory.owner')} <span className="text-slate-200">{project.ownerDisplayName || t('surface.memory.user')}</span>
             </p>
           </div>
         </div>
@@ -215,7 +215,7 @@ export default function ProjectMemoryManager({ project, onClose }: ProjectMemory
           className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-sm transition-all shadow-lg shadow-indigo-600/20 active:scale-95 cursor-pointer"
         >
           <Plus className="w-4 h-4" />
-          <span>{isRtl ? 'إضافة ذاكرة جديدة' : 'Add New Memory'}</span>
+          <span>{t('surface.memory.add')}</span>
         </button>
       </div>
 
@@ -224,7 +224,7 @@ export default function ProjectMemoryManager({ project, onClose }: ProjectMemory
         <div className="flex justify-between items-center text-xs">
           <span className="text-slate-400 flex items-center gap-1.5">
             <HardDrive className="w-3.5 h-3.5 text-indigo-400" />
-            {isRtl ? 'السعة التخزينية المطبقة (السقف الإجمالي 10 ميغابايت)' : 'Storage usage (10 MB quota)'}
+            {t('surface.memory.quota')}
           </span>
           <span className="font-mono text-slate-200 font-semibold">
             {formatBytes(totalBytesUsed)} / 10.0 MB ({usagePercentage.toFixed(1)}%)
@@ -239,33 +239,33 @@ export default function ProjectMemoryManager({ project, onClose }: ProjectMemory
           />
         </div>
         <p className="text-[11px] text-slate-400 pt-1">
-          {isRtl ? 'يتم تضمين موجز مضغوط تلقائياً في كل محادثة، ويمكنك استدعاء النص/الملف الأصلي كاملاً عند الحاجة عبر السؤال المباشر.' : 'A condensed summary is automatically included in every conversation. You can prompt directly to retrieve full details.'}
+          {t('surface.memory.hint')}
         </p>
       </div>
 
       {/* Memory Items List */}
       <div className="space-y-3">
         <h3 className="text-sm font-semibold text-slate-300 flex items-center gap-2">
-          {isRtl ? 'العناصر المخزنة' : 'Stored Items'} ({memoryItems.length})
+          {t('surface.memory.items')} ({memoryItems.length})
         </h3>
 
         {loading ? (
           <div className="flex items-center justify-center py-12 text-slate-400 gap-2">
             <NajeSpinner className="w-5 h-5" />
-            <span className="text-xs">{isRtl ? 'جاري تحميل عناصر الذاكرة...' : 'Loading memory items...'}</span>
+            <span className="text-xs">{t('surface.memory.loading')}</span>
           </div>
         ) : memoryItems.length === 0 ? (
           <div className="text-center py-10 bg-slate-900/40 rounded-xl border border-dashed border-slate-800 p-6">
             <Database className="w-8 h-8 text-slate-600 mx-auto mb-2" />
-            <p className="text-sm font-medium text-slate-400">{isRtl ? 'لا توجد عناصر ذاكرة مضافة بعد لهذا المشروع' : 'No memory items added yet for this project'}</p>
+            <p className="text-sm font-medium text-slate-400">{t('surface.memory.empty')}</p>
             <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
-              {isRtl ? 'أضف نصوصاً، مستندات، أو روابط لتعزيز فهم "ناجي" لسياق مشروعك بشكل دائم وملخص تلقائياً.' : 'Add texts, documents, or URLs to enhance the context of this project.'}
+              {t('surface.memory.emptyHint')}
             </p>
             <button
               onClick={() => setShowAddModal(true)}
               className="mt-4 px-3.5 py-1.5 text-xs rounded-lg bg-indigo-600/30 text-indigo-300 hover:bg-indigo-600/40 border border-indigo-500/30 transition-all cursor-pointer"
             >
-              + {isRtl ? 'إضافة أول ذاكرة' : 'Add First Memory'}
+              + {t('surface.memory.addFirst')}
             </button>
           </div>
         ) : (
@@ -283,14 +283,14 @@ export default function ProjectMemoryManager({ project, onClose }: ProjectMemory
                     <div className="flex items-center gap-2 flex-wrap">
                       <h4 className="text-sm font-semibold text-slate-100 truncate">{item.label}</h4>
                       <span className="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">
-                        {item.type === 'text' ? (isRtl ? 'نص' : 'Text') : item.type === 'url' ? (isRtl ? 'رابط' : 'URL') : (isRtl ? 'ملف' : 'File')}
+                        {item.type === 'text' ? t('surface.memory.text') : item.type === 'url' ? t('surface.memory.url') : t('surface.memory.file')}
                       </span>
                       <span className="text-[10px] font-mono text-slate-400">
                         {formatBytes(item.rawSizeBytes)}
                       </span>
                     </div>
                     <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed bg-slate-950/40 p-2 rounded-lg border border-slate-800/50">
-                      {item.summary || (isRtl ? 'جاري معالجة الملخص...' : 'Processing summary...')}
+                      {item.summary || t('surface.memory.summarizing')}
                     </p>
                   </div>
                 </div>
@@ -300,8 +300,8 @@ export default function ProjectMemoryManager({ project, onClose }: ProjectMemory
                     onClick={() => handleDeleteItem(item.id)}
                     disabled={deletingId === item.id}
                     className="p-2 rounded-lg bg-slate-800/50 text-slate-400 hover:text-red-400 hover:bg-red-500/10 border border-slate-700/50 transition-all cursor-pointer"
-                    title={isRtl ? 'حذف هذا العنصر' : 'Delete item'}
-                    aria-label={isRtl ? 'حذف هذا العنصر' : 'Delete item'}
+                    title={t('surface.memory.delete')}
+                    aria-label={t('surface.memory.delete')}
                   >
                     {deletingId === item.id ? (
                       <NajeSpinner className="w-4 h-4" />
@@ -330,7 +330,7 @@ export default function ProjectMemoryManager({ project, onClose }: ProjectMemory
               <div className="flex items-center justify-between border-b border-slate-800 pb-3">
                 <h3 className="text-base font-bold text-white flex items-center gap-2">
                   <Plus className="w-4 h-4 text-indigo-400" />
-                  {isRtl ? 'إضافة عنصر إلى ذاكرة المشروع' : 'Add Item to Project Memory'}
+                  {t('surface.memory.addItem')}
                 </h3>
                 <button 
                   onClick={() => setShowAddModal(false)}
@@ -352,7 +352,7 @@ export default function ProjectMemoryManager({ project, onClose }: ProjectMemory
                       : 'text-slate-400 hover:text-slate-200'
                   }`}
                 >
-                  {isRtl ? 'نص مباشر' : 'Raw Text'}
+                  {t('surface.memory.raw')}
                 </button>
                 <button
                   type="button"
@@ -363,7 +363,7 @@ export default function ProjectMemoryManager({ project, onClose }: ProjectMemory
                       : 'text-slate-400 hover:text-slate-200'
                   }`}
                 >
-                  {isRtl ? 'رفع ملف' : 'Upload File'}
+                  {t('surface.memory.upload')}
                 </button>
                 <button
                   type="button"
@@ -374,21 +374,21 @@ export default function ProjectMemoryManager({ project, onClose }: ProjectMemory
                       : 'text-slate-400 hover:text-slate-200'
                   }`}
                 >
-                  {isRtl ? 'رابط موقع' : 'Web URL'}
+                  {t('surface.memory.web')}
                 </button>
               </div>
 
               <form onSubmit={handleAddMemory} className="space-y-4">
                 <div>
                   <label className="block text-xs font-medium text-slate-300 mb-1">
-                    {isRtl ? 'عنوان/وسم الذاكرة' : 'Memory Label'} <span className="text-red-400">*</span>
+                    {t('surface.memory.label')} <span className="text-red-400">*</span>
                   </label>
                   <input
                     type="text"
                     required
                     value={label}
                     onChange={(e) => setLabel(e.target.value)}
-                    placeholder={isRtl ? 'مثال: دليل هوية العلامة التجارية، شروط الخدمة...' : 'e.g. Brand Style Guide, Product Overview...'}
+                    placeholder={t('surface.memory.labelPh')}
                     className="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500"
                   />
                 </div>
@@ -396,14 +396,14 @@ export default function ProjectMemoryManager({ project, onClose }: ProjectMemory
                 {activeTab === 'text' && (
                   <div>
                     <label className="block text-xs font-medium text-slate-300 mb-1">
-                      {isRtl ? 'محتوى النص' : 'Text Content'} <span className="text-red-400">*</span>
+                      {t('surface.memory.body')} <span className="text-red-400">*</span>
                     </label>
                     <textarea
                       required
                       rows={5}
                       value={textContent}
                       onChange={(e) => setTextContent(e.target.value)}
-                      placeholder={isRtl ? 'الصق هنا النص أو الملاحظات الهامة التي تريد حفظها في ذاكرة المشروع...' : 'Paste text or notes to store in project memory...'}
+                      placeholder={t('surface.memory.bodyPh')}
                       className="w-full bg-slate-900 border border-slate-700/80 rounded-xl p-3 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 resize-none"
                     />
                   </div>
@@ -412,7 +412,7 @@ export default function ProjectMemoryManager({ project, onClose }: ProjectMemory
                 {activeTab === 'file' && (
                   <div>
                     <label className="block text-xs font-medium text-slate-300 mb-1">
-                      {isRtl ? 'اختر ملفاً (PDF, Word, TXT, Markdown, JSON, CSV, صور, كود)' : 'Choose a file (PDF, Word, TXT, Markdown, JSON, CSV, Images, Code)'} <span className="text-red-400">*</span>
+                      {t('surface.memory.choose')} <span className="text-red-400">*</span>
                     </label>
                     <input
                       type="file"
@@ -437,7 +437,7 @@ export default function ProjectMemoryManager({ project, onClose }: ProjectMemory
                 {activeTab === 'url' && (
                   <div>
                     <label className="block text-xs font-medium text-slate-300 mb-1">
-                      {isRtl ? 'رابط الصفحة أو الموقع (HTTP/HTTPS)' : 'Web Page URL (HTTP/HTTPS)'} <span className="text-red-400">*</span>
+                      {t('surface.memory.urlLabel')} <span className="text-red-400">*</span>
                     </label>
                     <input
                       type="url"
@@ -448,7 +448,7 @@ export default function ProjectMemoryManager({ project, onClose }: ProjectMemory
                       className="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-mono text-left dir-ltr"
                     />
                     <p className="text-[11px] text-slate-500 mt-1">
-                      {isRtl ? 'سيتم جلب الصفحة واستخراج محتواها النصي بآمان وتلخيصه فورياً.' : 'The webpage will be securely fetched and indexed for instant context.'}
+                      {t('surface.memory.urlHint')}
                     </p>
                   </div>
                 )}
@@ -469,10 +469,10 @@ export default function ProjectMemoryManager({ project, onClose }: ProjectMemory
                     {isSubmitting ? (
                       <>
                         <NajeSpinner className="w-3.5 h-3.5" />
-                        <span>{isRtl ? 'جاري الحفظ والمعالجة الذكية...' : 'Saving & processing...'}</span>
+                        <span>{t('surface.memory.saving')}</span>
                       </>
                     ) : (
-                      <span>{isRtl ? 'حفظ الذاكرة' : 'Save Memory'}</span>
+                      <span>{t('surface.memory.save')}</span>
                     )}
                   </button>
                 </div>

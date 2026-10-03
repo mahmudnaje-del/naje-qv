@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { ChevronDown, Check, Cpu, Film, SlidersHorizontal, Image as ImageIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
+import { useI18n } from '../i18n';
 import { usePricingConfig } from '../hooks/usePricingConfig';
 import najeTierLite from '../assets/icons/naje-tier-lite.svg';
 import najeTierCore from '../assets/icons/naje-tier-core.svg';
@@ -73,6 +74,15 @@ export const MODEL_TIER_INFO: Record<ModelTier, { label: string; hint: string }>
   max:  { label: MODEL_TIERS.max.label, hint: MODEL_TIERS.max.hint },
 };
 
+function tx(
+  t: (key: string, params?: Record<string, string | number>) => string,
+  key: string,
+  fallback: string,
+  params?: Record<string, string | number>,
+) {
+  const value = t(key, params);
+  return value && value !== key ? value : fallback;
+}
 function useDropdownPortalCoords(
   open: boolean,
   containerRef: React.RefObject<HTMLDivElement | null>,
@@ -146,6 +156,7 @@ export default function NajeModelTierSelector({
   disabled,
   dropDirection = 'up'
 }: NajeModelTierSelectorProps) {
+  const { t, isRtl } = useI18n();
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -178,7 +189,7 @@ export default function NajeModelTierSelector({
   }, [open]);
 
   return (
-    <div className={cn("relative inline-block text-right z-30", className)} ref={containerRef} dir="rtl">
+    <div className={cn("relative inline-block text-start z-30", className)} ref={containerRef} dir={isRtl ? 'rtl' : 'ltr'}>
       {/* Trigger Button */}
       <button
         type="button"
@@ -229,13 +240,13 @@ export default function NajeModelTierSelector({
                 "bg-white/95 dark:bg-gray-900/95 border border-gray-200/90 dark:border-gray-800/90",
                 "flex flex-col gap-1 ring-1 ring-black/5 dark:ring-white/10"
               )}
-              dir="rtl"
+              dir={isRtl ? 'rtl' : 'ltr'}
             >
             {/* Header info */}
             <div className="px-3 py-1.5 border-b border-gray-100 dark:border-gray-800/60 flex items-center justify-between text-[11px] font-semibold text-gray-500 dark:text-gray-400">
               <span className="flex items-center gap-1">
                 <Cpu className="w-3.5 h-3.5 text-indigo-500" />
-                اختر نموذج المعالجة
+                {tx(t, 'surface.tier.pickText', 'اختر نموذج المعالجة')}
               </span>
               <span className="text-[10px] text-gray-400">Naje Engine</span>
             </div>
@@ -258,7 +269,7 @@ export default function NajeModelTierSelector({
                       setOpen(false);
                     }}
                     className={cn(
-                      "w-full text-right p-2.5 rounded-xl transition-all cursor-pointer flex items-start gap-2.5 border text-xs",
+                      "w-full text-start p-2.5 rounded-xl transition-all cursor-pointer flex items-start gap-2.5 border text-xs",
                       isSelected
                         ? cn(tier.bgActive, "border-current shadow-sm font-semibold")
                         : "border-transparent hover:bg-gray-100/80 dark:hover:bg-gray-800/70 text-gray-700 dark:text-gray-300"
@@ -287,7 +298,7 @@ export default function NajeModelTierSelector({
                               ? "bg-indigo-600 text-white dark:bg-indigo-500"
                               : "bg-gray-200/80 dark:bg-gray-800 text-gray-600 dark:text-gray-400"
                           )}>
-                            {tier.badge}
+                            {tx(t, `surface.tier.${tierKey}.badge`, tier.badge)}
                           </span>
                         </div>
                         {isSelected && (
@@ -297,7 +308,7 @@ export default function NajeModelTierSelector({
                         )}
                       </div>
                       <p className="text-[10px] text-gray-500 dark:text-gray-400 line-clamp-2 leading-relaxed font-normal">
-                        {tier.hint}
+                        {tx(t, `surface.tier.${tierKey}.hint`, tier.hint)}
                       </p>
                     </div>
                   </button>
@@ -371,6 +382,7 @@ export function NajeImageModelSelector({
   disabled?: boolean;
   dropDirection?: 'up' | 'down';
 }) {
+  const { t, isRtl } = useI18n();
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -381,8 +393,8 @@ export function NajeImageModelSelector({
     lite: {
       id: 'lite',
       label: 'Naje Imagen Lite',
-      badge: `${pricing.image?.liteBase ?? 0.5} نقطة`,
-      hint: 'خفيف وفائق السرعة للمسودات والأفكار السريعة (nano-banana-2-lite).',
+      badge: tx(t, 'surface.tier.image.points', `${pricing.image?.liteBase ?? 0.5} نقطة`, { n: pricing.image?.liteBase ?? 0.5 }),
+      hint: tx(t, 'surface.tier.image.liteHint', 'خفيف وفائق السرعة للمسودات والأفكار السريعة (nano-banana-2-lite).'),
       icon: TierLiteIcon,
       accentColor: 'text-amber-500 dark:text-amber-400',
       bgActive: 'bg-amber-500/10 border-amber-500/30 dark:bg-amber-500/15',
@@ -390,8 +402,10 @@ export function NajeImageModelSelector({
     spectra: {
       id: 'spectra',
       label: 'Naje Imagen',
-      badge: (pricing.image?.base ?? 1.0) === 1 ? 'نقطة واحدة (افتراضي)' : `${pricing.image?.base} نقاط (افتراضي)`,
-      hint: 'توازن مثالي بين الدقة العالية وتفاصيل الألوان (nano-banana-2).',
+      badge: (pricing.image?.base ?? 1.0) === 1
+        ? tx(t, 'surface.tier.image.oneDefault', 'نقطة واحدة (افتراضي)')
+        : tx(t, 'surface.tier.image.nDefault', `${pricing.image?.base} نقاط (افتراضي)`, { n: pricing.image?.base ?? 1 }),
+      hint: tx(t, 'surface.tier.image.coreHint', 'توازن مثالي بين الدقة العالية وتفاصيل الألوان (nano-banana-2).'),
       icon: TierCoreIcon,
       accentColor: 'text-indigo-600 dark:text-indigo-400',
       bgActive: 'bg-indigo-50 dark:bg-indigo-950/60 border-indigo-500/30',
@@ -399,13 +413,13 @@ export function NajeImageModelSelector({
     nova: {
       id: 'nova',
       label: 'Naje Imagen Pro',
-      badge: `${pricing.image?.proBase ?? 1.5} نقطة (احترافي)`,
-      hint: 'أقصى واقعية سينمائية ودقة متناهية بالتفاصيل (nano-banana-pro).',
+      badge: tx(t, 'surface.tier.image.pro', `${pricing.image?.proBase ?? 1.5} نقطة (احترافي)`, { n: pricing.image?.proBase ?? 1.5 }),
+      hint: tx(t, 'surface.tier.image.proHint', 'أقصى واقعية سينمائية ودقة متناهية بالتفاصيل (nano-banana-pro).'),
       icon: TierMaxIcon,
       accentColor: 'text-purple-600 dark:text-purple-400',
       bgActive: 'bg-purple-50 dark:bg-purple-950/60 border-purple-500/30',
     },
-  }), [pricing]);
+  }), [pricing, t]);
 
   const currentModel = (dynamicImageModels as any)[value] || dynamicImageModels.spectra;
   const CurrentIcon = currentModel.icon;
@@ -434,7 +448,7 @@ export function NajeImageModelSelector({
   }, [open]);
 
   return (
-    <div className={cn("relative inline-block text-right z-30", className)} ref={containerRef} dir="rtl">
+    <div className={cn("relative inline-block text-start z-30", className)} ref={containerRef} dir={isRtl ? 'rtl' : 'ltr'}>
       {/* Trigger Button */}
       <button
         type="button"
@@ -485,13 +499,13 @@ export function NajeImageModelSelector({
                 "bg-white/95 dark:bg-gray-900/95 border border-gray-200/90 dark:border-gray-800/90",
                 "flex flex-col gap-1 ring-1 ring-black/5 dark:ring-white/10"
               )}
-              dir="rtl"
+              dir={isRtl ? 'rtl' : 'ltr'}
             >
             {/* Header info */}
             <div className="px-3 py-1.5 border-b border-gray-100 dark:border-gray-800/60 flex items-center justify-between text-[11px] font-semibold text-gray-500 dark:text-gray-400">
               <span className="flex items-center gap-1">
                 <ImageIcon className="w-3.5 h-3.5 text-indigo-500" />
-                اختر نموذج توليد الصور
+                {tx(t, 'surface.tier.pickImage', 'اختر نموذج توليد الصور')}
               </span>
               <span className="text-[10px] text-gray-400">Naje Imagen Studio</span>
             </div>
@@ -514,7 +528,7 @@ export function NajeImageModelSelector({
                       setOpen(false);
                     }}
                     className={cn(
-                      "w-full text-right p-2.5 rounded-xl transition-all cursor-pointer flex items-start gap-2.5 border text-xs",
+                      "w-full text-start p-2.5 rounded-xl transition-all cursor-pointer flex items-start gap-2.5 border text-xs",
                       isSelected
                         ? cn(model.bgActive, "border-current shadow-sm font-semibold")
                         : "border-transparent hover:bg-gray-100/80 dark:hover:bg-gray-800/70 text-gray-700 dark:text-gray-300"
@@ -616,6 +630,7 @@ export function NajeVideoModelSelector({
   disabled?: boolean;
   dropDirection?: 'up' | 'down';
 }) {
+  const { t, isRtl } = useI18n();
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -648,7 +663,7 @@ export function NajeVideoModelSelector({
   }, [open]);
 
   return (
-    <div className={cn("relative inline-block text-right z-30", className)} ref={containerRef} dir="rtl">
+    <div className={cn("relative inline-block text-start z-30", className)} ref={containerRef} dir={isRtl ? 'rtl' : 'ltr'}>
       {/* Trigger Button */}
       <button
         type="button"
@@ -699,13 +714,13 @@ export function NajeVideoModelSelector({
                 "bg-white/95 dark:bg-gray-900/95 border border-gray-200/90 dark:border-gray-800/90",
                 "flex flex-col gap-1 ring-1 ring-black/5 dark:ring-white/10"
               )}
-              dir="rtl"
+              dir={isRtl ? 'rtl' : 'ltr'}
             >
             {/* Header info */}
             <div className="px-3 py-1.5 border-b border-gray-100 dark:border-gray-800/60 flex items-center justify-between text-[11px] font-semibold text-gray-500 dark:text-gray-400">
               <span className="flex items-center gap-1">
                 <Film className="w-3.5 h-3.5 text-pink-500" />
-                اختر نموذج توليد الفيديو
+                {tx(t, 'surface.tier.pickVideo', 'اختر نموذج توليد الفيديو')}
               </span>
               <span className="text-[10px] text-gray-400">Naje Video Studio</span>
             </div>
@@ -728,7 +743,7 @@ export function NajeVideoModelSelector({
                       setOpen(false);
                     }}
                     className={cn(
-                      "w-full text-right p-2.5 rounded-xl transition-all cursor-pointer flex items-start gap-2.5 border text-xs",
+                      "w-full text-start p-2.5 rounded-xl transition-all cursor-pointer flex items-start gap-2.5 border text-xs",
                       isSelected
                         ? cn(model.bgActive, "border-current shadow-sm font-semibold")
                         : "border-transparent hover:bg-gray-100/80 dark:hover:bg-gray-800/70 text-gray-700 dark:text-gray-300"
@@ -755,7 +770,9 @@ export function NajeVideoModelSelector({
                               ? "bg-pink-600 text-white dark:bg-pink-500"
                               : "bg-gray-200/80 dark:bg-gray-800 text-gray-600 dark:text-gray-400"
                           )}>
-                            {model.badge}
+                            {key === 'veo'
+                              ? tx(t, 'surface.tier.video.four', model.badge, { n: 3 })
+                              : tx(t, 'surface.tier.video.five', model.badge, { n: 6 })}
                           </span>
                         </div>
                         {isSelected && (
@@ -765,7 +782,7 @@ export function NajeVideoModelSelector({
                         )}
                       </div>
                       <p className="text-[10px] text-gray-500 dark:text-gray-400 line-clamp-2 leading-relaxed font-normal">
-                        {model.hint}
+                        {tx(t, key === 'veo' ? 'surface.tier.video.hint' : 'surface.tier.video.proHint', model.hint)}
                       </p>
                     </div>
                   </button>

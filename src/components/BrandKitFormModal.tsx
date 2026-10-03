@@ -69,11 +69,11 @@ export function BrandKitFormModal({ isOpen, onClose, onSubmit }: BrandKitFormMod
               </div>
               <div>
                 <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                  {isRtl ? 'استوديو إنشاء الهويات والشعارات' : 'Brand Kit & Logo Studio'}
+                  {t('surface.brand.title')}
                   <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-mono">Creative AI</span>
                 </h3>
                 <p className="text-xs text-slate-400">
-                  {isRtl ? 'قم بتعبئة نموذج الطلب لتوليد هوية بصرية كاملة بدقة الاحترافيين' : 'Fill in the brief to generate a complete visual identity kit'}
+                  {t('surface.brand.subtitle')}
                 </p>
               </div>
             </div>
@@ -89,10 +89,10 @@ export function BrandKitFormModal({ isOpen, onClose, onSubmit }: BrandKitFormMod
           {/* Form Tabs Selector */}
           <div className="flex gap-2 my-4 overflow-x-auto pb-1 scrollbar-none">
             {[
-              { key: 'brand_kit', label: isRtl ? 'دليل هوية متكامل (Brand Kit)' : 'Complete Brand Kit', icon: Layers },
-              { key: 'horizontal_logo', label: isRtl ? 'تصميم شعار احترافي' : 'Professional Logo', icon: Briefcase },
-              { key: 'logo_and_identity', label: isRtl ? 'شعار + تطبيقات الهوية' : 'Logo & Identity Apps', icon: Target },
-              { key: 'social_post', label: isRtl ? 'منشورات السوشال ميديا' : 'Social Media Posts', icon: Palette }
+              { key: 'brand_kit', label: t('surface.brand.kit'), icon: Layers },
+              { key: 'horizontal_logo', label: t('surface.brand.logo'), icon: Briefcase },
+              { key: 'logo_and_identity', label: t('surface.brand.identity'), icon: Target },
+              { key: 'social_post', label: t('surface.brand.social'), icon: Palette }
             ].map((tab) => {
               const Icon = tab.icon;
               const isActive = selectedFormKey === tab.key;
@@ -199,7 +199,7 @@ export function BrandKitFormModal({ isOpen, onClose, onSubmit }: BrandKitFormMod
                 className="px-6 py-2.5 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-lg shadow-amber-500/20 flex items-center gap-2 transition cursor-pointer active:scale-95"
               >
                 <Send className="w-4 h-4" />
-                <span>{isRtl ? 'إرسال وتوليد الهوية الإبداعية' : 'Generate Brand Kit'}</span>
+                <span>{t('surface.brand.submit')}</span>
               </button>
             </div>
           </form>

@@ -537,6 +537,35 @@ export function getChatTypeConfig(type?: string | ChatType): ChatTypeMeta {
   return CHAT_TYPES_CONFIG[type] || CHAT_TYPES_CONFIG.text;
 }
 
+type Translator = (key: string) => string;
+
+function translated(t: Translator, key: string, fallback: string): string {
+  const value = t(key);
+  return value && value !== key ? value : fallback;
+}
+
+/** Resolve studio chrome in the active language. Arabic in the config is only the fallback. */
+export function localizeChatType(type: string | ChatType | undefined, t: Translator): ChatTypeMeta {
+  const base = getChatTypeConfig(type);
+  const id = base.id;
+  const field = (suffix: string, fallback: string) => translated(t, `surface.chat.${id}.${suffix}`, fallback);
+  return {
+    ...base,
+    nameAr: field('name', base.nameAr),
+    nameEn: field('name', base.nameEn),
+    phrases: base.phrases.map((phrase, index) => field(`phrase.${index}`, phrase)),
+    emptyTitle: field('emptyTitle', base.emptyTitle),
+    emptySubtitle: field('emptySubtitle', base.emptySubtitle),
+    featureCards: base.featureCards.map((card) => ({
+      ...card,
+      title: field(`card.${card.id}.title`, card.title),
+      desc: field(`card.${card.id}.desc`, card.desc),
+      prompt: field(`card.${card.id}.prompt`, card.prompt),
+      badge: card.badge ? field(`card.${card.id}.badge`, card.badge) : card.badge,
+    })),
+  };
+}
+
 /**
  * Return CSS color styles for a chat type that are 100% theme-independent
  */

@@ -13,11 +13,13 @@ import { creativeTenPack } from './creativeTen';
 import { toolsTenPack } from './toolsTen';
 import { omniversePack } from './omniverse';
 import { createPack } from './create';
+import { surfacePack } from './surface';
 import type { LocalePack } from './types';
 import { ALL_OVERLAY_LOCALES } from './types';
 import { completePack } from './complete';
 
 const RAW_PACKS: LocalePack[] = [
+  surfacePack,
   welcomePack,
   promptTenPack,
   studioTenPack,
@@ -51,6 +53,7 @@ export function lookupOverlay(locale: SupportedLocale, key: string): string | un
 export function overlayParityGaps(): string[] {
   const gaps: string[] = [];
   const names = [
+    'surface',
     'welcome',
     'promptTen',
     'studioTen',

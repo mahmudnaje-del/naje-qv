@@ -4,6 +4,7 @@ import { db } from '../firebase';
 import { motion, AnimatePresence } from 'motion/react';
 import { Sparkles, CheckCircle2, AlertCircle, Volume2, Image as ImageIcon, Video as VideoIcon, FileText, Layout, Mic, Film, Brain } from 'lucide-react';
 import { parseAndCategorizeError, parseAndCategorizeErrorSync, FormattedError } from '../utils/errorFormatter';
+import { useI18n } from '../i18n';
 
 interface NajeProgressLineProps {
   jobId?: string;
@@ -22,8 +23,13 @@ export default function NajeProgressLine({
   onFinished,
   fallbackLabel
 }: NajeProgressLineProps) {
+  const { t } = useI18n();
+  const tr = (key: string, fallback: string) => {
+    const value = t(key);
+    return value && value !== key ? value : fallback;
+  };
   const [progress, setProgress] = useState(0);
-  const [label, setLabel] = useState(fallbackLabel || 'جاري المعالجة والتوليد بلمسة ناجي الذكية...');
+  const [label, setLabel] = useState(fallbackLabel || tr('surface.progress.working', 'جاري المعالجة والتوليد بلمسة ناجي الذكية...'));
   const [status, setStatus] = useState<'generating' | 'completed' | 'failed'>('generating');
   const [errorMsg, setErrorMsg] = useState('');
   const [errorCat, setErrorCat] = useState<FormattedError | null>(null);
@@ -64,8 +70,8 @@ export default function NajeProgressLine({
         }
         if (data.status === 'failed') {
           setStatus('failed');
-          setErrorMsg(data.error || 'حدث خطأ غير متوقع أثناء معالجة الطلب.');
-          setLabel(data.stepLabel || 'فشلت معالجة الطلب.');
+          setErrorMsg(data.error || tr('surface.progress.failedUnexpected', 'حدث خطأ غير متوقع أثناء معالجة الطلب.'));
+          setLabel(data.stepLabel || tr('surface.progress.failed', 'فشلت معالجة الطلب.'));
         } else {
           const rawProg = typeof data.progress === 'number' ? data.progress : 15;
           setProgress(prev => Math.max(prev, rawProg));
@@ -115,7 +121,7 @@ export default function NajeProgressLine({
     if (isCompleted) {
       setProgress(100);
       setStatus('completed');
-      setLabel('اكتمل التوليد والمعالجة بنجاح!');
+      setLabel(tr('surface.progress.done', 'اكتمل التوليد والمعالجة بنجاح!'));
       if (onFinished) {
         setTimeout(onFinished, 1000);
       }
@@ -127,52 +133,52 @@ export default function NajeProgressLine({
     switch (detectedType) {
       case 'voice':
         return {
-          title: 'نموذج التوليد الصوتي الذكي (Naje Voice)',
+          title: tr('surface.progress.voiceTitle', 'نموذج التوليد الصوتي الذكي'),
           icon: Volume2,
           badgeBg: 'bg-cyan-500/15 border-cyan-500/30 text-cyan-600 dark:text-cyan-400',
           gradient: 'from-cyan-500 via-sky-500 to-indigo-600',
-          defaultLabel: 'جاري تحويل النص وصياغة النبرات الصوتية الطبيعية...'
+          defaultLabel: tr('surface.progress.voiceLabel', 'جاري تحويل النص وصياغة النبرات الصوتية الطبيعية...')
         };
       case 'image':
       case 'design':
         return {
-          title: 'نموذج توليد الصور والرسوم (Naje Imagen)',
+          title: tr('surface.progress.imageTitle', 'نموذج توليد الصور والرسوم'),
           icon: ImageIcon,
           badgeBg: 'bg-amber-500/15 border-amber-500/30 text-amber-600 dark:text-amber-400',
           gradient: 'from-amber-500 via-orange-500 to-rose-500',
-          defaultLabel: 'جاري رسم وتوليد البكسلات عالية الدقة...'
+          defaultLabel: tr('surface.progress.imageLabel', 'جاري رسم وتوليد البكسلات عالية الدقة...')
         };
       case 'video':
         return {
-          title: 'نموذج إخراج وتحريك الفيديو (Naje Video)',
+          title: tr('surface.progress.videoTitle', 'نموذج إخراج وتحريك الفيديو'),
           icon: Film,
           badgeBg: 'bg-purple-500/15 border-purple-500/30 text-purple-600 dark:text-purple-400',
           gradient: 'from-purple-500 via-fuchsia-500 to-pink-500',
-          defaultLabel: 'جاري معالجة الكادرات وتحريك إطارات الفيديو...'
+          defaultLabel: tr('surface.progress.videoLabel', 'جاري معالجة الكادرات وتحريك إطارات الفيديو...')
         };
       case 'document':
         return {
-          title: 'محرك بناء وصياغة المستندات المتقدم',
+          title: tr('surface.progress.docTitle', 'محرك بناء وصياغة المستندات المتقدم'),
           icon: FileText,
           badgeBg: 'bg-indigo-500/15 border-indigo-500/30 text-indigo-600 dark:text-indigo-400',
           gradient: 'from-indigo-500 via-blue-500 to-cyan-500',
-          defaultLabel: 'جاري التخطيط وصياغة محتوى المستند...'
+          defaultLabel: tr('surface.progress.docLabel', 'جاري التخطيط وصياغة محتوى المستند...')
         };
       case 'ui':
         return {
-          title: 'مطور الواجهات والأكواد التفاعلية',
+          title: tr('surface.progress.uiTitle', 'مطور الواجهات والأكواد التفاعلية'),
           icon: Layout,
           badgeBg: 'bg-emerald-500/15 border-emerald-500/30 text-emerald-600 dark:text-emerald-400',
           gradient: 'from-emerald-500 via-teal-500 to-sky-500',
-          defaultLabel: 'جاري بناء أثر الواجهة وتصميم العناصر...'
+          defaultLabel: tr('surface.progress.uiLabel', 'جاري بناء أثر الواجهة وتصميم العناصر...')
         };
       default:
         return {
-          title: 'نموذج التفكير والمعالجة الذكية',
+          title: tr('surface.progress.textTitle', 'نموذج التفكير والمعالجة الذكية'),
           icon: Brain,
           badgeBg: 'bg-indigo-500/15 border-indigo-500/30 text-indigo-600 dark:text-indigo-400',
           gradient: 'from-indigo-500 via-purple-500 to-pink-500',
-          defaultLabel: 'جاري التفكير وصياغة الرد المناسب...'
+          defaultLabel: tr('surface.progress.textLabel', 'جاري التفكير وصياغة الرد المناسب...')
         };
     }
   };
@@ -220,7 +226,7 @@ export default function NajeProgressLine({
           <span className={`text-xs font-bold ${
             status === 'completed' ? 'text-emerald-600 dark:text-emerald-400' : status === 'failed' ? 'text-rose-600 dark:text-rose-400' : 'text-gray-700 dark:text-gray-300'
           }`}>
-            {status === 'completed' ? 'اكتمل التوليد بنجاح!' : status === 'failed' ? 'فشلت المعالجة' : 'جاري الاتصال والتوليد المباشر...'}
+            {status === 'completed' ? tr('surface.progress.doneShort', 'اكتمل التوليد بنجاح!') : status === 'failed' ? tr('surface.progress.failedShort', 'فشلت المعالجة') : tr('surface.progress.connecting', 'جاري الاتصال والتوليد المباشر...')}
           </span>
         </div>
       </div>

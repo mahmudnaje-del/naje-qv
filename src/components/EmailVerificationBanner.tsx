@@ -77,13 +77,13 @@ export default function EmailVerificationBanner() {
     } catch (err: any) {
       console.error('Email verification resend error:', err);
       if (err.code === 'auth/too-many-requests') {
-        setError(isRtl ? 'تم إرسال عدة طلبات مؤخراً. يرجى الانتظار دقيقة قبل المحاولة مجدداً.' : 'Too many requests. Please wait a minute before retrying.');
+        setError(t('surface.email.tooMany'));
         setTimedCooldown(60);
       } else if (err.code === 'auth/user-not-found') {
         setError(t('auth.errUserNotFound'));
         setTimedCooldown(15);
       } else {
-        setError(err.message || (isRtl ? 'تعذر إرسال الرابط حالياً. يرجى المحاولة لاحقاً.' : 'Unable to send link right now.'));
+        setError(err.message || t('surface.email.sendFail'));
         setTimedCooldown(30);
       }
     } finally {
@@ -101,7 +101,7 @@ export default function EmailVerificationBanner() {
           <Mail className="w-3.5 h-3.5" />
         </div>
         <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 truncate">
-          <span className="font-bold">{isRtl ? 'يرجى تفعيل بريدك الإلكتروني:' : 'Please verify your email address:'}</span>
+          <span className="font-bold">{t('surface.email.verify')}</span>
           <span className="text-amber-800 dark:text-amber-300 truncate font-mono text-[11px] dir-ltr text-start">
             {user.email}
           </span>
@@ -112,7 +112,7 @@ export default function EmailVerificationBanner() {
         {sentSuccess ? (
           <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
             <CheckCircle2 className="w-3.5 h-3.5" />
-            <span>{isRtl ? 'تم الإرسال! تفقد بريدك' : 'Sent! Check your inbox'}</span>
+            <span>{t('surface.email.sent')}</span>
           </span>
         ) : error ? (
           <span className="text-[11px] text-rose-600 dark:text-rose-400 font-medium max-w-[220px] truncate" title={error}>
@@ -128,8 +128,8 @@ export default function EmailVerificationBanner() {
           {sending ? <NajeSpinner className="w-3 h-3" /> : null}
           <span>
             {sending 
-              ? (isRtl ? 'جاري الإرسال...' : 'Sending...')
-              : (cooldown > 0 ? (isRtl ? `انتظر (${cooldown} ثانية)` : `Wait (${cooldown}s)`) : (isRtl ? 'إعادة إرسال رابط التفعيل' : 'Resend verification link'))}
+              ? t('surface.email.sending')
+              : (cooldown > 0 ? t('surface.email.wait', { n: cooldown }) : t('surface.email.resend'))}
           </span>
         </button>
 

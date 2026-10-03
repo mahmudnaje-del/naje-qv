@@ -4,6 +4,7 @@ import { db } from '../firebase';
 import { motion, AnimatePresence } from 'motion/react';
 import { Volume2, Image as ImageIcon, FileText, Film } from 'lucide-react';
 import NajeThinking from './NajeThinking';
+import { useI18n } from '../i18n';
 
 type JobType = 'image' | 'video' | 'voice' | 'document';
 
@@ -62,7 +63,13 @@ const META: Record<JobType, { title: string; icon: any; gradient: string; think:
 export default function NajeSmartLoader({
   jobId, jobType, userPrompt = '', isCompleted = false,
 }: { jobId: string | null; jobType: JobType; userPrompt?: string; isCompleted?: boolean }) {
-  const meta = META[jobType] || META.image;
+  const { t } = useI18n();
+  const tr = (key: string, fallback: string) => {
+    const value = t(key);
+    return value && value !== key ? value : fallback;
+  };
+  const kind: JobType = META[jobType] ? jobType : 'image';
+  const meta = META[kind];
   const [phase, setPhase] = useState<'thinking' | 'generating' | 'completed'>('thinking');
   const [progress, setProgress] = useState(0);
   const [serverLabel, setServerLabel] = useState('');
@@ -106,7 +113,7 @@ export default function NajeSmartLoader({
             initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }}
             transition={{ duration: 0.35 }}
             className="text-[13px] text-gray-500 dark:text-gray-400">
-            {meta.think[thinkIdx]}
+            {tr(`surface.loader.${kind}.step.${thinkIdx}`, meta.think[thinkIdx] || '')}
           </motion.span>
         </AnimatePresence>
       </div>
@@ -120,7 +127,7 @@ export default function NajeSmartLoader({
             <Icon size={20} strokeWidth={2.2} />
           </div>
           <div className="min-w-0 flex-1">
-            <div className="text-[13px] font-bold text-gray-800 dark:text-gray-100 truncate">{meta.title}</div>
+            <div className="text-[13px] font-bold text-gray-800 dark:text-gray-100 truncate">{tr(`surface.loader.${kind}.title`, meta.title)}</div>
             <AnimatePresence mode="wait">
               <motion.div
                 key={'g' + serverLabel + phase}

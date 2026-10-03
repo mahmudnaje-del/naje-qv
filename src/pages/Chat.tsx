@@ -51,7 +51,7 @@ import { Paintbrush, History as HistoryIcon } from 'lucide-react';
 import { fetchWithRetry } from '../lib/fetchWithRetry';
 
 import MessageBubble from '../components/chat/MessageBubble';
-import { getChatTypeConfig } from '../lib/chatTypeConfig';
+import { getChatTypeConfig, localizeChatType } from '../lib/chatTypeConfig';
 
 import UiChatPanel from '../components/chat/UiChatPanel';
 import TextChatPanel from '../components/chat/TextChatPanel';
@@ -1068,7 +1068,7 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
       abortControllerRef.current = new AbortController();
 
       if (openFormat && token) {
-        setLiveActivity('يقرأ الطلب ويحدد شكل الملف');
+        setLiveActivity('surface.activity.read');
         const assistantRef = doc(collection(db, 'messages'));
         const assistantId = assistantRef.id;
         let acc = '';
@@ -2009,7 +2009,7 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
 
       {/* Redesigned StudioHeader for Chat */}
       {(() => {
-        const chatTypeMeta = getChatTypeConfig(chat.type);
+        const chatTypeMeta = localizeChatType(chat.type, t);
         return (
           <StudioHeader
             title={chat.title}

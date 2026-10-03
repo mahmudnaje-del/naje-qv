@@ -168,7 +168,7 @@ export default function NajeIdent() {
     const d = nextDraft || draft;
     const currentSlot = resolveSlot(d.kind, d.activePiece);
     if (!d.brandName.trim()) {
-      toast.error('يرجى كتابة اسم علامتك التجارية أولاً');
+      toast.error(t('surface.ident.needBrand'));
       setMobileTab('brand');
       return;
     }
@@ -240,7 +240,7 @@ export default function NajeIdent() {
   const runSurprise = () => {
     const next = surpriseDirection(draft);
     setDraft(next);
-    toast.success('تم ابتكار أسلوب إخراجي ملهم لهويتك');
+    toast.success(t('surface.ident.styleReady'));
   };
 
   const stepLabel =
@@ -249,16 +249,16 @@ export default function NajeIdent() {
       : job?.stepLabel || (busy ? t(`motion.step.${stepIndex(job?.progress || 0)}`) : '');
 
   const generateLabel = () => {
-    if (busy) return stepLabel || 'ناجي يقوم بالإنتاج السينمائي…';
+    if (busy) return stepLabel || t('surface.ident.producing');
     const piece = t(`motion.piece.${slot}`);
     const duration = formatNumber(draft.duration);
     if (draft.kind === 'both' && slot === 'intro' && !results.intro?.videoUrl) {
-      return `إنتاج شارة البداية (${duration}ث)`;
+      return t('surface.ident.introDur', { duration });
     }
     if (draft.kind === 'both' && slot === 'outro' && results.intro?.videoUrl && !results.outro?.videoUrl) {
-      return `إنتاج شارة النهاية (${duration}ث)`;
+      return t('surface.ident.outroDur', { duration });
     }
-    return `إنتاج ${piece} (${duration}ث)`;
+    return t('surface.ident.pieceDur', { piece, duration });
   };
 
   const hasResults = Object.values(results).some((r) => r?.videoUrl);
@@ -314,14 +314,14 @@ export default function NajeIdent() {
                         className="inline-flex min-h-[38px] items-center gap-1.5 px-3 py-1 rounded-xl bg-black/40 border border-[#8ec8ff]/20 text-xs font-black text-[#93a0b5] hover:text-[#8ec8ff] active:scale-95 transition"
                       >
                         <ArrowLeft className="w-3.5 h-3.5 rtl:rotate-180" />
-                        <span>العودة للرئيسية</span>
+                        <span>{t('surface.ident.backHome')}</span>
                       </button>
                     )}
                     <div className="inline-flex items-center gap-1.5 rounded-full border border-[#8ec8ff]/30 bg-[#8ec8ff]/10 px-3 py-1 text-[11px] font-black tracking-wider text-[#e7eef8]">
                       <NajeIdentIcon size={28} className="h-7 w-7 shrink-0" />
                       <span className="motion-tally inline-block h-2 w-2 rounded-full bg-[#ffb020] animate-pulse" aria-hidden />
                       <span className="text-[#ffb020]">NAJE IDENT</span>
-                      <span className="text-[#93a0b5] text-[10px]">· استوديو الموشن غرافيك</span>
+                      <span className="text-[#93a0b5] text-[10px]">· {t('surface.ident.studioTag')}</span>
                     </div>
                   </div>
                   <h1 className="text-base sm:text-2xl font-black leading-snug tracking-tight text-[#e7eef8]">
@@ -352,7 +352,7 @@ export default function NajeIdent() {
               {draft.kind === 'both' && (
                 <div className="mt-3.5 rounded-2xl border border-[#8ec8ff]/15 bg-black/30 p-3">
                   <p className="mb-2 text-[11px] leading-relaxed text-[#93a0b5]">
-                    حزمة متكاملة: يتم إنتاج شارة البداية ثم شارة النهاية بتناغم بصري كامل.
+                    {t('surface.ident.bundleNote')}
                   </p>
                   <div className="grid grid-cols-2 gap-2">
                     <Chip
@@ -360,21 +360,21 @@ export default function NajeIdent() {
                       onClick={() => patch({ activePiece: 'intro' })}
                       className="w-full justify-center py-2.5 text-xs font-black"
                     >
-                      شارة البداية (Intro)
-                      {results.intro?.videoUrl ? ' — ✓ جاهزة' : ''}
+                      {t('surface.ident.intro')}
+                      {results.intro?.videoUrl ? ` — ✓ ${t('surface.ident.ready')}` : ''}
                     </Chip>
                     <Chip
                       active={draft.activePiece === 'outro'}
                       onClick={() => patch({ activePiece: 'outro' })}
                       className="w-full justify-center py-2.5 text-xs font-black"
                     >
-                      شارة النهاية (Outro)
-                      {results.outro?.videoUrl ? ' — ✓ جاهزة' : ''}
+                      {t('surface.ident.outro')}
+                      {results.outro?.videoUrl ? ` — ✓ ${t('surface.ident.ready')}` : ''}
                     </Chip>
                   </div>
                   {results.intro?.videoUrl && !results.outro?.videoUrl && draft.activePiece === 'intro' && (
                     <p className="mt-2 text-[11px] font-bold text-[#ffb020]">
-                      تم تجهيز شارة البداية بنجاح! انتقل لإنتاج شارة النهاية لإكمال الحزمة.
+                      {t('surface.ident.goOutro')}
                     </p>
                   )}
                 </div>
@@ -387,7 +387,7 @@ export default function NajeIdent() {
                 <p className="inline-flex items-start gap-2.5">
                   <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-rose-400" />
                   <span>
-                    <strong className="block text-sm font-bold text-white mb-0.5">تنبيه أثناء الإنتاج:</strong>
+                    <strong className="block text-sm font-bold text-white mb-0.5">{t('surface.ident.productionWarn')}</strong>
                     {error}
                   </span>
                 </p>
@@ -400,14 +400,14 @@ export default function NajeIdent() {
                     }}
                     className="min-h-[42px] rounded-xl bg-rose-500/30 border border-rose-400/50 px-4 text-xs font-black text-white hover:bg-rose-500/40 active:scale-95 transition"
                   >
-                    إعادة المحاولة
+                    {t('surface.ident.retry')}
                   </button>
                   <button
                     type="button"
                     onClick={() => setError(null)}
                     className="min-h-[42px] px-3 text-xs font-bold text-rose-200/80 hover:text-white"
                   >
-                    إغلاق
+                    {t('surface.ident.close')}
                   </button>
                 </div>
               </div>
@@ -446,9 +446,9 @@ export default function NajeIdent() {
               {/* Ready Project Card if finished */}
               {hasResults && !busy && (
                 <div className="rounded-2xl border border-[#8ec8ff]/30 bg-[#8ec8ff]/10 p-3.5">
-                  <p className="text-sm font-black text-[#e7eef8]">تم إخراج الشارة السينمائية بنجاح!</p>
+                  <p className="text-sm font-black text-[#e7eef8]">{t('surface.ident.doneTitle')}</p>
                   <p className="mt-1 text-xs leading-relaxed text-[#93a0b5]">
-                    يمكنك تشغيل الفيديو أعلاه، تكبيره بملء الشاشة، أو تحميله بصيغة MP4 جاهزة للمونتاج.
+                    {t('surface.ident.doneBody')}
                   </p>
                   <div className="mt-2.5">
                     <button
@@ -456,7 +456,7 @@ export default function NajeIdent() {
                       onClick={resetProject}
                       className="min-h-[40px] rounded-xl border border-[#8ec8ff]/30 bg-black/40 px-3.5 text-xs font-black text-[#e7eef8] active:scale-95 transition"
                     >
-                      بدء مشروع هوية جديد
+                      {t('surface.ident.newProject')}
                     </button>
                   </div>
                 </div>
@@ -475,7 +475,7 @@ export default function NajeIdent() {
                     }`}
                   >
                     <Palette className="w-3.5 h-3.5 shrink-0" />
-                    <span className="text-[11px] truncate">الهوية والألوان</span>
+                    <span className="text-[11px] truncate">{t('surface.ident.stepBrand')}</span>
                   </button>
 
                   <button
@@ -488,7 +488,7 @@ export default function NajeIdent() {
                     }`}
                   >
                     <Sparkles className="w-3.5 h-3.5 shrink-0" />
-                    <span className="text-[11px] truncate">الأسلوب والمخرج</span>
+                    <span className="text-[11px] truncate">{t('surface.ident.stepStyle')}</span>
                   </button>
 
                   <button
@@ -501,7 +501,7 @@ export default function NajeIdent() {
                     }`}
                   >
                     <Sliders className="w-3.5 h-3.5 shrink-0" />
-                    <span className="text-[11px] truncate">المقاس والمدة</span>
+                    <span className="text-[11px] truncate">{t('surface.ident.stepFormat')}</span>
                   </button>
 
                   <button
@@ -514,7 +514,7 @@ export default function NajeIdent() {
                     }`}
                   >
                     <Layers className="w-3.5 h-3.5 shrink-0" />
-                    <span className="text-[11px] truncate">المخطط الزمني</span>
+                    <span className="text-[11px] truncate">{t('surface.ident.stepTimeline')}</span>
                   </button>
                 </div>
               </div>
@@ -560,14 +560,14 @@ export default function NajeIdent() {
                 {mobileTab === 'plan' && (
                   <div className="space-y-4">
                     <BestPracticeHints draft={draft} slot={slot} />
-                    <StudioCard title="رؤية المخرج التوليدية" hint="ملاحظات توجيهية إضافية لإثراء المشهد والحركة">
-                      <FieldLabel>الرؤية والوصف الفني:</FieldLabel>
+                    <StudioCard title={t('surface.ident.directorTitle')} hint={t('surface.ident.directorHint')}>
+                      <FieldLabel>{t('surface.ident.directorLabel')}</FieldLabel>
                       <textarea
                         rows={3}
                         value={draft.vision}
                         maxLength={1200}
                         onChange={(e) => patch({ vision: e.target.value })}
-                        placeholder="أدخل أي تفاصيل إضافية للمخرج الذكي (مثال: إظهار إشعاع ذهبي ناعم في الثانية الخامسة)..."
+                        placeholder={t('surface.ident.directorPlaceholder')}
                         className={fieldClass}
                       />
                     </StudioCard>
@@ -595,14 +595,14 @@ export default function NajeIdent() {
                   <Wand2 className="h-4 w-4 text-[#ffb020]" />
                   <span>{t('motion.page.surprise')}</span>
                 </button>
-                <StudioCard title="رؤية المخرج التوليدية" hint="ملاحظات توجيهية إضافية لإثراء المشهد والحركة">
-                  <FieldLabel>الرؤية والوصف الفني:</FieldLabel>
+                <StudioCard title={t('surface.ident.directorTitle')} hint={t('surface.ident.directorHint')}>
+                  <FieldLabel>{t('surface.ident.directorLabel')}</FieldLabel>
                   <textarea
                     rows={3}
                     value={draft.vision}
                     maxLength={1200}
                     onChange={(e) => patch({ vision: e.target.value })}
-                    placeholder="أدخل أي تفاصيل إضافية للمخرج الذكي..."
+                    placeholder={t('surface.ident.directorPlaceholderShort')}
                     className={fieldClass}
                   />
                 </StudioCard>
@@ -655,7 +655,7 @@ export default function NajeIdent() {
                       <span>{formatNumber(points)} {t('common.pointsShort')}</span>
                     </span>
                     <span className="mt-0.5 block text-[10px] text-[#93a0b5]">
-                      إخراج فائق الدقة · نافذة 10 ثوانٍ سينمائية
+                      {t('surface.ident.hires')}
                     </span>
                   </p>
                   <button
@@ -671,9 +671,9 @@ export default function NajeIdent() {
 
                 {hasResults && !busy && (
                   <div className="rounded-2xl border border-[#8ec8ff]/30 bg-[#8ec8ff]/10 p-4">
-                    <p className="text-sm font-black text-[#e7eef8]">تم إخراج الشارة بنجاح!</p>
+                    <p className="text-sm font-black text-[#e7eef8]">{t('surface.ident.doneTitle')}</p>
                     <p className="mt-1 text-xs leading-relaxed text-[#93a0b5]">
-                      يمكنك معاينة الفيديو، المقارنة مع نسخ سابقة، أو تنزيل ملف MP4.
+                      {t('surface.ident.doneBody')}
                     </p>
                     <div className="mt-3">
                       <button
@@ -681,7 +681,7 @@ export default function NajeIdent() {
                         onClick={resetProject}
                         className="min-h-[42px] rounded-xl border border-[#8ec8ff]/30 bg-black/40 px-3.5 text-xs font-black text-[#e7eef8] hover:bg-[#8ec8ff]/20 active:scale-95 transition"
                       >
-                        بدء مشروع هوية جديد
+                        {t('surface.ident.newProject')}
                       </button>
                     </div>
                   </div>
@@ -701,7 +701,7 @@ export default function NajeIdent() {
           <div className="mx-auto flex max-w-md items-center justify-between gap-3">
             <div className="flex flex-col text-start min-w-0">
               <span className="text-[11px] text-[#93a0b5] flex items-center gap-1">
-                <span>التكلفة:</span>
+                <span>{t('surface.ident.cost')}</span>
                 <span className="font-mono font-black text-[#ffb020]">
                   {formatNumber(points)} {t('common.pointsShort')}
                 </span>

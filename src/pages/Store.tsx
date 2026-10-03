@@ -178,7 +178,7 @@ export default function Store() {
 
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.error || 'كود الشحن غير صالح أو تم استخدامه مسبقاً');
+        throw new Error(data.error || t('surface.store.badCode'));
       }
 
       if (typeof data.newBalance === 'number') {
@@ -188,8 +188,8 @@ export default function Store() {
       toast.success(t('shell.store.pointsAdded', { points: data.addedPoints }));
       setVoucherCode('');
     } catch (err: any) {
-      setRedeemError(err.message || 'حدث خطأ أثناء محاولة شحن الكود');
-      toast.error(err.message || 'حدث خطأ أثناء محاولة شحن الكود');
+      setRedeemError(err.message || t('surface.store.redeemError'));
+      toast.error(err.message || t('surface.store.redeemError'));
     } finally {
       setRedeemLoading(false);
     }
@@ -788,12 +788,10 @@ export default function Store() {
                 <div className="bg-gradient-to-br from-purple-950/30 via-slate-900/60 to-black border border-purple-500/25 rounded-2xl p-4 text-xs shadow-md">
                   <div className="flex items-center gap-2 mb-2 pb-2 border-b border-purple-500/20 text-purple-300 font-bold">
                     <Gift className="w-4 h-4 text-purple-400 shrink-0" />
-                    <span>{isRtl ? 'شحن فوري عبر كود مسبق الدفع' : 'Redeem Prepaid Voucher Code'}</span>
+                    <span>{t('surface.store.voucherTitle')}</span>
                   </div>
                   <p className="text-[11px] text-gray-300 mb-3">
-                    {isRtl
-                      ? 'إذا كان لديك كود شحن أو بطاقة هدية، يمكنك إدخاله هنا لإيداع الرصيد فوراً في حسابك.'
-                      : 'Have a prepaid gift or voucher code? Enter it below for instant credit top-up.'}
+                    {t('surface.store.voucherBody')}
                   </p>
                   <form onSubmit={handleRedeemVoucher} className="space-y-2">
                     <input
@@ -821,7 +819,7 @@ export default function Store() {
                       ) : (
                         <>
                           <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-                          <span>{isRtl ? 'شحن الرصيد الآن' : 'Redeem Points Now'}</span>
+                          <span>{t('surface.store.redeemNow')}</span>
                         </>
                       )}
                     </button>

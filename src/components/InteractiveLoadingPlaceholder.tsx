@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { auth } from '../firebase';
 import { getEpisodes, Frame } from '../lib/LoadingEpisodes';
+import { useI18n } from '../i18n';
 
 // ----------------- CHARACTERS -----------------
 const SleekCharacter = ({ color, glowColor, flip, pose }: { color: string, glowColor: string, flip: boolean, pose: string }) => {
@@ -199,6 +200,7 @@ const Props = ({ type }: { type: string }) => {
 };
 
 const SpeechBubble = ({ text, isRtl, speaker }: { text: string, isRtl: boolean, speaker: 'omar' | 'arthur' }) => {
+  const { t } = useI18n();
   const isOmar = speaker === 'omar';
   
   return (
@@ -217,7 +219,7 @@ const SpeechBubble = ({ text, isRtl, speaker }: { text: string, isRtl: boolean, 
     >
       <div className={`font-bold mb-2 ${isOmar ? 'text-sky-400' : 'text-red-400'} text-[10px] uppercase tracking-widest flex items-center gap-2`}>
         <div className={`w-1.5 h-1.5 rounded-full ${isOmar ? 'bg-sky-400' : 'bg-red-400'} animate-pulse shadow-[0_0_8px_currentColor]`} />
-        {isOmar ? (isRtl ? 'عمر (المهندس)' : 'Omar') : (isRtl ? 'الذكاء آرثر' : 'Arthur AI')}
+        {isOmar ? t('surface.load.omar') : t('surface.load.arthur')}
       </div>
       <p className="leading-relaxed drop-shadow-md whitespace-pre-wrap">{text}</p>
       

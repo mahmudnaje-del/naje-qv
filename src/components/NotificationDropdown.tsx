@@ -62,20 +62,20 @@ export default function NotificationDropdown() {
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const dbNotifications: NotificationItem[] = snapshot.docs.map((d) => {
         const data = d.data();
-        let formattedTime = isRtl ? 'مؤخراً' : 'Recently';
+        let formattedTime = t('surface.notify.recent');
         if (data.createdAt) {
           const diffMs = Date.now() - data.createdAt;
           const diffMins = Math.floor(diffMs / 60000);
           const diffHours = Math.floor(diffMins / 60);
           const diffDays = Math.floor(diffHours / 24);
-          if (diffMins < 1) formattedTime = isRtl ? 'الآن' : 'Just now';
-          else if (diffMins < 60) formattedTime = isRtl ? `منذ ${diffMins} دقيقة` : `${diffMins}m ago`;
-          else if (diffHours < 24) formattedTime = isRtl ? `منذ ${diffHours} ساعة` : `${diffHours}h ago`;
-          else formattedTime = isRtl ? `منذ ${diffDays} يوم` : `${diffDays}d ago`;
+          if (diffMins < 1) formattedTime = t('surface.notify.now');
+          else if (diffMins < 60) formattedTime = t('surface.notify.mins', { n: diffMins });
+          else if (diffHours < 24) formattedTime = t('surface.notify.hours', { n: diffHours });
+          else formattedTime = t('surface.notify.days', { n: diffDays });
         }
         return {
           id: d.id,
-          title: data.title || (isRtl ? 'تنبيه جديد' : 'Notification'),
+          title: data.title || t('surface.notify.new'),
           message: data.message || '',
           time: formattedTime,
           type: data.type || 'system',

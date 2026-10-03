@@ -27,13 +27,9 @@ import { Message, Chat } from '../../types';
 import SmokeChatWrapper from './SmokeChatWrapper';
 import { 
   useLivePlaceholder, 
-  TEXT_CHAT_PHRASES, 
-  IMAGE_CHAT_PHRASES, 
-  VIDEO_CHAT_PHRASES, 
-  VOICE_CHAT_PHRASES 
 } from '../../hooks/useLivePlaceholder';
-import { getChatTypeConfig } from '../../lib/chatTypeConfig';
-import { isOpenFormatId } from '../../lib/creationEngine';
+import { localizeChatType } from '../../lib/chatTypeConfig';
+import { isOpenFormatId, localizeActivity } from '../../lib/creationEngine';
 import najePersonaDesignerData from '../../assets/icons/naje-persona-designer-data.svg';
 import najeDocument from '../../assets/icons/naje-document.svg';
 import najeChartBars from '../../assets/icons/naje-chart-bars.svg';
@@ -326,7 +322,7 @@ export default function TextChatPanel({
   const [showInfographicModal, setShowInfographicModal] = useState(false);
   const [dismissedInfographicChip, setDismissedInfographicChip] = useState(false);
 
-  const chatMeta = useMemo(() => getChatTypeConfig(chat?.type), [chat?.type]);
+  const chatMeta = useMemo(() => localizeChatType(chat?.type, t), [chat?.type, t]);
   const dynamicPlaceholder = useLivePlaceholder(chatMeta.phrases);
 
   const textFeatures = [
@@ -558,9 +554,9 @@ export default function TextChatPanel({
                     className="w-2.5 h-2.5 rounded-full inline-block shrink-0 shadow-xs" 
                     style={{ backgroundColor: chatMeta.color }} 
                   />
-                  <span>نماذج وأفكار مقترحة لـ {chatMeta.nameAr}</span>
+                  <span>{t('surface.chat.ideas')} {chatMeta.nameAr}</span>
                 </h3>
-                <span className="text-[11px] font-semibold text-gray-500 dark:text-gray-400">انقر لتجربة فورية</span>
+                <span className="text-[11px] font-semibold text-gray-500 dark:text-gray-400">{t('surface.chat.tryNow')}</span>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                 {chatMeta.featureCards.map(feat => (
@@ -675,7 +671,7 @@ export default function TextChatPanel({
                   />
                   {liveActivity && (
                     <div className="mt-1 border-t border-indigo-500/30 pt-1.5 text-[11px] font-bold text-indigo-600 dark:text-indigo-300">
-                      {liveActivity}
+                      {localizeActivity(liveActivity, t)}
                     </div>
                   )}
                 </>

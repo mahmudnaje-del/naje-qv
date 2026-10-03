@@ -8757,7 +8757,7 @@ Return ONLY raw JSON, no markdown code fences.` }] }
           let streamUsageMetadata: any = null;
           let announcedWrite = false;
           const maxOutputBytes = ((pricing.ui?.maxOutputKb || 400) * 1024);
-          res.write(`data: ${JSON.stringify({ activity: enableSearchGrounding ? 'يبحث في الويب ثم يكتب' : 'يقرأ الطلب' })}\n\n`);
+          res.write(`data: ${JSON.stringify({ activity: enableSearchGrounding ? 'surface.activity.searchThenWrite' : 'surface.activity.readShort' })}\n\n`);
 
           try {
             for await (const chunk of stream) {
@@ -8767,7 +8767,7 @@ Return ONLY raw JSON, no markdown code fences.` }] }
               const extractedCalls = extractGeminiFunctionCalls(chunk);
               if (extractedCalls.length > 0) {
                 functionCalls.push(...extractedCalls);
-                res.write(`data: ${JSON.stringify({ activity: 'يجهّز الخطوة التالية من الطلب' })}\n\n`);
+                res.write(`data: ${JSON.stringify({ activity: 'surface.activity.nextStep' })}\n\n`);
               }
               const candidate = chunk.candidates?.[0];
               if (candidate?.groundingMetadata?.groundingChunks) {
@@ -8786,7 +8786,7 @@ Return ONLY raw JSON, no markdown code fences.` }] }
                 fullText += chunkText;
                 if (!announcedWrite) {
                   announcedWrite = true;
-                  res.write(`data: ${JSON.stringify({ activity: 'يكتب الآن' })}\n\n`);
+                  res.write(`data: ${JSON.stringify({ activity: 'surface.activity.writing' })}\n\n`);
                 }
 
                 // PART 1.1: Per-chunk Plan Mode Violation Check (stop immediately if HTML emitted)
