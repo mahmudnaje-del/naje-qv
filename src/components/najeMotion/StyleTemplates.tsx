@@ -1,8 +1,8 @@
 import React, { useMemo, useState } from 'react';
-import { Sparkles, Search, Check, Wand2 } from 'lucide-react';
+import { Sparkles, Check, Wand2 } from 'lucide-react';
 import { STYLE_CATEGORIES, STYLE_TEMPLATES, type StyleCategory } from '../../lib/motionStudio';
 import { useMotionI18n } from './i18n';
-import { Chip, StudioCard, StudioInput } from './StudioUi';
+import { Chip, StudioCard } from './StudioUi';
 
 export function StyleTemplates({
   styleId,
@@ -12,18 +12,14 @@ export function StyleTemplates({
   onSelect: (id: string) => void;
 }) {
   const { t, opt } = useMotionI18n();
-  const [query, setQuery] = useState('');
   const [cat, setCat] = useState<StyleCategory | 'all'>('all');
 
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
     return STYLE_TEMPLATES.filter((tpl) => {
       if (cat !== 'all' && tpl.category !== cat) return false;
-      if (!q) return true;
-      const bag = `${t(`motion.opt.style.${tpl.id}`)} ${t(`motion.opt.style.${tpl.id}.hint`)} ${tpl.name} ${tpl.nameEn} ${tpl.hint} ${opt('intensity', tpl.motionLevel)}`.toLowerCase();
-      return bag.includes(q);
+      return true;
     });
-  }, [query, cat, t, opt]);
+  }, [cat]);
 
   return (
     <StudioCard
@@ -31,28 +27,6 @@ export function StyleTemplates({
       hint={t('motion.style.hint')}
       icon={<Wand2 className="w-4 h-4 text-[#8ec8ff]" />}
     >
-      {/* Search Bar */}
-      <div className="mb-3.5">
-        <div className="relative">
-          <StudioInput
-            value={query}
-            onChange={setQuery}
-            placeholder={t('motion.style.search')}
-            className="ps-9"
-          />
-          <Search className="w-4 h-4 text-[#93a0b5] absolute start-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-          {query && (
-            <button
-              type="button"
-              onClick={() => setQuery('')}
-              className="absolute end-3 top-1/2 -translate-y-1/2 text-xs text-[#93a0b5] hover:text-white"
-            >
-              مسح
-            </button>
-          )}
-        </div>
-      </div>
-
       {/* Category Pills */}
       <div className="mb-4 flex gap-1.5 overflow-x-auto pb-1 scrollbar-none sm:flex-wrap touch-pan-x">
         <Chip active={cat === 'all'} onClick={() => setCat('all')}>

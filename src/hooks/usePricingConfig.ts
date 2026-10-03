@@ -50,6 +50,49 @@ export interface PricingConfig {
     resolutionMultiplier?: { '360p'?: number; '720p'?: number; '1080p'?: number; '4k'?: number };
     editMultiplier?: number;
   };
+  najeIdent?: {
+    enabled: boolean;
+    pointsRatePerSecond: number;
+    durationOptionsSec: number[];
+    resolutionMultiplier?: { '720p'?: number; '1080p'?: number; '4k'?: number };
+    fullPackDiscountPercent?: number;
+    stingerBasePoints?: number;
+    logoRevealBasePoints?: number;
+    modelEndpointId?: string;
+  };
+  najeCv?: {
+    enabled: boolean;
+    baseDossierCost: number;
+    coverLetterCost: number;
+    linkedInOptimizationCost: number;
+    interviewPrepCost: number;
+    bilingualAddonCost: number;
+    portfolioWebCost: number;
+    docxExportCost: number;
+    maxRevisionsIncluded: number;
+  };
+  najePrompt?: {
+    enabled: boolean;
+    promptOptimizationCost: number;
+    fewShotDatasetCost: number;
+    multiModelAdapterCost: number;
+    chainOfThoughtCost: number;
+  };
+  creativeStudio?: {
+    enabled: boolean;
+    socialMediaPostCost: number;
+    marketingFlyerCost: number;
+    brandKitBundleCost: number;
+    bannerAdCost: number;
+    vectorExportAddon: number;
+  };
+  najeDeveloper?: {
+    enabled: boolean;
+    codeProjectCost: number;
+    securityAuditCost: number;
+    repoAnalysisCost: number;
+    dockerCiGenCost: number;
+  };
 }
 
 export const DEFAULT_PRICING_CONFIG: PricingConfig = {
@@ -100,6 +143,49 @@ export const DEFAULT_PRICING_CONFIG: PricingConfig = {
     defaultModelEndpointId: 'video_omni',
     resolutionMultiplier: { '360p': 0.35, '720p': 1.0, '1080p': 1.5, '4k': 3.0 },
     editMultiplier: 0.5
+  },
+  najeIdent: {
+    enabled: true,
+    pointsRatePerSecond: 2.5,
+    durationOptionsSec: [5, 10],
+    resolutionMultiplier: { '720p': 1.0, '1080p': 1.6, '4k': 2.8 },
+    fullPackDiscountPercent: 15,
+    stingerBasePoints: 12,
+    logoRevealBasePoints: 15,
+    modelEndpointId: 'omni-1.1'
+  },
+  najeCv: {
+    enabled: true,
+    baseDossierCost: 8,
+    coverLetterCost: 4,
+    linkedInOptimizationCost: 5,
+    interviewPrepCost: 6,
+    bilingualAddonCost: 3,
+    portfolioWebCost: 5,
+    docxExportCost: 1,
+    maxRevisionsIncluded: 3
+  },
+  najePrompt: {
+    enabled: true,
+    promptOptimizationCost: 2,
+    fewShotDatasetCost: 5,
+    multiModelAdapterCost: 3,
+    chainOfThoughtCost: 4
+  },
+  creativeStudio: {
+    enabled: true,
+    socialMediaPostCost: 4,
+    marketingFlyerCost: 6,
+    brandKitBundleCost: 12,
+    bannerAdCost: 5,
+    vectorExportAddon: 2
+  },
+  najeDeveloper: {
+    enabled: true,
+    codeProjectCost: 10,
+    securityAuditCost: 4,
+    repoAnalysisCost: 8,
+    dockerCiGenCost: 3
   }
 };
 
@@ -122,7 +208,12 @@ export async function fetchCurrentPricing(): Promise<PricingConfig> {
             ui: { ...DEFAULT_PRICING_CONFIG.ui, ...(data.ui || {}) },
             voice: { ...DEFAULT_PRICING_CONFIG.voice, ...(data.voice || {}) },
             agent: { ...(data.agent || {}) },
-            najeAd: { ...DEFAULT_PRICING_CONFIG.najeAd, ...(data.najeAd || {}) }
+            najeAd: { ...DEFAULT_PRICING_CONFIG.najeAd, ...(data.najeAd || {}) },
+            najeIdent: { ...DEFAULT_PRICING_CONFIG.najeIdent, ...(data.najeIdent || {}) },
+            najeCv: { ...DEFAULT_PRICING_CONFIG.najeCv, ...(data.najeCv || {}) },
+            najePrompt: { ...DEFAULT_PRICING_CONFIG.najePrompt, ...(data.najePrompt || {}) },
+            creativeStudio: { ...DEFAULT_PRICING_CONFIG.creativeStudio, ...(data.creativeStudio || {}) },
+            najeDeveloper: { ...DEFAULT_PRICING_CONFIG.najeDeveloper, ...(data.najeDeveloper || {}) },
           };
           cachedPricing = merged;
           return merged;

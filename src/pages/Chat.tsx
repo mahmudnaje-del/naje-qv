@@ -313,7 +313,7 @@ function getMismatchSuggestion(mode: 'plan' | 'build', text: string): 'plan' | '
 export default function Chat() {
   const pricing = usePricingConfig();
   const [uiMode, setUiMode] = useState<'build' | 'plan'>('build');
-  const [uiModelTier, setUiModelTier] = useState<'lite' | 'core' | 'max'>('core');
+  const [uiModelTier, setUiModelTier] = useState<'lite' | 'core' | 'max'>('lite');
   const [enableSearchGrounding, setEnableSearchGrounding] = useState<boolean>(false);
   const [modelDropdownOpen, setModelDropdownOpen] = useState(false);
   const modelDropdownRef = useRef<HTMLDivElement>(null);
@@ -1644,7 +1644,7 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
   const [aspectRatio, setAspectRatio] = useState('1:1');
   const [videoModel, setVideoModel] = useState('veo');
   const [videoResolution, setVideoResolution] = useState<'720p' | '1080p'>('720p');
-  const [textModelTier, setTextModelTier] = useState<'lite' | 'core' | 'max'>('core');
+  const [textModelTier, setTextModelTier] = useState<'lite' | 'core' | 'max'>('lite');
   const [videoDuration, setVideoDuration] = useState('4');
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [selectedCoord, setSelectedCoord] = useState<{msgId: string, x: number, y: number} | null>(null);

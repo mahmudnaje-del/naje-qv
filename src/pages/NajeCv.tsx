@@ -476,7 +476,7 @@ export default function NajeCv() {
   };
 
   return (
-    <div className="naje-cv-studio relative h-full overflow-x-hidden overflow-y-auto bg-[#0b1220] px-2.5 pb-10 pt-2 text-[#f3ead8] sm:px-6" dir={isRtl ? 'rtl' : 'ltr'}>
+    <div className="naje-cv-studio relative h-full overflow-y-auto bg-[#0b1220] px-2.5 pb-10 pt-2 text-[#f3ead8] sm:px-6" dir={isRtl ? 'rtl' : 'ltr'}>
       <StudioBootSplash dark />
 
       {gate !== 'studio' && (
@@ -506,7 +506,7 @@ export default function NajeCv() {
 
       {gate === 'studio' && (
         <div className="mx-auto max-w-7xl space-y-3">
-          <header className="sticky top-0 z-20 overflow-hidden rounded-2xl border border-[#c4a35a]/35 bg-[#101826] shadow-[inset_0_1px_0_rgba(232,195,106,0.35)]">
+          <header className="relative z-10 overflow-hidden rounded-2xl border border-[#c4a35a]/40 bg-[#101826]/95 backdrop-blur-xl shadow-[0_12px_36px_rgba(0,0,0,0.85),inset_0_1px_0_rgba(232,195,106,0.35)]">
             <div className="flex">
               <div className="cv-spine shrink-0" aria-hidden />
               <div className="min-w-0 flex-1 p-3 sm:p-4">
@@ -514,7 +514,7 @@ export default function NajeCv() {
               <div className="min-w-0">
                 <p className="text-[10px] font-black tracking-[0.22em] text-[#e8c36a]">{t('cv.brand')}</p>
                 <h1 className="mt-1 text-xl font-black leading-snug text-white sm:text-2xl">{t('cv.studio.title')}</h1>
-                <p className="mt-1 max-w-xl text-[11px] leading-relaxed text-white/50 sm:text-xs">{t('cv.studio.lead')}</p>
+                <p className="mt-1 max-w-xl text-[11px] leading-relaxed text-white/50 sm:text-xs hidden sm:block">{t('cv.studio.lead')}</p>
               </div>
               <div className="flex flex-col items-stretch gap-2 sm:items-end">
                 <div className="rounded-2xl border border-[#c4a35a]/40 bg-black/40 px-4 py-2 text-center">

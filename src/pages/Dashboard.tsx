@@ -1099,23 +1099,6 @@ export default function Dashboard() {
         )}
       </AnimatePresence>
 
-      {/* Floating Desktop Sidebar Handle */}
-      <AnimatePresence>
-        {!sidebarOpen && (
-          <motion.button
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: 20 }}
-            transition={{ type: 'spring', damping: 20, stiffness: 200 }}
-            onClick={() => setSidebarOpen(true)}
-            className="hidden md:flex fixed top-1/2 right-0 -translate-y-1/2 z-40 bg-white dark:bg-gray-900 border border-r-0 border-gray-200 dark:border-gray-800 py-5 px-2 rounded-l-2xl shadow-[0_0_20px_rgba(0,0,0,0.1)] dark:shadow-[0_0_20px_rgba(0,0,0,0.3)] hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-gray-800 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 cursor-pointer group"
-            title={t('nav.expandSidebar')}
-          >
-            <PanelRight className="w-5 h-5 group-hover:-translate-x-0.5 transition-transform" />
-          </motion.button>
-        )}
-      </AnimatePresence>
-
       {/* 3. Main Stage Content Area */}
       <main className="flex-1 flex flex-col min-w-0 h-full relative overflow-hidden">
         {/* Email Verification Banner */}

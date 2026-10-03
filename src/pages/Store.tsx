@@ -21,6 +21,7 @@ import {
   Lock,
   Globe,
   Info,
+  Gift,
 } from 'lucide-react';
 import {
   VisaBadge,
@@ -146,8 +147,53 @@ export default function Store() {
   const [sdkError, setSdkError] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [successInfo, setSuccessInfo] = useState<{ points: number; newBalance: number } | null>(null);
+  const [voucherCode, setVoucherCode] = useState<string>('');
+  const [redeemLoading, setRedeemLoading] = useState<boolean>(false);
+  const [redeemError, setRedeemError] = useState<string | null>(null);
   const buttonContainerRef = useRef<HTMLDivElement>(null);
   const selectedIdRef = useRef<string>(selectedId);
+
+  const handleRedeemVoucher = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!voucherCode.trim()) return;
+    if (!user) {
+      toast.error(t('shell.store.loginToPay'));
+      return;
+    }
+    setRedeemLoading(true);
+    setRedeemError(null);
+
+    try {
+      const token = await auth.currentUser?.getIdToken();
+      if (!token) throw new Error(t('shell.store.loginToPay'));
+
+      const res = await fetch('/api/redeem-code', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ code: voucherCode.trim() }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'كود الشحن غير صالح أو تم استخدامه مسبقاً');
+      }
+
+      if (typeof data.newBalance === 'number') {
+        updateBalance(data.newBalance);
+      }
+      setSuccessInfo({ points: data.addedPoints, newBalance: data.newBalance });
+      toast.success(t('shell.store.pointsAdded', { points: data.addedPoints }));
+      setVoucherCode('');
+    } catch (err: any) {
+      setRedeemError(err.message || 'حدث خطأ أثناء محاولة شحن الكود');
+      toast.error(err.message || 'حدث خطأ أثناء محاولة شحن الكود');
+    } finally {
+      setRedeemLoading(false);
+    }
+  };
 
   const getPackageDetails = (pkgId: string) => {
     if (pkgId === 'pkg_5') {
@@ -736,6 +782,55 @@ export default function Store() {
                       ${selectedPackage?.usd.toFixed(2)} USD
                     </span>
                   </div>
+                </div>
+
+                {/* Direct Voucher Redemption Card in Store */}
+                <div className="bg-gradient-to-br from-purple-950/30 via-slate-900/60 to-black border border-purple-500/25 rounded-2xl p-4 text-xs shadow-md">
+                  <div className="flex items-center gap-2 mb-2 pb-2 border-b border-purple-500/20 text-purple-300 font-bold">
+                    <Gift className="w-4 h-4 text-purple-400 shrink-0" />
+                    <span>{isRtl ? 'شحن فوري عبر كود مسبق الدفع' : 'Redeem Prepaid Voucher Code'}</span>
+                  </div>
+                  <p className="text-[11px] text-gray-300 mb-3">
+                    {isRtl
+                      ? 'إذا كان لديك كود شحن أو بطاقة هدية، يمكنك إدخاله هنا لإيداع الرصيد فوراً في حسابك.'
+                      : 'Have a prepaid gift or voucher code? Enter it below for instant credit top-up.'}
+                  </p>
+                  <form onSubmit={handleRedeemVoucher} className="space-y-2">
+                    <input
+                      type="text"
+                      value={voucherCode}
+                      onChange={(e) => {
+                        setVoucherCode(e.target.value.toUpperCase());
+                        if (redeemError) setRedeemError(null);
+                      }}
+                      placeholder="XXXX-XXXX-XXXX-XXXX"
+                      disabled={redeemLoading}
+                      dir="ltr"
+                      className="w-full bg-black/50 border border-purple-500/30 focus:border-purple-400 focus:ring-1 focus:ring-purple-400 rounded-xl px-3 py-2 text-xs font-mono text-center uppercase tracking-widest text-white placeholder-gray-500 outline-none transition disabled:opacity-50"
+                    />
+                    <button
+                      type="submit"
+                      disabled={redeemLoading || !voucherCode.trim()}
+                      className="w-full py-2 px-3 rounded-xl bg-purple-600 hover:bg-purple-500 disabled:bg-gray-800 disabled:text-gray-500 text-white font-bold text-xs transition cursor-pointer flex items-center justify-center gap-1.5 shadow-sm active:scale-98"
+                    >
+                      {redeemLoading ? (
+                        <>
+                          <NajeSpinner className="w-3.5 h-3.5 text-white" />
+                          <span>{t('common.processing')}</span>
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                          <span>{isRtl ? 'شحن الرصيد الآن' : 'Redeem Points Now'}</span>
+                        </>
+                      )}
+                    </button>
+                    {redeemError && (
+                      <p className="text-[11px] text-rose-400 text-center font-semibold mt-1">
+                        {redeemError}
+                      </p>
+                    )}
+                  </form>
                 </div>
               </div>
             </div>

@@ -1,11 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100" height="100" role="img" aria-label="ناجي يفكّر">
   <defs>
     <linearGradient id="gV" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#A78BFA"/><stop offset="100%" stop-color="#8B5CF6"/></linearGradient>
-    <linearGradient id="gG" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#EBC85A"/><stop offset="100%" stop-color="#D4AF37"/></linearGradient>
+    <linearGradient id="gR" gradientUnits="userSpaceOnUse" x1="0" y1="47" x2="0" y2="707"><stop offset="0%" stop-color="#EBC85A"/><stop offset="100%" stop-color="#D4AF37"/></linearGradient>
     <style>
-      rect { transform-box: fill-box; transform-origin: center; animation: najePop 1.9s cubic-bezier(.34,1.4,.5,1) infinite; }
-      rect.v { filter: drop-shadow(0 0 3px rgba(139,92,246,.55)); }
-      rect.d { filter: drop-shadow(0 0 3.5px rgba(212,175,55,.6)); }
+      .p { transform-box: fill-box; transform-origin: center; animation: najePop 1.9s cubic-bezier(.34,1.4,.5,1) infinite; }
+      .v { filter: drop-shadow(0 0 3px rgba(139,92,246,.55)); }
+      .d { filter: drop-shadow(0 0 3.5px rgba(212,175,55,.6)); }
       @keyframes najePop {
         0%,100% { opacity:0; transform:scale(.25); }
         11%     { opacity:1; transform:scale(1.12); }
@@ -13,15 +13,25 @@
         20%,52% { opacity:1; }
         70%     { opacity:0; transform:scale(.25); }
       }
-      @media (prefers-reduced-motion: reduce) { rect { animation:none; opacity:1; transform:none; } }
+      @media (prefers-reduced-motion: reduce) { .p { animation:none; opacity:1; transform:none; } }
     </style>
   </defs>
-  <rect class="v" x="106.0" y="146.0" width="61.1" height="61.1" rx="13.4" fill="url(#gV)" style="animation-delay:0.00s"/>
-  <rect class="v" x="106.0" y="220.8" width="61.1" height="61.1" rx="13.4" fill="url(#gV)" style="animation-delay:0.09s"/>
-  <rect class="v" x="106.0" y="295.6" width="61.1" height="61.1" rx="13.4" fill="url(#gV)" style="animation-delay:0.18s"/>
-  <rect class="d" x="188.8" y="210.2" width="61.1" height="61.1" rx="13.4" fill="url(#gG)" style="animation-delay:0.27s"/>
-  <rect class="d" x="262.1" y="243.8" width="61.1" height="61.1" rx="13.4" fill="url(#gG)" style="animation-delay:0.36s"/>
-  <rect class="v" x="344.9" y="146.0" width="61.1" height="61.1" rx="13.4" fill="url(#gV)" style="animation-delay:0.45s"/>
-  <rect class="v" x="344.9" y="220.8" width="61.1" height="61.1" rx="13.4" fill="url(#gV)" style="animation-delay:0.54s"/>
-  <rect class="v" x="344.9" y="295.6" width="61.1" height="61.1" rx="13.4" fill="url(#gV)" style="animation-delay:0.63s"/>
+  <rect class="p v" x="106.0" y="146.0" width="61.1" height="61.1" rx="13.4" fill="url(#gV)" style="animation-delay:0.00s"/>
+  <rect class="p v" x="106.0" y="220.8" width="61.1" height="61.1" rx="13.4" fill="url(#gV)" style="animation-delay:0.09s"/>
+  <rect class="p v" x="106.0" y="295.6" width="61.1" height="61.1" rx="13.4" fill="url(#gV)" style="animation-delay:0.18s"/>
+  <g class="p d" style="animation-delay:0.27s">
+    <g transform="translate(219.35,240.75) scale(0.09701) translate(-445,-377)" fill="none" stroke="url(#gR)" stroke-width="62" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="153" y="214" width="584" height="462" rx="110"/>
+      <path d="M344 384V506M546 384V506M74 445H153M737 445H816M322 78H444V214"/>
+    </g>
+  </g>
+  <g class="p d" style="animation-delay:0.36s">
+    <g transform="translate(292.65,274.35) scale(0.09701) translate(-445,-377)" fill="none" stroke="url(#gR)" stroke-width="62" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="153" y="214" width="584" height="462" rx="110"/>
+      <path d="M344 384V506M546 384V506M74 445H153M737 445H816M322 78H444V214"/>
+    </g>
+  </g>
+  <rect class="p v" x="344.9" y="146.0" width="61.1" height="61.1" rx="13.4" fill="url(#gV)" style="animation-delay:0.45s"/>
+  <rect class="p v" x="344.9" y="220.8" width="61.1" height="61.1" rx="13.4" fill="url(#gV)" style="animation-delay:0.54s"/>
+  <rect class="p v" x="344.9" y="295.6" width="61.1" height="61.1" rx="13.4" fill="url(#gV)" style="animation-delay:0.63s"/>
 </svg>

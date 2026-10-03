@@ -12,6 +12,7 @@ export type AdminTab =
   | 'user_chats' 
   | 'codes' 
   | 'model_pricing'
+  | 'studios_control'
   | 'naje_ad'
   | 'flagged' 
   | 'feedback' 
@@ -74,7 +75,8 @@ export default function AdminSidebar({
       title: t('tools.admin.groupEconomy'),
       items: [
         { id: 'model_pricing' as AdminTab, label: t('tools.admin.pricing'), icon: Cpu, badge: t('tools.admin.badgeUnified') },
-        { id: 'naje_ad' as AdminTab, label: t('tools.admin.najeAd'), icon: Film, badge: t('tools.admin.badgeNew') },
+        { id: 'studios_control' as AdminTab, label: t('tools.admin.studiosControl') || 'الاستوديوهات والأسعار', icon: Sparkles, badge: t('tools.admin.badgeNew') },
+        { id: 'naje_ad' as AdminTab, label: t('tools.admin.najeAd'), icon: Film, badge: null },
       ]
     },
     {

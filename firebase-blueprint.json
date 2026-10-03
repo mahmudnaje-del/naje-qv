@@ -111,6 +111,14 @@
         "timestamp": { "type": "string" }
       },
       "required": ["user_id", "type", "amount", "source"]
+    },
+    "TestConnection": {
+      "title": "TestConnection",
+      "description": "Connection test document for health check.",
+      "type": "object",
+      "properties": {
+        "status": { "type": "string" }
+      }
     }
   },
   "firestore": {
@@ -141,6 +149,10 @@
     "/transactions/{transactionId}": {
       "schema": "Transaction",
       "description": "User point balance transaction history."
+    },
+    "/test/{testId}": {
+      "schema": "TestConnection",
+      "description": "Connection health test endpoint."
     }
   }
 }

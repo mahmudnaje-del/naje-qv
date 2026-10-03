@@ -22,6 +22,7 @@ import AdminAuditLogView from '../components/admin/AdminAuditLogView';
 import AdminFeatureFlags from '../components/admin/AdminFeatureFlags';
 import { AdminModelPricing } from '../components/admin/AdminModelPricing';
 import { AdminNajeAd } from '../components/admin/AdminNajeAd';
+import { AdminStudiosControl } from '../components/admin/AdminStudiosControl';
 import { useI18n } from '../i18n';
 
 
@@ -1385,6 +1386,11 @@ export default function Admin() {
       {/* TAB: UNIFIED MODEL & PRICING CONTROL CENTER */}
       {activeTab === 'model_pricing' && (
         <AdminModelPricing />
+      )}
+
+      {/* TAB: NAJE STUDIOS SUITE & PRICING CONTROL HUB */}
+      {activeTab === 'studios_control' && (
+        <AdminStudiosControl />
       )}
 
       {/* TAB: NAJE AD MULTI-SHOT ENGINE MANAGEMENT */}

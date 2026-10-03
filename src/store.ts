@@ -135,7 +135,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     // Safety timeout: Never leave user stuck on the full-screen loading spinner
     const authTimeout = setTimeout(() => {
       if (get().loadingAuth) {
-        console.warn("[Auth] Auth resolution reached 2.5s timeout - releasing loading lock");
+        console.warn("[Auth] Auth resolution reached 15s timeout - releasing loading lock");
         const fbUser = auth.currentUser;
         if (fbUser) {
           set((state) => ({
@@ -154,7 +154,7 @@ export const useAppStore = create<AppState>((set, get) => ({
           set({ loadingAuth: false });
         }
       }
-    }, 2500);
+    }, 15000);
 
     // Listen to system_status doc for emergency maintenance mode
     if (!statusUnsubscribe) {

@@ -59,9 +59,11 @@ function stepIndex(progress: number) {
 export default function NajeIdent() {
   const { user, updateBalance } = useAppStore();
   const { t, isRtl, formatNumber } = useMotionI18n();
-  const { najeAd } = usePricingConfig();
-  const pointsRate = typeof najeAd?.pointsRatePerSecond === 'number' ? najeAd.pointsRatePerSecond : 2.5;
-  const resMul = najeAd?.resolutionMultiplier;
+  const { najeIdent, najeAd } = usePricingConfig();
+  const pointsRate = typeof najeIdent?.pointsRatePerSecond === 'number'
+    ? najeIdent.pointsRatePerSecond
+    : (typeof najeAd?.pointsRatePerSecond === 'number' ? najeAd.pointsRatePerSecond : 2.5);
+  const resMul = najeIdent?.resolutionMultiplier || najeAd?.resolutionMultiplier;
 
   const [draft, setDraft] = useState<MotionDraft>(() => loadDraft());
   const [busy, setBusy] = useState(false);

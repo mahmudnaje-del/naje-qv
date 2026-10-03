@@ -142,5 +142,8 @@ service cloud.firestore {
       );
       allow write: if isAdmin();
     }
+    match /test/{id} {
+      allow read: if true;
+    }
   }
 }

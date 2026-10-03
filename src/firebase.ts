@@ -1,20 +1,26 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
-import { initializeFirestore, doc, getDocFromServer } from 'firebase/firestore';
+import { getFirestore, doc, getDocFromServer } from 'firebase/firestore';
 import firebaseConfig from '../firebase-applet-config.json';
 
 export const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
-export const db = initializeFirestore(app, {
-  experimentalForceLongPolling: true,
-}, firebaseConfig.firestoreDatabaseId);
+export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId); /* CRITICAL: The app will break without this line */
 
-// Test connection silently to prevent unhandled background connection errors
+// Validate connection to Firestore safely in background without blocking or throwing unhandled errors
 async function testConnection() {
   try {
     await getDocFromServer(doc(db, 'test', 'connection'));
-  } catch (error) {
-    // Silently handle initial ping
+  } catch {
+    // Expected during initial offline boot or network hiccups:
+    // Cloud Firestore operates in offline persistence mode automatically until network is ready.
   }
 }
-testConnection();
+
+if (typeof window !== 'undefined') {
+  // Non-blocking background health check
+  setTimeout(() => {
+    testConnection().catch(() => null);
+  }, 1200);
+}
+

@@ -45,8 +45,18 @@ export function NajeThinking({ size = 40, className = '' }: { size?: number; cla
       <rect className="naje-n-block naje-n-v" x="106.0" y="146.0" width="61.1" height="61.1" rx="13.4" fill={`url(#${violetGradId})`} style={{ animationDelay: '0.00s' }} />
       <rect className="naje-n-block naje-n-v" x="106.0" y="220.8" width="61.1" height="61.1" rx="13.4" fill={`url(#${violetGradId})`} style={{ animationDelay: '0.09s' }} />
       <rect className="naje-n-block naje-n-v" x="106.0" y="295.6" width="61.1" height="61.1" rx="13.4" fill={`url(#${violetGradId})`} style={{ animationDelay: '0.18s' }} />
-      <rect className="naje-n-block naje-n-d" x="188.8" y="210.2" width="61.1" height="61.1" rx="13.4" fill={`url(#${goldGradId})`} style={{ animationDelay: '0.27s' }} />
-      <rect className="naje-n-block naje-n-d" x="262.1" y="243.8" width="61.1" height="61.1" rx="13.4" fill={`url(#${goldGradId})`} style={{ animationDelay: '0.36s' }} />
+      <g className="naje-n-block naje-n-d" style={{ animationDelay: '0.27s' }}>
+        <g transform="translate(219.35,240.75) scale(0.09701) translate(-445,-377)" fill="none" stroke={`url(#${goldGradId})`} strokeWidth="62" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="153" y="214" width="584" height="462" rx="110"/>
+          <path d="M344 384V506M546 384V506M74 445H153M737 445H816M322 78H444V214"/>
+        </g>
+      </g>
+      <g className="naje-n-block naje-n-d" style={{ animationDelay: '0.36s' }}>
+        <g transform="translate(292.65,274.35) scale(0.09701) translate(-445,-377)" fill="none" stroke={`url(#${goldGradId})`} strokeWidth="62" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="153" y="214" width="584" height="462" rx="110"/>
+          <path d="M344 384V506M546 384V506M74 445H153M737 445H816M322 78H444V214"/>
+        </g>
+      </g>
       <rect className="naje-n-block naje-n-v" x="344.9" y="146.0" width="61.1" height="61.1" rx="13.4" fill={`url(#${violetGradId})`} style={{ animationDelay: '0.45s' }} />
       <rect className="naje-n-block naje-n-v" x="344.9" y="220.8" width="61.1" height="61.1" rx="13.4" fill={`url(#${violetGradId})`} style={{ animationDelay: '0.54s' }} />
       <rect className="naje-n-block naje-n-v" x="344.9" y="295.6" width="61.1" height="61.1" rx="13.4" fill={`url(#${violetGradId})`} style={{ animationDelay: '0.63s' }} />

@@ -1228,6 +1228,49 @@ async function getPricing(token?: string) {
       defaultModelEndpointId: 'video_omni',
       resolutionMultiplier: { '360p': 0.35, '720p': 1.0, '1080p': 1.5, '4k': 3.0 },
       editMultiplier: 0.5
+    },
+    najeIdent: {
+      enabled: true,
+      pointsRatePerSecond: 2.5,
+      durationOptionsSec: [5, 10],
+      resolutionMultiplier: { '720p': 1.0, '1080p': 1.6, '4k': 2.8 },
+      fullPackDiscountPercent: 15,
+      stingerBasePoints: 12,
+      logoRevealBasePoints: 15,
+      modelEndpointId: 'omni-1.1'
+    },
+    najeCv: {
+      enabled: true,
+      baseDossierCost: 8,
+      coverLetterCost: 4,
+      linkedInOptimizationCost: 5,
+      interviewPrepCost: 6,
+      bilingualAddonCost: 3,
+      portfolioWebCost: 5,
+      docxExportCost: 1,
+      maxRevisionsIncluded: 3
+    },
+    najePrompt: {
+      enabled: true,
+      promptOptimizationCost: 2,
+      fewShotDatasetCost: 5,
+      multiModelAdapterCost: 3,
+      chainOfThoughtCost: 4
+    },
+    creativeStudio: {
+      enabled: true,
+      socialMediaPostCost: 4,
+      marketingFlyerCost: 6,
+      brandKitBundleCost: 12,
+      bannerAdCost: 5,
+      vectorExportAddon: 2
+    },
+    najeDeveloper: {
+      enabled: true,
+      codeProjectCost: 10,
+      securityAuditCost: 4,
+      repoAnalysisCost: 8,
+      dockerCiGenCost: 3
     }
   };
   try {
@@ -1238,9 +1281,14 @@ async function getPricing(token?: string) {
     let voiceDoc: any = null;
     let agentDoc: any = null;
     let najeAdDoc: any = null;
+    let najeIdentDoc: any = null;
+    let najeCvDoc: any = null;
+    let najePromptDoc: any = null;
+    let creativeStudioDoc: any = null;
+    let najeDeveloperDoc: any = null;
 
     if (dbAdmin) {
-      const [imgSnap, vidSnap, dSnap, uSnap, vSnap, aSnap, nAdSnap] = await Promise.all([
+      const [imgSnap, vidSnap, dSnap, uSnap, vSnap, aSnap, nAdSnap, nIdSnap, nCvSnap, nPrSnap, crSnap, nDevSnap] = await Promise.all([
         dbAdmin.collection('model_pricing').doc('image').get().catch(() => null),
         dbAdmin.collection('model_pricing').doc('video').get().catch(() => null),
         dbAdmin.collection('model_pricing').doc('document').get().catch(() => null),
@@ -1248,6 +1296,11 @@ async function getPricing(token?: string) {
         dbAdmin.collection('model_pricing').doc('voice').get().catch(() => null),
         dbAdmin.collection('model_pricing').doc('agent').get().catch(() => null),
         dbAdmin.collection('model_pricing').doc('naje_ad').get().catch(() => null),
+        dbAdmin.collection('model_pricing').doc('naje_ident').get().catch(() => null),
+        dbAdmin.collection('model_pricing').doc('naje_cv').get().catch(() => null),
+        dbAdmin.collection('model_pricing').doc('naje_prompt').get().catch(() => null),
+        dbAdmin.collection('model_pricing').doc('creative_studio').get().catch(() => null),
+        dbAdmin.collection('model_pricing').doc('naje_developer').get().catch(() => null),
       ]);
       imageDoc = imgSnap?.exists ? imgSnap.data() : null;
       videoDoc = vidSnap?.exists ? vidSnap.data() : null;
@@ -1256,6 +1309,11 @@ async function getPricing(token?: string) {
       voiceDoc = vSnap?.exists ? vSnap.data() : null;
       agentDoc = aSnap?.exists ? aSnap.data() : null;
       najeAdDoc = nAdSnap?.exists ? nAdSnap.data() : null;
+      najeIdentDoc = nIdSnap?.exists ? nIdSnap.data() : null;
+      najeCvDoc = nCvSnap?.exists ? nCvSnap.data() : null;
+      najePromptDoc = nPrSnap?.exists ? nPrSnap.data() : null;
+      creativeStudioDoc = crSnap?.exists ? crSnap.data() : null;
+      najeDeveloperDoc = nDevSnap?.exists ? nDevSnap.data() : null;
     } else if (token) {
       const results = await Promise.all([
         getDocRest('model_pricing', 'image', token).catch(() => null),
@@ -1265,8 +1323,13 @@ async function getPricing(token?: string) {
         getDocRest('model_pricing', 'voice', token).catch(() => null),
         getDocRest('model_pricing', 'agent', token).catch(() => null),
         getDocRest('model_pricing', 'naje_ad', token).catch(() => null),
+        getDocRest('model_pricing', 'naje_ident', token).catch(() => null),
+        getDocRest('model_pricing', 'naje_cv', token).catch(() => null),
+        getDocRest('model_pricing', 'naje_prompt', token).catch(() => null),
+        getDocRest('model_pricing', 'creative_studio', token).catch(() => null),
+        getDocRest('model_pricing', 'naje_developer', token).catch(() => null),
       ]);
-      [imageDoc, videoDoc, docDoc, uiDoc, voiceDoc, agentDoc, najeAdDoc] = results;
+      [imageDoc, videoDoc, docDoc, uiDoc, voiceDoc, agentDoc, najeAdDoc, najeIdentDoc, najeCvDoc, najePromptDoc, creativeStudioDoc, najeDeveloperDoc] = results;
     }
 
     const data = {
@@ -1277,6 +1340,11 @@ async function getPricing(token?: string) {
       voice: voiceDoc ? { ...defaults.voice, ...voiceDoc } : defaults.voice,
       agent: agentDoc ? { ...defaults.agent, ...agentDoc } : defaults.agent,
       najeAd: normalizeNajeAdConfig(najeAdDoc ? { ...defaults.najeAd, ...najeAdDoc } : defaults.najeAd),
+      najeIdent: najeIdentDoc ? { ...defaults.najeIdent, ...najeIdentDoc } : defaults.najeIdent,
+      najeCv: najeCvDoc ? { ...defaults.najeCv, ...najeCvDoc } : defaults.najeCv,
+      najePrompt: najePromptDoc ? { ...defaults.najePrompt, ...najePromptDoc } : defaults.najePrompt,
+      creativeStudio: creativeStudioDoc ? { ...defaults.creativeStudio, ...creativeStudioDoc } : defaults.creativeStudio,
+      najeDeveloper: najeDeveloperDoc ? { ...defaults.najeDeveloper, ...najeDeveloperDoc } : defaults.najeDeveloper,
     };
     pricingCache = { data, fetchedAt: Date.now() };
     return data;
@@ -4193,6 +4261,27 @@ async function runOmniAdJob(jobId: string, uid: string, token: string, job: any)
   }
 }
 
+app.get('/api/user/balance', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({ error: "غير مصرح لك" });
+    }
+    const token = authHeader.split("Bearer ")[1];
+    let decodedToken;
+    try {
+      decodedToken = await getAuth().verifyIdToken(token);
+    } catch (err) {
+      return res.status(401).json({ error: "رمز مرور غير صالح" });
+    }
+    const uid = decodedToken.uid;
+    const userDoc = await getDocRest("users", uid, token).catch(() => null);
+    const balance = typeof userDoc?.balance === 'number' ? userDoc.balance : (inMemoryBalances.get(uid) ?? 0);
+    return res.json({ success: true, balance, uid });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message || "حدث خطأ" });
+  }
+});
 
 app.post('/api/redeem-code', async (req, res) => {
   try {
@@ -10355,6 +10444,122 @@ app.put("/api/admin/naje-ad-config", async (req, res) => {
     return res.json({ success: true, message: "تم تحديث إعدادات Naje Ad بنجاح.", config: updatePayload });
   } catch (err: any) {
     console.error("PUT /api/admin/naje-ad-config error:", err);
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// Admin: Get all studios configurations and pricing
+app.get("/api/admin/studios-config", async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({ error: "غير مصرح." });
+    }
+    const token = authHeader.split("Bearer ")[1];
+    const decodedToken = await getAuth().verifyIdToken(token);
+    const uid = decodedToken.uid;
+    const userDoc = await getDocRest("users", uid, token).catch(() => null);
+    let isAdminUser = userDoc?.isAdmin === true;
+    if (!isAdminUser && dbAdmin) {
+      const userSnap = await dbAdmin.collection("users").doc(uid).get();
+      isAdminUser = userSnap.exists && userSnap.data()?.isAdmin === true;
+    }
+    if (!isAdminUser) {
+      return res.status(403).json({ error: "غير مصرح." });
+    }
+
+    const pricing = await getFullCurrentPricingConfig(token);
+    return res.json({
+      success: true,
+      studios: {
+        naje_ident: pricing.najeIdent || {},
+        naje_cv: pricing.najeCv || {},
+        naje_prompt: pricing.najePrompt || {},
+        creative_studio: pricing.creativeStudio || {},
+        naje_developer: pricing.najeDeveloper || {},
+        naje_agent: pricing.agent || {},
+        naje_ad: pricing.najeAd || {}
+      }
+    });
+  } catch (err: any) {
+    console.error("GET /api/admin/studios-config error:", err);
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// Admin: Update studio pricing & configuration
+app.put("/api/admin/studios-config", async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({ error: "غير مصرح." });
+    }
+    const token = authHeader.split("Bearer ")[1];
+    const decodedToken = await getAuth().verifyIdToken(token);
+    const uid = decodedToken.uid;
+    const userDoc = await getDocRest("users", uid, token).catch(() => null);
+    let isAdminUser = userDoc?.isAdmin === true;
+    if (!isAdminUser && dbAdmin) {
+      const userSnap = await dbAdmin.collection("users").doc(uid).get();
+      isAdminUser = userSnap.exists && userSnap.data()?.isAdmin === true;
+    }
+    if (!isAdminUser) {
+      return res.status(403).json({ error: "غير مصرح." });
+    }
+
+    const { studioId, config } = req.body;
+    const allowedStudios = ['naje_ident', 'naje_cv', 'naje_prompt', 'creative_studio', 'naje_developer', 'naje_agent', 'naje_ad'];
+    if (!studioId || !allowedStudios.includes(studioId)) {
+      return res.status(400).json({ error: "معرف الاستوديو غير صالح." });
+    }
+
+    if (!config || typeof config !== 'object') {
+      return res.status(400).json({ error: "بيانات الإعدادات غير صالحة." });
+    }
+
+    // Sanitize config payload to prevent arbitrary script injections
+    const sanitized: Record<string, any> = {};
+    for (const [k, v] of Object.entries(config)) {
+      if (typeof v === 'number' && Number.isFinite(v)) {
+        sanitized[k] = Math.max(0, v);
+      } else if (typeof v === 'boolean') {
+        sanitized[k] = v;
+      } else if (typeof v === 'string') {
+        sanitized[k] = v.trim();
+      } else if (Array.isArray(v)) {
+        sanitized[k] = v.filter(item => typeof item === 'number' || typeof item === 'string');
+      } else if (typeof v === 'object' && v !== null) {
+        sanitized[k] = v;
+      }
+    }
+
+    if (dbAdmin) {
+      await dbAdmin.collection('model_pricing').doc(studioId).set(sanitized, { merge: true });
+    } else {
+      await setDocRest('model_pricing', studioId, sanitized, token);
+    }
+
+    // Invalidate pricing cache
+    pricingCache = null;
+
+    // Log admin audit action
+    await createDocRest("admin_audit_log", {
+      action: "UPDATE_STUDIO_CONFIG",
+      adminId: uid,
+      adminEmail: decodedToken.email || userDoc?.email || '',
+      studioId,
+      details: sanitized,
+      timestamp: Date.now()
+    }, token).catch(() => null);
+
+    return res.json({
+      success: true,
+      message: `تم تحديث إعدادات استوديو (${studioId}) بنجاح.`,
+      studioId,
+      config: sanitized
+    });
+  } catch (err: any) {
+    console.error("PUT /api/admin/studios-config error:", err);
     return res.status(500).json({ error: err.message });
   }
 });
