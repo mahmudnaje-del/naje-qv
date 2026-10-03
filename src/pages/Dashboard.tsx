@@ -645,7 +645,7 @@ export default function Dashboard() {
             )}
           >
             <div className="flex items-center gap-2.5">
-              <CreativeStudioIcon className="w-4 h-4 shrink-0" />
+              <CreativeStudioIcon className="w-8 h-8 shrink-0" size={32} />
               <span>{t('nav.creativeStudio')}</span>
             </div>
           </Link>
@@ -661,7 +661,7 @@ export default function Dashboard() {
             )}
           >
             <div className="flex items-center gap-2.5">
-              <NajeAdIcon className="w-4 h-4 shrink-0" />
+              <NajeAdIcon className="w-8 h-8 shrink-0" size={32} />
               <span>{t('nav.najeAd')}</span>
             </div>
           </Link>
@@ -693,7 +693,7 @@ export default function Dashboard() {
             )}
           >
             <div className="flex items-center gap-2.5">
-              <NajeIdentIcon className="w-4 h-4 shrink-0" />
+              <NajeIdentIcon className="w-8 h-8 shrink-0" size={32} />
               <span>{t('nav.najeMotion')}</span>
             </div>
           </Link>
@@ -709,7 +709,7 @@ export default function Dashboard() {
             )}
           >
             <div className="flex items-center gap-2.5">
-              <NajeCvIcon className="w-4 h-4 shrink-0" />
+              <NajeCvIcon className="w-8 h-8 shrink-0" size={32} />
               <span>{t('nav.najeCv')}</span>
             </div>
           </Link>
@@ -1228,7 +1228,8 @@ export default function Dashboard() {
           if (p.includes('naje-ad')) {
             studio = {
               title: t('studio.adStudio'),
-              icon: Clapperboard,
+              icon: NajeAdIcon,
+              imageMark: true,
               iconBg: 'bg-gradient-to-br from-[#d4a574]/25 to-[#d4a574]/10 border-[#d4a574]/40 text-[#e8b86d] shadow-[0_0_15px_rgba(212,165,116,0.25)]',
               headerBg: 'bg-[#090a0e] border-b border-[#d4a574]/25 shadow-[0_4px_30px_rgba(0,0,0,0.7)] backdrop-blur-xl',
               btnBorder: 'text-[#e8b86d] border-[#d4a574]/25',
@@ -1239,6 +1240,7 @@ export default function Dashboard() {
             studio = {
               title: t('shell.projects.motionStudio'),
               icon: NajeIdentIcon,
+              imageMark: true,
               iconBg: 'bg-gradient-to-br from-[#8ec8ff]/25 to-[#8ec8ff]/10 border-[#8ec8ff]/40 text-[#8ec8ff] shadow-[0_0_15px_rgba(142,200,255,0.25)]',
               headerBg: 'bg-[#06080e] border-b border-[#8ec8ff]/25 shadow-[0_4px_30px_rgba(0,0,0,0.7)] backdrop-blur-xl',
               btnBorder: 'text-[#8ec8ff] border-[#8ec8ff]/25',
@@ -1248,7 +1250,8 @@ export default function Dashboard() {
           } else if (p.includes('naje-cv')) {
             studio = {
               title: t('shell.projects.cvTitle'),
-              icon: FileText,
+              icon: NajeCvIcon,
+              imageMark: true,
               iconBg: 'bg-gradient-to-br from-[#c4a35a]/25 to-[#c4a35a]/10 border-[#c4a35a]/40 text-[#e8c36a] shadow-[0_0_15px_rgba(196,163,90,0.25)]',
               headerBg: 'bg-[#090e18] border-b border-[#c4a35a]/25 shadow-[0_4px_30px_rgba(0,0,0,0.7)] backdrop-blur-xl',
               btnBorder: 'text-[#e8c36a] border-[#c4a35a]/25',
@@ -1258,7 +1261,8 @@ export default function Dashboard() {
           } else if (p.includes('/creative') || p.includes('creative-studio')) {
             studio = {
               title: t('shell.projects.creativeTitle'),
-              icon: Palette,
+              icon: CreativeStudioIcon,
+              imageMark: true,
               iconBg: 'bg-gradient-to-br from-amber-500/25 to-amber-500/10 border-amber-500/40 text-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.25)]',
               headerBg: 'bg-[#030303] border-b border-amber-500/25 shadow-[0_4px_30px_rgba(0,0,0,0.7)] backdrop-blur-xl',
               btnBorder: 'text-amber-400 border-amber-500/25',
@@ -1291,9 +1295,15 @@ export default function Dashboard() {
                     <PanelRight className="w-4.5 h-4.5 sm:w-5 sm:h-5" />
                   </button>
                   <div className="flex items-center gap-2">
-                    <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl border flex items-center justify-center shrink-0 ${studio.iconBg}`}>
-                      <StudioIcon className="w-4.5 h-4.5 sm:w-5 sm:h-5" />
-                    </div>
+                    {('imageMark' in studio && studio.imageMark) ? (
+                      <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl overflow-hidden shrink-0">
+                        <StudioIcon className="w-full h-full" size={36} />
+                      </div>
+                    ) : (
+                      <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl border flex items-center justify-center shrink-0 ${studio.iconBg}`}>
+                        <StudioIcon className="w-4.5 h-4.5 sm:w-5 sm:h-5" />
+                      </div>
+                    )}
                     <span className="font-black text-xs sm:text-base text-white whitespace-nowrap tracking-tight">
                       {studio.title}
                     </span>
@@ -1564,8 +1574,8 @@ export default function Dashboard() {
                   className="w-full sm:h-[140px] min-h-[72px] h-auto px-4 py-3 sm:p-5 bg-gray-50 dark:bg-gray-900 border border-amber-500/20 hover:border-amber-500/40 rounded-xl flex flex-row sm:flex-col items-center justify-between sm:justify-center sm:text-center gap-3 sm:gap-4 transition cursor-pointer group"
                 >
                   <div className="flex flex-row sm:flex-col items-center gap-3 sm:gap-2 min-w-0 sm:w-full">
-                    <div className="w-10 h-10 rounded-full bg-amber-500/10 text-amber-500 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
-                      <NajeIdentIcon className="w-5 h-5" />
+                    <div className="w-10 h-10 rounded-xl overflow-hidden flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
+                      <NajeIdentIcon className="w-10 h-10" size={40} />
                     </div>
                     <div className="flex flex-col text-start sm:text-center">
                       <span className="text-xs font-bold text-gray-900 dark:text-white">{t('nav.najeMotion')}</span>
@@ -1581,8 +1591,8 @@ export default function Dashboard() {
                   className="w-full sm:h-[140px] min-h-[72px] h-auto px-4 py-3 sm:p-5 bg-gray-50 dark:bg-gray-900 border border-indigo-500/20 hover:border-indigo-500/40 rounded-xl flex flex-row sm:flex-col items-center justify-between sm:justify-center sm:text-center gap-3 sm:gap-4 transition cursor-pointer group sm:col-span-2"
                 >
                   <div className="flex flex-row sm:flex-col items-center gap-3 sm:gap-2 min-w-0 sm:w-full">
-                    <div className="w-10 h-10 rounded-full bg-indigo-500/10 text-indigo-500 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
-                      <NajeCvIcon className="w-5 h-5" />
+                    <div className="w-10 h-10 rounded-xl overflow-hidden flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
+                      <NajeCvIcon className="w-10 h-10" size={40} />
                     </div>
                     <div className="flex flex-col text-start sm:text-center">
                       <span className="text-xs font-bold text-gray-900 dark:text-white">{t('nav.najeCv')}</span>

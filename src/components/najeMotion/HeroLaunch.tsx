@@ -18,7 +18,7 @@ export function HeroLaunch({
       {/* Top Studio Indicator */}
       <div className="flex flex-wrap items-center justify-between gap-3 mb-4 sm:mb-6">
         <div className="inline-flex items-center gap-2 rounded-full border border-[#8ec8ff]/30 bg-[#8ec8ff]/10 px-3.5 py-1.5 text-[11px] font-black tracking-wider text-[#e7eef8]">
-          <NajeIdentIcon size={18} className="shrink-0" />
+          <NajeIdentIcon size={28} className="h-7 w-7 shrink-0" />
           <span className="motion-tally inline-block h-2 w-2 rounded-full bg-[#ffb020] animate-pulse" aria-hidden />
           <span className="text-[#ffb020] font-mono">IDENT STUDIO</span>
           <span className="text-[#93a0b5] text-[10px]">· موشن غرافيك وشارات بصرية</span>

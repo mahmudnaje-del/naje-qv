@@ -1106,8 +1106,8 @@ export const AdminStudiosControl: React.FC = () => {
               {/* Studio Header Card */}
               <div className="p-5 sm:p-6 border-b border-slate-100 dark:border-slate-800/80 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-50/40 dark:bg-slate-900/30">
                 <div className="flex items-start sm:items-center gap-3.5 min-w-0">
-                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center p-2.5 bg-gradient-to-br ${studio.accentColor} text-white shadow-lg shrink-0`}>
-                    <IconComp className="w-7 h-7 text-white" size={28} />
+                  <div className={`w-12 h-12 rounded-2xl overflow-hidden flex items-center justify-center shrink-0 ${studio.id === 'naje_ad' || studio.id === 'naje_ident' || studio.id === 'naje_cv' || studio.id === 'creative_studio' ? '' : `p-2.5 bg-gradient-to-br ${studio.accentColor} text-white shadow-lg`}`}>
+                    <IconComp className="w-full h-full" size={48} />
                   </div>
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">

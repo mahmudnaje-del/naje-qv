@@ -580,8 +580,8 @@ export default function Projects() {
                   )}
                 >
                   <div className="flex items-start justify-between">
-                    <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center bg-gradient-to-br from-sky-500/15 via-sky-600/10 to-blue-600/5 dark:from-sky-500/25 dark:via-sky-600/15 dark:to-transparent border border-sky-500/30 dark:border-sky-400/30 shadow-xs shadow-sky-500/10 group-hover:scale-105 group-hover:shadow-md transition-all shrink-0">
-                      <NajeAdIcon className="w-6 h-6" size={24} />
+                    <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl overflow-hidden shrink-0 group-hover:scale-105 transition-all">
+                      <NajeAdIcon className="w-full h-full" size={48} />
                     </div>
                     <div className="w-7 h-7 rounded-xl flex items-center justify-center bg-slate-100/70 dark:bg-slate-800/70 group-hover:bg-sky-500/10 transition-colors">
                       {loadingStudio === '/naje-ad' ? (
@@ -608,8 +608,8 @@ export default function Projects() {
                   )}
                 >
                   <div className="flex items-start justify-between">
-                    <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center bg-gradient-to-br from-amber-500/15 via-orange-500/10 to-amber-600/5 dark:from-amber-500/25 dark:via-orange-600/15 dark:to-transparent border border-amber-500/30 dark:border-amber-400/30 shadow-xs shadow-amber-500/10 group-hover:scale-105 group-hover:shadow-md transition-all shrink-0">
-                      <NajeIdentIcon className="w-6 h-6" size={24} />
+                    <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl overflow-hidden shrink-0 group-hover:scale-105 transition-all">
+                      <NajeIdentIcon className="w-full h-full" size={48} />
                     </div>
                     <div className="w-7 h-7 rounded-xl flex items-center justify-center bg-slate-100/70 dark:bg-slate-800/70 group-hover:bg-amber-500/10 transition-colors">
                       {loadingStudio === '/naje-ident' ? (
@@ -636,8 +636,8 @@ export default function Projects() {
                   )}
                 >
                   <div className="flex items-start justify-between">
-                    <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center bg-gradient-to-br from-indigo-500/15 via-violet-500/10 to-indigo-600/5 dark:from-indigo-500/25 dark:via-violet-600/15 dark:to-transparent border border-indigo-500/30 dark:border-indigo-400/30 shadow-xs shadow-indigo-500/10 group-hover:scale-105 group-hover:shadow-md transition-all shrink-0">
-                      <NajeCvIcon className="w-6 h-6" size={24} />
+                    <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl overflow-hidden shrink-0 group-hover:scale-105 transition-all">
+                      <NajeCvIcon className="w-full h-full" size={48} />
                     </div>
                     <div className="w-7 h-7 rounded-xl flex items-center justify-center bg-slate-100/70 dark:bg-slate-800/70 group-hover:bg-indigo-500/10 transition-colors">
                       {loadingStudio === '/naje-cv' ? (
@@ -664,8 +664,8 @@ export default function Projects() {
                   )}
                 >
                   <div className="flex items-start justify-between">
-                    <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center bg-gradient-to-br from-purple-500/15 via-fuchsia-500/10 to-pink-600/5 dark:from-purple-500/25 dark:via-fuchsia-600/15 dark:to-transparent border border-purple-500/30 dark:border-purple-400/30 shadow-xs shadow-purple-500/10 group-hover:scale-105 group-hover:shadow-md transition-all shrink-0">
-                      <CreativeStudioIcon className="w-6 h-6" size={24} />
+                    <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl overflow-hidden shrink-0 group-hover:scale-105 transition-all">
+                      <CreativeStudioIcon className="w-full h-full" size={48} />
                     </div>
                     <div className="w-7 h-7 rounded-xl flex items-center justify-center bg-slate-100/70 dark:bg-slate-800/70 group-hover:bg-purple-500/10 transition-colors">
                       {loadingStudio === '/creative-studio' ? (

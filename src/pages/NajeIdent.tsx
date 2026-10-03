@@ -318,7 +318,7 @@ export default function NajeIdent() {
                       </button>
                     )}
                     <div className="inline-flex items-center gap-1.5 rounded-full border border-[#8ec8ff]/30 bg-[#8ec8ff]/10 px-3 py-1 text-[11px] font-black tracking-wider text-[#e7eef8]">
-                      <NajeIdentIcon size={16} className="shrink-0" />
+                      <NajeIdentIcon size={28} className="h-7 w-7 shrink-0" />
                       <span className="motion-tally inline-block h-2 w-2 rounded-full bg-[#ffb020] animate-pulse" aria-hidden />
                       <span className="text-[#ffb020]">NAJE IDENT</span>
                       <span className="text-[#93a0b5] text-[10px]">· استوديو الموشن غرافيك</span>

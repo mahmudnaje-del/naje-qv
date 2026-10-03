@@ -8,14 +8,18 @@ import {
 } from 'lucide-react';
 import { useI18n } from '../i18n';
 import { useAppStore } from '../store';
+import adIcon from '../assets/studio-icons/naje-ad.png';
+import identIcon from '../assets/studio-icons/naje-ident.png';
+import cvIcon from '../assets/studio-icons/naje-cv.png';
+import creativeIcon from '../assets/studio-icons/creative-icon.png';
 
 const STUDIOS = [
   { id: 'agent', to: '/naje-agent-core', icon: Bot, accent: 'from-indigo-400 to-violet-500', glow: 'rgba(129,140,248,0.35)' },
   { id: 'prompt', to: '/naje-prompt', icon: Wand2, accent: 'from-violet-400 to-fuchsia-500', glow: 'rgba(192,132,252,0.35)' },
-  { id: 'creative', to: '/creative-studio', icon: Palette, accent: 'from-cyan-400 to-blue-500', glow: 'rgba(34,211,238,0.28)' },
-  { id: 'ad', to: '/naje-ad', icon: Clapperboard, accent: 'from-amber-400 to-orange-500', glow: 'rgba(251,191,36,0.28)' },
-  { id: 'motion', to: '/naje-ident', icon: Film, accent: 'from-sky-300 to-indigo-400', glow: 'rgba(125,211,252,0.28)' },
-  { id: 'cv', to: '/naje-cv', icon: FileBadge, accent: 'from-yellow-300 to-amber-500', glow: 'rgba(253,224,71,0.28)' },
+  { id: 'creative', to: '/creative-studio', icon: Palette, image: creativeIcon, accent: 'from-cyan-400 to-blue-500', glow: 'rgba(34,211,238,0.28)' },
+  { id: 'ad', to: '/naje-ad', icon: Clapperboard, image: adIcon, accent: 'from-amber-400 to-orange-500', glow: 'rgba(251,191,36,0.28)' },
+  { id: 'motion', to: '/naje-ident', icon: Film, image: identIcon, accent: 'from-sky-300 to-indigo-400', glow: 'rgba(125,211,252,0.28)' },
+  { id: 'cv', to: '/naje-cv', icon: FileBadge, image: cvIcon, accent: 'from-yellow-300 to-amber-500', glow: 'rgba(253,224,71,0.28)' },
   { id: 'dev', to: '/naje-developer', icon: Code2, accent: 'from-emerald-400 to-teal-500', glow: 'rgba(52,211,153,0.28)' },
   { id: 'source', to: '/naje-source', icon: BookOpen, accent: 'from-lime-300 to-emerald-500', glow: 'rgba(163,230,53,0.24)' },
   { id: 'media', to: '/', icon: ImageIcon, accent: 'from-rose-400 to-pink-500', glow: 'rgba(251,113,133,0.28)' },
@@ -132,8 +136,12 @@ export default function WelcomeStudioDeck() {
                 />
                 <div className="pointer-events-none absolute -top-px inset-x-8 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent opacity-0 group-hover:opacity-100 transition" />
                 <div className="relative flex items-start justify-between gap-3">
-                  <div className={`flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br ${studio.accent} text-white shadow-lg transition-transform duration-300 group-hover:scale-110 group-hover:-rotate-3`}>
-                    <Icon className="w-5 h-5" />
+                  <div className={`flex h-11 w-11 items-center justify-center overflow-hidden rounded-2xl ${'image' in studio && studio.image ? '' : `bg-gradient-to-br ${studio.accent} text-white shadow-lg`} transition-transform duration-300 group-hover:scale-110 group-hover:-rotate-3`}>
+                    {'image' in studio && studio.image ? (
+                      <img src={studio.image} alt="" className="h-full w-full object-cover" />
+                    ) : (
+                      <Icon className="w-5 h-5" />
+                    )}
                   </div>
                   <div className="w-6 h-6 flex items-center justify-center">
                     {loadingStudio === studio.id ? (
