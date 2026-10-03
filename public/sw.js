@@ -12,12 +12,10 @@ self.addEventListener('message', (event) => {
 });
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(SHELL).then((cache) =>
-      cache.addAll(['/', '/index.html', '/manifest.json', '/logo-192.png', '/logo-512.png', '/favicon.svg']).catch(() => undefined)
-    )
-  );
+  // Must finish immediately. Waiting on cache.addAll('/') stalls Android's
+  // "Installing…" notification until Chrome cancels the home-screen install.
   self.skipWaiting();
+  event.waitUntil(caches.open(SHELL));
 });
 
 self.addEventListener('activate', (event) => {

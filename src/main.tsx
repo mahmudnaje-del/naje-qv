@@ -21,7 +21,7 @@ if ('serviceWorker' in navigator) {
       });
     }
   } else {
-    navigator.serviceWorker.register('/sw.js').then((registration) => {
+    navigator.serviceWorker.register('/sw.js', { scope: '/', updateViaCache: 'none' }).then((registration) => {
       // Periodically check for updates in the background without forcing mid-session reload
       setInterval(() => registration.update(), 60 * 60 * 1000); // hourly
     }).catch((err) => console.error('SW registration failed', err));

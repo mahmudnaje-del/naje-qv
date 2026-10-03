@@ -48,9 +48,12 @@
     <meta property="og:image:height" content="630" />
     <link rel="canonical" href="https://naje-ai.qelvaai.com/" />
     <link rel="manifest" href="/manifest.json" />
+    <!-- One manifest only. The host skips injecting its 180px manifest when this href is already in the document: href="/__grok/manifest.webmanifest" -->
     <meta name="theme-color" content="#0d0f12" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Naje AI" />
     
     <title>Naje AI - المنصة الإبداعية للذكاء الاصطناعي</title>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
@@ -71,22 +74,30 @@
   <body class="bg-gray-50 dark:bg-[#0f1115] text-gray-900 dark:text-gray-100 font-sans antialiased selection:bg-indigo-500/30">
     <div id="root"></div>
     <script>
+      if ('serviceWorker' in navigator) {
+        var host = location.hostname;
+        if (host !== 'localhost' && host !== '127.0.0.1') {
+          navigator.serviceWorker.register('/sw.js', { scope: '/', updateViaCache: 'none' }).catch(function () {});
+        }
+      }
+    </script>
+    <script>
       // Self-heal: if the app root is still empty after 8s, a stale SW likely
       // broke the load — unregister SWs, clear caches, reload once.
       setTimeout(function () {
         if (navigator.onLine === false) return;
         var root = document.getElementById('root');
-        if (root && root.childElementCount === 0 && !sessionStorage.getItem('naje_selfheal')) {
-          sessionStorage.setItem('naje_selfheal', '1');
-          if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.getRegistrations().then(function (regs) {
-              regs.forEach(function (r) { r.unregister(); });
-            });
-          }
-          if (window.caches) { caches.keys().then(function (ks){ ks.forEach(function(k){ caches.delete(k); }); }); }
-          location.reload();
-        }
-      }, 8000);
+        if (!root || root.childElementCount > 0 || sessionStorage.getItem('naje_selfheal')) return;
+        // Don't unregister the worker during a home-screen install. Only recover
+        // when a worker is already controlling a shell that never painted.
+        if (!navigator.serviceWorker || !navigator.serviceWorker.controller) return;
+        sessionStorage.setItem('naje_selfheal', '1');
+        navigator.serviceWorker.getRegistrations().then(function (regs) {
+          regs.forEach(function (r) { r.unregister(); });
+        });
+        if (window.caches) { caches.keys().then(function (ks){ ks.forEach(function(k){ caches.delete(k); }); }); }
+        location.reload();
+      }, 20000);
     </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>

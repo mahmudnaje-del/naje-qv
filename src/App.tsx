@@ -20,6 +20,7 @@ import NajeThinking from './components/NajeThinking';
 import RealtimeNotificationListener from './components/RealtimeNotificationListener';
 import SmartDownloadGatewayModal from './components/SmartDownloadGatewayModal';
 import OfflineBanner from './components/OfflineBanner';
+import InstallAppButton from './components/InstallAppButton';
 import { scheduleOfflineWarm } from './lib/offline';
 
 const Admin = lazyWithRetry(() => import('./pages/Admin'));
@@ -112,6 +113,7 @@ export default function App() {
         </Suspense>
         <ToastContainer />
         <OfflineBanner />
+        <InstallAppButton />
         <SmartDownloadGatewayModal />
         <RealtimeNotificationListener />
         <TermsConsentModal />
