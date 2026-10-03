@@ -1,15 +1,21 @@
-const CACHE_NAME = 'naje-ai-cache-v3';
-const PRECACHE_URLS = ['/', '/index.html', '/manifest.json'];
+const SHELL = 'naje-shell-v4';
+const MEDIA = 'naje-media-v1';
+const MEDIA_CAP = 150;
+
+const MEDIA_HOST = /(firebasestorage\.googleapis\.com|storage\.googleapis\.com|googleusercontent\.com|ggpht\.com)/i;
 
 self.addEventListener('message', (event) => {
-  if (event.data?.type === 'SKIP_WAITING') {
-    self.skipWaiting();
+  if (event.data?.type === 'SKIP_WAITING') self.skipWaiting();
+  if (event.data?.type === 'CACHE_URLS' && Array.isArray(event.data.urls)) {
+    event.waitUntil(storeMediaUrls(event.data.urls));
   }
 });
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(PRECACHE_URLS))
+    caches.open(SHELL).then((cache) =>
+      cache.addAll(['/', '/index.html', '/manifest.json', '/logo-192.png', '/logo-512.png', '/favicon.svg']).catch(() => undefined)
+    )
   );
   self.skipWaiting();
 });
@@ -17,52 +23,119 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
+      Promise.all(
+        keys
+          .filter((key) => key !== SHELL && key !== MEDIA && (key.startsWith('naje-') || key.startsWith('naje-ai-')))
+          .map((key) => caches.delete(key))
+      )
     )
   );
   self.clients.claim();
 });
 
 self.addEventListener('fetch', (event) => {
-  const url = new URL(event.request.url);
+  const request = event.request;
+  if (request.method !== 'GET') return;
+  const url = new URL(request.url);
 
-  // Never intercept API calls or Vite dev modules.
-  if (
-    url.pathname.startsWith('/api/') ||
-    url.pathname.startsWith('/src/') ||
-    url.pathname.startsWith('/@') ||
-    url.pathname.startsWith('/node_modules/') ||
-    url.hostname === 'localhost' ||
-    url.hostname.includes('.run.app')
-  ) {
+  if (url.origin === self.location.origin) {
+    if (
+      url.pathname.startsWith('/api/') ||
+      url.pathname.startsWith('/src/') ||
+      url.pathname.startsWith('/@') ||
+      url.pathname.startsWith('/node_modules/')
+    ) {
+      return;
+    }
+    if (request.mode === 'navigate' || url.pathname === '/' || url.pathname.endsWith('.html')) {
+      event.respondWith(networkFirstDocument(request));
+      return;
+    }
+    event.respondWith(cacheFirst(request, SHELL, 0));
     return;
   }
 
-
-  // NETWORK-FIRST for navigations / the HTML shell — prevents stale index.html
-  // pointing at deleted hashed JS (the white-screen bug).
-  if (event.request.mode === 'navigate' || url.pathname === '/' || url.pathname.endsWith('.html')) {
-    event.respondWith(
-      fetch(event.request)
-        .then((response) => {
-          const copy = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
-          return response;
-        })
-        .catch(() => caches.match(event.request).then((c) => c || caches.match('/index.html')))
-    );
-    return;
+  if (isMedia(request, url)) {
+    event.respondWith(cacheFirst(request, MEDIA, MEDIA_CAP));
   }
-
-  // Cache-first for everything else (hashed immutable assets are safe).
-  event.respondWith(
-    caches.match(event.request).then((cached) => cached || fetch(event.request))
-  );
 });
 
-// Push Notification Handler for Mobile & Desktop Native System Tray
+function isMedia(request, url) {
+  if (request.destination === 'image') return true;
+  if (MEDIA_HOST.test(url.hostname) && /\.(png|jpe?g|webp|gif|avif|svg)(\?|$)/i.test(url.pathname)) return true;
+  return false;
+}
+
+async function networkFirstDocument(request) {
+  const cache = await caches.open(SHELL);
+  try {
+    const response = await fetch(request);
+    const type = response.headers.get('content-type') || '';
+    if (response.ok && type.includes('text/html')) {
+      await cache.put(request, response.clone());
+      await cache.put(new Request('/index.html'), response.clone());
+    }
+    return response;
+  } catch {
+    return (await cache.match(request)) || (await cache.match('/index.html')) || (await cache.match('/')) || Response.error();
+  }
+}
+
+async function cacheFirst(request, cacheName, cap) {
+  const cache = await caches.open(cacheName);
+  const cached = await cache.match(request);
+  if (cached) {
+    refresh(cache, request, cap);
+    return cached;
+  }
+  try {
+    const response = await fetch(request);
+    await putIfOk(cache, request, response, cap);
+    return response;
+  } catch (err) {
+    if (cached) return cached;
+    throw err;
+  }
+}
+
+function refresh(cache, request, cap) {
+  fetch(request)
+    .then((response) => putIfOk(cache, request, response, cap))
+    .catch(() => undefined);
+}
+
+async function putIfOk(cache, request, response, cap) {
+  if (!response || !(response.ok || response.type === 'opaque')) return;
+  try {
+    await cache.put(request, response.clone());
+    if (cap) await trim(cache, cap);
+  } catch {
+    // Quota or opaque body. The live response is still returned.
+  }
+}
+
+async function trim(cache, cap) {
+  const keys = await cache.keys();
+  if (keys.length <= cap) return;
+  await Promise.all(keys.slice(0, keys.length - cap).map((key) => cache.delete(key)));
+}
+
+async function storeMediaUrls(urls) {
+  const cache = await caches.open(MEDIA);
+  for (const raw of urls.slice(0, 60)) {
+    if (typeof raw !== 'string' || !/^https?:\/\//i.test(raw)) continue;
+    try {
+      if (await cache.match(raw)) continue;
+      const response = await fetch(raw, { mode: 'no-cors' });
+      await putIfOk(cache, raw, response, MEDIA_CAP);
+    } catch {
+      // Ignore a single image that cannot be stored.
+    }
+  }
+}
+
 self.addEventListener('push', (event) => {
-  let data = { title: 'إشعار جديد من ناجي الذكي ⚡', body: '', url: '/' };
+  let data = { title: 'إشعار جديد من ناجي', body: '', url: '/' };
   if (event.data) {
     try {
       const parsed = event.data.json();
@@ -71,39 +144,29 @@ self.addEventListener('push', (event) => {
         if (parsed.notification.title) data.title = parsed.notification.title;
         if (parsed.notification.body) data.body = parsed.notification.body;
       }
-      if (parsed.fcmOptions?.link) {
-        data.url = parsed.fcmOptions.link;
-      } else if (parsed.data?.url) {
-        data.url = parsed.data.url;
-      }
-    } catch (e) {
+      if (parsed.fcmOptions?.link) data.url = parsed.fcmOptions.link;
+      else if (parsed.data?.url) data.url = parsed.data.url;
+    } catch {
       data.body = event.data.text();
     }
   }
-  const options = {
+  event.waitUntil(self.registration.showNotification(data.title || 'ناجي AI', {
     body: data.body || data.message || '',
     icon: '/logo-192.png',
     badge: '/favicon.svg',
-    vibrate: [150, 80, 150],
     data: { url: data.url || '/' },
-  };
-  event.waitUntil(self.registration.showNotification(data.title || 'ناجي AI', options));
+  }));
 });
 
-// Handle clicking on native notifications
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   const urlToOpen = event.notification.data?.url || '/';
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
-      for (let client of windowClients) {
-        if (client.url === urlToOpen && 'focus' in client) {
-          return client.focus();
-        }
+      for (const client of windowClients) {
+        if (client.url === urlToOpen && 'focus' in client) return client.focus();
       }
-      if (clients.openWindow) {
-        return clients.openWindow(urlToOpen);
-      }
+      if (clients.openWindow) return clients.openWindow(urlToOpen);
     })
   );
 });

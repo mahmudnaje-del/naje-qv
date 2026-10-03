@@ -16,7 +16,7 @@ export function lazyWithRetry<T extends ComponentType<any>>(
         const isModuleFetchError = error?.message?.includes?.('Failed to fetch dynamically imported module') ||
                                    error?.message?.includes?.('Importing a module script failed');
         
-        if (isModuleFetchError && typeof window !== 'undefined') {
+        if (isModuleFetchError && typeof window !== 'undefined' && navigator.onLine) {
           const sessionKey = `retry_reload_${window.location.pathname}`;
           if (!sessionStorage.getItem(sessionKey)) {
             sessionStorage.setItem(sessionKey, '1');

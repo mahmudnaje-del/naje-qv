@@ -39,6 +39,7 @@ import { VoiceSettingsPanel, parseDualScriptLines, buildVoiceChatPayload } from 
 import { calcVoicePointsCost, spokenTextFromVoiceScript } from '../lib/voicePricing';
 import { readNajeSse } from '../lib/sseRead';
 import { isOpenFormatId, resolveOpenFormat } from '../lib/creationEngine';
+import { rememberMedia } from '../lib/offline';
 import { VideoSettingsPanel, buildVideoChatPayload } from "../components/chat/VideoChatPanel";
 import { ImageSettingsPanel, buildImageChatPayload } from "../components/chat/ImageChatPanel";
 import { motion, AnimatePresence } from 'motion/react';
@@ -1846,10 +1847,11 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
             msgs.splice(0, msgs.length - 100);
           }
           setMessages(msgs);
+      rememberMedia(msgs.map((m) => (m.mediaType === 'video' || m.mediaType === 'audio' ? null : m.mediaUrl)));
         },
         (fallbackErr) => {
           console.error('[Messages onSnapshot] Fallback query failed:', fallbackErr);
-          toast.error(ct('chatui.messagesLoadFail'));
+          if (navigator.onLine) toast.error(ct('chatui.messagesLoadFail'));
         }
       );
     };
@@ -1858,9 +1860,10 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
     const unsubMessages = onSnapshot(q, (snapshot) => {
       const msgs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ChatMessage)).reverse();
       setMessages(msgs);
+      rememberMedia(msgs.map((m) => (m.mediaType === 'video' || m.mediaType === 'audio' ? null : m.mediaUrl)));
     }, (error) => {
       console.error('[Messages onSnapshot] Primary query failed:', error?.code, error?.message);
-      toast.error(ct('chatui.messagesBackup'));
+      if (navigator.onLine) toast.error(ct('chatui.messagesBackup'));
       setupFallbackListener();
     });
 

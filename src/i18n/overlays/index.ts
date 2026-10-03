@@ -14,12 +14,14 @@ import { toolsTenPack } from './toolsTen';
 import { omniversePack } from './omniverse';
 import { createPack } from './create';
 import { surfacePack } from './surface';
+import { offlinePack } from './offline';
 import type { LocalePack } from './types';
 import { ALL_OVERLAY_LOCALES } from './types';
 import { completePack } from './complete';
 
 const RAW_PACKS: LocalePack[] = [
   surfacePack,
+  offlinePack,
   welcomePack,
   promptTenPack,
   studioTenPack,
@@ -54,6 +56,7 @@ export function overlayParityGaps(): string[] {
   const gaps: string[] = [];
   const names = [
     'surface',
+    'offline',
     'welcome',
     'promptTen',
     'studioTen',

@@ -19,6 +19,8 @@ import AppErrorBoundary from './components/AppErrorBoundary';
 import NajeThinking from './components/NajeThinking';
 import RealtimeNotificationListener from './components/RealtimeNotificationListener';
 import SmartDownloadGatewayModal from './components/SmartDownloadGatewayModal';
+import OfflineBanner from './components/OfflineBanner';
+import { scheduleOfflineWarm } from './lib/offline';
 
 const Admin = lazyWithRetry(() => import('./pages/Admin'));
 const TermsOfService = lazyWithRetry(() => import('./pages/TermsOfService'));
@@ -52,6 +54,11 @@ export default function App() {
   useEffect(() => {
     initializeAuth();
   }, [initializeAuth]);
+
+  useEffect(() => {
+    if (!user) return;
+    scheduleOfflineWarm();
+  }, [user]);
 
   if (loadingAuth) {
     return (
@@ -104,6 +111,7 @@ export default function App() {
           </Routes>
         </Suspense>
         <ToastContainer />
+        <OfflineBanner />
         <SmartDownloadGatewayModal />
         <RealtimeNotificationListener />
         <TermsConsentModal />

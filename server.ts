@@ -12479,6 +12479,12 @@ ${sourceBlock}`;
   const isProduction = process.env.NODE_ENV === 'production';
   console.log(`[Static Serving] Mode: ${isProduction ? 'production' : 'development'}, distPath: ${distPath || 'none'}`);
 
+  // The service worker must revalidate, or an old shell keeps serving a dead bundle.
+  app.get('/sw.js', (_req, res, next) => {
+    res.setHeader('Cache-Control', 'no-cache');
+    next();
+  });
+
   // Serve public directory as static assets (logos, manifest, etc.)
   app.use(express.static(path.join(process.cwd(), 'public'), { dotfiles: 'allow' }));
   

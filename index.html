@@ -74,6 +74,7 @@
       // Self-heal: if the app root is still empty after 8s, a stale SW likely
       // broke the load — unregister SWs, clear caches, reload once.
       setTimeout(function () {
+        if (navigator.onLine === false) return;
         var root = document.getElementById('root');
         if (root && root.childElementCount === 0 && !sessionStorage.getItem('naje_selfheal')) {
           sessionStorage.setItem('naje_selfheal', '1');

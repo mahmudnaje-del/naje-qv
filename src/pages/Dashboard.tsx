@@ -36,6 +36,7 @@ import NotificationDropdown from '../components/NotificationDropdown';
 import EmailVerificationBanner from '../components/EmailVerificationBanner';
 import BalanceTopDropdown from '../components/BalanceTopDropdown';
 import { useI18n, translate } from '../i18n';
+import { rememberMedia, useOnline } from '../lib/offline';
 import { OmniverseCommandBar } from '../components/OmniverseCommandBar';
 import { getChatTypeConfig } from '../lib/chatTypeConfig';
 import { NajeAdIcon, NajeIdentIcon, NajeCvIcon, CreativeStudioIcon } from '../components/icons/SuiteIcons';
@@ -246,6 +247,7 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const location = useLocation();
   const { t, isRtl } = useI18n();
+  const online = useOnline();
 
   const [projects, setProjects] = useState<any[]>([]);
   const [chats, setChats] = useState<any[]>([]);
@@ -401,6 +403,7 @@ export default function Dashboard() {
         .map(d => ({ id: d.id, ...d.data() }))
         .filter((m: any) => m.mediaUrl && userChatIds.includes(m.chatId));
       setAllMediaMessages(msgs);
+      rememberMedia(msgs.map((m: any) => m.mediaType === 'video' ? null : m.mediaUrl));
     }, (err) => console.error("Messages listen failed:", err));
 
     return unsub;
@@ -524,7 +527,7 @@ export default function Dashboard() {
                 <div className="w-7 h-7 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center font-extrabold text-[10px] text-white border border-black/10 dark:border-white/10">
                   {user?.displayName ? user.displayName.substring(0, 1).toUpperCase() : 'N'}
                 </div>
-                <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-green-500 border-2 border-white dark:border-[#11141c]"></span>
+                <span className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-white dark:border-[#11141c] ${online ? 'bg-green-500' : 'bg-amber-400'}`} title={online ? undefined : t('surface.offline.badge')}></span>
               </div>
               <div className="flex flex-col min-w-0 text-start leading-tight">
                 <span className="text-xs font-extrabold text-slate-900 dark:text-white group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors truncate leading-tight">
