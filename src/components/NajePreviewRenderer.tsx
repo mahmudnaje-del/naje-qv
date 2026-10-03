@@ -5,9 +5,10 @@ import { NajeSlide } from '../lib/naje-engine';
 
 interface Props {
   slides: NajeSlide[];
+  theme?: { background?: string; title?: string; text?: string; accent?: string };
 }
 
-export default function NajePreviewRenderer({ slides }: Props) {
+export default function NajePreviewRenderer({ slides, theme }: Props) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [scale, setScale] = useState(1);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -37,10 +38,10 @@ export default function NajePreviewRenderer({ slides }: Props) {
   // Hex helpers
   const hex = (c: string) => c.startsWith('#') ? c : `#${c}`;
 
-  const bg = hex("0E0F13");
-  const titleColor = hex("F4F4F7");
-  const textColor = hex("9EA0B0");
-  const accentColor = hex("D4AF37");
+  const bg = hex(theme?.background || "12141A");
+  const titleColor = hex(theme?.title || "F6F1E7");
+  const textColor = hex(theme?.text || "C9C3B6");
+  const accentColor = hex(theme?.accent || "D4A574");
 
   const nextSlide = () => setCurrentIndex(p => Math.min(slides.length - 1, p + 1));
   const prevSlide = () => setCurrentIndex(p => Math.max(0, p - 1));
@@ -141,8 +142,8 @@ export default function NajePreviewRenderer({ slides }: Props) {
                 {/* Simulated Image Placeholder */}
                 <div className="absolute inset-0 bg-gradient-to-br from-black/40 to-transparent z-10" />
                 <div className="text-center p-10 z-20">
-                   <span className="text-gray-900 dark:text-white/50 text-sm font-mono border border-white/20 px-3 py-1 rounded-full uppercase tracking-wider">Generated Image Area</span>
-                   <p className="text-gray-900 dark:text-white/80 mt-4 text-xl max-w-sm italic">"{currentSlide.content.aiImagePrompt || currentSlide.slideTitle}"</p>
+                   <span className="text-white/70 text-sm font-mono border border-white/20 px-3 py-1 rounded-full uppercase tracking-wider">لوحة بصرية</span>
+                   <p className="text-white/85 mt-4 text-xl max-w-sm italic">"{currentSlide.content.aiImagePrompt || currentSlide.slideTitle}"</p>
                 </div>
              </div>
            </div>
@@ -156,8 +157,8 @@ export default function NajePreviewRenderer({ slides }: Props) {
              <div className="flex-1 flex flex-row gap-8 mt-14 items-center justify-center">
                {currentSlide.content.cards?.slice(0, 3).map((card, i) => (
                  <div key={i} className="flex-1 bg-white dark:bg-black/10 border border-white/5 p-10 rounded-2xl h-full max-h-72 flex flex-col items-center text-center">
-                   <div className="w-12 h-12 rounded-full flex items-center justify-center mb-4" style={{ backgroundColor: accentColor + '20', color: accentColor }}>
-                      <span className="text-sm font-bold text-amber-500">جاري المعالجة</span>
+                   <div className="w-12 h-12 rounded-full flex items-center justify-center mb-4 text-[10px] font-black uppercase tracking-wide" style={{ backgroundColor: accentColor + '22', color: accentColor }}>
+                      {card.iconKeyword || 'n'}
                    </div>
                    <h3 className="text-3xl font-bold mb-3" style={{ color: titleColor }}>{card.title}</h3>
                    <p className="text-base" style={{ color: textColor }}>{card.text}</p>
@@ -238,6 +239,13 @@ export default function NajePreviewRenderer({ slides }: Props) {
          </button>
       </div>
       
+      {currentSlide.content?.aiImagePrompt && (
+        <div className="max-w-5xl mx-auto w-full border-t border-white/10 pt-2 text-[11px] leading-relaxed text-slate-500 dark:text-slate-300">
+          <span className="font-black text-[10px] uppercase tracking-wider" style={{ color: accentColor }}>التغذية البصرية</span>
+          <p className="mt-1">{currentSlide.content.aiImagePrompt}</p>
+        </div>
+      )}
+
       {/* Speaker Notes */}
       {currentSlide.speakerNotes && (
         <div className="max-w-5xl mx-auto w-full p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-xl mt-2">

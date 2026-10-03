@@ -574,6 +574,34 @@ export async function executeAgentTool(
       return { output, artifact, pointsDeducted: calculatedPoints };
     }
 
+    case 'compose_artifact': {
+      const { creationSystem, parseDeck, artifactMeta, isOpenFormatId } = await import('./creationEngine.ts');
+      const requested = String(inputParams?.format || inputParams?.docType || '').toLowerCase();
+      const format = isOpenFormatId(requested) ? requested : 'markdown';
+      const filePrompt = String(inputParams?.prompt || enrichedPrompt || '').slice(0, 8000);
+      const res = await ai.models.generateContent({
+        model: PERSONAS_MODEL(),
+        contents: filePrompt,
+        config: {
+          systemInstruction: creationSystem(format),
+          maxOutputTokens: format === 'deck' || format === 'html' ? 8192 : 4096,
+          tools: /ابحث|أحدث|search/i.test(filePrompt) ? [{ googleSearch: {} }] : undefined,
+        },
+      });
+      const text = res.text || '';
+      const deck = format === 'deck' ? parseDeck(text) : null;
+      const file = format === 'deck' ? null : artifactMeta(format, text, filePrompt);
+      const artifact: AgentArtifact = {
+        id: `artifact_file_${Date.now()}`,
+        type: 'text',
+        title: deck?.title || file?.filename || 'ملف ناجي',
+        downloadFilename: file?.filename,
+        data: deck ? { ...deck, format } : file,
+        createdAt: Date.now(),
+      };
+      return { output: deck || file || { text }, artifact, pointsDeducted: calculatedPoints };
+    }
+
     case 'web_grounding':
     default: {
       // Real Google Search Grounding with sources extraction

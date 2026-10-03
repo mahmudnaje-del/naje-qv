@@ -46,7 +46,7 @@ export interface AgentProjectPlan {
 
 export interface AgentToolCall {
   id: string;
-  name: 'brand_identity' | 'image_studio' | 'video_director' | 'video_stitch' | 'ui_director' | 'document_architect' | 'voice_narration' | 'fullstack_engineer' | 'web_grounding' | 'infographic_designer';
+  name: 'brand_identity' | 'image_studio' | 'video_director' | 'video_stitch' | 'ui_director' | 'document_architect' | 'compose_artifact' | 'voice_narration' | 'fullstack_engineer' | 'web_grounding' | 'infographic_designer';
   title: string;
   status: 'pending' | 'running' | 'completed' | 'failed';
   input: Record<string, any>;
@@ -142,7 +142,7 @@ export interface AgentPlanProposal {
     title: string;
     description: string;
     tools: Array<{
-      name: 'brand_identity' | 'image_studio' | 'video_director' | 'video_stitch' | 'ui_director' | 'document_architect' | 'voice_narration' | 'fullstack_engineer' | 'web_grounding';
+      name: 'brand_identity' | 'image_studio' | 'video_director' | 'video_stitch' | 'ui_director' | 'document_architect' | 'compose_artifact' | 'voice_narration' | 'fullstack_engineer' | 'web_grounding';
       title: string;
       estimatedPoints: number;
       inputParams: Record<string, any>;
@@ -174,5 +174,7 @@ export interface AgentChatMessage {
   question?: string;
   suggestedQuickReplies?: string[];
   proposal?: AgentPlanProposal;
+  activity?: string;
+  documentData?: any;
   timestamp: number;
 }

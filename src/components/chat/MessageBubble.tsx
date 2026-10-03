@@ -283,6 +283,19 @@ export default function MessageBubble({
               <button 
                 type="button"
                 onClick={async () => {
+                  const textBody = (msg as any).documentData.textBody;
+                  if (typeof textBody === 'string' && textBody.length) {
+                    const mimeType = (msg as any).documentData.mimeType || 'text/plain';
+                    const filename = (msg as any).documentData.filename || 'naje.txt';
+                    const blob = new Blob([textBody], { type: mimeType });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = filename;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                    return;
+                  }
                   let b64: string | null = null;
                   // 1) Prefer the server-verified permanent Storage URL (byte-perfect PDF/DOCX);
                   //    this bypasses the idb/base64 round-trip that produced invalid files.
@@ -334,7 +347,7 @@ export default function MessageBubble({
 
         {(msg as any).documentData?.slides && (
           <div className="mt-4">
-            <NajePreviewRenderer slides={(msg as any).documentData.slides} />
+            <NajePreviewRenderer slides={(msg as any).documentData.slides} theme={(msg as any).documentData.theme} />
           </div>
         )}
 

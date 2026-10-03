@@ -37,6 +37,9 @@ import { hasFeatureAccess } from '../lib/featureAccess';
 import SmokeChatWrapper from '../components/chat/SmokeChatWrapper';
 import { FleetStrip } from '../components/FleetStrip';
 import { dispatchSpecialists, type DispatchDecision } from '../lib/agentFleet';
+import { readNajeSse } from '../lib/sseRead';
+import { resolveOpenFormat } from '../lib/creationEngine';
+import NajePreviewRenderer from '../components/NajePreviewRenderer';
 
 export interface AgentSourceItem {
   id: string;
@@ -417,6 +420,55 @@ export default function NajeAgent() {
       if (!token) {
         toast.error(t('tools.agent.loginRequired'));
         setIsSendingChat(false);
+        return;
+      }
+
+      const openFormat = resolveOpenFormat(undefined, text);
+      if (openFormat) {
+        const botId = `bot_${Date.now()}`;
+        let acc = '';
+        let documentData: any = null;
+        setMessages(prev => [...prev, {
+          id: botId,
+          role: 'model',
+          type: 'reply',
+          content: '',
+          activity: 'يقرأ الطلب ويحدد شكل الملف',
+          timestamp: Date.now(),
+        }]);
+        const createRes = await fetch('/api/create/stream', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({
+            prompt: text,
+            format: openFormat,
+            history: newMessages.slice(-8).map(m => ({ role: m.role, content: m.content || '' })),
+          }),
+        });
+        if (!createRes.ok) {
+          const raw = await createRes.text();
+          let message = raw;
+          try { message = JSON.parse(raw).error || raw; } catch { /* keep */ }
+          throw new Error(message || t('tools.agent.serverDown'));
+        }
+        await readNajeSse(createRes, (ev) => {
+          if (typeof ev.text === 'string') acc += ev.text;
+          if (typeof ev.replaceContent === 'string') acc = ev.replaceContent;
+          if (ev.deck) {
+            documentData = { title: ev.deck.title, slides: ev.deck.slides, theme: ev.deck.theme, extension: 'deck' };
+          }
+          if (ev.artifact?.text) {
+            documentData = ev.artifact;
+            acc = ev.artifact.text;
+          }
+          setMessages(prev => prev.map(m => m.id === botId ? {
+            ...m,
+            content: acc,
+            activity: ev.activity ? String(ev.activity) : m.activity,
+            documentData: documentData || m.documentData,
+          } : m));
+        });
+        setMessages(prev => prev.map(m => m.id === botId ? { ...m, activity: undefined } : m));
         return;
       }
 
@@ -922,7 +974,7 @@ export default function NajeAgent() {
 
                   {/* Bubble Content */}
                   <div className="space-y-3 min-w-0 max-w-[90%] sm:max-w-[85%]">
-                    {msg.content && (
+                    {(msg.content || msg.activity) && (
                       <div className={`p-4 rounded-2xl text-xs sm:text-sm leading-relaxed whitespace-pre-wrap ${
                         msg.role === 'user'
                           ? 'bg-purple-600 text-white shadow-sm rounded-tr-sm'
@@ -933,7 +985,32 @@ export default function NajeAgent() {
                         ) : (
                           msg.content
                         )}
+                        {msg.activity && (
+                          <div className="mt-2 border-t border-indigo-500/30 pt-1.5 text-[11px] font-bold text-indigo-600 dark:text-indigo-300">
+                            {msg.activity}
+                          </div>
+                        )}
                       </div>
+                    )}
+                    {msg.documentData?.slides && (
+                      <NajePreviewRenderer slides={msg.documentData.slides} theme={msg.documentData.theme} />
+                    )}
+                    {msg.documentData?.text && msg.documentData?.filename && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const blob = new Blob([msg.documentData.text], { type: msg.documentData.mime || 'text/plain' });
+                          const url = URL.createObjectURL(blob);
+                          const a = document.createElement('a');
+                          a.href = url;
+                          a.download = msg.documentData.filename;
+                          a.click();
+                          URL.revokeObjectURL(url);
+                        }}
+                        className="px-3 py-1.5 rounded-xl bg-white dark:bg-gray-900 border border-indigo-300 text-[11px] font-bold text-indigo-700 dark:text-indigo-300"
+                      >
+                        {msg.documentData.filename}
+                      </button>
                     )}
                     {msg.role === 'user' && fleetById[msg.id] && <FleetStrip decision={fleetById[msg.id]} />}
 

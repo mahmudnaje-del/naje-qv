@@ -102,6 +102,7 @@ const agentFunctionDeclarations = [
                         'voice_narration',
                         'fullstack_engineer',
                         'document_architect',
+                        'compose_artifact',
                         'web_grounding'
                       ]
                     },
@@ -154,6 +155,7 @@ ${fleetNote}
      - 'voice_narration': توليد فويس أوفر وتعليق صوتي سينمائي فخم.
      - 'fullstack_engineer': برمجة أنظمة ومواقع وتطبيقات ويب متكاملة مع المعاينة وتحميل ZIP.
      - 'document_architect': تأليف كتيبات PDF استراتيجية أو عروض تقديمية متعددة الصفحات/الشرائح.
+     - 'compose_artifact': أنشئ الملف حتى لو لم يكن في القائمة القديمة: markdown أو csv أو json أو html أو txt أو deck. ضع format داخل inputParams، والطلب داخل prompt. لا ترفض صيغة ناقصة.
      - 'web_grounding': البحث الحي لجمع حقائق الصناعة والمنافسين.
 
 تنبيه حاسم: لا تضع أسعار أو تقديرات نقاط داخل الخطوات؛ المنظومة تحسب النقاط ذاتياً وبدقة قطعية.`;

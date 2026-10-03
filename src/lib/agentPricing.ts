@@ -141,6 +141,9 @@ export function getAgentToolCost(
       return parseFloat(Number(cost).toFixed(2));
     }
 
+    case 'compose_artifact':
+      return 1.5;
+
     case 'web_grounding': {
       const cost = agentPricing.web_grounding ?? 2;
       return parseFloat(Number(cost).toFixed(2));

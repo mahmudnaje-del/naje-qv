@@ -37,6 +37,8 @@ import { uploadBase64ToStorage, uploadWithRetry } from '../lib/mediaStorage';
 import { downloadBase64File } from '../utils/fileDownloader';
 import { VoiceSettingsPanel, parseDualScriptLines, buildVoiceChatPayload } from "../components/chat/VoiceChatPanel";
 import { calcVoicePointsCost, spokenTextFromVoiceScript } from '../lib/voicePricing';
+import { readNajeSse } from '../lib/sseRead';
+import { isOpenFormatId, resolveOpenFormat } from '../lib/creationEngine';
 import { VideoSettingsPanel, buildVideoChatPayload } from "../components/chat/VideoChatPanel";
 import { ImageSettingsPanel, buildImageChatPayload } from "../components/chat/ImageChatPanel";
 import { motion, AnimatePresence } from 'motion/react';
@@ -504,7 +506,9 @@ export default function Chat() {
         minCost: pricing.voice?.minCost
       }).cost;
     } else if (chat.type === 'text') {
-      if (activeDocType !== 'none') {
+      if (isOpenFormatId(activeDocType)) {
+        cost = 0;
+      } else if (activeDocType !== 'none') {
         if (activeDocType === 'pptx' || activeDocType === 'pdf_slides') {
           cost = (overrideSlidesCount !== undefined ? overrideSlidesCount : slidesCount) * (pricing.document?.pdf_per_slide ?? 0.20);
         } else {
@@ -917,11 +921,9 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
     }
     const finalDocType = docTypeOverride || docType;
     if ((!finalPrompt.trim() && files.length === 0) || !chat || !user) return;
-
-    // A real document request (pptx/docx/pdf) must hit the server's document
-    // pipeline via type:'document' and be read as a JSON response — NOT as the
-    // text SSE stream — otherwise the file is never actually built.
-    const isDocRequest = chat.type === 'text' && !!finalDocType && finalDocType !== 'none';
+    const openFormat = chat.type === 'text' ? resolveOpenFormat(finalDocType, finalPrompt) : null;
+    // Heavy PDF/PPTX/Word stays on the document job. Open files stream instead.
+    const isDocRequest = chat.type === 'text' && !!finalDocType && finalDocType !== 'none' && !openFormat;
     const requestType = isDocRequest ? 'document' : (chat?.type || 'text');
 
     // First recharge check for restricted advanced engines
@@ -1065,6 +1067,77 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
 
       abortControllerRef.current = new AbortController();
 
+      if (openFormat && token) {
+        setLiveActivity('يقرأ الطلب ويحدد شكل الملف');
+        const assistantRef = doc(collection(db, 'messages'));
+        const assistantId = assistantRef.id;
+        let acc = '';
+        let documentData: any = null;
+        setMessages(prev => [...prev, {
+          id: assistantId,
+          ownerId: user?.uid,
+          chatId,
+          role: 'assistant',
+          content: '',
+          createdAt: Date.now(),
+        } as any]);
+        const createRes = await fetch('/api/create/stream', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          signal: abortControllerRef.current.signal,
+          body: JSON.stringify({
+            prompt: finalPrompt,
+            format: openFormat,
+            search: enableSearchGrounding === true,
+            history: messages.slice(-8).map(m => ({ role: m.role, content: m.content })),
+          }),
+        });
+        if (!createRes.ok) {
+          const raw = await createRes.text();
+          let message = raw;
+          try { message = JSON.parse(raw).error || raw; } catch { /* keep */ }
+          throw new Error(message || ct('chatui.genFailed'));
+        }
+        await readNajeSse(createRes, (ev) => {
+          if (ev.activity) setLiveActivity(String(ev.activity));
+          if (typeof ev.text === 'string') acc += ev.text;
+          if (typeof ev.replaceContent === 'string') acc = ev.replaceContent;
+          if (ev.deck) {
+            documentData = {
+              title: ev.deck.title,
+              filename: `${ev.deck.title || 'naje-deck'}.json`,
+              extension: 'deck',
+              type: 'deck',
+              slides: ev.deck.slides,
+              theme: ev.deck.theme,
+            };
+          }
+          if (ev.artifact) {
+            documentData = {
+              title: ev.artifact.title,
+              filename: ev.artifact.filename,
+              extension: ev.artifact.extension,
+              mimeType: ev.artifact.mime,
+              type: ev.artifact.format,
+              textBody: ev.artifact.text,
+            };
+          }
+          if (ev.newBalance !== undefined) updateBalance(ev.newBalance);
+          assistantContent = acc;
+          setMessages(prev => prev.map(m => m.id === assistantId ? { ...m, content: acc, documentData } : m));
+        });
+        await setDoc(assistantRef, stripUndefined({
+          ownerId: user?.uid,
+          chatId,
+          role: 'assistant',
+          content: assistantContent,
+          documentData,
+          createdAt: Date.now(),
+        })).catch((e) => console.error('Failed to save created file message:', e));
+        setLiveActivity('');
+        return;
+      }
+
       const res = await fetchWithRetry('/api/generate', {
         method: 'POST',
         headers: {
@@ -1142,6 +1215,10 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
             throw new Error(parsedChunk.error);
           }
 
+          if (parsedChunk.activity) {
+            setLiveActivity(String(parsedChunk.activity));
+          }
+
           if (parsedChunk.replaceContent) {
             assistantContent = parsedChunk.replaceContent;
             if (msgIdToUpdate) {
@@ -1161,6 +1238,16 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
               updateDoc(doc(db, 'messages', msgIdToUpdate), { content: assistantContent })
                 .catch(e => console.error('Failed to update message:', e));
             }
+            setMessages(prev => {
+              if (!msgIdToUpdate) return prev;
+              const idx = prev.findIndex(m => m.id === msgIdToUpdate);
+              if (idx < 0) {
+                return [...prev, { id: msgIdToUpdate, ownerId: user?.uid, chatId, role: 'assistant', content: assistantContent, createdAt: Date.now() } as any];
+              }
+              const next = prev.slice();
+              next[idx] = { ...next[idx], content: assistantContent };
+              return next;
+            });
           }
           if (parsedChunk.searchSources && Array.isArray(parsedChunk.searchSources) && parsedChunk.searchSources.length > 0) {
             if (msgIdToUpdate) {
@@ -1480,6 +1567,7 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
     } finally {
       submitInFlightRef.current = false;
       setLoading(false);
+      setLiveActivity('');
       setActiveJobId(null);
       setActiveJobType(null);
       setIsJobCompleted(false);
@@ -1631,6 +1719,7 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
 
   const [files, setFiles] = useState<{name: string, data: string, mimeType: string}[]>([]);
   const [loading, setLoading] = useState(false);
+  const [liveActivity, setLiveActivity] = useState('');
   
   // Real-time generation job tracking
   const [activeJobId, setActiveJobId] = useState<string | null>(null);
@@ -2064,6 +2153,7 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
             messages={messages}
             chat={chat}
             loading={loading}
+            liveActivity={liveActivity}
             setActiveUiTab={setActiveUiTab}
             editingMessageId={editingMessageId}
             setEditingMessageId={setEditingMessageId}

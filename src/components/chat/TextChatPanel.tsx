@@ -33,6 +33,7 @@ import {
   VOICE_CHAT_PHRASES 
 } from '../../hooks/useLivePlaceholder';
 import { getChatTypeConfig } from '../../lib/chatTypeConfig';
+import { isOpenFormatId } from '../../lib/creationEngine';
 import najePersonaDesignerData from '../../assets/icons/naje-persona-designer-data.svg';
 import najeDocument from '../../assets/icons/naje-document.svg';
 import najeChartBars from '../../assets/icons/naje-chart-bars.svg';
@@ -94,6 +95,7 @@ interface TextChatPanelProps {
   messages: Message[];
   chat: Chat;
   loading: boolean;
+  liveActivity?: string;
   setActiveUiTab: (tab: 'chat' | 'preview' | 'code') => void;
   editingMessageId: string | null;
   setEditingMessageId: (id: string | null) => void;
@@ -205,6 +207,7 @@ export default function TextChatPanel({
   messages,
   chat,
   loading,
+  liveActivity = '',
   setActiveUiTab,
   editingMessageId,
   setEditingMessageId,
@@ -665,10 +668,17 @@ export default function TextChatPanel({
 
               /* PLAIN TEXT reply -> Naje thinking + smooth streaming text (NEVER the tracking screen) */
               ) : (
-                <NajeReasoningIndicator 
-                  chatType={(chat?.type === 'ui' ? 'ui' : (chat?.type === 'image' || chat?.type === 'design') ? 'image' : chat?.type === 'video' ? 'video' : 'text')} 
-                  hasStartedContent={messages.length > 0 && messages[messages.length - 1]?.role === 'assistant' && !!messages[messages.length - 1]?.content}
-                />
+                <>
+                  <NajeReasoningIndicator 
+                    chatType={(chat?.type === 'ui' ? 'ui' : (chat?.type === 'image' || chat?.type === 'design') ? 'image' : chat?.type === 'video' ? 'video' : 'text')}
+                    hasStartedContent={messages.length > 0 && messages[messages.length - 1]?.role === 'assistant'}
+                  />
+                  {liveActivity && (
+                    <div className="mt-1 border-t border-indigo-500/30 pt-1.5 text-[11px] font-bold text-indigo-600 dark:text-indigo-300">
+                      {liveActivity}
+                    </div>
+                  )}
+                </>
               )}
             </div>
           </div>
@@ -697,18 +707,26 @@ export default function TextChatPanel({
                     <div className="flex justify-between items-center text-sm mb-1.5">
                       <span className="text-gray-500 dark:text-gray-400">{t('chatui.docTypeLabel')}</span>
                       <span className="font-semibold text-gray-900 dark:text-white">
-                        {pendingDocConfirm.docType === 'pptx' ? t('chatui.docPptxFull') : pendingDocConfirm.docType === 'docx' ? t('chatui.docWordFull') : pendingDocConfirm.docType === 'pdf_slides' ? t('studio.docPdfSlides') : t('studio.docPdfDoc')}
+                        {isOpenFormatId(pendingDocConfirm.docType)
+                          ? t(pendingDocConfirm.docType === 'markdown' ? 'create.md' : pendingDocConfirm.docType === 'deck' ? 'create.deck' : `create.${pendingDocConfirm.docType}`)
+                          : pendingDocConfirm.docType === 'pptx' ? t('chatui.docPptxFull') : pendingDocConfirm.docType === 'docx' ? t('chatui.docWordFull') : pendingDocConfirm.docType === 'pdf_slides' ? t('studio.docPdfSlides') : t('studio.docPdfDoc')}
                       </span>
                     </div>
                     <div className="flex justify-between items-center text-sm">
                       <span className="text-gray-500 dark:text-gray-400">{t('chatui.expectedCost')}</span>
                       <span className="font-bold text-indigo-600 dark:text-indigo-400">
-                        {t('chatui.pointsCount', { count: (pendingDocConfirm.docType === 'pptx' || pendingDocConfirm.docType === 'pdf_slides')
-                          ? parseFloat((pendingDocConfirm.estimatedCount * 0.20).toFixed(2))
-                          : parseFloat((pendingDocConfirm.estimatedCount * (paperSize === 'a5' ? 0.10 : 0.15)).toFixed(2))
-                        })} ({(pendingDocConfirm.docType === 'pptx' || pendingDocConfirm.docType === 'pdf_slides')
-                          ? t('chatui.suggestedSlides', { count: pendingDocConfirm.estimatedCount })
-                          : t('chatui.suggestedPages', { count: pendingDocConfirm.estimatedCount })})
+                        {isOpenFormatId(pendingDocConfirm.docType)
+                          ? t('create.tokenPriced')
+                          : (
+                            <>
+                              {t('chatui.pointsCount', { count: (pendingDocConfirm.docType === 'pptx' || pendingDocConfirm.docType === 'pdf_slides')
+                                ? parseFloat((pendingDocConfirm.estimatedCount * 0.20).toFixed(2))
+                                : parseFloat((pendingDocConfirm.estimatedCount * (paperSize === 'a5' ? 0.10 : 0.15)).toFixed(2))
+                              })} ({(pendingDocConfirm.docType === 'pptx' || pendingDocConfirm.docType === 'pdf_slides')
+                                ? t('chatui.suggestedSlides', { count: pendingDocConfirm.estimatedCount })
+                                : t('chatui.suggestedPages', { count: pendingDocConfirm.estimatedCount })})
+                            </>
+                          )}
                       </span>
                     </div>
                   </div>
@@ -733,7 +751,9 @@ export default function TextChatPanel({
                       type="button"
                       className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white py-2.5 px-4 rounded-xl text-sm font-semibold shadow-md shadow-indigo-600/10 active:scale-95 transition cursor-pointer"
                     >
-                      {t('chatui.generateDocPoints', { cost: (pendingDocConfirm.docType === 'pptx' || pendingDocConfirm.docType === 'pdf_slides')
+                      {isOpenFormatId(pendingDocConfirm.docType)
+                        ? t('create.make')
+                        : t('chatui.generateDocPoints', { cost: (pendingDocConfirm.docType === 'pptx' || pendingDocConfirm.docType === 'pdf_slides')
                         ? parseFloat((pendingDocConfirm.estimatedCount * 0.20).toFixed(2))
                         : parseFloat((pendingDocConfirm.estimatedCount * (paperSize === 'a5' ? 0.10 : 0.15)).toFixed(2))
                       })}
@@ -887,13 +907,19 @@ export default function TextChatPanel({
                     <div className={cn("grid grid-cols-1 gap-4", docType === 'none' ? "sm:grid-cols-1" : (docType === 'pptx' || docType === 'pdf_slides') ? "sm:grid-cols-2" : "sm:grid-cols-3")}>
                       <div className="flex flex-col gap-2 col-span-full">
                         <span className="text-xs text-gray-800 dark:text-gray-400 font-bold">{t('studio.requiredFileType')}</span>
-                        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                           {[
                             { id: 'none', label: t('studio.docNone'), desc: t('studio.docNoneDesc'), icon: najeChatTyping },
-                            { id: 'pptx', label: t('studio.docPptx'), desc: t('studio.docPptxDesc'), icon: najeChartBars, isPptx: true },
+                            { id: 'pptx', label: t('studio.docPptx'), desc: t('studio.docPptxDesc'), icon: najeChartBars },
                             { id: 'pdf_slides', label: t('studio.docPdfSlides'), desc: t('studio.docPdfSlidesDesc'), icon: najeFilmstrip },
                             { id: 'pdf_doc', label: t('studio.docPdfDoc'), desc: t('studio.docPdfDocDesc'), icon: najeDocument },
-                            { id: 'docx', label: t('studio.docWord'), desc: t('studio.docWordDesc'), icon: najePencilWrite }
+                            { id: 'docx', label: t('studio.docWord'), desc: t('studio.docWordDesc'), icon: najePencilWrite },
+                            { id: 'deck', label: t('create.deck'), desc: t('create.deckDesc'), icon: najeFilmstrip },
+                            { id: 'markdown', label: t('create.md'), desc: t('create.mdDesc'), icon: najeDocument },
+                            { id: 'csv', label: t('create.csv'), desc: t('create.csvDesc'), icon: najeChartBars },
+                            { id: 'json', label: t('create.json'), desc: t('create.jsonDesc'), icon: najeRulerSpec },
+                            { id: 'html', label: t('create.html'), desc: t('create.htmlDesc'), icon: najeTemplateGallery },
+                            { id: 'txt', label: t('create.txt'), desc: t('create.txtDesc'), icon: najePencilWrite },
                           ].map(opt => (
                             <button
                               key={opt.id}

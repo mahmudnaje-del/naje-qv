@@ -8568,11 +8568,11 @@ Aim for output a senior product designer would approve. Restraint, hierarchy, an
             const decls: any[] = [
               {
                 name: "generate_document",
-                description: "Call this when the user explicitly asks to turn the current conversation, an idea, or content into a downloadable document, presentation, or PDF. (Max 25 pages for Word/PDF documents, Max 35 slides for PowerPoint presentations)",
+                description: "Call this when the user explicitly asks for a downloadable file: PowerPoint, Word, PDF, Markdown, CSV, JSON, HTML, plain text, or a visual slide deck. Do not refuse a format that is missing from older menus.",
                 parameters: {
                   type: "OBJECT",
                   properties: {
-                    docType: { type: "STRING", enum: ["pptx", "docx", "pdf_slides", "pdf_doc"] },
+                    docType: { type: "STRING", enum: ["pptx", "docx", "pdf_slides", "pdf_doc", "markdown", "csv", "json", "html", "txt", "deck"] },
                     summary: { type: "STRING", description: "A short summary of what the document should contain, based on the conversation so far." },
                     estimatedPageOrSlideCount: { type: "NUMBER", description: "Your best estimate, based on the conversation so far, of how many pages (for docx/pdf, max 25) or slides (for pptx, max 35) this document should reasonably contain." }
                   },
@@ -8755,7 +8755,9 @@ Return ONLY raw JSON, no markdown code fences.` }] }
           let searchSources: Array<{ title: string; url: string }> = [];
           let planViolationDetected = false;
           let streamUsageMetadata: any = null;
+          let announcedWrite = false;
           const maxOutputBytes = ((pricing.ui?.maxOutputKb || 400) * 1024);
+          res.write(`data: ${JSON.stringify({ activity: enableSearchGrounding ? 'يبحث في الويب ثم يكتب' : 'يقرأ الطلب' })}\n\n`);
 
           try {
             for await (const chunk of stream) {
@@ -8765,6 +8767,7 @@ Return ONLY raw JSON, no markdown code fences.` }] }
               const extractedCalls = extractGeminiFunctionCalls(chunk);
               if (extractedCalls.length > 0) {
                 functionCalls.push(...extractedCalls);
+                res.write(`data: ${JSON.stringify({ activity: 'يجهّز الخطوة التالية من الطلب' })}\n\n`);
               }
               const candidate = chunk.candidates?.[0];
               if (candidate?.groundingMetadata?.groundingChunks) {
@@ -8781,6 +8784,10 @@ Return ONLY raw JSON, no markdown code fences.` }] }
               const chunkText = extractGeminiText(chunk);
               if (chunkText) {
                 fullText += chunkText;
+                if (!announcedWrite) {
+                  announcedWrite = true;
+                  res.write(`data: ${JSON.stringify({ activity: 'يكتب الآن' })}\n\n`);
+                }
 
                 // PART 1.1: Per-chunk Plan Mode Violation Check (stop immediately if HTML emitted)
                 if (type === 'ui' && isPlanMode && !planViolationDetected) {
@@ -11318,6 +11325,136 @@ app.delete("/api/admin/presets/format/:id", async (req, res) => {
 // ==========================================
 
 // Chat Turn Handler (Conversational Judgment, Clarification, & Proposal Generation)
+app.post("/api/create/stream", async (req, res) => {
+  const {
+    resolveOpenFormat,
+    creationSystem,
+    creationActivity,
+    wantsLiveSearch,
+    parseDeck,
+    artifactMeta,
+    isOpenFormatId,
+  } = await import("./src/lib/creationEngine.ts");
+
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: "يجب تسجيل الدخول لاستخدام هذه الميزة." });
+    }
+    const token = authHeader.split('Bearer ')[1];
+    let decoded;
+    try {
+      decoded = await getAuth().verifyIdToken(token);
+    } catch {
+      return res.status(401).json({ error: "جلسة الدخول غير صالحة، يرجى تسجيل الدخول مجدداً." });
+    }
+    const uid = decoded.uid;
+    const userDocSnap = await dbAdmin.collection('users').doc(uid).get();
+    const userData = userDocSnap.data() || {};
+    const isUserAdmin = !!userData.isAdmin;
+    const balance = typeof userData.balance === 'number' ? userData.balance : 0;
+    if (!isUserAdmin && (balance <= 0 || userData.isNegativeBalance === true)) {
+      return res.status(400).json({ error: "رصيدك غير كافٍ لإتمام هذا الطلب. يرجى شحن رصيدك للمتابعة." });
+    }
+    if (!isUserAdmin) {
+      const rl = checkRateLimit(`create_stream:${uid}`, 40, 60 * 60 * 1000);
+      if (!rl.allowed) {
+        return res.status(429).json({ error: `وصلت للحد الأقصى من ملفات هذه الساعة. جرّب بعد ${Math.max(1, Math.ceil(rl.retryAfterSec / 60))} دقيقة.` });
+      }
+    }
+
+    const prompt = String(req.body?.prompt || '').trim();
+    const format = resolveOpenFormat(req.body?.format, prompt);
+    if (!prompt || !format || !isOpenFormatId(format)) {
+      return res.status(400).json({ error: "حدد طلباً وملفاً يمكن إنشاؤه." });
+    }
+
+    res.writeHead(200, {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive',
+    });
+
+    const search = wantsLiveSearch(prompt, format) || req.body?.search === true;
+    res.write(`data: ${JSON.stringify({ activity: creationActivity(format, 'read') })}\n\n`);
+    if (search) {
+      res.write(`data: ${JSON.stringify({ activity: creationActivity(format, 'search') })}\n\n`);
+    }
+    res.write(`data: ${JSON.stringify({ activity: creationActivity(format, 'write') })}\n\n`);
+
+    const history = Array.isArray(req.body?.history) ? req.body.history.slice(-8) : [];
+    const contents = history
+      .filter((m: any) => m && (m.role === 'user' || m.role === 'assistant' || m.role === 'model') && m.content)
+      .map((m: any) => ({
+        role: m.role === 'assistant' || m.role === 'model' ? 'model' : 'user',
+        parts: [{ text: String(m.content).slice(0, 4000) }],
+      }));
+    contents.push({ role: 'user', parts: [{ text: prompt.slice(0, 12000) }] });
+
+    const modelId = resolveEngineModel(getNajeModel('core'));
+    let fullText = '';
+    let seenSlides = 0;
+    let usageMetadata: any = null;
+    const stream = await ai.models.generateContentStream({
+      model: modelId,
+      contents,
+      config: {
+        systemInstruction: creationSystem(format),
+        maxOutputTokens: format === 'deck' || format === 'html' ? 8192 : 4096,
+        tools: search ? [{ googleSearch: {} }] : undefined,
+      },
+    });
+
+    for await (const chunk of stream) {
+      if ((chunk as any).usageMetadata) usageMetadata = (chunk as any).usageMetadata;
+      const piece = extractGeminiText(chunk);
+      if (!piece) continue;
+      fullText += piece;
+      res.write(`data: ${JSON.stringify({ text: piece })}\n\n`);
+      if (format === 'deck') {
+        const count = (fullText.match(/"layoutTemplate"/g) || []).length;
+        if (count > seenSlides) {
+          seenSlides = count;
+          res.write(`data: ${JSON.stringify({ activity: creationActivity(format, 'slide', seenSlides) })}\n\n`);
+        }
+      }
+    }
+
+    res.write(`data: ${JSON.stringify({ activity: creationActivity(format, 'pack') })}\n\n`);
+    if (format === 'deck') {
+      const deck = parseDeck(fullText);
+      if (!deck) {
+        res.write(`data: ${JSON.stringify({ error: 'تعذر قراءة العرض. أعد الطلب بجملة أوضح.' })}\n\n`);
+      } else {
+        res.write(`data: ${JSON.stringify({
+          replaceContent: `${deck.title}\n${deck.slides.length} شرائح. المعاينة تحت النص، والتغذية البصرية مكتوبة على كل شريحة.`,
+          deck,
+        })}\n\n`);
+      }
+    } else {
+      const file = artifactMeta(format, fullText, prompt);
+      res.write(`data: ${JSON.stringify({
+        replaceContent: file.text,
+        artifact: file,
+      })}\n\n`);
+    }
+
+    const bill = await chargeForTextModelUsage(uid, modelId, usageMetadata, isUserAdmin).catch(() => null);
+    if (bill) {
+      res.write(`data: ${JSON.stringify({ usage: bill, newBalance: bill.newBalance })}\n\n`);
+    }
+    res.write(`data: [DONE]\n\n`);
+    res.end();
+  } catch (err: any) {
+    console.error('[create/stream]', err);
+    if (!res.headersSent) {
+      return res.status(500).json({ error: err?.message || 'تعذر إنشاء الملف.' });
+    }
+    res.write(`data: ${JSON.stringify({ error: err?.message || 'انقطع الإنشاء.' })}\n\n`);
+    res.end();
+  }
+});
+
 app.post("/api/agent/chat-turn", async (req, res) => {
   try {
     const authHeader = req.headers.authorization;
