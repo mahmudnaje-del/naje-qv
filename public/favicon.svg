@@ -1,39 +1,28 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="96 92 320 320">
   <defs>
-    <linearGradient id="gold" gradientUnits="userSpaceOnUse" x1="0" y1="47" x2="0" y2="707">
-      <stop offset="0%" stop-color="#EFD066"/>
-      <stop offset="100%" stop-color="#D2A82F"/>
+    <linearGradient id="purple" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#A688FA"/>
+      <stop offset="1" stop-color="#8B5CF6"/>
     </linearGradient>
-    <linearGradient id="violet" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#A78BFA"/>
-      <stop offset="100%" stop-color="#8B5CF6"/>
+    <linearGradient id="gold" gradientUnits="userSpaceOnUse" x1="0" y1="209" x2="0" y2="272">
+      <stop offset="0" stop-color="#E9C756"/>
+      <stop offset="1" stop-color="#D3A834"/>
     </linearGradient>
-    <radialGradient id="bg" cx="256" cy="256" r="360" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#1A1D27"/>
-      <stop offset="100%" stop-color="#0F1115"/>
-    </radialGradient>
+    <g id="robot" fill="none" stroke="url(#gold)" stroke-width="7" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="191.5" y="225" width="57" height="44" rx="10"/>
+      <path d="M219.5 225V212H208"/>
+      <path d="M184 247H191.5M248.5 247H256"/>
+      <path d="M210 242V252M229 242V252"/>
+    </g>
   </defs>
-  <rect width="512" height="512" rx="114" fill="url(#bg)"/>
-  <rect x="106" y="146" width="61" height="61" rx="14" fill="url(#violet)"/>
-  <rect x="106" y="221" width="61" height="61" rx="14" fill="url(#violet)"/>
-  <rect x="106" y="296" width="61" height="61" rx="14" fill="url(#violet)"/>
-  <rect x="345" y="146" width="61" height="61" rx="14" fill="url(#violet)"/>
-  <rect x="345" y="221" width="61" height="61" rx="14" fill="url(#violet)"/>
-  <rect x="345" y="296" width="61" height="61" rx="14" fill="url(#violet)"/>
-  <g transform="translate(219.5,240.5) scale(0.09701) translate(-445,-377)" fill="none" stroke="url(#gold)" stroke-width="62" stroke-linecap="round" stroke-linejoin="round">
-    <rect x="153" y="214" width="584" height="462" rx="110"/>
-    <line x1="344" y1="384" x2="344" y2="506"/>
-    <line x1="546" y1="384" x2="546" y2="506"/>
-    <line x1="74" y1="445" x2="153" y2="445"/>
-    <line x1="737" y1="445" x2="816" y2="445"/>
-    <path d="M322 78H444V214"/>
+  <g fill="url(#purple)">
+    <rect x="106" y="146" width="61" height="61" rx="14"/>
+    <rect x="106" y="221" width="61" height="61" rx="14"/>
+    <rect x="106" y="296" width="61" height="61" rx="14"/>
+    <rect x="345" y="146" width="61" height="61" rx="14"/>
+    <rect x="345" y="221" width="61" height="61" rx="14"/>
+    <rect x="345" y="296" width="61" height="61" rx="14"/>
   </g>
-  <g transform="translate(292.5,274.5) scale(0.09701) translate(-445,-377)" fill="none" stroke="url(#gold)" stroke-width="62" stroke-linecap="round" stroke-linejoin="round">
-    <rect x="153" y="214" width="584" height="462" rx="110"/>
-    <line x1="344" y1="384" x2="344" y2="506"/>
-    <line x1="546" y1="384" x2="546" y2="506"/>
-    <line x1="74" y1="445" x2="153" y2="445"/>
-    <line x1="737" y1="445" x2="816" y2="445"/>
-    <path d="M322 78H444V214"/>
-  </g>
+  <use href="#robot"/>
+  <use href="#robot" transform="translate(73 34)"/>
 </svg>
