@@ -20,6 +20,8 @@ import {
 } from './i18n';
 
 let userUnsubscribe: (() => void) | null = null;
+const starterBalanceRequested = new Set<string>();
+let requestStarterBalance = (_uid: string) => {};
 
 export interface SystemStatusData {
   isMaintenance: boolean;
@@ -212,6 +214,10 @@ export const useAppStore = create<AppState>((set, get) => ({
               get().setLanguage(savedLanguage);
             }
 
+            if (typeof userData.balance !== 'number') {
+              requestStarterBalance(firebaseUser.uid);
+            }
+
             set({ 
               user: { 
                 ...userData, 
@@ -286,7 +292,8 @@ export const useAppStore = create<AppState>((set, get) => ({
             };
             try {
               await setDoc(userRef, newUser, { merge: true });
-              set({ user: { ...newUser, balance: typeof snapshot.data()?.balance === 'number' ? snapshot.data()!.balance : 0 }, loadingAuth: false, activeProjectId: null });
+              set({ user: { ...newUser, balance: 0 }, loadingAuth: false, activeProjectId: null });
+              requestStarterBalance(firebaseUser.uid);
             } catch (e) {
               console.error('Failed to create user document:', e);
               set({ loadingAuth: false });
@@ -314,3 +321,22 @@ export const useAppStore = create<AppState>((set, get) => ({
     });
   },
 }));
+
+requestStarterBalance = (uid: string) => {
+  if (!uid || starterBalanceRequested.has(uid)) return;
+  starterBalanceRequested.add(uid);
+  const fb = auth.currentUser;
+  if (!fb || fb.uid !== uid) return;
+  fb.getIdToken()
+    .then((token) => {
+      if (!token) return;
+      return fetch('/api/user/balance', { headers: { Authorization: `Bearer ${token}` } });
+    })
+    .then((res) => (res ? res.json() : null))
+    .then((data) => {
+      if (!data?.success || typeof data.balance !== 'number') return;
+      const cur = useAppStore.getState().user;
+      if (cur && cur.uid === uid) useAppStore.getState().updateBalance(data.balance);
+    })
+    .catch(() => {});
+};

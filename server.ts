@@ -20,7 +20,7 @@ const appDirname = getAppDirname();
 const appFilename = getAppFilename();
 
 import { GoogleGenAI, GenerateVideosOperation } from "@google/genai";
-import { getApps, initializeApp } from "firebase-admin/app";
+import { getApps, initializeApp, cert, type ServiceAccount } from "firebase-admin/app";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import { getAuth } from "firebase-admin/auth";
 import { getStorage } from "firebase-admin/storage";
@@ -91,6 +91,29 @@ function extractGeminiFunctionCalls(chunk: any): any[] {
 
 // Load environment variables
 dotenv.config();
+
+function loadServiceAccountFromEnv(): ServiceAccount | null {
+  const raw = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
+  if (!raw || !raw.trim()) return null;
+  try {
+    let parsed: any = JSON.parse(raw);
+    if (typeof parsed === "string") parsed = JSON.parse(parsed);
+    if (!parsed || typeof parsed !== "object" || !parsed.client_email || !parsed.private_key) {
+      console.error("[Auth] GOOGLE_SERVICE_ACCOUNT_JSON is missing client_email or private_key");
+      return null;
+    }
+    const keyPath = path.join(os.tmpdir(), "naje-service-account.json");
+    fs.writeFileSync(keyPath, JSON.stringify(parsed), { mode: 0o600 });
+    process.env.GOOGLE_APPLICATION_CREDENTIALS = keyPath;
+    console.log(`[Auth] Service account loaded for ${parsed.client_email}`);
+    return parsed as ServiceAccount;
+  } catch {
+    console.error("[Auth] GOOGLE_SERVICE_ACCOUNT_JSON is not valid JSON");
+    return null;
+  }
+}
+
+const serviceAccount = loadServiceAccountFromEnv();
 
 // Prevent unhandled errors from silently crashing the process
 process.on('uncaughtException', (err) => {
@@ -711,6 +734,7 @@ let dbAdmin: any = null;
 try {
   if (!getApps().length) {
     initializeApp({
+      ...(serviceAccount ? { credential: cert(serviceAccount) } : {}),
       projectId: PROJECT_ID,
       storageBucket: STORAGE_BUCKET,
     });
@@ -4275,8 +4299,7 @@ app.get('/api/user/balance', async (req, res) => {
       return res.status(401).json({ error: "رمز مرور غير صالح" });
     }
     const uid = decodedToken.uid;
-    const userDoc = await getDocRest("users", uid, token).catch(() => null);
-    const balance = typeof userDoc?.balance === 'number' ? userDoc.balance : (inMemoryBalances.get(uid) ?? 0);
+    const { balance } = await getUserDocAndBalance(uid, token, decodedToken);
     return res.json({ success: true, balance, uid });
   } catch (err: any) {
     return res.status(500).json({ error: err.message || "حدث خطأ" });

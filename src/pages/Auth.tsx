@@ -189,7 +189,7 @@ export default function Auth() {
           email: targetEmail,
           displayName: chosenName,
           hasAcceptedTerms: true,
-          hasCompletedOnboarding: true,
+          hasCompletedOnboarding: false,
           emailVerified: false,
         }, { merge: true });
 

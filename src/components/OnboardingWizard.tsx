@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
 import {
   Sparkles, ArrowLeft, ArrowRight, Rocket,
@@ -26,9 +26,22 @@ export default function OnboardingWizard() {
   const { user, setUser } = useAppStore();
   const { t, isRtl } = useI18n();
   const reduce = useReducedMotion();
-  const [currentStep, setCurrentStep] = useState(0);
+  const stepKey = user ? `naje_onboarding_step_${user.uid}` : '';
+  const [currentStep, setCurrentStep] = useState(() => {
+    try {
+      const n = Number(sessionStorage.getItem(stepKey));
+      return n === 1 || n === 2 ? n : 0;
+    } catch {
+      return 0;
+    }
+  });
   const [direction, setDirection] = useState(1);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!stepKey) return;
+    try { sessionStorage.setItem(stepKey, String(currentStep)); } catch {}
+  }, [currentStep, stepKey]);
 
   if (!user || user.hasCompletedOnboarding) return null;
 
@@ -39,6 +52,7 @@ export default function OnboardingWizard() {
       await updateDoc(doc(db, 'users', user.uid), { hasCompletedOnboarding: true });
       setUser({ ...user, hasCompletedOnboarding: true });
       try { localStorage.setItem('naje_onboarding_done_' + user.uid, 'true'); } catch {}
+      try { sessionStorage.removeItem(stepKey); } catch {}
       toast.success(t('onboarding.completedToast'));
     } catch (err) {
       console.error('Error completing onboarding:', err);
@@ -140,9 +154,7 @@ export default function OnboardingWizard() {
               {t('onboarding.prevBtn')}
             </button>
           ) : (
-            <button type="button" onClick={handleComplete} className="px-3 py-2 text-xs font-bold text-white/45 hover:text-white">
-              {t('common.cancel')}
-            </button>
+            <div className="px-3 py-2" />
           )}
           <button
             type="button"
