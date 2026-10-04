@@ -12485,6 +12485,12 @@ ${sourceBlock}`;
     next();
   });
 
+  app.get('/manifest.json', (_req, res, next) => {
+    res.setHeader('Content-Type', 'application/manifest+json; charset=utf-8');
+    res.setHeader('Cache-Control', 'no-cache');
+    next();
+  });
+
   // Serve public directory as static assets (logos, manifest, etc.)
   app.use(express.static(path.join(process.cwd(), 'public'), { dotfiles: 'allow' }));
   

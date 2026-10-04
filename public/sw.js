@@ -1,8 +1,12 @@
-const SHELL = 'naje-shell-v5';
+const SHELL = 'naje-shell-v6';
 const MEDIA = 'naje-media-v1';
 const MEDIA_CAP = 150;
 
 const MEDIA_HOST = /(firebasestorage\.googleapis\.com|storage\.googleapis\.com|googleusercontent\.com|ggpht\.com)/i;
+// Chrome's WebAPK installer fetches these itself. A worker that answers them
+// from cache, or waits on them during install, leaves "Installing…" spinning
+// until Android cancels the home-screen install.
+const INSTALL_ASSET = /^\/(sw\.js|manifest\.json|manifest\.webmanifest|logo-192\.png|logo-512\.png|logo-512-maskable\.png|icon\.png|apple-touch-icon\.png|favicon\.ico|favicon\.svg)$/;
 
 self.addEventListener('message', (event) => {
   if (event.data?.type === 'SKIP_WAITING') self.skipWaiting();
@@ -11,24 +15,24 @@ self.addEventListener('message', (event) => {
   }
 });
 
-self.addEventListener('install', (event) => {
-  // Must finish immediately. Waiting on cache.addAll('/') stalls Android's
-  // "Installing…" notification until Chrome cancels the home-screen install.
+self.addEventListener('install', () => {
+  // No waitUntil. cache.addAll('/') never resolved and Chrome waited on it.
   self.skipWaiting();
-  event.waitUntil(caches.open(SHELL));
 });
 
 self.addEventListener('activate', (event) => {
-  event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(
+  event.waitUntil(Promise.race([
+    (async () => {
+      const keys = await caches.keys();
+      await Promise.all(
         keys
           .filter((key) => key !== SHELL && key !== MEDIA && (key.startsWith('naje-') || key.startsWith('naje-ai-')))
           .map((key) => caches.delete(key))
-      )
-    )
-  );
-  self.clients.claim();
+      );
+      await self.clients.claim();
+    })(),
+    new Promise((resolve) => setTimeout(resolve, 3000)),
+  ]));
 });
 
 self.addEventListener('fetch', (event) => {
@@ -38,6 +42,7 @@ self.addEventListener('fetch', (event) => {
 
   if (url.origin === self.location.origin) {
     if (
+      INSTALL_ASSET.test(url.pathname) ||
       url.pathname.startsWith('/api/') ||
       url.pathname.startsWith('/src/') ||
       url.pathname.startsWith('/@') ||
@@ -70,8 +75,11 @@ async function networkFirstDocument(request) {
     const response = await fetch(request);
     const type = response.headers.get('content-type') || '';
     if (response.ok && type.includes('text/html')) {
-      await cache.put(request, response.clone());
-      await cache.put(new Request('/index.html'), response.clone());
+      try {
+        await cache.put(request, response.clone());
+      } catch {
+        // A cache failure must not turn a good page into a failed install check.
+      }
     }
     return response;
   } catch {

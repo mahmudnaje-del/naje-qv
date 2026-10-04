@@ -77,27 +77,29 @@
       if ('serviceWorker' in navigator) {
         var host = location.hostname;
         if (host !== 'localhost' && host !== '127.0.0.1') {
-          navigator.serviceWorker.register('/sw.js', { scope: '/', updateViaCache: 'none' }).catch(function () {});
+          var swOptions = { scope: '/', updateViaCache: 'none' };
+          navigator.serviceWorker.register('/sw.js', swOptions).then(function (reg) {
+            function watch(worker) {
+              if (!worker) return;
+              worker.addEventListener('statechange', function () {
+                if (worker.state === 'installed' && navigator.serviceWorker.controller) {
+                  worker.postMessage({ type: 'SKIP_WAITING' });
+                }
+              });
+              // The previous worker waited forever on cache.addAll('/').
+              // Drop only that stuck install, then register the fixed one.
+              setTimeout(function () {
+                if (worker.state !== 'installing') return;
+                reg.unregister().finally(function () {
+                  navigator.serviceWorker.register('/sw.js', swOptions);
+                });
+              }, 8000);
+            }
+            watch(reg.installing);
+            reg.addEventListener('updatefound', function () { watch(reg.installing); });
+          }).catch(function () {});
         }
       }
-    </script>
-    <script>
-      // Self-heal: if the app root is still empty after 8s, a stale SW likely
-      // broke the load — unregister SWs, clear caches, reload once.
-      setTimeout(function () {
-        if (navigator.onLine === false) return;
-        var root = document.getElementById('root');
-        if (!root || root.childElementCount > 0 || sessionStorage.getItem('naje_selfheal')) return;
-        // Don't unregister the worker during a home-screen install. Only recover
-        // when a worker is already controlling a shell that never painted.
-        if (!navigator.serviceWorker || !navigator.serviceWorker.controller) return;
-        sessionStorage.setItem('naje_selfheal', '1');
-        navigator.serviceWorker.getRegistrations().then(function (regs) {
-          regs.forEach(function (r) { r.unregister(); });
-        });
-        if (window.caches) { caches.keys().then(function (ks){ ks.forEach(function(k){ caches.delete(k); }); }); }
-        location.reload();
-      }, 20000);
     </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
