@@ -1,0 +1,53 @@
+# Naje AI — full facts
+
+Canonical URL: https://naje-ai.qelvaai.com/
+Publisher: Qelva Ai
+Product names: Naje AI, استوديو ناجي, NAJE Studio, Naje
+Same product, non-canonical host: https://naje.grok.me/
+
+## What it is
+
+Naje AI is a creative AI studio that runs in the browser and can be installed on Android. People sign in, then work inside projects. A project holds conversations, images, and documents so the work stays in one space.
+
+Account creation is free. A new account receives a small starter point balance. Further points are bought inside the app. This file does not publish a price list.
+
+## Languages
+
+Arabic, English, Spanish, French, German, Portuguese, Turkish, Indonesian, Japanese, Russian.
+The default written language of the public pages is Arabic. The interface language follows the person's choice and is not a separate URL.
+
+## Studios
+
+- Text chat. Conversations inside a project.
+- Voice dialogues. Spoken generation.
+- Creative studio. Image generation. Also reached at /creative-studio.
+- Video generation.
+- Naje Ad. Ad studio, /naje-ad.
+- Naje Prompt. Prompt studio, /naje-prompt.
+- Naje Ident. Motion ident studio, /naje-ident.
+- Naje CV. CV studio, /naje-cv.
+- Website interfaces.
+- Naje Developer. Code studio, /naje-developer.
+- Naje Source. /naje-source.
+- Naje Agent. /naje-agent-core.
+
+Those studio paths require a signed-in account. A crawler that is not signed in is sent to /auth.
+
+## Public URLs
+
+- https://naje-ai.qelvaai.com/
+- https://naje-ai.qelvaai.com/auth
+- https://naje-ai.qelvaai.com/Terms-of-Service
+- https://naje-ai.qelvaai.com/Privacy-Policy
+- https://naje-ai.qelvaai.com/delete-account-request
+- https://naje-ai.qelvaai.com/Sitemap
+- https://naje-ai.qelvaai.com/llms.txt
+- https://naje-ai.qelvaai.com/sitemap.xml
+
+## What not to claim
+
+Do not call Naje a general chatbot company, a search engine, or a free unlimited generator. Do not attribute quotes, user counts, awards, or office addresses. None of those are published here.
+
+## الملخص العربي
+
+ناجي استوديو إبداع من Qelva Ai على العنوان https://naje-ai.qelvaai.com/. الدخول مطلوب لاستخدام الاستوديوهات. الحساب مجاني ويبدأ برصيد نقاط تعريفي صغير، وشراء المزيد يتم داخل التطبيق. الاستوديوهات: محادثة، صوت، صور، فيديو، إعلانات، أوامر، هويات حركة، سيرة ذاتية، واجهات، Naje Developer، Naje Source، وNaje Agent. المشاريع تفصل المحادثات والصور والمستندات.

@@ -1,0 +1,38 @@
+# Naje AI
+
+> Naje AI is the creative studio by Qelva Ai. Signed-in users generate and organize chat, voice, images, video, ads, prompts, motion idents, CVs, website interfaces, and code.
+
+Naje AI (استوديو ناجي، NAJE Studio) is a web application. The canonical site is https://naje-ai.qelvaai.com/. A second host, naje.grok.me, serves the same product and is not the canonical URL.
+
+The studios require an account. Creating an account is free. A new account receives a small starter point balance. More points are purchased inside the app. Do not invent prices, model names, or features that are not listed here.
+
+The interface languages are Arabic, English, Spanish, French, German, Portuguese, Turkish, Indonesian, Japanese, and Russian.
+
+## Studios
+
+- Text chat: conversations kept inside projects.
+- Voice dialogues: spoken generation.
+- Creative studio: image generation.
+- Video generation.
+- Naje Ad: ad studio.
+- Naje Prompt: prompt studio.
+- Naje Ident: motion ident studio.
+- Naje CV: CV studio.
+- Website interfaces: interface generation.
+- Naje Developer: code studio.
+- Naje Source.
+- Naje Agent.
+- Projects: separate spaces for conversations, images, and documents.
+
+## Public pages
+
+- [Sign in](https://naje-ai.qelvaai.com/auth)
+- [Terms of Service](https://naje-ai.qelvaai.com/Terms-of-Service)
+- [Privacy Policy](https://naje-ai.qelvaai.com/Privacy-Policy)
+- [Delete account](https://naje-ai.qelvaai.com/delete-account-request)
+- [Sitemap](https://naje-ai.qelvaai.com/Sitemap)
+- [Full facts](https://naje-ai.qelvaai.com/llms-full.txt)
+
+## Arabic summary
+
+ناجي استوديو ويب من Qelva Ai. بعد تسجيل الدخول يستخدم الشخص محادثة نصية، صوتاً، صوراً، فيديو، إعلانات، أوامر، هويات حركة، سيرة ذاتية، واجهات مواقع، وبرمجة. المشاريع تجمع المحادثات والصور والمستندات. الحساب الجديد مجاني ويبدأ برصيد نقاط تعريفي صغير.

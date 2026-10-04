@@ -20,23 +20,31 @@
     </script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    <meta name="description" content="منصة شاملة للإبداع بالذكاء الاصطناعي: محادثة متقدمة، توليد صور وفيديوهات، تصميم عروض تقديمية ورسوم بيانية، وتوليد نصوص صوتية احترافية" />
-    <meta name="keywords" content="ذكاء اصطناعي, تصميم, توليد محتوى, استوديو ناجي, Naje AI, إنشاء صور, تحليل نصوص, كتابة, مشاريع إبداعية" />
-    <meta name="author" content="استوديو ناجي" />
-    <meta name="robots" content="index, follow" />
+    <meta name="description" content="ناجي AI استوديو إبداعي من Qelva Ai: محادثة، صوت، صور، فيديو، إعلانات، واجهات، برمجة، وسيرة ذاتية. بالعربية وتسع لغات أخرى." />
+    <meta name="author" content="Qelva Ai" />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+    <meta name="googlebot" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+    <link rel="canonical" href="https://naje-ai.qelvaai.com/" />
+    <link rel="alternate" type="text/plain" href="https://naje-ai.qelvaai.com/llms.txt" title="Naje AI facts for AI systems" />
     
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://naje-ai.qelvaai.com/" />
     <meta property="og:title" content="Naje AI - المنصة الإبداعية للذكاء الاصطناعي" />
-    <meta property="og:description" content="منصة شاملة للإبداع بالذكاء الاصطناعي: محادثة متقدمة، توليد صور وفيديوهات، تصميم عروض تقديمية ورسوم بيانية، وتوليد نصوص صوتية احترافية" />
+    <meta property="og:description" content="استوديو ناجي من Qelva Ai: محادثة، صوت، صور، فيديو، إعلانات، واجهات، برمجة، وسيرة ذاتية." />
     <meta property="og:image" content="https://naje-ai.qelvaai.com/og.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Naje AI studio mark" />
+    <meta property="og:locale" content="ar_AR" />
+    <meta property="og:locale:alternate" content="en_US" />
+    <meta property="og:site_name" content="Naje AI" />
 
     <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image" />
     <meta property="twitter:url" content="https://naje-ai.qelvaai.com/" />
     <meta property="twitter:title" content="Naje AI - المنصة الإبداعية للذكاء الاصطناعي" />
-    <meta property="twitter:description" content="منصة شاملة للإبداع بالذكاء الاصطناعي: محادثة متقدمة، توليد صور وفيديوهات، تصميم عروض تقديمية ورسوم بيانية، وتوليد نصوص صوتية احترافية" />
+    <meta property="twitter:description" content="استوديو ناجي من Qelva Ai: محادثة، صوت، صور، فيديو، إعلانات، واجهات، برمجة، وسيرة ذاتية." />
     <meta property="twitter:image" content="https://naje-ai.qelvaai.com/og.jpg" />
 
     <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48.png?v=3">
@@ -45,9 +53,6 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=3">
     <link rel="shortcut icon" href="/favicon.ico?v=3">
     <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=3">
-    <meta property="og:image:width" content="1200" />
-    <meta property="og:image:height" content="630" />
-    <link rel="canonical" href="https://naje-ai.qelvaai.com/" />
     <link rel="manifest" href="/manifest.json" />
     <!-- One manifest only. The host skips injecting its 180px manifest when this href is already in the document: href="/__grok/manifest.webmanifest" -->
     <meta name="theme-color" content="#0d0f12" />
@@ -63,17 +68,100 @@
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
-      "@type": "WebApplication",
-      "name": "Naje AI - استوديو ناجي",
-      "url": "https://naje-ai.qelvaai.com/",
-      "description": "منصة متقدمة لتوليد المحتوى بالذكاء الاصطناعي، تقدم أدوات تصميم، وتوليد نصوص.",
-      "applicationCategory": "ProductivityApplication",
-      "operatingSystem": "All"
+      "@graph": [
+        {
+          "@type": "Organization",
+          "@id": "https://naje-ai.qelvaai.com/#org",
+          "name": "Qelva Ai",
+          "url": "https://naje-ai.qelvaai.com/",
+          "logo": "https://naje-ai.qelvaai.com/logo-512.png",
+          "brand": { "@type": "Brand", "name": "Naje AI" }
+        },
+        {
+          "@type": "WebSite",
+          "@id": "https://naje-ai.qelvaai.com/#website",
+          "name": "Naje AI",
+          "url": "https://naje-ai.qelvaai.com/",
+          "inLanguage": ["ar", "en", "es", "fr", "de", "pt", "tr", "id", "ja", "ru"],
+          "publisher": { "@id": "https://naje-ai.qelvaai.com/#org" },
+          "description": "Creative AI studio for chat, voice, images, video, ads, interfaces, code, and CVs."
+        },
+        {
+          "@type": "SoftwareApplication",
+          "@id": "https://naje-ai.qelvaai.com/#app",
+          "name": "Naje AI",
+          "alternateName": ["استوديو ناجي", "NAJE Studio", "Naje"],
+          "applicationCategory": "DesignApplication",
+          "operatingSystem": "Web, Android",
+          "url": "https://naje-ai.qelvaai.com/",
+          "image": "https://naje-ai.qelvaai.com/og.jpg",
+          "inLanguage": ["ar", "en", "es", "fr", "de", "pt", "tr", "id", "ja", "ru"],
+          "publisher": { "@id": "https://naje-ai.qelvaai.com/#org" },
+          "description": "Naje AI is Qelva Ai's creative studio. Signed-in users organize work in projects and use studios for text chat, voice, images, video, ads, prompts, motion idents, CVs, website interfaces, and code.",
+          "featureList": [
+            "Text chat",
+            "Voice dialogues",
+            "Image generation",
+            "Video generation",
+            "Ad studio",
+            "Prompt studio",
+            "Motion ident studio",
+            "CV studio",
+            "Website interface generation",
+            "Naje Developer",
+            "Naje Source",
+            "Naje Agent",
+            "Projects for conversations, images, and documents"
+          ],
+          "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "USD",
+            "description": "Account creation is free. New accounts receive a small starter point balance. Additional points are bought inside the app."
+          }
+        }
+      ]
     }
     </script>
   </head>
   <body class="bg-gray-50 dark:bg-[#0f1115] text-gray-900 dark:text-gray-100 font-sans antialiased selection:bg-indigo-500/30">
-    <div id="root"></div>
+    <div id="root">
+      <main lang="ar" dir="rtl">
+        <h1>ناجي AI — استوديو الإبداع من Qelva Ai</h1>
+        <p>ناجي استوديو ويب لتوليد العمل الإبداعي بالذكاء الاصطناعي. الاستخدام بعد تسجيل الدخول. الحساب الجديد يبدأ برصيد نقاط تعريفي صغير، وشراء النقاط يتم من داخل التطبيق. الواجهة بالعربية والإنجليزية والإسبانية والفرنسية والألمانية والبرتغالية والتركية والإندونيسية واليابانية والروسية.</p>
+        <h2>الاستوديوهات</h2>
+        <ul>
+          <li>محادثة نصية لتنظيم الحوارات داخل مشاريع.</li>
+          <li>حوارات صوتية.</li>
+          <li>توليد الصور في الاستوديو الإبداعي.</li>
+          <li>توليد الفيديو.</li>
+          <li>استوديو الإعلانات Naje Ad.</li>
+          <li>استوديو الأوامر Naje Prompt.</li>
+          <li>هويات الحركة Naje Ident.</li>
+          <li>السيرة الذاتية Naje CV.</li>
+          <li>واجهات المواقع.</li>
+          <li>Naje Developer للبرمجة.</li>
+          <li>Naje Source.</li>
+          <li>Naje Agent.</li>
+        </ul>
+        <p>المشاريع تجمع المحادثات والصور والمستندات في مساحات منفصلة.</p>
+        <h2>صفحات عامة</h2>
+        <ul>
+          <li><a href="https://naje-ai.qelvaai.com/auth">تسجيل الدخول</a></li>
+          <li><a href="https://naje-ai.qelvaai.com/Terms-of-Service">شروط الاستخدام</a></li>
+          <li><a href="https://naje-ai.qelvaai.com/Privacy-Policy">سياسة الخصوصية</a></li>
+          <li><a href="https://naje-ai.qelvaai.com/delete-account-request">طلب حذف الحساب</a></li>
+          <li><a href="https://naje-ai.qelvaai.com/Sitemap">خريطة الموقع</a></li>
+          <li><a href="https://naje-ai.qelvaai.com/llms.txt">ملخص للأنظمة الذكية</a></li>
+        </ul>
+      </main>
+      <section lang="en" dir="ltr">
+        <h2>Naje AI, the creative studio by Qelva Ai</h2>
+        <p>Naje AI is a web studio for creative work with AI. The studios require a signed-in account. A new account starts with a small complimentary point balance, and more points are purchased in the app. The interface is available in Arabic, English, Spanish, French, German, Portuguese, Turkish, Indonesian, Japanese, and Russian.</p>
+        <p>Studios cover text chat, voice, image generation, video, ads, prompts, motion idents, CVs, website interfaces, Naje Developer, Naje Source, and Naje Agent. Projects keep conversations, images, and documents in separate spaces.</p>
+        <p>Canonical site: https://naje-ai.qelvaai.com/</p>
+      </section>
+    </div>
     <script>
       if ('serviceWorker' in navigator) {
         var host = location.hostname;

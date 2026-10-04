@@ -370,6 +370,33 @@ export default function Auth() {
         <span>•</span>
         <Link to="/delete-account-request" className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors font-semibold">{t('auth.deleteAccountRequest')}</Link>
       </div>
+
+      <section className="mt-10 w-full max-w-2xl text-start" aria-labelledby="naje-about-title">
+        <h2 id="naje-about-title" className="text-sm font-black text-gray-900 dark:text-white">
+          {isRtl ? 'ما هو ناجي' : 'What Naje AI is'}
+        </h2>
+        <p className="mt-2 text-xs leading-relaxed text-gray-700 dark:text-gray-300">
+          {isRtl
+            ? 'ناجي استوديو إبداع من Qelva Ai. بعد الدخول تنظّم عملك في مشاريع وتستخدم محادثة نصية، صوتاً، صوراً، فيديو، إعلانات، أوامر، هويات حركة، سيرة ذاتية، واجهات مواقع، وبرمجة. الحساب الجديد مجاني ويبدأ برصيد نقاط تعريفي صغير.'
+            : 'Naje AI is Qelva Ai’s creative studio. After you sign in, projects hold your work and the studios cover text chat, voice, images, video, ads, prompts, motion idents, CVs, website interfaces, and code. A new account is free and starts with a small point balance.'}
+        </p>
+        <ul className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1 text-[11px] text-gray-600 dark:text-gray-400">
+          {(isRtl
+            ? ['محادثة نصية', 'حوارات صوتية', 'توليد صور', 'توليد فيديو', 'إعلانات', 'أوامر', 'هويات حركة', 'سيرة ذاتية', 'واجهات مواقع', 'برمجة', 'Naje Source', 'Naje Agent']
+            : ['Text chat', 'Voice', 'Images', 'Video', 'Ads', 'Prompts', 'Motion idents', 'CVs', 'Website interfaces', 'Naje Developer', 'Naje Source', 'Naje Agent']
+          ).map((item) => (
+            <li key={item}>{item}</li>
+          ))}
+        </ul>
+        <details className="mt-3 text-[11px] text-gray-500 dark:text-gray-400">
+          <summary className="cursor-pointer">{isRtl ? 'English summary' : 'الملخص بالعربية'}</summary>
+          <p className="mt-2 leading-relaxed" dir={isRtl ? 'ltr' : 'rtl'}>
+            {isRtl
+              ? 'Naje AI is Qelva Ai’s creative studio for chat, voice, images, video, ads, prompts, motion, CVs, interfaces, and code. Canonical site: https://naje-ai.qelvaai.com/'
+              : 'ناجي استوديو إبداع من Qelva Ai للمحادثة والصوت والصور والفيديو والإعلانات والأوامر وهويات الحركة والسيرة والواجهات والبرمجة. الموقع: https://naje-ai.qelvaai.com/'}
+          </p>
+        </details>
+      </section>
     </div>
   );
 }
