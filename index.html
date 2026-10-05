@@ -55,13 +55,16 @@
     <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=3">
     <link rel="manifest" href="/manifest.json" />
     <!-- One manifest only. The host skips injecting its 180px manifest when this href is already in the document: href="/__grok/manifest.webmanifest" -->
-    <meta name="theme-color" content="#0d0f12" />
+    <meta name="theme-color" content="#101115" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Naje AI" />
     
     <title>Naje AI - المنصة الإبداعية للذكاء الاصطناعي</title>
+    <style>
+      html, body, #root { background: #101115; }
+    </style>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
     
     <!-- Schema.org markup for AI indexing -->
@@ -125,10 +128,11 @@
     </script>
   </head>
   <body class="bg-gray-50 dark:bg-[#0f1115] text-gray-900 dark:text-gray-100 font-sans antialiased selection:bg-indigo-500/30">
-    <div id="root">
+    <div id="root"></div>
+    <noscript>
       <main lang="ar" dir="rtl">
         <h1>ناجي AI — استوديو الإبداع من Qelva Ai</h1>
-        <p>ناجي استوديو ويب لتوليد العمل الإبداعي بالذكاء الاصطناعي. الاستخدام بعد تسجيل الدخول. الحساب الجديد يبدأ برصيد نقاط تعريفي صغير، وشراء النقاط يتم من داخل التطبيق. الواجهة بالعربية والإنجليزية والإسبانية والفرنسية والألمانية والبرتغالية والتركية والإندونيسية واليابانية والروسية.</p>
+        <p>ناجي استوديو ويب لتوليد العمل الإبداعي بالذكاء الاصطناعي. الاستخدام بعد تسجيل الدخول. الحساب الجديد يبدأ برصيد نقاط تعريفي صغير، وشراء النقاط يتم من داخل التطبيق. الواجهة بالعربية والإنجليزية والإسبانية والألمانية والفرنسية والبرتغالية والتركية والإندونيسية واليابانية والروسية.</p>
         <h2>الاستوديوهات</h2>
         <ul>
           <li>محادثة نصية لتنظيم الحوارات داخل مشاريع.</li>
@@ -161,7 +165,7 @@
         <p>Studios cover text chat, voice, image generation, video, ads, prompts, motion idents, CVs, website interfaces, Naje Developer, Naje Source, and Naje Agent. Projects keep conversations, images, and documents in separate spaces.</p>
         <p>Canonical site: https://naje-ai.qelvaai.com/</p>
       </section>
-    </div>
+    </noscript>
     <script>
       if ('serviceWorker' in navigator) {
         var host = location.hostname;
