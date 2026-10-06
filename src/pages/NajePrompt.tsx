@@ -8,6 +8,7 @@ import { cn } from '../lib/utils';
 import NajeThinking from '../components/NajeThinking';
 import StudioBootSplash from '../components/StudioBootSplash';
 import PromptComposer from '../components/najePrompt/PromptComposer';
+import { ModelTier } from '../components/NajeModelTierSelector';
 import PromptBubble from '../components/najePrompt/PromptBubble';
 import ClarificationCard from '../components/najePrompt/ClarificationCard';
 import ReadyCard from '../components/najePrompt/ReadyCard';
@@ -219,6 +220,12 @@ export default function NajePrompt() {
     setSettings(saved);
     setModelChoice(saved.defaultModel);
   }, []);
+
+  const promptModelTier: ModelTier = modelChoice === 'lite' ? 'lite' : modelChoice === 'max' ? 'max' : 'core';
+  const handleModelTierChange = useCallback((tier: ModelTier) => {
+    setModelChoice(tier);
+    patchSettings({ ...settings, defaultModel: tier, autoRouting: false });
+  }, [patchSettings, settings]);
 
   const stopTurn = useCallback(() => {
     abortRef.current?.abort();
@@ -985,6 +992,8 @@ export default function NajePrompt() {
               onAttachmentsChange={setAttachments}
               imageIntent={imageIntent}
               onImageIntentChange={setImageIntent}
+              modelTier={promptModelTier}
+              onModelTierChange={handleModelTierChange}
             />
           </div>
         </div>

@@ -17,6 +17,7 @@ import {
 import { engineMessageKey } from './promptLabels';
 import SmokeChatWrapper from '../chat/SmokeChatWrapper';
 import { useLivePlaceholder, PROMPT_STUDIO_PHRASES } from '../../hooks/useLivePlaceholder';
+import NajeModelTierSelector, { ModelTier } from '../NajeModelTierSelector';
 
 interface PromptComposerProps {
   value: string;
@@ -30,6 +31,8 @@ interface PromptComposerProps {
   onAttachmentsChange: (files: PromptAttachment[]) => void;
   imageIntent: ImageIntent;
   onImageIntentChange: (intent: ImageIntent) => void;
+  modelTier?: ModelTier;
+  onModelTierChange?: (tier: ModelTier) => void;
 }
 
 function readAsDataUrl(file: File): Promise<string> {
@@ -88,6 +91,8 @@ export function PromptComposer({
   onAttachmentsChange,
   imageIntent,
   onImageIntentChange,
+  modelTier,
+  onModelTierChange,
 }: PromptComposerProps) {
   const { t, isRtl } = useI18n();
   const ref = useRef<HTMLTextAreaElement>(null);
@@ -139,9 +144,22 @@ export function PromptComposer({
   return (
     <SmokeChatWrapper className="w-full" chatType="najePrompt">
       <div
-        className="rounded-3xl border border-zinc-200 bg-white p-2 shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
+        className="rounded-3xl border border-zinc-200 bg-white p-2 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 space-y-1"
         dir={isRtl ? 'rtl' : 'ltr'}
       >
+        {/* Badges placed on their own row - fitted naturally on a single line with smooth scroll */}
+        {modelTier && onModelTierChange && (
+          <div className="flex items-center justify-between gap-1 sm:gap-2 px-1.5 pt-0.5 empty:hidden relative z-30 max-w-full overflow-x-auto scrollbar-none pb-0.5">
+            <div className="flex items-center gap-1 sm:gap-1.5 flex-nowrap shrink-0">
+              <NajeModelTierSelector
+                value={modelTier}
+                onChange={onModelTierChange}
+                disabled={disabled || busy}
+                className="shrink-0"
+              />
+            </div>
+          </div>
+        )}
       {attachments.length > 0 && (
         <div className="flex flex-wrap gap-1.5 px-2 pt-1.5">
           {attachments.map((file) => (

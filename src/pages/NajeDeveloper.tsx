@@ -23,6 +23,7 @@ import { hasFeatureAccess } from '../lib/featureAccess';
 import { readNajeSse } from '../lib/sseRead';
 import { useI18n } from '../i18n';
 import SmokeChatWrapper from '../components/chat/SmokeChatWrapper';
+import NajeModelTierSelector, { ModelTier } from '../components/NajeModelTierSelector';
 import { useLivePlaceholder, DEVELOPER_PHRASES } from '../hooks/useLivePlaceholder';
 
 type Tab = 'code' | 'chat';
@@ -47,6 +48,7 @@ export default function NajeDeveloper() {
   const [showPaywall, setShowPaywall] = useState(false);
   const [tab, setTab] = useState<Tab>('code');
   const [workspaceId, setWorkspaceId] = useState<string>('');
+  const [modelTier, setModelTier] = useState<ModelTier>('lite');
   const [tree, setTree] = useState<TreeFile[]>([]);
   const [unpackStats, setUnpackStats] = useState<{ skipped: number; truncatedFiles: number } | null>(null);
   const [fileName, setFileName] = useState('project.zip');
@@ -415,6 +417,7 @@ export default function NajeDeveloper() {
           images: currentImages,
           intent,
           focusPath,
+          modelTier,
           history: messages.map(m => ({ role: m.role, content: m.content })).slice(-10)
         })
       });
@@ -754,10 +757,23 @@ export default function NajeDeveloper() {
             />
 
             <SmokeChatWrapper className="w-full" chatType="najeDeveloper">
-            <form
-              onSubmit={(e) => { e.preventDefault(); send(input); }}
-              className="flex items-end gap-2 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md p-1.5 rounded-2xl border border-gray-200/80 dark:border-gray-800 shadow-sm"
-            >
+            <div className="rounded-2xl border border-gray-200/80 dark:border-gray-800 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md shadow-sm p-1.5 space-y-1">
+              {/* Badges placed on their own row - fitted naturally on a single line with smooth scroll */}
+              <div className="flex items-center justify-between gap-1 sm:gap-2 px-1.5 pt-0.5 empty:hidden relative z-30 max-w-full overflow-x-auto scrollbar-none pb-0.5">
+                <div className="flex items-center gap-1 sm:gap-1.5 flex-nowrap shrink-0">
+                  <NajeModelTierSelector
+                    value={modelTier}
+                    onChange={setModelTier}
+                    disabled={sending}
+                    className="shrink-0"
+                  />
+                </div>
+              </div>
+
+              <form
+                onSubmit={(e) => { e.preventDefault(); send(input); }}
+                className="flex items-end gap-2"
+              >
               <button 
                 type="button" 
                 onClick={() => imageInputRef.current?.click()}
@@ -794,6 +810,7 @@ export default function NajeDeveloper() {
                 {sending ? <NajeSpinner className="w-4 h-4" /> : <ArrowUp className="w-5 h-5 stroke-[2.5]" />}
               </button>
             </form>
+            </div>
             </SmokeChatWrapper>
           </div>
         </div>

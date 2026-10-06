@@ -2,7 +2,7 @@ import type { AskNajeFile, NajeTextModel } from './askNaje';
 import { parseModelJson } from './askNaje';
 
 export type PromptMode = 'fast' | 'smart' | 'deep';
-export type ModelChoice = 'auto' | 'lite' | 'core';
+export type ModelChoice = 'auto' | 'lite' | 'core' | 'max';
 export type BestFor = 'image' | 'video' | 'ad' | 'intro' | 'outro' | 'text' | 'ui' | 'code' | 'cv';
 export type ImageIntent = 'inspire' | 'rebuild';
 export type AttachmentKind = 'image' | 'pdf' | 'text' | 'docx';
@@ -164,6 +164,7 @@ export const MODEL_OPTIONS: Array<{ id: ModelChoice; label: string; hint: string
   { id: 'auto', label: 'Auto', hint: 'ناجي يختار حسب المهمة' },
   { id: 'lite', label: 'Naje Lite', hint: MODEL_PROFILES.lite.hint },
   { id: 'core', label: 'Naje Core', hint: MODEL_PROFILES.core.hint },
+  { id: 'max', label: 'Naje Pro', hint: 'النموذج الأقوى للمهام المعقدة' },
 ];
 
 export const REFINE_CHIPS = [
@@ -273,6 +274,7 @@ export function resolveModel(
     return { model: 'lite', reason: choice === 'auto' ? 'التوجيه التلقائي مقفل — Lite' : null };
   }
   if (choice === 'core') return { model: 'core', reason: null };
+  if (choice === 'max') return { model: 'max', reason: null };
   const text = idea.trim();
   const intent = classifyIntent(text);
   const heavyIntent =
@@ -914,7 +916,7 @@ export function loadSettings(): PromptSettings {
     const parsed = readJson<Partial<PromptSettings>>(localStorage.getItem(SETTINGS_KEY));
     if (!parsed || typeof parsed !== 'object') return { ...DEFAULT_SETTINGS };
     const model: ModelChoice =
-      parsed.defaultModel === 'lite' || parsed.defaultModel === 'core' || parsed.defaultModel === 'auto'
+      parsed.defaultModel === 'lite' || parsed.defaultModel === 'core' || parsed.defaultModel === 'max' || parsed.defaultModel === 'auto'
         ? parsed.defaultModel
         : DEFAULT_SETTINGS.defaultModel;
     return {

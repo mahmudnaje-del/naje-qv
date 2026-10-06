@@ -1,8 +1,8 @@
-import { AD_STYLES, getAdStyle } from '../data/adStyles';
-import { AVATAR_REGISTRY } from '../data/avatars/avatarRegistry';
-import { LOCATION_REGISTRY } from '../data/locations/locationRegistry';
-import type { AdDnaState } from './adDnaEngine';
-import { DIALECT_OPTIONS } from './adDnaEngine';
+import { AD_STYLES, getAdStyle } from '../data/adStyles.ts';
+import { AVATAR_REGISTRY } from '../data/avatars/avatarRegistry.ts';
+import { LOCATION_REGISTRY } from '../data/locations/locationRegistry.ts';
+import type { AdDnaState } from './adDnaEngine.ts';
+import { DIALECT_OPTIONS } from './adDnaEngine.ts';
 
 export const OMNI_11_ID = 'gemini-omni-1.1-flash';
 export const OMNI_11_FALLBACK_ID = 'gemini-omni-1.1-flash-preview';

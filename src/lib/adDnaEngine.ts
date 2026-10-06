@@ -1,7 +1,7 @@
-import { AVATAR_REGISTRY, NajiAvatar } from '../data/avatars/avatarRegistry.ts';
-import { LOCATION_REGISTRY, NajiLocation } from '../data/locations/locationRegistry.ts';
+import { AVATAR_REGISTRY, type NajiAvatar } from '../data/avatars/avatarRegistry.ts';
+import { LOCATION_REGISTRY, type NajiLocation } from '../data/locations/locationRegistry.ts';
 
-import { AD_STYLES } from '../data/adStyles';
+import { AD_STYLES } from '../data/adStyles.ts';
 export interface AdDnaState {
   selectedStyleTemplateId: string | null;
   selectedAvatarId: string | null;

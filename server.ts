@@ -43,7 +43,7 @@ import {
   type BeatInterval,
   type BeatSlot,
 } from './src/lib/omniAd.ts';
-import { unpackSiteZip, buildFileTree, buildCodeContext, WorkspaceFile } from './src/lib/workspaceZip.ts';
+import { unpackSiteZip, buildFileTree, buildCodeContext, type WorkspaceFile } from './src/lib/workspaceZip.ts';
 import { calcVoicePointsCost, spokenTextFromVoiceScript } from './src/lib/voicePricing.ts';
 
 let ffmpegMod: any = null;
@@ -57,7 +57,7 @@ async function getFfmpeg() {
 }
 
 async function getNajeEngineCtor() {
-  const mod = await import('./src/lib/naje-engine');
+  const mod = await import('./src/lib/naje-engine.ts');
   return mod.NajeEngine;
 }
 
@@ -11519,9 +11519,15 @@ app.post("/api/agent/chat-turn", async (req, res) => {
     const { dispatchSpecialists } = await import("./src/lib/agentFleet");
     const lastUser = [...messages].reverse().find((m: any) => m?.role === 'user')?.content || '';
     const dispatch = dispatchSpecialists(String(lastUser || ''));
+    const agentReqTier = req.body?.modelTier;
+    if (agentReqTier) {
+      dispatch.tier = agentReqTier;
+      dispatch.modelId = agentReqTier === 'max' ? 'gemini-3.1-pro' : agentReqTier === 'core' ? 'gemini-3.5-flash' : 'gemini-3.5-flash-lite';
+    }
     const result = await processAgentChatTurn(messages, pricing, { ...(projectContext || {}), dispatch });
     const usage = takeLastAgentUsage();
-    const bill = await chargeForTextModelUsage(uid, dispatch.modelId || 'gemini-3.5-flash-lite', usage, isUserAdmin).catch(() => null);
+    const chargeEndpoint = agentReqTier === 'max' ? 'text_max' : agentReqTier === 'lite' ? 'text_lite' : 'text_core';
+    const bill = await chargeForTextModelUsage(uid, chargeEndpoint, usage, isUserAdmin).catch(() => null);
     return res.json({ success: true, result, dispatch, usage: bill });
   } catch (err: any) {
     if (err?.code?.startsWith?.('auth/')) {
@@ -12055,7 +12061,10 @@ app.post("/api/agent/execute-tool-stream", async (req, res) => {
       const tree = buildFileTree(loaded.files.map(f => f.path));
       const codeCtx = buildCodeContext(loaded.files, focusPath);
       const ai = createGenAIClient();
-      const modelId = resolveEngineModel(await getModelEndpointId('text_core', getNajeModel('core'), auth.token));
+      const devReqTier = req.body?.modelTier;
+      const devTier: 'lite' | 'core' | 'max' = devReqTier === 'max' ? 'max' : devReqTier === 'core' ? 'core' : 'lite';
+      const devEndpoint = devTier === 'max' ? 'text_max' : devTier === 'lite' ? 'text_lite' : 'text_core';
+      const modelId = resolveEngineModel(await getModelEndpointId(devEndpoint, getNajeModel(devTier), auth.token));
 
       let system = `أنت «ناجي المطور». تفحص مواقع مرفوعة كأرشيف ZIP. تتكلم عربي فصيح واضح، رؤوس أقلام، بدون حشو.
 ملفات المشروع (${loaded.files.length}):
@@ -12173,7 +12182,7 @@ ${codeCtx}
         res.write(`data: ${JSON.stringify({ text: note, applied })}\n\n`);
       }
 
-      const bill = await chargeForTextModelUsage(auth.uid, 'text_core', usageMeta, userIsAdmin).catch(() => null);
+      const bill = await chargeForTextModelUsage(auth.uid, devEndpoint, usageMeta, userIsAdmin).catch(() => null);
       if (typeof bill?.newBalance === 'number') {
         // live balance
       }
@@ -12399,8 +12408,11 @@ ${sourceBlock}`;
 
       const ai = createGenAIClient();
       const wantLite = /لايت|lite|مسودة|اختصر/.test(promptText);
+      const srcReqTier = req.body?.modelTier;
+      const srcTier: 'lite' | 'core' | 'max' = srcReqTier === 'max' ? 'max' : srcReqTier === 'core' ? 'core' : srcReqTier === 'lite' ? 'lite' : (wantLite ? 'lite' : 'core');
+      const srcEndpoint = srcTier === 'max' ? 'text_max' : srcTier === 'lite' ? 'text_lite' : 'text_core';
       const modelId = resolveEngineModel(
-        await getModelEndpointId(wantLite ? 'text_lite' : 'text_core', getNajeModel(wantLite ? 'lite' : 'core'), auth.token)
+        await getModelEndpointId(srcEndpoint, getNajeModel(srcTier), auth.token)
       );
       const contents: any[] = [];
       for (const h of history) {
@@ -12468,7 +12480,7 @@ ${sourceBlock}`;
         if (t) res.write(`data: ${JSON.stringify({ text: t })}\n\n`);
       }
       if (searchSources.length) res.write(`data: ${JSON.stringify({ searchSources })}\n\n`);
-      const bill = await chargeForTextModelUsage(auth.uid, 'text_core', usageMeta, userIsAdmin).catch(() => null);
+      const bill = await chargeForTextModelUsage(auth.uid, srcEndpoint, usageMeta, userIsAdmin).catch(() => null);
       res.write(`data: ${JSON.stringify({
         newBalance: bill?.newBalance,
         usage: {
