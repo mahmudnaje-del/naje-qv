@@ -886,6 +886,16 @@ const handleProUnlockSubmit = async () => {};
           }
         }));
 
+        if (data.imageUrl) {
+          saveDesign({
+            url: data.imageUrl,
+            prompt: data.enhancedPrompt || buildPrompt,
+            type: 'brand_kit',
+            conceptTitle: itemId,
+            conceptExplanation: data.conceptExplanation || ''
+          }).catch(console.warn);
+        }
+
         // Deduct/consume 1 limit count on the frontend for visual feedback if code valid
         if (balance > 0) updateBalance(Math.max(0, balance - 1));
 

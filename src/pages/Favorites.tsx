@@ -27,7 +27,7 @@ const LocalFavMediaRenderer = ({ fav }: { fav: any }) => {
           }
         }).catch(console.error);
       } else {
-        setSrc(fav.message.mediaUrl.startsWith('data:') || fav.message.mediaUrl.startsWith('http') ? fav.message.mediaUrl : `data:image/jpeg;base64,${fav.message.mediaUrl}`);
+        setSrc(fav.message.mediaUrl.startsWith('data:') || fav.message.mediaUrl.startsWith('http') || fav.message.mediaUrl.startsWith('/') ? fav.message.mediaUrl : `data:image/jpeg;base64,${fav.message.mediaUrl}`);
       }
     }
     return () => { active = false; };
@@ -48,10 +48,28 @@ export default function Favorites() {
   useEffect(() => {
     if (!user) return;
     const fetchFavorites = async () => {
-      const q = query(collection(db, 'favorites'), where('userId', '==', user.uid));
-      const snap = await getDocs(q);
+      let snapDocs: any[] = [];
+      try {
+        const qOwner = query(collection(db, 'favorites'), where('ownerId', '==', user.uid));
+        const snapOwner = await getDocs(qOwner);
+        snapDocs.push(...snapOwner.docs);
+      } catch (err) {
+        console.warn('Favorites ownerId query notice:', err);
+      }
+
+      try {
+        const qUser = query(collection(db, 'favorites'), where('userId', '==', user.uid));
+        const snapUser = await getDocs(qUser);
+        snapDocs.push(...snapUser.docs);
+      } catch (err) {
+        console.warn('Favorites userId query notice:', err);
+      }
+
+      const uniqueDocsMap = new Map();
+      snapDocs.forEach(d => uniqueDocsMap.set(d.id, d));
+      const uniqueDocs = Array.from(uniqueDocsMap.values());
       
-      const favs = await Promise.all(snap.docs.map(async (d) => {
+      const favs = await Promise.all(uniqueDocs.map(async (d: any) => {
         const favData = d.data();
         const msgRef = doc(db, 'messages', favData.messageId);
         const msgSnap = await getDoc(msgRef);

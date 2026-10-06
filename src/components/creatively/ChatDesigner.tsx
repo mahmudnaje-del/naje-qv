@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { auth } from '../../firebase';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { auth, db } from '../../firebase';
 import { InteractiveLoadingPlaceholder } from './InteractiveLoadingPlaceholder';
 import NajeSpinner from '../NajeSpinner';
 import NajeThinking from '../NajeThinking';
@@ -399,16 +400,34 @@ export function ChatDesigner({
     }
   }, [activeTab]);
 
-  // Load from local storage on mount
-    useEffect(() => {
+  // Load from local storage and Firestore on mount
+  useEffect(() => {
     async function loadData() {
       try {
         const saved = (await get(`koun_chat_sessions_${activationCode}`)) || (await get('koun_chat_sessions'));
-        let loadedSessions = [];
+        let loadedSessions: any[] = [];
         if (saved) {
           try {
             loadedSessions = JSON.parse(saved);
           } catch(e) {}
+        }
+
+        // Cross-device sync with Firestore
+        const user = auth.currentUser;
+        if (user?.uid) {
+          try {
+            const remoteDocSnap = await getDoc(doc(db, 'chats', `designer_${user.uid}`));
+            if (remoteDocSnap.exists()) {
+              const remoteData = remoteDocSnap.data();
+              if (Array.isArray(remoteData.sessions) && remoteData.sessions.length > 0) {
+                if (!loadedSessions.length || (remoteData.updatedAt || 0) >= (loadedSessions[0]?.updatedAt || 0)) {
+                  loadedSessions = remoteData.sessions;
+                }
+              }
+            }
+          } catch (remoteErr) {
+            console.warn('[ChatDesigner] Remote sessions load notice:', remoteErr);
+          }
         }
         
         if (Array.isArray(loadedSessions) && loadedSessions.length > 0) {
@@ -431,11 +450,34 @@ export function ChatDesigner({
     loadData();
   }, [activationCode, lang]);
 
-  // Save to local storage whenever sessions change
-    useEffect(() => {
-    if (sessions.length > 0 && activationCode && isStorageLoaded) {
-      set(`koun_chat_sessions_${activationCode}`, JSON.stringify(sessions));
+  // Save to local storage and sync to Firestore whenever sessions change
+  useEffect(() => {
+    if (sessions.length > 0 && isStorageLoaded) {
+      if (activationCode) set(`koun_chat_sessions_${activationCode}`, JSON.stringify(sessions));
       set('koun_chat_sessions', JSON.stringify(sessions));
+
+      const user = auth.currentUser;
+      if (user?.uid) {
+        const cleanSessions = sessions.map(s => ({
+          id: s.id,
+          title: s.title,
+          updatedAt: s.updatedAt || Date.now(),
+          messages: s.messages.slice(-50).map(m => ({
+            role: m.role,
+            content: m.content,
+            imageUrl: m.imageUrl
+          }))
+        }));
+
+        setDoc(doc(db, 'chats', `designer_${user.uid}`), {
+          ownerId: user.uid,
+          userId: user.uid,
+          type: 'chatDesigner',
+          title: 'Chat Designer',
+          sessions: cleanSessions,
+          updatedAt: Date.now()
+        }).catch(err => console.warn('[ChatDesigner] Firestore sync notice:', err));
+      }
     }
   }, [sessions, activationCode, isStorageLoaded]);
 

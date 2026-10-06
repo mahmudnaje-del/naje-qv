@@ -106,7 +106,29 @@ export default function NajeDeveloper() {
             }
           }
         } else {
-          // If no chatId, ALWAYS start a fresh new chat session like all other chats
+          // Check if user has an existing developer chat session first
+          let existingChatId: string | null = null;
+          try {
+            const q = query(
+              collection(db, 'chats'),
+              where('ownerId', '==', user.uid),
+              where('type', '==', 'najeDeveloper')
+            );
+            const snap = await getDocs(q);
+            if (!snap.empty) {
+              const sorted = snap.docs.sort((a, b) => (b.data().createdAt || 0) - (a.data().createdAt || 0));
+              existingChatId = sorted[0].id;
+            }
+          } catch (e) {
+            console.warn('Error querying existing developer chats:', e);
+          }
+
+          if (existingChatId && active) {
+            setSearchParams({ chatId: existingChatId }, { replace: true });
+            return;
+          }
+
+          // If no existing chat, start a fresh new chat session
           const newRef = doc(collection(db, 'chats'));
           await setDoc(newRef, {
             ownerId: user.uid,
@@ -132,22 +154,17 @@ export default function NajeDeveloper() {
     return () => { active = false; };
   }, [user, chatId]);
 
-  // Listen to messages for current chatId
+  // Listen to messages for current chatId with unindexed fallback
   useEffect(() => {
     if (!chatId || !user) {
       setMessages([]);
       return;
     }
 
-    const q = query(
-      collection(db, 'messages'),
-      where('chatId', '==', chatId),
-      where('ownerId', '==', user.uid),
-      orderBy('createdAt', 'asc')
-    );
+    let unsubFallback: (() => void) | null = null;
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const msgs: ChatMsg[] = snapshot.docs.map((docSnap) => {
+    const processDocs = (snapshot: any) => {
+      const msgs: ChatMsg[] = snapshot.docs.map((docSnap: any) => {
         const d = docSnap.data();
         return {
           id: docSnap.id,
@@ -158,12 +175,36 @@ export default function NajeDeveloper() {
           createdAt: d.createdAt
         };
       });
+      msgs.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
       setMessages(msgs);
+    };
+
+    const q = query(
+      collection(db, 'messages'),
+      where('chatId', '==', chatId),
+      where('ownerId', '==', user.uid),
+      orderBy('createdAt', 'asc')
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      processDocs(snapshot);
     }, (err) => {
-      console.warn('Error listening to messages:', err);
+      console.warn('Primary messages query notice, trying unindexed fallback:', err?.message || err);
+      const fallbackQ = query(
+        collection(db, 'messages'),
+        where('chatId', '==', chatId)
+      );
+      unsubFallback = onSnapshot(fallbackQ, (fallbackSnap) => {
+        processDocs(fallbackSnap);
+      }, (fErr) => {
+        console.error('Fallback messages query failed:', fErr);
+      });
     });
 
-    return () => unsubscribe();
+    return () => {
+      unsubscribe();
+      if (unsubFallback) unsubFallback();
+    };
   }, [chatId, user]);
 
   // Load Workspace tree & metadata

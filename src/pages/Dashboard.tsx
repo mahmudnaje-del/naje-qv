@@ -62,7 +62,7 @@ function useResolvedMediaSrc(mediaUrl: string | undefined, defaultMime = 'image/
       return;
     }
 
-    if (mediaUrl.startsWith('data:') || mediaUrl.startsWith('http://') || mediaUrl.startsWith('https://')) {
+    if (mediaUrl.startsWith('data:') || mediaUrl.startsWith('http://') || mediaUrl.startsWith('https://') || mediaUrl.startsWith('/')) {
       setSrc(mediaUrl);
       setLoading(false);
       return;
@@ -77,15 +77,41 @@ function useResolvedMediaSrc(mediaUrl: string | undefined, defaultMime = 'image/
             setSrc(doc.startsWith('data:') || doc.startsWith('http') ? doc : `data:${defaultMime};base64,${doc}`);
             setLoading(false);
           } else {
-            setError(true);
-            setLoading(false);
+            // Check server cache for cross-device access (e.g. mobile)
+            fetch(`/api/media-blob/${encodeURIComponent(localId)}`).then(res => {
+              if (!active) return;
+              if (res.ok) {
+                setSrc(`/api/media-blob/${encodeURIComponent(localId)}`);
+                setLoading(false);
+              } else {
+                setError(true);
+                setLoading(false);
+              }
+            }).catch(() => {
+              if (active) {
+                setError(true);
+                setLoading(false);
+              }
+            });
           }
         })
         .catch(() => {
-          if (active) {
-            setError(true);
-            setLoading(false);
-          }
+          if (!active) return;
+          fetch(`/api/media-blob/${encodeURIComponent(localId)}`).then(res => {
+            if (!active) return;
+            if (res.ok) {
+              setSrc(`/api/media-blob/${encodeURIComponent(localId)}`);
+              setLoading(false);
+            } else {
+              setError(true);
+              setLoading(false);
+            }
+          }).catch(() => {
+            if (active) {
+              setError(true);
+              setLoading(false);
+            }
+          });
         });
       return;
     }
@@ -113,10 +139,10 @@ async function handleDownloadMedia(mediaUrl: string, filename: string, defaultMi
           ? localDoc
           : `data:${defaultMime};base64,${localDoc}`;
       } else {
-        toast.error(tr('shell.localExtractFail'));
-        return;
+        // Attempt fallback to server blob for cross-device downloads
+        realUrl = `/api/media-blob/${encodeURIComponent(localId)}`;
       }
-    } else if (!realUrl.startsWith('data:') && !realUrl.startsWith('http')) {
+    } else if (!realUrl.startsWith('data:') && !realUrl.startsWith('http') && !realUrl.startsWith('/')) {
       realUrl = `data:${defaultMime};base64,${realUrl}`;
     }
     downloadBase64File(realUrl, filename, defaultMime, { prompt });
@@ -126,21 +152,39 @@ async function handleDownloadMedia(mediaUrl: string, filename: string, defaultMi
   }
 }
 
-function GalleryImageThumb({ m, idx, onClose }: { m: any; idx: number; onClose: () => void }) {
+function getStudioInfo(studio?: string) {
+  if (studio === 'naje_ident') return { name: 'نايس موشن', link: '/naje-ident', color: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' };
+  if (studio === 'naje_ad') return { name: 'إعلانات Naje Ad', link: '/naje-ad', color: 'bg-amber-500/10 text-amber-400 border-amber-500/30' };
+  if (studio === 'creativelyAI' || studio === 'creative_pro' || studio === 'chat_designer') return { name: 'استوديو الإبداع', link: '/creative-studio', color: 'bg-purple-500/10 text-purple-400 border-purple-500/30' };
+  if (studio?.startsWith('chat_')) return { name: 'استوديو الدردشة', link: null, color: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/30' };
+  return { name: 'استوديوهات نايس', link: null, color: 'bg-slate-500/10 text-slate-400 border-slate-500/30' };
+}
+
+function GalleryImageThumb({ m, idx, onClose, onZoom }: { m: any; idx: number; onClose: () => void; onZoom?: (url: string) => void }) {
   const { t } = useI18n();
   const { src, loading, error } = useResolvedMediaSrc(m.mediaUrl, 'image/jpeg');
   const [downloading, setDownloading] = useState(false);
   const [imgError, setImgError] = useState(false);
+  const studioInfo = getStudioInfo(m.studio);
 
-  const onDownload = async () => {
+  const onDownload = async (e: React.MouseEvent) => {
+    e.stopPropagation();
     setDownloading(true);
     await handleDownloadMedia(m.mediaUrl, `NajeAI_Image_${idx + 1}.jpg`, 'image/jpeg', m.content);
     setDownloading(false);
   };
 
+  const targetLink = m.chatId ? `/chat/${m.chatId}` : studioInfo.link;
+
   return (
-    <div className="group bg-white dark:bg-[#11141c] border border-purple-200/80 dark:hover:border-gray-800 rounded-2xl overflow-hidden shadow-lg hover:border-purple-300 transition-all flex flex-col">
-      <div className="aspect-square bg-gray-50 dark:bg-gray-950 relative overflow-hidden flex items-center justify-center">
+    <div className="group bg-white dark:bg-[#11141c] border border-purple-200/80 dark:border-white/10 dark:hover:border-purple-500/40 rounded-2xl overflow-hidden shadow-lg hover:shadow-purple-500/10 transition-all flex flex-col">
+      <div 
+        onClick={() => src && onZoom?.(src)} 
+        className="aspect-square bg-gray-50 dark:bg-gray-950 relative overflow-hidden flex items-center justify-center cursor-zoom-in"
+      >
+        <span className={cn("absolute top-2.5 start-2.5 z-10 px-2 py-0.5 rounded-full text-[10px] font-bold border backdrop-blur-md shadow-xs", studioInfo.color)}>
+          {studioInfo.name}
+        </span>
         {loading ? (
           <div className="text-gray-400 text-xs animate-pulse p-2 text-center">{t('common.loading')}</div>
         ) : error || imgError || !src ? (
@@ -158,22 +202,26 @@ function GalleryImageThumb({ m, idx, onClose }: { m: any; idx: number; onClose: 
         )}
       </div>
       <div className="p-4 flex flex-col flex-1 justify-between gap-3">
-        <p className="text-xs text-gray-800 dark:text-gray-400 line-clamp-2">{m.content || t('shell.aiImageFallback')}</p>
-        <div className="flex items-center justify-between border-t border-gray-200 dark:border-gray-900/50 pt-3">
-          <Link 
-            to={`/chat/${m.chatId}`} 
-            onClick={onClose}
-            className="text-[11px] text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-medium flex items-center gap-1"
-          >
-            <span>{t('shell.viewChat')}</span>
-            <ExternalLink className="w-3 h-3" />
-          </Link>
+        <p className="text-xs text-gray-800 dark:text-gray-300 line-clamp-2 leading-relaxed">{m.content || m.prompt || t('shell.aiImageFallback')}</p>
+        <div className="flex items-center justify-between border-t border-gray-200 dark:border-gray-800/60 pt-3">
+          {targetLink ? (
+            <Link 
+              to={targetLink} 
+              onClick={onClose}
+              className="text-[11px] text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-bold flex items-center gap-1 transition"
+            >
+              <span>{m.chatId ? t('shell.viewChat') : studioInfo.name}</span>
+              <ExternalLink className="w-3 h-3" />
+            </Link>
+          ) : (
+            <span className="text-[11px] text-gray-500 dark:text-gray-400 font-medium">{studioInfo.name}</span>
+          )}
           <button 
             onClick={onDownload}
             disabled={downloading}
-            className="text-[11px] text-gray-800 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white flex items-center gap-1 font-medium cursor-pointer disabled:opacity-50"
+            className="text-[11px] text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-white flex items-center gap-1 font-semibold cursor-pointer disabled:opacity-50 transition"
           >
-            <Download className="w-3 h-3" />
+            {downloading ? <NajeSpinner className="w-3 h-3" /> : <Download className="w-3 h-3 text-indigo-500" />}
             <span>{t('common.download')}</span>
           </button>
         </div>
@@ -187,16 +235,23 @@ function GalleryVideoThumb({ m, idx, onClose }: { m: any; idx: number; onClose: 
   const { src, loading, error } = useResolvedMediaSrc(m.mediaUrl, 'video/mp4');
   const [downloading, setDownloading] = useState(false);
   const [videoError, setVideoError] = useState(false);
+  const studioInfo = getStudioInfo(m.studio);
 
-  const onDownload = async () => {
+  const onDownload = async (e: React.MouseEvent) => {
+    e.stopPropagation();
     setDownloading(true);
     await handleDownloadMedia(m.mediaUrl, `NajeAI_Video_${idx + 1}.mp4`, 'video/mp4', m.content);
     setDownloading(false);
   };
 
+  const targetLink = m.chatId ? `/chat/${m.chatId}` : studioInfo.link;
+
   return (
-    <div className="group bg-white dark:bg-[#11141c] border border-purple-200/80 dark:hover:border-gray-800 rounded-2xl overflow-hidden shadow-lg hover:border-pink-500/30 transition-all flex flex-col">
+    <div className="group bg-white dark:bg-[#11141c] border border-purple-200/80 dark:border-white/10 dark:hover:border-pink-500/40 rounded-2xl overflow-hidden shadow-lg hover:shadow-pink-500/10 transition-all flex flex-col">
       <div className="aspect-video bg-gray-50 dark:bg-gray-950 relative overflow-hidden flex items-center justify-center">
+        <span className={cn("absolute top-2.5 start-2.5 z-10 px-2 py-0.5 rounded-full text-[10px] font-bold border backdrop-blur-md shadow-xs pointer-events-none", studioInfo.color)}>
+          {studioInfo.name}
+        </span>
         {loading ? (
           <div className="text-gray-400 text-xs animate-pulse p-2 text-center">{t('common.loading')}</div>
         ) : error || videoError || !src ? (
@@ -208,28 +263,33 @@ function GalleryVideoThumb({ m, idx, onClose }: { m: any; idx: number; onClose: 
           <video 
             src={src} 
             controls
+            playsInline
             className="w-full h-full object-cover"
             onError={() => setVideoError(true)}
           />
         )}
       </div>
       <div className="p-4 flex flex-col flex-1 justify-between gap-3">
-        <p className="text-xs text-gray-800 dark:text-gray-400 line-clamp-2">{m.content || t('shell.aiVideoFallback')}</p>
-        <div className="flex items-center justify-between border-t border-gray-200 dark:border-gray-900/50 pt-3">
-          <Link 
-            to={`/chat/${m.chatId}`} 
-            onClick={onClose}
-            className="text-[11px] text-pink-600 dark:text-pink-400 hover:text-pink-300 font-medium flex items-center gap-1"
-          >
-            <span>{t('shell.viewChat')}</span>
-            <ExternalLink className="w-3 h-3" />
-          </Link>
+        <p className="text-xs text-gray-800 dark:text-gray-300 line-clamp-2 leading-relaxed">{m.content || m.prompt || t('shell.aiVideoFallback')}</p>
+        <div className="flex items-center justify-between border-t border-gray-200 dark:border-gray-800/60 pt-3">
+          {targetLink ? (
+            <Link 
+              to={targetLink} 
+              onClick={onClose}
+              className="text-[11px] text-pink-600 dark:text-pink-400 hover:text-pink-700 dark:hover:text-pink-300 font-bold flex items-center gap-1 transition"
+            >
+              <span>{m.chatId ? t('shell.viewChat') : studioInfo.name}</span>
+              <ExternalLink className="w-3 h-3" />
+            </Link>
+          ) : (
+            <span className="text-[11px] text-gray-500 dark:text-gray-400 font-medium">{studioInfo.name}</span>
+          )}
           <button 
             onClick={onDownload}
             disabled={downloading}
-            className="text-[11px] text-gray-800 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white flex items-center gap-1 font-medium cursor-pointer disabled:opacity-50"
+            className="text-[11px] text-gray-700 dark:text-gray-300 hover:text-pink-600 dark:hover:text-white flex items-center gap-1 font-semibold cursor-pointer disabled:opacity-50 transition"
           >
-            <Download className="w-3 h-3" />
+            {downloading ? <NajeSpinner className="w-3 h-3" /> : <Download className="w-3 h-3 text-pink-500" />}
             <span>{t('common.download')}</span>
           </button>
         </div>
@@ -362,52 +422,132 @@ export default function Dashboard() {
   useEffect(() => {
     if (!user) return;
 
+    let unsubFallbackChats: (() => void) | null = null;
+
     // Subscribe to projects
-    const qProjects = query(collection(db, 'projects'), where('ownerId', '==', user.uid), orderBy('createdAt', 'desc'));
+    const qProjects = query(collection(db, 'projects'), where('ownerId', '==', user.uid));
     const unsubProjects = onSnapshot(qProjects, (snap) => {
-      const projs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      const projs = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a: any, b: any) => (b.createdAt || 0) - (a.createdAt || 0));
       setProjects(projs);
     }, (err) => console.error("Projects listen failed:", err));
 
-    // Subscribe to chats
-    const qChats = query(collection(db, 'chats'), where('ownerId', '==', user.uid), orderBy('createdAt', 'desc'));
-    const unsubChats = onSnapshot(qChats, (snap) => {
-      const allChats = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    // Subscribe to chats with composite-index fallback and dual ownerId/userId merge
+    let unsubChatsOwner: (() => void) | null = null;
+    let unsubChatsUser: (() => void) | null = null;
+    let ownerChats: any[] = [];
+    let userChats: any[] = [];
+
+    const syncUnifiedChats = () => {
+      const map = new Map<string, any>();
+      for (const c of [...ownerChats, ...userChats]) {
+        if (c.id) map.set(c.id, c);
+      }
+      const allChats = Array.from(map.values()).sort((a: any, b: any) => (b.createdAt || 0) - (a.createdAt || 0));
       setChats(allChats);
-    }, (err) => console.error("Chats listen failed:", err));
+    };
+
+    const qChats = query(collection(db, 'chats'), where('ownerId', '==', user.uid));
+    unsubChatsOwner = onSnapshot(qChats, (snap) => {
+      ownerChats = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      syncUnifiedChats();
+    }, (err) => console.warn("Chats owner listen notice:", err?.message));
+
+    const qChatsUser = query(collection(db, 'chats'), where('userId', '==', user.uid));
+    unsubChatsUser = onSnapshot(qChatsUser, (snap) => {
+      userChats = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      syncUnifiedChats();
+    }, (err) => console.warn("Chats user listen notice:", err?.message));
 
     return () => {
       unsubProjects();
-      unsubChats();
+      if (unsubChatsOwner) unsubChatsOwner();
+      if (unsubChatsUser) unsubChatsUser();
     };
   }, [user]);
 
-  // Real-time messages with media ONLY when user gallery is open
+  // Real-time media messages and generated_media across ALL studios for the library galleries
   useEffect(() => {
-    if (userGalleriesOpen === 'none' || projects.length === 0 || !user) {
-      setAllMediaMessages([]);
-      return;
-    }
-    const projectIds = projects.map(p => p.id);
-    const userChats = chats.filter(c => projectIds.includes(c.projectId));
-    const userChatIds = userChats.map(c => c.id);
-
-    if (userChatIds.length === 0) {
+    if (!user) {
       setAllMediaMessages([]);
       return;
     }
 
-    const qMsg = query(collection(db, 'messages'), where('ownerId', '==', user.uid), orderBy('createdAt', 'desc'));
-    const unsub = onSnapshot(qMsg, (snap) => {
-      const msgs = snap.docs
+    let unsubGenMedia: (() => void) | null = null;
+    let unsubMsgs: (() => void) | null = null;
+    let unsubDesigns: (() => void) | null = null;
+    let genMediaDocs: any[] = [];
+    let msgDocs: any[] = [];
+    let designDocs: any[] = [];
+
+    const mergeAndSetMedia = () => {
+      const combined = [...genMediaDocs, ...designDocs, ...msgDocs];
+      const seenUrls = new Set<string>();
+      const deduped: any[] = [];
+      for (const item of combined) {
+        const url = item.mediaUrl || item.url;
+        if (!url) continue;
+        if (!seenUrls.has(url)) {
+          seenUrls.add(url);
+          deduped.push({
+            ...item,
+            mediaUrl: url
+          });
+        }
+      }
+      deduped.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+      setAllMediaMessages(deduped);
+      rememberMedia(deduped.map((m: any) => m.mediaType === 'video' ? null : m.mediaUrl));
+    };
+
+    // 1. Listen to generated_media collection across all studios
+    const qGen = query(collection(db, 'generated_media'), where('ownerId', '==', user.uid));
+    unsubGenMedia = onSnapshot(qGen, (snap) => {
+      genMediaDocs = snap.docs.map(d => {
+        const data = d.data();
+        return {
+          id: d.id,
+          ...data,
+          mediaType: data.type || data.mediaType || 'image',
+          content: data.prompt || data.title || '',
+          createdAt: data.createdAt || 0
+        };
+      });
+      mergeAndSetMedia();
+    }, (err) => console.warn("generated_media listen notice:", err));
+
+    // 2. Listen to creatively_designs collection
+    const qDesigns = query(collection(db, 'creatively_designs'), where('ownerId', '==', user.uid));
+    unsubDesigns = onSnapshot(qDesigns, (snap) => {
+      designDocs = snap.docs.map(d => {
+        const data = d.data();
+        return {
+          id: d.id,
+          ...data,
+          mediaType: data.type === 'video' ? 'video' : 'image',
+          mediaUrl: data.url,
+          content: data.prompt || data.conceptTitle || '',
+          studio: 'creativelyAI',
+          createdAt: data.createdAt ? new Date(data.createdAt).getTime() : 0
+        };
+      });
+      mergeAndSetMedia();
+    }, (err) => console.warn("creatively_designs listen notice:", err));
+
+    // 3. Listen to messages with media across all chats
+    const qMsg = query(collection(db, 'messages'), where('ownerId', '==', user.uid));
+    unsubMsgs = onSnapshot(qMsg, (snap) => {
+      msgDocs = snap.docs
         .map(d => ({ id: d.id, ...d.data() }))
-        .filter((m: any) => m.mediaUrl && userChatIds.includes(m.chatId));
-      setAllMediaMessages(msgs);
-      rememberMedia(msgs.map((m: any) => m.mediaType === 'video' ? null : m.mediaUrl));
-    }, (err) => console.error("Messages listen failed:", err));
+        .filter((m: any) => m.mediaUrl);
+      mergeAndSetMedia();
+    }, (err) => console.warn("Messages listen notice:", err));
 
-    return unsub;
-  }, [projects, chats, userGalleriesOpen, user]);
+    return () => {
+      if (unsubGenMedia) unsubGenMedia();
+      if (unsubDesigns) unsubDesigns();
+      if (unsubMsgs) unsubMsgs();
+    };
+  }, [user]);
 
   // Body Scroll Lock implementation for better overlay experiences without layout shift
   useEffect(() => {
@@ -432,6 +572,7 @@ export default function Dashboard() {
 
     const chatData = {
       ownerId: user?.uid,
+      userId: user?.uid,
       projectId: projId,
       type,
       title: type === 'ui' ? tr('shell.chatTitleUi')
@@ -469,8 +610,20 @@ export default function Dashboard() {
     });
   };
 
-  const imagesList = allMediaMessages.filter(m => m.mediaType === 'image' || (m.mediaUrl && !m.mediaType));
-  const videosList = allMediaMessages.filter(m => m.mediaType === 'video');
+  const isVideoItem = (m: any) => {
+    const t = String(m.mediaType || m.type || '').toLowerCase();
+    if (t === 'video' || t === 'video_ad') return true;
+    const url = String(m.mediaUrl || m.url || '').toLowerCase();
+    return url.endsWith('.mp4') || url.endsWith('.webm') || url.includes('/video-download') || url.includes('type=video');
+  };
+
+  const isAudioItem = (m: any) => {
+    const t = String(m.mediaType || m.type || '').toLowerCase();
+    return t === 'audio' || t === 'voice';
+  };
+
+  const imagesList = allMediaMessages.filter(m => !isVideoItem(m) && !isAudioItem(m) && Boolean(m.mediaUrl || m.url));
+  const videosList = allMediaMessages.filter(m => isVideoItem(m) && Boolean(m.mediaUrl || m.url));
 
   // Deduplicate chats to eliminate any potential duplication or triplication
   const uniqueChatsMap = new Map();
@@ -582,62 +735,6 @@ export default function Dashboard() {
           </Link>
 
           <Link 
-            to="/naje-agent-core" 
-            onClick={() => { setSidebarOpen(false); setUserGalleriesOpen('none'); }}
-            className={cn(
-              "w-full h-11 md:h-9 flex items-center justify-between px-3 rounded-xl text-xs font-bold transition-all border border-transparent",
-              location.pathname.includes('naje-agent') || location.pathname.includes('al-nassaj') || location.pathname.includes('weaver') || location.pathname.includes('agent')
-                ? "bg-white dark:bg-purple-950/45 text-purple-950 dark:text-purple-200 border border-purple-300 dark:border-purple-500/40 shadow-md shadow-purple-500/10 font-extrabold" 
-                : "text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-900/60"
-            )}
-          >
-            <div className="flex items-center gap-2.5">
-              <Bot className="w-4 h-4 text-indigo-500" />
-              <span dir="ltr">Naje Agent Core</span>
-            </div>
-          </Link>
-
-          <button 
-            type="button"
-            onClick={() => { 
-              setSidebarOpen(false); 
-              setUserGalleriesOpen('none'); 
-              handleCreateNewChat('najeDeveloper');
-            }}
-            className={cn(
-              "w-full h-11 md:h-9 flex items-center justify-between px-3 rounded-xl text-xs font-bold transition-all border border-transparent cursor-pointer",
-              location.pathname.includes('naje-developer')
-                ? "bg-white dark:bg-purple-950/45 text-purple-950 dark:text-purple-200 border border-purple-300 dark:border-purple-500/40 shadow-md shadow-purple-500/10 font-extrabold" 
-                : "text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-900/60"
-            )}
-          >
-            <div className="flex items-center gap-2.5">
-              <Code2 className="w-4 h-4 text-sky-500" />
-              <span>{t('nav.najeDeveloper')}</span>
-            </div>
-          </button>
-
-          <button 
-            type="button"
-            onClick={() => { 
-              setSidebarOpen(false); 
-              setUserGalleriesOpen('none'); 
-              handleCreateNewChat('najeSource');
-            }}
-            className={cn(
-              "w-full h-11 md:h-9 flex items-center justify-between px-3 rounded-xl text-xs font-bold transition-all border border-transparent cursor-pointer",
-              location.pathname.includes('naje-source')
-                ? "bg-white dark:bg-purple-950/45 text-purple-950 dark:text-purple-200 border border-purple-300 dark:border-purple-500/40 shadow-md shadow-purple-500/10 font-extrabold" 
-                : "text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-900/60"
-            )}
-          >
-            <div className="flex items-center gap-2.5">
-              <BookOpen className="w-4 h-4 text-emerald-500" />
-              <span>{t('nav.najeSource')}</span>
-            </div>
-          </button>
-
-          <Link 
             to="/creative-studio" 
             onClick={() => { setSidebarOpen(false); setUserGalleriesOpen('none'); }}
             className={cn(
@@ -666,22 +763,6 @@ export default function Dashboard() {
             <div className="flex items-center gap-2.5">
               <NajeAdIcon className="w-8 h-8 shrink-0" size={32} />
               <span>{t('nav.najeAd')}</span>
-            </div>
-          </Link>
-
-          <Link
-            to="/naje-prompt"
-            onClick={() => { setSidebarOpen(false); setUserGalleriesOpen('none'); }}
-            className={cn(
-              "w-full h-11 md:h-9 flex items-center justify-between px-3 rounded-xl text-xs font-bold transition-all border border-transparent",
-              location.pathname.includes('naje-prompt')
-                ? "bg-white dark:bg-purple-950/45 text-purple-950 dark:text-purple-200 border border-purple-300 dark:border-purple-500/40 shadow-md shadow-purple-500/10 font-extrabold"
-                : "text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-900/60"
-            )}
-          >
-            <div className="flex items-center gap-2.5">
-              <MessageSquare className="w-4 h-4 text-violet-500" />
-              <span>{t('nav.najePrompt')}</span>
             </div>
           </Link>
 
@@ -716,19 +797,6 @@ export default function Dashboard() {
               <span>{t('nav.najeCv')}</span>
             </div>
           </Link>
-
-          <button 
-            onClick={() => handleCreateNewChat('voice')}
-            className={cn(
-              "w-full h-11 md:h-9 flex items-center justify-between px-3 rounded-xl text-xs font-bold transition-all border border-transparent cursor-pointer text-start",
-              "text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-900/60"
-            )}
-          >
-            <div className="flex items-center gap-2.5">
-              <Mic2 className="w-4 h-4 text-emerald-500 shrink-0" />
-              <span>{t('nav.voiceChat')}</span>
-            </div>
-          </button>
         </div>
 
         {/* Group 4: Library */}

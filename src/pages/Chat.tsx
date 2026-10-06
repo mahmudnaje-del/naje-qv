@@ -34,6 +34,7 @@ import { useSmoothReveal } from '../hooks/useSmoothReveal';
 import { CodeBlock } from '../components/CodeBlock';
 import { saveDoc, getDoc as getLocalDoc } from '../lib/idb';
 import { uploadBase64ToStorage, uploadWithRetry } from '../lib/mediaStorage';
+import { recordGeneratedMedia, ensurePermanentMediaUrl } from '../lib/studioMediaSync';
 import { downloadBase64File } from '../utils/fileDownloader';
 import { VoiceSettingsPanel, parseDualScriptLines, buildVoiceChatPayload } from "../components/chat/VoiceChatPanel";
 import { calcVoicePointsCost, spokenTextFromVoiceScript } from '../lib/voicePricing';
@@ -314,6 +315,7 @@ function getMismatchSuggestion(mode: 'plan' | 'build', text: string): 'plan' | '
 }
 
 export default function Chat() {
+  const { user, updateBalance, systemStatus, maintenanceDismissed, setMaintenanceDismissed } = useAppStore();
   const pricing = usePricingConfig();
   const [uiMode, setUiMode] = useState<'build' | 'plan'>('build');
   const [uiModelTier, setUiModelTier] = useState<'lite' | 'core' | 'max'>('lite');
@@ -420,7 +422,51 @@ export default function Chat() {
   }, [modelDropdownOpen]);
 
   const [favorites, setFavorites] = useState<string[]>([]);
-  const handleFavorite = (id: string) => { setFavorites(prev => prev.includes(id) ? prev.filter(f => f !== id) : [...prev, id]) };
+  
+  // Real-time synchronization of user favorites with Firestore across all devices
+  useEffect(() => {
+    if (!user?.uid) {
+      setFavorites([]);
+      return;
+    }
+    const qFav = query(collection(db, 'favorites'), where('ownerId', '==', user.uid));
+    const unsub = onSnapshot(qFav, (snap) => {
+      const ids = snap.docs.map(d => d.data().messageId).filter(Boolean);
+      setFavorites(ids);
+    }, (err) => {
+      console.warn('Favorites primary query notice, trying userId fallback:', err?.message);
+      const qFallback = query(collection(db, 'favorites'), where('userId', '==', user.uid));
+      onSnapshot(qFallback, (snapFallback) => {
+        const ids = snapFallback.docs.map(d => d.data().messageId).filter(Boolean);
+        setFavorites(ids);
+      }, (e2) => console.error('Favorites listen failed:', e2));
+    });
+    return () => unsub();
+  }, [user?.uid]);
+
+  const handleFavorite = async (msgId: string) => {
+    if (!user?.uid || !msgId) return;
+    const favDocId = `${user.uid}_${msgId}`;
+    const isFav = favorites.includes(msgId);
+    
+    // Optimistic UI update
+    setFavorites(prev => isFav ? prev.filter(f => f !== msgId) : [...prev, msgId]);
+    
+    try {
+      if (isFav) {
+        await deleteDoc(doc(db, 'favorites', favDocId));
+      } else {
+        await setDoc(doc(db, 'favorites', favDocId), {
+          messageId: msgId,
+          ownerId: user.uid,
+          userId: user.uid,
+          createdAt: Date.now()
+        });
+      }
+    } catch (err) {
+      console.error('Failed to update favorite in Firestore:', err);
+    }
+  };
 
   // ===== Feedback system (Naje) =====
   const feedbackReasonsDown = [ct('chatui.fb.down1'), ct('chatui.fb.down2'), ct('chatui.fb.down3'), ct('chatui.fb.down4'), ct('chatui.fb.down5'), ct('chatui.fb.down6')];
@@ -1004,6 +1050,7 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
     const tempUserMsg = {
       id: tempMsgId,
       ownerId: user?.uid,
+      userId: user?.uid,
       chatId,
       role: 'user',
       content: rawUserText || (appliedTemplateName ? ct('chatui.stylePrefix', { name: appliedTemplateName }) : ''),
@@ -1022,12 +1069,14 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
       return rest;
     });
     let dbSourceMediaUrl = sourceMediaUrl;
-    if (dbSourceMediaUrl && (dbSourceMediaUrl.startsWith('data:') || dbSourceMediaUrl.length > 500000)) {
-      dbSourceMediaUrl = 'local:source_media';
+    if (dbSourceMediaUrl && dbSourceMediaUrl.length > 500000) {
+      dbSourceMediaUrl = dbSourceMediaUrl.slice(0, 500) + '...';
     }
 
     const dbUserMsg = {
       ...tempUserMsg,
+      ownerId: user?.uid,
+      userId: user?.uid,
       files: dbFiles,
       sourceMediaUrl: dbSourceMediaUrl
     };
@@ -1233,7 +1282,7 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
               msgIdToUpdate = docRef.id;
               isFirstChunk = false;
               setDoc(docRef, stripUndefined({
-                ownerId: user?.uid, chatId, role: 'assistant', content: assistantContent, createdAt: Date.now()
+                ownerId: user?.uid, userId: user?.uid, chatId, role: 'assistant', content: assistantContent, createdAt: Date.now()
               })).catch(e => console.error('Failed to save message to db:', e));
             } else if (msgIdToUpdate) {
               updateDoc(doc(db, 'messages', msgIdToUpdate), { content: assistantContent })
@@ -1311,6 +1360,15 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
           }
         }
 
+        if (msgIdToUpdate && assistantContent) {
+          updateDoc(doc(db, 'messages', msgIdToUpdate), {
+            content: assistantContent,
+            ownerId: user?.uid,
+            userId: user?.uid,
+            updatedAt: Date.now()
+          }).catch(e => console.warn('Final stream message sync notice:', e));
+        }
+
         if (chat?.type === 'ui' && assistantContent && user?.uid && chatId) {
           try {
             const q = query(
@@ -1363,6 +1421,7 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
           const chatRef = doc(collection(db, 'messages'));
           setDoc(chatRef, stripUndefined({
             ownerId: user?.uid,
+            userId: user?.uid,
             chatId,
             role: 'assistant',
             content: data.chatReply,
@@ -1377,6 +1436,7 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
           const chatRef = doc(collection(db, 'messages'));
           setDoc(chatRef, stripUndefined({
             ownerId: user?.uid,
+            userId: user?.uid,
             chatId,
             role: 'assistant',
             content: data.message,
@@ -1498,10 +1558,10 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
       if (mediaUrl) {
         const localId = `media_${Date.now()}`;
         saveDoc(localId, mediaUrl).catch(console.error);
-        if (data.permanentMediaUrl && (data.permanentMediaUrl.startsWith('http://') || data.permanentMediaUrl.startsWith('https://'))) {
+        if (data.permanentMediaUrl && (data.permanentMediaUrl.startsWith('http://') || data.permanentMediaUrl.startsWith('https://') || data.permanentMediaUrl.startsWith('/api/'))) {
           mediaUrl = data.permanentMediaUrl;
-        } else {
-          mediaUrl = 'local:' + localId;
+        } else if (mediaUrl.startsWith('data:') || mediaUrl.length > 50000) {
+          mediaUrl = await ensurePermanentMediaUrl(mediaUrl, chat.type === 'video' ? 'video' : chat.type === 'voice' ? 'audio' : 'image');
         }
       }
 
@@ -1510,9 +1570,13 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
         assistantContent = ct('chatui.docCreated', { type: finalDocType.toUpperCase() });
         const localDocId = currentJobId || Date.now().toString();
         saveDoc(localDocId, data.result).catch(e => console.error(e));
+        let docPermanentUrl = data.permanentMediaUrl || null;
+        if (!docPermanentUrl && typeof data.result === 'string' && (data.result.startsWith('data:') || data.result.length > 50000)) {
+          docPermanentUrl = await ensurePermanentMediaUrl(data.result, 'image', `documents/${user?.uid || 'anon'}/doc_${Date.now()}.${data.extension || 'pdf'}`);
+        }
         documentData = {
             id: localDocId,
-            url: data.permanentMediaUrl || null,
+            url: docPermanentUrl,
             mimeType: data.mimeType,
             extension: data.extension,
             filename: `NajeAI_Document.${data.extension}`,
@@ -1524,6 +1588,7 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
       if (chat.type !== 'text' || mediaUrl || documentData) {
         const msgData: any = {
           ownerId: user?.uid,
+          userId: user?.uid,
           chatId,
           role: 'assistant',
           content: assistantContent,
@@ -1536,8 +1601,19 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
         else if (chat.type === 'image') msgData.mediaType = 'image';
         else if (chat.type === 'voice') msgData.mediaType = 'audio';
 
-        const mRef = doc(collection(db, 'messages'));
+        const mRef = currentJobId ? doc(db, 'messages', `assistant_${currentJobId}`) : doc(collection(db, 'messages'));
         setDoc(mRef, stripUndefined(msgData)).catch(e => console.error(e));
+
+        // Always sync media to generated_media collection for the user's gallery across all devices
+        if (user?.uid && (chat.type === 'image' || chat.type === 'video' || chat.type === 'voice')) {
+          recordGeneratedMedia({
+            type: chat.type === 'voice' ? 'audio' : (chat.type as 'image' | 'video'),
+            mediaUrl: mediaUrl || rawResultMedia,
+            prompt: finalPrompt || input || '',
+            chatId,
+            studio: `chat_${chat.type}`
+          }).catch(e => console.warn('Failed to record generated_media:', e));
+        }
 
         // If server-side upload was not returned, perform background retry upload
         if (!data.permanentMediaUrl && rawResultMedia && user?.uid && (chat.type === 'image' || chat.type === 'video' || chat.type === 'voice')) {
@@ -1561,9 +1637,9 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
       const formattedErrorContent = isAbort
         ? ct('chatui.connectionDropped')
         : await formatProfessionalError(err, { chatType: chat?.type });
-      const eRef = doc(collection(db, 'messages'));
+      const eRef = currentJobId ? doc(db, 'messages', `assistant_${currentJobId}`) : doc(collection(db, 'messages'));
       setDoc(eRef, stripUndefined({
-        ownerId: user?.uid, chatId, role: 'assistant', content: formattedErrorContent, createdAt: Date.now()
+        ownerId: user?.uid, userId: user?.uid, chatId, role: 'assistant', content: formattedErrorContent, createdAt: Date.now()
       })).catch(e => console.error(e));
     } finally {
       submitInFlightRef.current = false;
@@ -1582,7 +1658,6 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
   const { chatId } = useParams();
   const navigate = useNavigate();
   const { isRtl, t } = useI18n();
-  const { user, updateBalance, systemStatus, maintenanceDismissed, setMaintenanceDismissed } = useAppStore();
   const [chat, setChat] = useState<ChatSession | null>(null);
   const [project, setProject] = useState<any>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -1828,49 +1903,55 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
       console.warn('onSnapshot chat error:', error);
     });
 
-    let unsubFallback: (() => void) | null = null;
+    let unsubOwner: (() => void) | null = null;
+    let unsubUser: (() => void) | null = null;
+    let ownerMsgs: ChatMessage[] = [];
+    let userMsgs: ChatMessage[] = [];
 
-    const setupFallbackListener = () => {
-      console.warn('[Messages onSnapshot] Falling back to unindexed single-field query');
-      const fallbackQ = query(
-        collection(db, 'messages'),
-        where('chatId', '==', chatId),
-        where('ownerId', '==', user.uid)
-      );
-      unsubFallback = onSnapshot(
-        fallbackQ,
-        (snapshot) => {
-          const msgs = snapshot.docs
-            .map(doc => ({ id: doc.id, ...doc.data() } as ChatMessage))
-            .sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
-          if (msgs.length > 100) {
-            msgs.splice(0, msgs.length - 100);
-          }
-          setMessages(msgs);
-      rememberMedia(msgs.map((m) => (m.mediaType === 'video' || m.mediaType === 'audio' ? null : m.mediaUrl)));
-        },
-        (fallbackErr) => {
-          console.error('[Messages onSnapshot] Fallback query failed:', fallbackErr);
-          if (navigator.onLine) toast.error(ct('chatui.messagesLoadFail'));
-        }
-      );
-    };
-
-    const q = query(collection(db, 'messages'), where('chatId', '==', chatId), where('ownerId', '==', user.uid), orderBy('createdAt', 'desc'), limit(100));
-    const unsubMessages = onSnapshot(q, (snapshot) => {
-      const msgs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ChatMessage)).reverse();
+    const syncUnifiedMessages = () => {
+      const msgMap = new Map<string, ChatMessage>();
+      for (const m of [...ownerMsgs, ...userMsgs]) {
+        if (m.id) msgMap.set(m.id, m);
+      }
+      let msgs = Array.from(msgMap.values());
+      msgs.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+      if (msgs.length > 200) {
+        msgs = msgs.slice(msgs.length - 200);
+      }
       setMessages(msgs);
       rememberMedia(msgs.map((m) => (m.mediaType === 'video' || m.mediaType === 'audio' ? null : m.mediaUrl)));
+    };
+
+    // 1. Listen for messages with ownerId
+    const qOwner = query(
+      collection(db, 'messages'),
+      where('chatId', '==', chatId),
+      where('ownerId', '==', user.uid)
+    );
+    unsubOwner = onSnapshot(qOwner, (snapshot) => {
+      ownerMsgs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ChatMessage));
+      syncUnifiedMessages();
     }, (error) => {
-      console.error('[Messages onSnapshot] Primary query failed:', error?.code, error?.message);
-      if (navigator.onLine) toast.error(ct('chatui.messagesBackup'));
-      setupFallbackListener();
+      console.warn('[Messages onSnapshot] ownerId query notice:', error?.message);
+    });
+
+    // 2. Listen for messages with userId (guaranteeing cross-device visibility regardless of field schema)
+    const qUser = query(
+      collection(db, 'messages'),
+      where('chatId', '==', chatId),
+      where('userId', '==', user.uid)
+    );
+    unsubUser = onSnapshot(qUser, (snapshot) => {
+      userMsgs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ChatMessage));
+      syncUnifiedMessages();
+    }, (error) => {
+      console.warn('[Messages onSnapshot] userId query notice:', error?.message);
     });
 
     return () => {
       unsubChat();
-      unsubMessages();
-      if (unsubFallback) unsubFallback();
+      if (unsubOwner) unsubOwner();
+      if (unsubUser) unsubUser();
     };
   }, [chatId, user?.uid]);
 

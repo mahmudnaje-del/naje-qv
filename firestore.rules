@@ -82,16 +82,16 @@ service cloud.firestore {
     }
 
     // All owned collections: read/write only your own documents, or admin access.
-    match /chats/{id}           { allow read: if owns(resource) || isAdmin(); allow create: if signedIn() && request.resource.data.ownerId == request.auth.uid; allow update: if (owns(resource) && ownerPinned()) || isAdmin(); allow delete: if owns(resource) || isAdmin(); }
-    match /messages/{id}        { allow read: if owns(resource) || isAdmin(); allow create: if signedIn() && request.resource.data.ownerId == request.auth.uid; allow update: if (owns(resource) && ownerPinned()) || isAdmin(); allow delete: if owns(resource) || isAdmin(); }
-    match /projects/{id}        { allow read: if owns(resource) || isAdmin(); allow create: if signedIn() && request.resource.data.ownerId == request.auth.uid; allow update: if (owns(resource) && ownerPinned()) || isAdmin(); allow delete: if owns(resource) || isAdmin(); }
+    match /chats/{id}           { allow read: if owns(resource) || isAdmin(); allow create: if signedIn() && (request.resource.data.ownerId == request.auth.uid || request.resource.data.userId == request.auth.uid); allow update: if (owns(resource) && ownerPinned()) || isAdmin(); allow delete: if owns(resource) || isAdmin(); }
+    match /messages/{id}        { allow read: if owns(resource) || isAdmin(); allow create: if signedIn() && (request.resource.data.ownerId == request.auth.uid || request.resource.data.userId == request.auth.uid); allow update: if (owns(resource) && ownerPinned()) || isAdmin(); allow delete: if owns(resource) || isAdmin(); }
+    match /projects/{id}        { allow read: if owns(resource) || isAdmin(); allow create: if signedIn() && (request.resource.data.ownerId == request.auth.uid || request.resource.data.userId == request.auth.uid); allow update: if (owns(resource) && ownerPinned()) || isAdmin(); allow delete: if owns(resource) || isAdmin(); }
     match /projects/{projectId}/memory_items/{id} {
       allow read, write: if signedIn() && (
         isAdmin() ||
         get(/databases/$(database)/documents/projects/$(projectId)).data.ownerId == request.auth.uid
       );
     }
-    match /generated_media/{id} { allow read: if owns(resource) || isAdmin(); allow create: if signedIn() && request.resource.data.ownerId == request.auth.uid; allow update: if (owns(resource) && ownerPinned()) || isAdmin(); allow delete: if owns(resource) || isAdmin(); }
+    match /generated_media/{id} { allow read: if owns(resource) || isAdmin(); allow create: if signedIn() && (request.resource.data.ownerId == request.auth.uid || request.resource.data.userId == request.auth.uid); allow update: if (owns(resource) && ownerPinned()) || isAdmin(); allow delete: if owns(resource) || isAdmin(); }
     match /generation_jobs/{id} { allow read: if owns(resource) || isAdmin(); allow create: if signedIn() && request.resource.data.ownerId == request.auth.uid; allow update: if (owns(resource) && ownerPinned()) || isAdmin(); allow delete: if owns(resource) || isAdmin(); }
     match /notifications/{id}   { allow read: if owns(resource) || isAdmin(); allow create: if signedIn() && request.resource.data.ownerId == request.auth.uid; allow update: if (owns(resource) && ownerPinned()) || isAdmin(); allow delete: if owns(resource) || isAdmin(); }
     match /favorites/{id}       { allow read: if owns(resource) || isAdmin(); allow create: if signedIn() && (request.resource.data.ownerId == request.auth.uid || request.resource.data.userId == request.auth.uid); allow update: if (owns(resource) && ownerPinned()) || isAdmin(); allow delete: if owns(resource) || isAdmin(); }

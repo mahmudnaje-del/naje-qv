@@ -35,7 +35,7 @@ export default function LocalMediaRenderer({
     setIsLoaded(false);
     
     const prepareSrc = (raw: string) => {
-      if (raw.startsWith('data:') || raw.startsWith('http')) return raw;
+      if (raw.startsWith('data:') || raw.startsWith('http') || raw.startsWith('/')) return raw;
       const isVideo = chatType === 'video' || msg.mediaType === 'video';
       const isAudio = chatType === 'voice' || msg.mediaType === 'audio';
       const mime = isAudio ? 'audio/wav' : isVideo ? 'video/mp4' : detectBase64MimeType(raw, 'image/png');
@@ -43,18 +43,38 @@ export default function LocalMediaRenderer({
     };
 
     if (msg.mediaUrl) {
-      if (msg.mediaUrl.startsWith('local:')) {
+      if (msg.permanentMediaUrl && (msg.permanentMediaUrl.startsWith('http') || msg.permanentMediaUrl.startsWith('/api/'))) {
+        setSrc(prepareSrc(msg.permanentMediaUrl));
+      } else if (msg.mediaUrl.startsWith('local:')) {
         const localId = msg.mediaUrl.split('local:')[1];
         getLocalDoc(localId).then(b64 => {
+          if (!active) return;
+          if (b64) {
+            setSrc(prepareSrc(b64));
+          } else if (msg.permanentMediaUrl) {
+            setSrc(prepareSrc(msg.permanentMediaUrl));
+          } else {
+            // Check server cache for cross-device access (e.g. mobile)
+            fetch(`/api/media-blob/${encodeURIComponent(localId)}`).then(res => {
+              if (active) {
+                if (res.ok) {
+                  setSrc(`/api/media-blob/${encodeURIComponent(localId)}`);
+                } else {
+                  setHasError(true);
+                }
+              }
+            }).catch(() => {
+              if (active) setHasError(true);
+            });
+          }
+        }).catch(() => {
           if (active) {
-            if (b64) {
-              setSrc(prepareSrc(b64));
+            if (msg.permanentMediaUrl) {
+              setSrc(prepareSrc(msg.permanentMediaUrl));
             } else {
               setHasError(true);
             }
           }
-        }).catch(() => {
-          if (active) setHasError(true);
         });
       } else {
         setSrc(prepareSrc(msg.mediaUrl));

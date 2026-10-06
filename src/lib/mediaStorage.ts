@@ -50,7 +50,7 @@ export async function uploadWithRetry(path: string, base64Data: string, mediaTyp
   for (let i = 0; i < attempts; i++) {
     try {
       const storedUrl = await uploadBase64ToStorage(path, base64Data, mediaType);
-      if (storedUrl && (storedUrl.startsWith('http://') || storedUrl.startsWith('https://')) && storedUrl.length < 500000) {
+      if (storedUrl && (storedUrl.startsWith('http://') || storedUrl.startsWith('https://') || storedUrl.startsWith('/api/')) && storedUrl.length < 500000) {
         if (mRef) {
           await updateDoc(mRef, { mediaUrl: storedUrl });
         }

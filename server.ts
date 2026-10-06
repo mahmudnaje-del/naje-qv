@@ -3227,18 +3227,75 @@ app.post('/api/upload-media', async (req, res) => {
       : (mediaType === 'voice' || mediaType === 'audio') ? 'audio/wav'
       : 'image/png';
 
-    const bucket = getStorage().bucket(STORAGE_BUCKET);
-    const file = bucket.file(safePath);
-    await file.save(buffer, {
-      metadata: { contentType, metadata: { ownerId: uid } },
-      public: true,
-      resumable: false,
-    });
-    const publicUrl = `https://storage.googleapis.com/${bucket.name}/${safePath}`;
-    return res.json({ url: publicUrl });
+    try {
+      const bucket = getStorage().bucket(STORAGE_BUCKET);
+      const file = bucket.file(safePath);
+      await file.save(buffer, {
+        metadata: { contentType, metadata: { ownerId: uid } },
+        public: true,
+        resumable: false,
+      });
+      const publicUrl = `https://storage.googleapis.com/${bucket.name}/${safePath}`;
+      return res.json({ url: publicUrl });
+    } catch (gcsErr: any) {
+      console.warn("[Upload Media API] Storage save notice, storing on server cache:", gcsErr?.message || gcsErr);
+      const safeLeaf = path.basename(safePath);
+      const localFile = path.join(MEDIA_STORAGE_DIR, safeLeaf);
+      fs.writeFileSync(localFile, buffer);
+      const serverUrl = `/api/media-blob/${encodeURIComponent(safeLeaf)}`;
+      return res.json({ url: serverUrl });
+    }
   } catch (err: any) {
     console.warn("[Upload Media API] Storage save warning:", err?.message || err);
     return res.status(500).json({ error: err?.message || "Upload failed" });
+  }
+});
+
+const MEDIA_STORAGE_DIR = path.join(os.tmpdir(), 'naje_media_cache');
+if (!fs.existsSync(MEDIA_STORAGE_DIR)) {
+  try { fs.mkdirSync(MEDIA_STORAGE_DIR, { recursive: true }); } catch (_) {}
+}
+
+app.get('/api/media-blob/:id', (req, res) => {
+  const safeId = path.basename(req.params.id);
+  const targetPath = path.join(MEDIA_STORAGE_DIR, safeId);
+  if (!fs.existsSync(targetPath)) {
+    return res.status(404).json({ error: 'Media not found' });
+  }
+  const ext = path.extname(safeId).toLowerCase();
+  const mimeMap: Record<string, string> = {
+    '.png': 'image/png',
+    '.jpg': 'image/jpeg',
+    '.jpeg': 'image/jpeg',
+    '.webp': 'image/webp',
+    '.mp4': 'video/mp4',
+    '.wav': 'audio/wav',
+    '.mp3': 'audio/mpeg',
+    '.pdf': 'application/pdf',
+    '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  };
+  const mimeType = mimeMap[ext] || 'application/octet-stream';
+  res.setHeader('Content-Type', mimeType);
+  res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  const stat = fs.statSync(targetPath);
+  const range = req.headers.range;
+  if (range && (mimeType.startsWith('video') || mimeType.startsWith('audio'))) {
+    const parts = range.replace(/bytes=/, "").split("-");
+    const start = parseInt(parts[0], 10);
+    const end = parts[1] ? parseInt(parts[1], 10) : stat.size - 1;
+    const chunksize = (end - start) + 1;
+    const file = fs.createReadStream(targetPath, { start, end });
+    res.writeHead(206, {
+      'Content-Range': `bytes ${start}-${end}/${stat.size}`,
+      'Accept-Ranges': 'bytes',
+      'Content-Length': chunksize,
+      'Content-Type': mimeType,
+    });
+    file.pipe(res);
+  } else {
+    res.setHeader('Content-Length', stat.size);
+    fs.createReadStream(targetPath).pipe(res);
   }
 });
 
@@ -5401,6 +5458,25 @@ app.get(["/api/video-download", "/api/creatively/video-download"], async (req, r
         }
         const arrayBuffer = await videoRes.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
+        try {
+          const safeLeaf = `media_${Date.now()}_${Math.random().toString(36).substring(2, 7)}.mp4`;
+          const localFile = path.join(MEDIA_STORAGE_DIR, safeLeaf);
+          fs.writeFileSync(localFile, buffer);
+          const permUrl = `/api/media-blob/${encodeURIComponent(safeLeaf)}`;
+          createDocRest('generated_media', {
+            ownerId: _auth.uid,
+            userId: _auth.uid,
+            type: 'video',
+            mediaType: 'video',
+            mediaUrl: permUrl,
+            prompt: 'Creative Video Ad',
+            title: 'Creative Studio Video',
+            studio: 'creativelyAI',
+            createdAt: Date.now()
+          }, _auth.token).catch(e => console.warn('Failed to record video to generated_media:', e));
+        } catch (saveErr) {
+          console.warn('[Video Cache] Local save notice:', saveErr);
+        }
         res.setHeader("Content-Type", "video/mp4");
         return res.send(buffer);
       }
@@ -5759,8 +5835,30 @@ app.post(["/api/creatively/generate"], async (req, res) => {
     }
 
     const _nbImg = await chargePoints(uid, token, _imagePrice);
+    let permanentMediaUrl = imageUrl;
+    try {
+      const safeLeaf = `media_${Date.now()}_${Math.random().toString(36).substring(2, 7)}.png`;
+      const localFile = path.join(MEDIA_STORAGE_DIR, safeLeaf);
+      fs.writeFileSync(localFile, Buffer.from(base64Image, 'base64'));
+      permanentMediaUrl = `/api/media-blob/${encodeURIComponent(safeLeaf)}`;
+      createDocRest('generated_media', {
+        ownerId: uid,
+        userId: uid,
+        type: 'image',
+        mediaType: 'image',
+        mediaUrl: permanentMediaUrl,
+        prompt: finalImagePrompt,
+        title: conceptTitle || 'تصميم إبداعي',
+        studio: 'creativelyAI',
+        chatId: req.body.chatId || null,
+        createdAt: Date.now()
+      }, token).catch(e => console.warn('Failed to record generated_media for creative:', e));
+    } catch (saveErr) {
+      console.warn('[Creative Generate] local save notice:', saveErr);
+    }
+
     return res.json({
-      imageUrl,
+      imageUrl: permanentMediaUrl || imageUrl,
       enhancedPrompt: finalImagePrompt,
       conceptTitle,
       conceptExplanation,
@@ -9051,6 +9149,23 @@ Return the complete updated HTML document with real layout-changing mobile media
             };
             streamEndPayload.consumedBalance = streamTokenBill.charged || 0;
           }
+          if (req.body.chatId && fullText && fullText.trim()) {
+            const serverMsg: any = {
+              ownerId: uid,
+              userId: uid,
+              chatId: req.body.chatId,
+              role: 'assistant',
+              content: fullText,
+              createdAt: Date.now()
+            };
+            if (searchSources.length > 0) serverMsg.searchSources = searchSources;
+            if (typeof groundingReport !== 'undefined' && groundingReport) serverMsg.groundingReport = groundingReport;
+            if (streamTokenBill) {
+              serverMsg.usage = streamEndPayload.usage;
+              serverMsg.costInPoints = streamEndPayload.consumedBalance;
+            }
+            createDocRest("messages", serverMsg, token).catch(e => console.warn("Failed to write assistant text stream to Firestore:", e));
+          }
           res.write(`data: ${JSON.stringify(streamEndPayload)}\n\n`);
           res.write(`data: [DONE]\n\n`);
           res.end();
@@ -9230,15 +9345,22 @@ Respond ONLY with JSON matching this structure:
           }, token).catch(e => console.error(e));
         }
         if (req.body.chatId) {
-          await createDocRest("messages", {
+          const failMsgDoc = {
             ownerId: uid,
+            userId: uid,
             chatId: req.body.chatId,
             role: 'assistant',
             content: 'تعذّر إنشاء الملف. يرجى المحاولة مرة أخرى. لم يتم خصم أي نقاط من رصيدك.',
             createdAt: Date.now(),
             isError: true,
             jobId: jobId || undefined
-          }, token).catch(e => console.error("Failed to write failure message to db:", e));
+          };
+          const failDocId = jobId ? `assistant_${jobId}` : undefined;
+          if (failDocId) {
+            await setDocRest("messages", failDocId, failMsgDoc, token).catch(e => console.error("Failed to write failure message to db:", e));
+          } else {
+            await createDocRest("messages", failMsgDoc, token).catch(e => console.error("Failed to write failure message to db:", e));
+          }
         }
         if (!res.headersSent) {
           return res.status(500).json({
@@ -9269,7 +9391,31 @@ Respond ONLY with JSON matching this structure:
           permanentMediaUrl = `https://storage.googleapis.com/${bucket.name}/${storagePath}`;
           console.log(`[Server Media Upload] Successfully uploaded ${type} to cloud: ${permanentMediaUrl}`);
         } catch (uploadErr: any) {
-          console.log("[Server Media Upload] Server storage upload notice (using client storage fallback):", uploadErr?.message || uploadErr);
+          console.log("[Server Media Upload] Server storage upload notice, caching on server:", uploadErr?.message || uploadErr);
+          try {
+            const ext = extension || (type === 'video' ? 'mp4' : type === 'voice' ? 'wav' : type === 'document' ? (docTypeToUse === 'docx' ? 'docx' : 'pdf') : 'png');
+            const safeLeaf = `media_${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${ext}`;
+            const cleanBase64 = typeof generationResult === 'string' && generationResult.includes(',') ? generationResult.split(',')[1] : generationResult;
+            const buffer = typeof cleanBase64 === 'string' ? Buffer.from(cleanBase64, 'base64') : Buffer.from(cleanBase64);
+            const localFile = path.join(MEDIA_STORAGE_DIR, safeLeaf);
+            fs.writeFileSync(localFile, buffer);
+            permanentMediaUrl = `/api/media-blob/${encodeURIComponent(safeLeaf)}`;
+          } catch (localSaveErr) {
+            console.warn("[Server Media Upload] Local save failed:", localSaveErr);
+          }
+        }
+
+        if (permanentMediaUrl && (type === 'image' || type === 'video' || type === 'voice' || type === 'infographic')) {
+          createDocRest('generated_media', {
+            ownerId: uid,
+            userId: uid,
+            type: (type === 'voice') ? 'audio' : type,
+            mediaType: (type === 'voice') ? 'audio' : type,
+            mediaUrl: permanentMediaUrl,
+            prompt: prompt || '',
+            chatId: req.body.chatId || null,
+            createdAt: Date.now()
+          }, token).catch(e => console.warn('Failed to record generated_media:', e));
         }
       }
 
@@ -9412,6 +9558,7 @@ Respond ONLY with JSON matching this structure:
           : 'تم التوليد بنجاح.';
         const msgDoc: any = {
           ownerId: uid,
+          userId: uid,
           chatId: req.body.chatId,
           role: 'assistant',
           content: assistantContent,
@@ -9422,7 +9569,12 @@ Respond ONLY with JSON matching this structure:
           documentData: documentData || undefined,
           interactionId: interactionId || undefined
         };
-        await createDocRest("messages", msgDoc, token).catch(e => console.error("Failed to write assistant message to db:", e));
+        const msgDocId = jobId ? `assistant_${jobId}` : undefined;
+        if (msgDocId) {
+          await setDocRest("messages", msgDocId, msgDoc, token).catch(e => console.error("Failed to write assistant message to db:", e));
+        } else {
+          await createDocRest("messages", msgDoc, token).catch(e => console.error("Failed to write assistant message to db:", e));
+        }
       }
 
       const responsePayload: any = {

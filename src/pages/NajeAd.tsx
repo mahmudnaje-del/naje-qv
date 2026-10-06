@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
 import { AlertCircle, Clapperboard, Download, Film, Sparkles, Wand2 } from 'lucide-react';
 import { collection, doc, limit, onSnapshot, orderBy, query, where } from 'firebase/firestore';
+import { recordGeneratedMedia } from '../lib/studioMediaSync';
 import { useAppStore } from '../store';
 import { auth, db } from '../firebase';
 import { usePricingConfig } from '../hooks/usePricingConfig';
@@ -122,6 +123,19 @@ export default function NajeAd() {
       if (data.lastActionError) setErrorMessage(data.lastActionError);
       if (data.status === 'completed' || data.status === 'failed') {
         setIsSubmitting(false);
+      }
+      if (data.status === 'completed') {
+        const vUrl = data.videoUrl || data.mediaUrl;
+        if (vUrl) {
+          recordGeneratedMedia({
+            type: 'video',
+            mediaUrl: vUrl,
+            prompt: data.prompt || prompt || 'Omni Ad Video',
+            title: 'Naje Ad Video',
+            studio: 'naje_ad',
+            metadata: { jobId: activeJobId }
+          }).catch(e => console.warn('Failed to sync ad video to gallery:', e));
+        }
       }
       if (data.status === 'failed') {
         setErrorMessage(data.error || translate('adui.generateFailed', undefined, useAppStore.getState().language || 'ar'));

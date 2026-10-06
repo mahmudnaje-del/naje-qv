@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MessageSquareText, Plus, Settings2 } from 'lucide-react';
+import { collection, query, where, getDocs, doc, setDoc } from 'firebase/firestore';
+import { db } from '../firebase';
 import { toast } from '../toastStore';
 import { useAppStore } from '../store';
 import { askNaje } from '../lib/askNaje';
@@ -91,7 +93,8 @@ export default function NajePrompt() {
     const key = TRAIL_LABEL_KEYS[raw];
     return key ? t(key) : raw;
   }, [t]);
-  const balance = useAppStore((s) => s.user?.balance);
+  const user = useAppStore((s) => s.user);
+  const balance = user?.balance;
   const [draft, setDraft] = useState('');
   const [messages, setMessages] = useState<ChatItem[]>([]);
   const [busy, setBusy] = useState(false);
@@ -160,7 +163,36 @@ export default function NajePrompt() {
 
   useEffect(() => {
     setHistory(loadHistory());
-  }, []);
+    if (!user?.uid) return;
+    const q = query(collection(db, 'chats'), where('ownerId', '==', user.uid), where('type', '==', 'prompt'));
+    getDocs(q).then((snap) => {
+      if (!snap.empty) {
+        const sorted = snap.docs.sort((a, b) => (b.data().createdAt || 0) - (a.data().createdAt || 0));
+        const latest = sorted[0];
+        const data = latest.data();
+        if (data.promptHistory && Array.isArray(data.promptHistory)) {
+          setHistory(prev => {
+            const merged = [...data.promptHistory, ...prev];
+            const map = new Map<string, HistoryItem>();
+            for (const h of merged) {
+              if (h?.prompt && !map.has(h.prompt)) map.set(h.prompt, h);
+            }
+            return Array.from(map.values()).slice(0, 30);
+          });
+        }
+        if (data.promptState && messages.length === 0) {
+          const ps = data.promptState;
+          if (ps.messages && Array.isArray(ps.messages) && ps.messages.length > 0) {
+            setMessages(ps.messages);
+            if (ps.originalIdea) setOriginalIdea(ps.originalIdea);
+            if (ps.lastReady) setLastReady(ps.lastReady);
+            if (ps.readyStack) setReadyStack(ps.readyStack);
+            if (ps.qa) setQa(ps.qa);
+          }
+        }
+      }
+    }).catch(err => console.warn('Prompt chats load notice:', err));
+  }, [user?.uid]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
@@ -508,11 +540,35 @@ export default function NajePrompt() {
         live.current.readyStack = stack;
         setLastReady(ready);
         setReadyStack(stack);
-        setHistory(saveHistoryItem({
+        const savedHistory = saveHistoryItem({
           title: ready.title,
           prompt: ready.prompt,
           bestFor: ready.bestFor,
-        }));
+        });
+        setHistory(savedHistory);
+
+        if (user?.uid) {
+          const qPrompt = query(collection(db, 'chats'), where('ownerId', '==', user.uid), where('type', '==', 'prompt'));
+          getDocs(qPrompt).then(async (snap) => {
+            const docRef = snap.empty ? doc(collection(db, 'chats')) : snap.docs[0].ref;
+            await setDoc(docRef, {
+              ownerId: user.uid,
+              type: 'prompt',
+              title: ready.title.slice(0, 60),
+              updatedAt: Date.now(),
+              createdAt: snap.empty ? Date.now() : (snap.docs[0].data().createdAt || Date.now()),
+              promptHistory: savedHistory.slice(0, 30),
+              promptState: {
+                originalIdea: live.current.originalIdea,
+                readyStack: stack,
+                lastReady: ready,
+                qa: live.current.qa,
+                messages: [...messages, { id: uid('r'), kind: 'ready', payload: ready, version: stack.length }]
+              }
+            }, { merge: true });
+          }).catch(e => console.warn('Failed to sync prompt to firestore:', e));
+        }
+
         pushTrail({
           id: uid('t'),
           kind: 'ready',

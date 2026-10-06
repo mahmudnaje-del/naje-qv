@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AlertCircle, Clapperboard, Film, Layers, Palette, Sparkles, Wand2, Sliders, ShieldCheck, Zap, ArrowLeft, RefreshCw } from 'lucide-react';
 import { doc, onSnapshot } from 'firebase/firestore';
+import { recordGeneratedMedia } from '../lib/studioMediaSync';
 import { useAppStore } from '../store';
 import { auth, db } from '../firebase';
 import { hasFeatureAccess } from '../lib/featureAccess';
@@ -140,6 +141,14 @@ export default function NajeIdent() {
           return next.slice(0, 8);
         });
         setFocusUrl(url);
+        recordGeneratedMedia({
+          type: 'video',
+          mediaUrl: url,
+          title: `Naje Ident (${doneSlot.toUpperCase()})`,
+          prompt: data.prompt || draft.brandName || `Naje Motion ${doneSlot}`,
+          studio: 'naje_ident',
+          metadata: { slot: doneSlot, jobId }
+        }).catch((e) => console.warn('Failed to record motion video to gallery:', e));
         if (kindRef.current === 'both' && doneSlot === 'intro') {
           toast.success(t('motion.page.introNext'));
         }

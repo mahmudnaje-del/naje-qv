@@ -236,18 +236,31 @@ export default function NajeAgent() {
             }
           }
         } else {
-          // Find latest agent chat or create one
-          const q = query(
-            collection(db, 'chats'),
-            where('ownerId', '==', user.uid),
-            where('type', '==', 'agent'),
-            orderBy('createdAt', 'desc'),
-            limit(1)
-          );
-          const snap = await getDocs(q);
+          // Find latest agent chat or create one with unindexed fallback
+          let snap;
+          try {
+            const q = query(
+              collection(db, 'chats'),
+              where('ownerId', '==', user.uid),
+              where('type', '==', 'agent'),
+              orderBy('createdAt', 'desc'),
+              limit(1)
+            );
+            snap = await getDocs(q);
+          } catch (qErr) {
+            console.warn('Agent chats query notice, using unindexed fallback:', qErr);
+            const fallbackQ = query(
+              collection(db, 'chats'),
+              where('ownerId', '==', user.uid),
+              where('type', '==', 'agent')
+            );
+            snap = await getDocs(fallbackQ);
+          }
+
           if (!active) return;
-          if (!snap.empty) {
-            const latest = snap.docs[0];
+          if (snap && !snap.empty) {
+            const sortedDocs = snap.docs.sort((a, b) => (b.data().createdAt || 0) - (a.data().createdAt || 0));
+            const latest = sortedDocs[0];
             setSearchParams({ chatId: latest.id }, { replace: true });
             const data = latest.data();
             if (Array.isArray(data.sources)) {
@@ -274,6 +287,67 @@ export default function NajeAgent() {
     syncChatSession();
     return () => { active = false; };
   }, [user, chatId]);
+
+  // Real-time messages listener for active agent chat
+  useEffect(() => {
+    if (!chatId || !user) {
+      setMessages([INITIAL_GREETING]);
+      return;
+    }
+
+    let unsubFallback: (() => void) | null = null;
+    const processDocs = (snap: any) => {
+      if (snap.empty) {
+        setMessages([INITIAL_GREETING]);
+        return;
+      }
+      const loaded: AgentChatMessage[] = snap.docs.map((d: any) => {
+        const data = d.data();
+        return {
+          id: d.id,
+          role: data.role || 'model',
+          type: data.type || 'reply',
+          content: data.content || '',
+          timestamp: data.createdAt || data.timestamp || Date.now(),
+          sources: data.sources,
+          question: data.question,
+          options: data.options,
+          suggestedQuickReplies: data.suggestedQuickReplies,
+          proposal: data.proposal,
+          documentData: data.documentData
+        };
+      });
+      loaded.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+      setMessages(loaded);
+    };
+
+    const q = query(
+      collection(db, 'messages'),
+      where('chatId', '==', chatId),
+      where('ownerId', '==', user.uid),
+      orderBy('createdAt', 'asc')
+    );
+
+    const unsub = onSnapshot(q, (snap) => {
+      processDocs(snap);
+    }, (err) => {
+      console.warn('Agent messages primary query notice, using unindexed fallback:', err?.message || err);
+      const fallbackQ = query(
+        collection(db, 'messages'),
+        where('chatId', '==', chatId)
+      );
+      unsubFallback = onSnapshot(fallbackQ, (fSnap) => {
+        processDocs(fSnap);
+      }, (fErr) => {
+        console.error('Agent messages fallback query failed:', fErr);
+      });
+    });
+
+    return () => {
+      unsub();
+      if (unsubFallback) unsubFallback();
+    };
+  }, [chatId, user]);
 
   // Save sources to Firestore when modified
   const updateSources = async (newSources: AgentSourceItem[]) => {
@@ -398,6 +472,17 @@ export default function NajeAgent() {
     setInputText('');
     setIsSendingChat(true);
 
+    // Save user message to Firestore
+    if (chatId && user?.uid) {
+      addDoc(collection(db, 'messages'), {
+        chatId,
+        ownerId: user.uid,
+        role: 'user',
+        content: text,
+        createdAt: Date.now()
+      }).catch(e => console.warn('Failed to save user agent msg:', e));
+    }
+
     // Update chat title in recent chats
     if (chatId) {
       updateDoc(doc(db, 'chats', chatId), {
@@ -512,6 +597,21 @@ export default function NajeAgent() {
         setMessages(prev => [...prev, botMsg]);
         if (turn.type === 'proposal') {
           setActiveProposal(turn.proposal);
+        }
+
+        // Save bot turn message to Firestore
+        if (chatId && user?.uid) {
+          addDoc(collection(db, 'messages'), {
+            chatId,
+            ownerId: user.uid,
+            role: 'model',
+            type: turn.type,
+            content: turn.type === 'reply' ? turn.message : '',
+            question: turn.type === 'clarification' ? turn.question : null,
+            suggestedQuickReplies: turn.type === 'clarification' ? (turn.suggestedQuickReplies || null) : null,
+            proposal: turn.type === 'proposal' ? (turn.proposal || null) : null,
+            createdAt: Date.now()
+          }).catch(e => console.warn('Failed to save bot agent msg:', e));
         }
       }
     } catch (err: any) {

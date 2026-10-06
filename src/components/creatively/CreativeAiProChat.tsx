@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { get, set } from 'idb-keyval';
-import { auth } from '../../firebase';
+import { doc, getDoc, setDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { auth, db } from '../../firebase';
+import { recordGeneratedMedia } from '../../lib/studioMediaSync';
 import { InteractiveLoadingPlaceholder } from "./InteractiveLoadingPlaceholder";
 import NajeSpinner from '../NajeSpinner';
 import NajeThinking from '../NajeThinking';
@@ -245,12 +247,31 @@ export function CreativeAiProChat({
     async function loadData() {
       try {
         const savedSessions = await get('creative_pro_sessions');
-        let parsedSessions = [];
+        let parsedSessions: any[] = [];
         if (savedSessions) {
           try {
             parsedSessions = JSON.parse(savedSessions);
           } catch (e) {}
         }
+
+        // Cross-device sync with Firestore
+        const user = auth.currentUser;
+        if (user?.uid) {
+          try {
+            const remoteDocSnap = await getDoc(doc(db, 'chats', `pro_${user.uid}`));
+            if (remoteDocSnap.exists()) {
+              const remoteData = remoteDocSnap.data();
+              if (Array.isArray(remoteData.sessions) && remoteData.sessions.length > 0) {
+                if (!parsedSessions.length || (remoteData.updatedAt || 0) >= (parsedSessions[0]?.updatedAt || 0)) {
+                  parsedSessions = remoteData.sessions;
+                }
+              }
+            }
+          } catch (remoteErr) {
+            console.warn('[CreativePro] Remote sessions load notice:', remoteErr);
+          }
+        }
+
         if (!parsedSessions.length || parsedSessions[0].messages.length > 1) {
           parsedSessions = [getInitialNewSession(), ...parsedSessions];
         }
@@ -263,12 +284,45 @@ export function CreativeAiProChat({
           setCurrentSessionId(parsedSessions[0].id);
         }
 
+        // Load studio gallery from Firestore generated_media for complete cross-device history
+        let initialGallery: GalleryItem[] = [];
         const savedGallery = await get('creative_pro_gallery_v2');
         if (savedGallery) {
           try {
-            setGallery(JSON.parse(savedGallery));
+            initialGallery = JSON.parse(savedGallery);
           } catch (e) {}
         }
+
+        if (user?.uid) {
+          try {
+            const qGen = query(collection(db, 'generated_media'), where('ownerId', '==', user.uid));
+            const genSnap = await getDocs(qGen);
+            const mediaFromDb: GalleryItem[] = genSnap.docs
+              .map(d => {
+                const data = d.data();
+                return {
+                  id: d.id,
+                  type: (data.type === 'video' || data.mediaType === 'video') ? 'video' : 'image',
+                  url: data.mediaUrl || data.url,
+                  prompt: data.prompt || data.title || '',
+                  createdAt: data.createdAt ? new Date(data.createdAt).toISOString() : new Date().toISOString()
+                } as GalleryItem;
+              })
+              .filter(item => Boolean(item.url));
+
+            const combinedGalleryMap = new Map<string, GalleryItem>();
+            [...initialGallery, ...mediaFromDb].forEach(item => {
+              if (item.url && !combinedGalleryMap.has(item.url)) {
+                combinedGalleryMap.set(item.url, item);
+              }
+            });
+            initialGallery = Array.from(combinedGalleryMap.values());
+          } catch (dbErr) {
+            console.warn('[CreativePro] Gallery sync from Firestore notice:', dbErr);
+          }
+        }
+
+        setGallery(initialGallery);
       } catch (e) {
         console.error("IDB load error", e);
       } finally {
@@ -278,18 +332,51 @@ export function CreativeAiProChat({
     loadData();
   }, []);
 
-  // Save to LocalStorage
+  // Save to LocalStorage & Sync to Firestore
   useEffect(() => {
-    if (isStorageLoaded) set('creative_pro_sessions', JSON.stringify(sessions));
-  }, [sessions]);
+    if (!isStorageLoaded) return;
+    set('creative_pro_sessions', JSON.stringify(sessions));
+
+    const user = auth.currentUser;
+    if (user?.uid && sessions.length > 0) {
+      // Clean sessions of non-serializable blobs before Firestore save
+      const cleanSessions = sessions.map(s => ({
+        id: s.id,
+        title: s.title,
+        proMode: s.proMode,
+        createdAt: s.createdAt,
+        updatedAt: Date.now(),
+        messages: s.messages.slice(-50).map(m => ({
+          id: m.id,
+          role: m.role,
+          text: m.text,
+          thought: m.thought,
+          generatedImageUrl: m.generatedImageUrl,
+          generatedVideoUrl: m.generatedVideoUrl,
+          conceptOptions: m.conceptOptions,
+          isGeneratingImage: false,
+          isGeneratingVideo: false
+        }))
+      }));
+
+      setDoc(doc(db, 'chats', `pro_${user.uid}`), {
+        ownerId: user.uid,
+        userId: user.uid,
+        type: 'creativePro',
+        title: 'Creative AI Pro',
+        sessions: cleanSessions,
+        updatedAt: Date.now()
+      }).catch(err => console.warn('[CreativePro] Firestore session sync notice:', err));
+    }
+  }, [sessions, isStorageLoaded]);
 
   useEffect(() => {
     if (isStorageLoaded) set('creative_pro_current_id', currentSessionId);
-  }, [currentSessionId]);
+  }, [currentSessionId, isStorageLoaded]);
 
   useEffect(() => {
     if (isStorageLoaded) set('creative_pro_gallery_v2', JSON.stringify(gallery));
-  }, [gallery]);
+  }, [gallery, isStorageLoaded]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -770,6 +857,13 @@ export function CreativeAiProChat({
             createdAt: new Date().toISOString()
           };
           setGallery(prev => [newItem, ...prev]);
+          recordGeneratedMedia({
+            type: 'image',
+            mediaUrl: imageUrl,
+            prompt,
+            title: 'Creative AI Pro Image',
+            studio: 'creative_pro'
+          }).catch(console.warn);
         }
         setSessions(prev => prev.map(s => {
           if (s.id === currentSessionId) {
@@ -882,6 +976,13 @@ export function CreativeAiProChat({
                                   };
                                   return [newItem, ...prev];
                                 });
+                                recordGeneratedMedia({
+                                  type: 'video',
+                                  mediaUrl: finalVideoUrl,
+                                  prompt: prompt || 'AI Video Clip',
+                                  title: 'Creative AI Pro Video',
+                                  studio: 'creative_pro'
+                                }).catch(console.warn);
                               }, 100);
                             }
                             return finalVideoUrl;
@@ -942,6 +1043,13 @@ export function CreativeAiProChat({
                             };
                             return [newItem, ...prev];
                           });
+                          recordGeneratedMedia({
+                            type: 'video',
+                            mediaUrl: finalVideoUrl,
+                            prompt: prompt || 'AI Video Clip',
+                            title: 'Creative AI Pro Video',
+                            studio: 'creative_pro'
+                          }).catch(console.warn);
                         }, 100);
                       }
                       return finalVideoUrl;
