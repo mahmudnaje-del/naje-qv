@@ -23,6 +23,11 @@ const LAYOUTS = new Set([
   'full_background_image',
 ]);
 
+export function isSlideRequest(value: unknown): boolean {
+  const id = String(value || '').trim().toLowerCase();
+  return id === 'deck' || id === 'pptx' || id === 'pdf_slides' || id === 'powerpoint' || id === 'ppt' || id === 'slides';
+}
+
 export function isOpenFormatId(value: unknown): value is OpenFormat {
   return typeof value === 'string' && (OPEN_FORMATS as readonly string[]).includes(value);
 }
@@ -33,11 +38,13 @@ function campaignBrief(prompt: string): boolean {
 
 export function resolveOpenFormat(explicit: string | undefined | null, prompt: string): OpenFormat | null {
   const asked = String(explicit || '').trim().toLowerCase();
+  if (isSlideRequest(asked)) return 'deck';
   if (isOpenFormatId(asked)) return asked;
   if (asked && asked !== 'none') return null;
   const text = String(prompt || '').trim();
   if (!text || campaignBrief(text)) return null;
-  if (/بوربوينت|powerpoint|\bpptx\b|\bpdf\b|وورد|\bdocx\b/i.test(text)) return null;
+  if (/وورد|\bdocx\b|مستند\s*pdf|تقرير\s*pdf/i.test(text)) return null;
+  if (/بوربوينت|powerpoint|\bpptx\b|عرض تقديمي|شرائح\s*pdf|pdf\s*slides/i.test(text)) return 'deck';
 
   if (/مارك\s*داون|markdown|\.md\b|ملف\s*md\b/i.test(text)) return 'markdown';
   if (/\bcsv\b|قيم مفصولة|ملف جدول/i.test(text)) return 'csv';
@@ -80,7 +87,7 @@ export function wantsLiveSearch(prompt: string, format: OpenFormat): boolean {
   return /ابحث|من الإنترنت|من الانترنت|google|أحدث الأرقام|search the web/i.test(prompt);
 }
 
-export function creationSystem(format: OpenFormat): string {
+export function creationSystem(format: OpenFormat, slidesCount?: number): string {
   const shared = `أنت محرّك الإنشاء في ناجي. نفّذ الطلب فعلاً. لا تعتذر بأن الصيغة غير مدعومة. إذا نقصت معلومة، افترض افتراضاً واضحاً واذكره في سطر واحد ثم أكمل.
 اكتب باللغة التي كتب بها المستخدم. العربي يبقى عربياً فصيحاً وعملياً.
 لا تضع مقدمة خارج الملف.`;
@@ -105,11 +112,12 @@ export function creationSystem(format: OpenFormat): string {
     return `${shared}
 أخرج نصاً صافياً بلا تنسيق ماركداون ثقيل.`;
   }
+  const count = Math.min(20, Math.max(3, Number(slidesCount) || 8));
   return `${shared}
 أخرج JSON فقط، بلا سياج، بهذا الشكل:
 {
   "title": "عنوان العرض",
-  "theme": { "background": "#12141A", "title": "#F6F1E7", "text": "#C9C3B6", "accent": "#D4A574" },
+  "theme": { "background": "#FFFFFF", "title": "#0F172A", "text": "#334155", "accent": "#4F46E5" },
   "slides": [
     {
       "layoutTemplate": "title_slide",
@@ -130,9 +138,11 @@ export function creationSystem(format: OpenFormat): string {
   ]
 }
 القواعد البصرية:
-- 6 إلى 10 شرائح إلا إذا طلب المستخدم عدداً.
+- بالضبط ${count} شرائح.
 - نوّع layoutTemplate بين: title_slide, split_image_left, split_image_right, three_cards, two_columns, bullet_list, showcase, comparison_bars, icon_list, full_background_image.
-- كل شريحة تحمل aiImagePrompt يصف لوناً وضوءاً وموضوعاً، حتى لو ما في صورة مولّدة بعد.
+- icon_list و three_cards تحمل بطاقات بعنوان ونص قصير. two_columns للمقارنة بين وضعين.
+- comparison_bars و chart_column تستخدمان comparisons بقيم رقمية.
+- كل شريحة تحمل فكرة واحدة ظاهرة في slideTitle أو البطاقات أو النقاط. لا تترك شريحة فارغة.
 - لا تكرر نفس التخطيط مرتين متتاليتين.
 - العنوان جملة قصيرة. النقطة فكرة واحدة.`;
 }
@@ -168,7 +178,7 @@ export function parseDeck(raw: string): { title: string; theme: DeckTheme; slide
     text: asString(themeIn.text || '#C9C3B6', 16) || '#C9C3B6',
     accent: asString(themeIn.accent || '#D4A574', 16) || '#D4A574',
   };
-  const clean = slides.slice(0, 16).map((slide: any, index: number) => {
+  const clean = slides.slice(0, 20).map((slide: any, index: number) => {
     const layout = LAYOUTS.has(slide?.layoutTemplate) ? slide.layoutTemplate : (index === 0 ? 'title_slide' : 'bullet_list');
     const content = slide?.content || {};
     return {
@@ -183,7 +193,7 @@ export function parseDeck(raw: string): { title: string; theme: DeckTheme; slide
         aiImagePrompt: asString(content.aiImagePrompt || content.visual || slide?.slideTitle, 300),
         visualSource: 'ai',
         cards: Array.isArray(content.cards)
-          ? content.cards.slice(0, 3).map((card: any) => ({
+          ? content.cards.slice(0, 4).map((card: any) => ({
               title: asString(card?.title, 60),
               text: asString(card?.text, 180),
               iconKeyword: asString(card?.iconKeyword || 'spark', 24),

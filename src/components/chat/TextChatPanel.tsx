@@ -29,7 +29,8 @@ import {
   useLivePlaceholder, 
 } from '../../hooks/useLivePlaceholder';
 import { localizeChatType } from '../../lib/chatTypeConfig';
-import { isOpenFormatId, localizeActivity } from '../../lib/creationEngine';
+import { isOpenFormatId, isSlideRequest, localizeActivity } from '../../lib/creationEngine';
+import DeckPreviewPane from '../deck/DeckPreviewPane';
 import najePersonaDesignerData from '../../assets/icons/naje-persona-designer-data.svg';
 import najeDocument from '../../assets/icons/naje-document.svg';
 import najeChartBars from '../../assets/icons/naje-chart-bars.svg';
@@ -93,6 +94,9 @@ interface TextChatPanelProps {
   loading: boolean;
   liveActivity?: string;
   setActiveUiTab: (tab: 'chat' | 'preview' | 'code') => void;
+  deckTab?: 'chat' | 'preview';
+  previewDeck?: { id: string; title?: string; slides: any[]; theme?: any } | null;
+  onOpenDeck?: (id: string) => void;
   editingMessageId: string | null;
   setEditingMessageId: (id: string | null) => void;
   editInstruction: string;
@@ -205,6 +209,9 @@ export default function TextChatPanel({
   loading,
   liveActivity = '',
   setActiveUiTab,
+  deckTab = 'chat',
+  previewDeck = null,
+  onOpenDeck,
   editingMessageId,
   setEditingMessageId,
   editInstruction,
@@ -335,6 +342,9 @@ export default function TextChatPanel({
   return (
     <div className="flex-1 min-h-0 flex flex-col w-full overflow-hidden relative" dir={isRtl ? 'rtl' : 'ltr'}>
       {/* Scrollable Messages Region */}
+      {deckTab === 'preview' && previewDeck ? (
+        <DeckPreviewPane title={previewDeck.title} slides={previewDeck.slides} theme={previewDeck.theme} building={loading} />
+      ) : (
       <div className="flex-1 min-h-0 overflow-y-auto p-3 sm:p-5 md:p-6 pb-12 sm:pb-6 w-full">
         <div className="max-w-[800px] mx-auto space-y-6 w-full">
           
@@ -631,6 +641,7 @@ export default function TextChatPanel({
             votedMessages={votedMessages}
             getLocalDoc={getLocalDoc}
             downloadBase64File={downloadBase64File}
+            onOpenDeck={onOpenDeck}
           />
         ))}
         
@@ -703,15 +714,15 @@ export default function TextChatPanel({
                     <div className="flex justify-between items-center text-sm mb-1.5">
                       <span className="text-gray-500 dark:text-gray-400">{t('chatui.docTypeLabel')}</span>
                       <span className="font-semibold text-gray-900 dark:text-white">
-                        {isOpenFormatId(pendingDocConfirm.docType)
-                          ? t(pendingDocConfirm.docType === 'markdown' ? 'create.md' : pendingDocConfirm.docType === 'deck' ? 'create.deck' : `create.${pendingDocConfirm.docType}`)
-                          : pendingDocConfirm.docType === 'pptx' ? t('chatui.docPptxFull') : pendingDocConfirm.docType === 'docx' ? t('chatui.docWordFull') : pendingDocConfirm.docType === 'pdf_slides' ? t('studio.docPdfSlides') : t('studio.docPdfDoc')}
+                        {isOpenFormatId(pendingDocConfirm.docType) || isSlideRequest(pendingDocConfirm.docType)
+                          ? t(pendingDocConfirm.docType === 'markdown' ? 'create.md' : isSlideRequest(pendingDocConfirm.docType) ? 'create.deck' : `create.${pendingDocConfirm.docType}`)
+                          : pendingDocConfirm.docType === 'docx' ? t('chatui.docWordFull') : t('studio.docPdfDoc')}
                       </span>
                     </div>
                     <div className="flex justify-between items-center text-sm">
                       <span className="text-gray-500 dark:text-gray-400">{t('chatui.expectedCost')}</span>
                       <span className="font-bold text-indigo-600 dark:text-indigo-400">
-                        {isOpenFormatId(pendingDocConfirm.docType)
+                        {isOpenFormatId(pendingDocConfirm.docType) || isSlideRequest(pendingDocConfirm.docType)
                           ? t('create.tokenPriced')
                           : (
                             <>
@@ -732,7 +743,7 @@ export default function TextChatPanel({
                         const { docType, prompt, estimatedCount } = pendingDocConfirm;
                         setPendingDocConfirm(null);
                         setDocType(docType);
-                        if (docType === 'pptx' || docType === 'pdf_slides') {
+                        if (isSlideRequest(docType)) {
                           setSlidesCount(estimatedCount);
                           setTimeout(() => {
                             executeSubmission(prompt, docType, undefined, estimatedCount);
@@ -747,7 +758,7 @@ export default function TextChatPanel({
                       type="button"
                       className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white py-2.5 px-4 rounded-xl text-sm font-semibold shadow-md shadow-indigo-600/10 active:scale-95 transition cursor-pointer"
                     >
-                      {isOpenFormatId(pendingDocConfirm.docType)
+                      {isOpenFormatId(pendingDocConfirm.docType) || isSlideRequest(pendingDocConfirm.docType)
                         ? t('create.make')
                         : t('chatui.generateDocPoints', { cost: (pendingDocConfirm.docType === 'pptx' || pendingDocConfirm.docType === 'pdf_slides')
                         ? parseFloat((pendingDocConfirm.estimatedCount * 0.20).toFixed(2))
@@ -772,6 +783,7 @@ export default function TextChatPanel({
           <div ref={messagesEndRef} />
         </div>
       </div>
+      )}
 
       {/* Fixed Docked Bottom Input Box with Full-Boundary Fluid Waves */}
       {chat.type !== 'ui' && (
@@ -900,17 +912,15 @@ export default function TextChatPanel({
                       </button>
                     </div>
 
-                    <div className={cn("grid grid-cols-1 gap-4", docType === 'none' ? "sm:grid-cols-1" : (docType === 'pptx' || docType === 'pdf_slides') ? "sm:grid-cols-2" : "sm:grid-cols-3")}>
+                    <div className={cn("grid grid-cols-1 gap-4", docType === 'none' ? "sm:grid-cols-1" : isSlideRequest(docType) ? "sm:grid-cols-2" : "sm:grid-cols-3")}>
                       <div className="flex flex-col gap-2 col-span-full">
                         <span className="text-xs text-gray-800 dark:text-gray-400 font-bold">{t('studio.requiredFileType')}</span>
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                           {[
                             { id: 'none', label: t('studio.docNone'), desc: t('studio.docNoneDesc'), icon: najeChatTyping },
-                            { id: 'pptx', label: t('studio.docPptx'), desc: t('studio.docPptxDesc'), icon: najeChartBars },
-                            { id: 'pdf_slides', label: t('studio.docPdfSlides'), desc: t('studio.docPdfSlidesDesc'), icon: najeFilmstrip },
+                            { id: 'deck', label: t('create.deck'), desc: t('create.deckDesc'), icon: najeFilmstrip },
                             { id: 'pdf_doc', label: t('studio.docPdfDoc'), desc: t('studio.docPdfDocDesc'), icon: najeDocument },
                             { id: 'docx', label: t('studio.docWord'), desc: t('studio.docWordDesc'), icon: najePencilWrite },
-                            { id: 'deck', label: t('create.deck'), desc: t('create.deckDesc'), icon: najeFilmstrip },
                             { id: 'markdown', label: t('create.md'), desc: t('create.mdDesc'), icon: najeDocument },
                             { id: 'csv', label: t('create.csv'), desc: t('create.csvDesc'), icon: najeChartBars },
                             { id: 'json', label: t('create.json'), desc: t('create.jsonDesc'), icon: najeRulerSpec },
@@ -936,7 +946,7 @@ export default function TextChatPanel({
                         </div>
                       </div>
 
-                      {docType !== 'none' && (docType === 'pptx' || docType === 'pdf_slides') && (
+                      {docType !== 'none' && isSlideRequest(docType) && (
                         <div className="flex flex-col gap-1.5">
                           <span className="text-xs text-gray-800 dark:text-gray-400 ">{t('studio.slidesCount')}</span>
                           <div className="flex flex-wrap gap-2">
@@ -1134,9 +1144,11 @@ export default function TextChatPanel({
                      >
                         <FileText className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-indigo-600 dark:text-indigo-400 shrink-0" />
                         <span>{t('chatui.docBadge', {
-                          type: docType === 'pdf_slides' ? t('studio.docPdfSlides') : docType === 'pdf_doc' ? t('studio.docPdfDoc') : docType === 'docx' ? t('studio.docWord') : t('studio.docPptx'),
-                          detail: (docType === 'pptx' || docType === 'pdf_slides')
+                          type: isSlideRequest(docType) ? t('create.deck') : docType === 'pdf_doc' ? t('studio.docPdfDoc') : docType === 'docx' ? t('studio.docWord') : isOpenFormatId(docType) ? t(docType === 'markdown' ? 'create.md' : `create.${docType}`) : t('studio.docPptx'),
+                          detail: isSlideRequest(docType)
                             ? t('chatui.slidesDetail', { count: slidesCount })
+                            : isOpenFormatId(docType)
+                            ? docType.toUpperCase()
                             : t('chatui.pagesDetail', { count: pagesCount, size: paperSize.toUpperCase() })
                         })}</span>
                         <ChevronDown className="w-2.5 h-2.5 sm:w-3 sm:h-3 opacity-70 mr-0.5 shrink-0" />

@@ -10,7 +10,7 @@ import { parseUiMessage, AssistantTextMessage } from '../../pages/Chat';
 import NajeErrorCard from '../NajeErrorCard';
 import NajeThinking from '../NajeThinking';
 import GroundingReportViewer from '../GroundingReportViewer';
-import NajePreviewRenderer from '../NajePreviewRenderer';
+import DeckMessageCard from '../deck/DeckMessageCard';
 import LocalMediaRenderer from '../LocalMediaRenderer';
 import ImageZoomModal from '../ImageZoomModal';
 import { Message, Chat } from '../../types';
@@ -103,6 +103,7 @@ interface MessageBubbleProps {
   votedMessages: Record<string, 'up' | 'down'>;
   getLocalDoc: (id: string) => Promise<string | null>;
   downloadBase64File: (b64: string, filename: string, mimeType: string, options?: any) => void;
+  onOpenDeck?: (id: string) => void;
 }
 
 export default function MessageBubble({
@@ -129,7 +130,8 @@ export default function MessageBubble({
   openFeedback,
   votedMessages,
   getLocalDoc,
-  downloadBase64File
+  downloadBase64File,
+  onOpenDeck
 }: MessageBubbleProps) {
   const [copied, setCopied] = useState(false);
   const [previewModalSrc, setPreviewModalSrc] = useState<string | null>(null);
@@ -248,7 +250,24 @@ export default function MessageBubble({
           </div>
         )}
 
-        {(msg as any).documentData && msg.role === 'assistant' && (
+        {(() => {
+          const docData = (msg as any).documentData;
+          const slides = Array.isArray(docData?.slides) ? docData.slides : [];
+          if (msg.role === 'assistant' && slides.length > 0) {
+            return (
+              <DeckMessageCard
+                title={docData.title || docData.filename}
+                slides={slides}
+                theme={docData.theme || slides[0]?.colors || slides[0]?.theme}
+                onPreview={() => {
+                  onOpenDeck?.(msg.id);
+                  setActiveUiTab('preview');
+                }}
+              />
+            );
+          }
+          if (!docData || msg.role !== 'assistant') return null;
+          return (
           <div className="mt-4 p-3 sm:p-4 naje-glass-card flex flex-wrap items-center justify-between gap-3 overflow-hidden">
             <div className="flex items-center gap-3 min-w-0 flex-1">
               <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center flex-shrink-0">
@@ -333,7 +352,8 @@ export default function MessageBubble({
               </button>
             </div>
           </div>
-        )}
+          );
+        })()}
 
         {(msg as any).documentData?.sources && Array.isArray((msg as any).documentData.sources) && (msg as any).documentData.sources.length > 0 && (
           <div className="mt-3">
@@ -343,12 +363,6 @@ export default function MessageBubble({
 
         {(msg as any).documentData?.groundingReport && (
           <GroundingReportViewer report={(msg as any).documentData.groundingReport} />
-        )}
-
-        {(msg as any).documentData?.slides && (
-          <div className="mt-4">
-            <NajePreviewRenderer slides={(msg as any).documentData.slides} theme={(msg as any).documentData.theme} />
-          </div>
         )}
 
         {msg.mediaUrl && (

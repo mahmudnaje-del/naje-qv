@@ -23,8 +23,8 @@ import { t as translate, useI18n } from '../i18n';
 import { exportSingleImagePDF, exportChatPDF } from '../utils/pdfExport';
 import { formatProfessionalError } from '../utils/errorFormatter';
 import { cn } from '../lib/utils';
-import NajePreviewRenderer from '../components/NajePreviewRenderer';
 import NajeFlowStepper from '../components/NajeFlowStepper';
+import DeckPreviewPane from '../components/deck/DeckPreviewPane';
 import NajeProgressLine from '../components/NajeProgressLine';
 import NajeErrorCard from '../components/NajeErrorCard';
 import NajeUiPreview from '../components/NajeUiPreview';
@@ -39,7 +39,7 @@ import { downloadBase64File } from '../utils/fileDownloader';
 import { VoiceSettingsPanel, parseDualScriptLines, buildVoiceChatPayload } from "../components/chat/VoiceChatPanel";
 import { calcVoicePointsCost, spokenTextFromVoiceScript } from '../lib/voicePricing';
 import { readNajeSse } from '../lib/sseRead';
-import { isOpenFormatId, resolveOpenFormat } from '../lib/creationEngine';
+import { isOpenFormatId, isSlideRequest, resolveOpenFormat } from '../lib/creationEngine';
 import { rememberMedia } from '../lib/offline';
 import { VideoSettingsPanel, buildVideoChatPayload } from "../components/chat/VideoChatPanel";
 import { ImageSettingsPanel, buildImageChatPayload } from "../components/chat/ImageChatPanel";
@@ -59,7 +59,6 @@ import UiChatPanel from '../components/chat/UiChatPanel';
 import TextChatPanel from '../components/chat/TextChatPanel';
 import { getTemplateThumbnail } from '../data/templateThumbnails';
 import { usePricingConfig } from '../hooks/usePricingConfig';
-import najeChartBars from '../assets/icons/naje-chart-bars.svg';
 import najeFilmstrip from '../assets/icons/naje-filmstrip.svg';
 import najeDocument from '../assets/icons/naje-document.svg';
 import najePencilWrite from '../assets/icons/naje-pencil-write.svg';
@@ -553,7 +552,7 @@ export default function Chat() {
         minCost: pricing.voice?.minCost
       }).cost;
     } else if (chat.type === 'text') {
-      if (isOpenFormatId(activeDocType)) {
+      if (isOpenFormatId(activeDocType) || isSlideRequest(activeDocType)) {
         cost = 0;
       } else if (activeDocType !== 'none') {
         if (activeDocType === 'pptx' || activeDocType === 'pdf_slides') {
@@ -570,7 +569,7 @@ export default function Chat() {
 
   const getAuthModalCost = () => {
     let cost = 0;
-    if (chosenAuthDocType === 'pptx' || chosenAuthDocType === 'pdf_slides') {
+    if (isSlideRequest(chosenAuthDocType)) {
       cost = slidesCount * (pricing.document?.pdf_per_slide ?? 0.20);
     } else {
       cost = pagesCount * (paperSize === 'a5' ? (pricing.document?.a5PerPage ?? 0.10) : (pricing.document?.a4PerPage ?? 0.15));
@@ -1136,8 +1135,11 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
           signal: abortControllerRef.current.signal,
           body: JSON.stringify({
-            prompt: finalPrompt,
+            prompt: openFormat === 'deck'
+              ? `${finalPrompt}\n\nعدد الشرائح المطلوب: ${slidesCountOverride ?? slidesCount}.`
+              : finalPrompt,
             format: openFormat,
+            slidesCount: openFormat === 'deck' ? (slidesCountOverride ?? slidesCount) : undefined,
             search: enableSearchGrounding === true,
             history: messages.slice(-8).map(m => ({ role: m.role, content: m.content })),
           }),
@@ -1150,17 +1152,19 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
         }
         await readNajeSse(createRes, (ev) => {
           if (ev.activity) setLiveActivity(String(ev.activity));
-          if (typeof ev.text === 'string') acc += ev.text;
+          if (typeof ev.text === 'string' && openFormat !== 'deck') acc += ev.text;
           if (typeof ev.replaceContent === 'string') acc = ev.replaceContent;
           if (ev.deck) {
             documentData = {
               title: ev.deck.title,
-              filename: `${ev.deck.title || 'naje-deck'}.json`,
+              filename: `${ev.deck.title || 'naje-deck'}.pptx`,
               extension: 'deck',
               type: 'deck',
               slides: ev.deck.slides,
               theme: ev.deck.theme,
             };
+            setPreviewDeckMsgId(assistantId);
+            setActiveUiTab('preview');
           }
           if (ev.artifact) {
             documentData = {
@@ -1516,6 +1520,17 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
                 return;
               }
               if (jobData.status === 'completed') {
+                data = {
+                  ...data,
+                  result: jobData.result || data.result,
+                  mimeType: jobData.mimeType || data.mimeType,
+                  extension: jobData.extension || data.extension,
+                  permanentMediaUrl: jobData.permanentMediaUrl || data.permanentMediaUrl,
+                  slides: jobData.slides || jobData.documentData?.slides || data.slides,
+                  documentData: jobData.documentData || data.documentData,
+                  groundingReport: jobData.groundingReport || jobData.documentData?.groundingReport || data.groundingReport,
+                  newBalance: jobData.newBalance ?? data.newBalance,
+                };
                 if (jobData.consumedBalance !== undefined) {
                   updateBalance(Math.max(0, (user?.balance || 0) - jobData.consumedBalance));
                 } else if (jobData.newBalance !== undefined) {
@@ -1566,21 +1581,24 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
       }
 
       let documentData = null;
-      if (finalDocType && finalDocType !== 'none' && data.result) {
+      const finishedSlides = data.slides || data.documentData?.slides;
+      if (finalDocType && finalDocType !== 'none' && (data.result || (Array.isArray(finishedSlides) && finishedSlides.length))) {
         assistantContent = ct('chatui.docCreated', { type: finalDocType.toUpperCase() });
         const localDocId = currentJobId || Date.now().toString();
-        saveDoc(localDocId, data.result).catch(e => console.error(e));
-        let docPermanentUrl = data.permanentMediaUrl || null;
+        if (data.result) saveDoc(localDocId, data.result).catch(e => console.error(e));
+        let docPermanentUrl = data.permanentMediaUrl || data.documentData?.url || null;
         if (!docPermanentUrl && typeof data.result === 'string' && (data.result.startsWith('data:') || data.result.length > 50000)) {
           docPermanentUrl = await ensurePermanentMediaUrl(data.result, 'image', `documents/${user?.uid || 'anon'}/doc_${Date.now()}.${data.extension || 'pdf'}`);
         }
         documentData = {
             id: localDocId,
             url: docPermanentUrl,
-            mimeType: data.mimeType,
-            extension: data.extension,
-            filename: `NajeAI_Document.${data.extension}`,
-            slides: data.slides,
+            mimeType: data.mimeType || data.documentData?.mimeType,
+            extension: data.extension || data.documentData?.extension || 'deck',
+            filename: data.documentData?.filename || `NajeAI_Document.${data.extension || 'pptx'}`,
+            title: data.documentData?.title || finishedSlides?.[0]?.slideTitle,
+            slides: finishedSlides,
+            theme: data.documentData?.theme || finishedSlides?.[0]?.colors || finishedSlides?.[0]?.theme,
             groundingReport: data.groundingReport
         };
       }
@@ -1603,6 +1621,10 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
 
         const mRef = currentJobId ? doc(db, 'messages', `assistant_${currentJobId}`) : doc(collection(db, 'messages'));
         setDoc(mRef, stripUndefined(msgData)).catch(e => console.error(e));
+        if (documentData?.slides?.length) {
+          setPreviewDeckMsgId(mRef.id);
+          setActiveUiTab('preview');
+        }
 
         // Always sync media to generated_media collection for the user's gallery across all devices
         if (user?.uid && (chat.type === 'image' || chat.type === 'video' || chat.type === 'voice')) {
@@ -1829,6 +1851,7 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const [activeUiTab, setActiveUiTab] = useState<'chat' | 'preview' | 'code'>('chat');
+  const [previewDeckMsgId, setPreviewDeckMsgId] = useState<string | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const submitInFlightRef = useRef(false);
 
@@ -1844,6 +1867,19 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
   const latestUiCodeLines = React.useMemo(() => {
     return latestUiHtml ? latestUiHtml.split('\n').length : 0;
   }, [latestUiHtml]);
+
+  const previewDeck = React.useMemo(() => {
+    const withSlides = messages.filter((m) => Array.isArray((m as any).documentData?.slides) && (m as any).documentData.slides.length > 0);
+    const picked = withSlides.find((m) => m.id === previewDeckMsgId) || withSlides[withSlides.length - 1];
+    if (!picked) return null;
+    const docData = (picked as any).documentData;
+    return {
+      id: picked.id,
+      title: docData.title || docData.filename || 'عرض',
+      slides: docData.slides,
+      theme: docData.theme || docData.slides?.[0]?.colors || docData.slides?.[0]?.theme || null,
+    };
+  }, [messages, previewDeckMsgId]);
 
   // Settings Panels Toggles (Bottom Inline Pop-ups)
   const [showDocSettings, setShowDocSettings] = useState(false);
@@ -1865,7 +1901,7 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
   // File creation authorization states
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [interceptedPrompt, setInterceptedPrompt] = useState<string | null>(null);
-  const [chosenAuthDocType, setChosenAuthDocType] = useState<string>('pdf_slides');
+  const [chosenAuthDocType, setChosenAuthDocType] = useState<string>('deck');
   const [pendingDocConfirm, setPendingDocConfirm] = useState<{ docType: string, prompt: string, estimatedCount: number } | null>(null);
   const [textRiskPrompt, setTextRiskPrompt] = useState<{ 
     originalPrompt: string; 
@@ -1884,6 +1920,11 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
     }
   }, [input, docType, chat?.type]);
 
+
+  useEffect(() => {
+    setActiveUiTab('chat');
+    setPreviewDeckMsgId(null);
+  }, [chatId]);
 
   useEffect(() => {
     if (!chatId || !user?.uid) return;
@@ -2170,6 +2211,42 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
                 </button>
               </div>
             </div>
+          ) : previewDeck && chat.type === 'text' ? (
+            <div className="bg-slate-200/70 dark:bg-slate-900/90 p-1 rounded-xl flex items-center gap-1 border border-slate-300/80 dark:border-slate-800">
+              <button
+                type="button"
+                onClick={() => setActiveUiTab('chat')}
+                className={cn(
+                  "relative px-3 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer active:scale-95",
+                  activeUiTab !== 'preview' ? "text-indigo-600 dark:text-indigo-400 font-extrabold" : "text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200"
+                )}
+              >
+                {activeUiTab !== 'preview' && (
+                  <motion.div layoutId="deckTabHighlight" className="absolute inset-0 bg-white dark:bg-slate-800 rounded-lg shadow-sm" transition={{ type: "spring", bounce: 0.15, duration: 0.3 }} />
+                )}
+                <span className="relative z-10 flex items-center gap-1.5">
+                  <MessageSquare className="w-3.5 h-3.5" />
+                  <span className="hidden min-[420px]:inline">{t('studio.chatTab')}</span>
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveUiTab('preview')}
+                className={cn(
+                  "relative px-3 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer active:scale-95",
+                  activeUiTab === 'preview' ? "text-indigo-600 dark:text-indigo-400 font-extrabold" : "text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200"
+                )}
+              >
+                {activeUiTab === 'preview' && (
+                  <motion.div layoutId="deckTabHighlight" className="absolute inset-0 bg-white dark:bg-slate-800 rounded-lg shadow-sm" transition={{ type: "spring", bounce: 0.15, duration: 0.3 }} />
+                )}
+                <span className="relative z-10 flex items-center gap-1.5">
+                  <Eye className="w-3.5 h-3.5" />
+                  <span className="hidden min-[420px]:inline">{t('studio.previewTab')}</span>
+                  {loading && <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />}
+                </span>
+              </button>
+            </div>
           ) : (
             messages.length > 0 && (
               <button
@@ -2239,6 +2316,9 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
             loading={loading}
             liveActivity={liveActivity}
             setActiveUiTab={setActiveUiTab}
+            deckTab={activeUiTab === 'preview' ? 'preview' : 'chat'}
+            previewDeck={previewDeck}
+            onOpenDeck={(id) => { setPreviewDeckMsgId(id); setActiveUiTab('preview'); }}
             editingMessageId={editingMessageId}
             setEditingMessageId={setEditingMessageId}
             editInstruction={editInstruction}
@@ -2382,10 +2462,9 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
               <div className="flex flex-col gap-4">
                 <div className="flex flex-col gap-1.5">
                   <span className="text-xs text-gray-800 dark:text-gray-400 ">{t('studio.selectDocType')}</span>
-                  <div className="grid grid-cols-4 gap-2">
+                  <div className="grid grid-cols-3 gap-2">
                     {[
-                      { id: 'pptx', label: 'PowerPoint', icon: najeChartBars },
-                      { id: 'pdf_slides', label: t('studio.docPdfSlides'), icon: najeFilmstrip },
+                      { id: 'deck', label: t('create.deck'), icon: najeFilmstrip },
                       { id: 'pdf_doc', label: t('studio.docPdfDoc'), icon: najeDocument },
                       { id: 'docx', label: 'Word', icon: najePencilWrite }
                     ].map(opt => (
@@ -2408,7 +2487,7 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
                 </div>
 
                 {/* Sub-config depending on chosen type */}
-                {(chosenAuthDocType === 'pptx' || chosenAuthDocType === 'pdf_slides') ? (
+                {isSlideRequest(chosenAuthDocType) ? (
                   <div className="flex flex-col gap-1.5 mt-3">
                     <span className="text-xs text-gray-800 dark:text-gray-400 ">{t('chatui.slidesCountCost', { cost: pricing.document?.pdf_per_slide ?? 0.2 })}</span>
                     <div className="flex flex-wrap gap-2">
@@ -2478,7 +2557,7 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
               {/* Total points card */}
               <div className="bg-indigo-600/[0.03] border border-indigo-500/15 rounded-xl p-3 flex justify-between items-center text-xs">
                 <span className="text-gray-800 dark:text-gray-400 font-semibold">{t('chatui.totalRequired')}</span>
-                <span className="text-indigo-600 dark:text-indigo-400 font-extrabold text-sm">{t('chatui.pointsCount', { count: getAuthModalCost() })}</span>
+                <span className="text-indigo-600 dark:text-indigo-400 font-extrabold text-sm">{isOpenFormatId(chosenAuthDocType) || isSlideRequest(chosenAuthDocType) ? t('create.tokenPriced') : t('chatui.pointsCount', { count: getAuthModalCost() })}</span>
               </div>
 
               {/* Buttons */}

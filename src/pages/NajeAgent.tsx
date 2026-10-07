@@ -39,7 +39,7 @@ import { FleetStrip } from '../components/FleetStrip';
 import { dispatchSpecialists, type DispatchDecision } from '../lib/agentFleet';
 import { readNajeSse } from '../lib/sseRead';
 import { resolveOpenFormat, localizeActivity } from '../lib/creationEngine';
-import NajePreviewRenderer from '../components/NajePreviewRenderer';
+import DeckPreviewPane from '../components/deck/DeckPreviewPane';
 
 export interface AgentSourceItem {
   id: string;
@@ -1084,7 +1084,9 @@ export default function NajeAgent() {
                       </div>
                     )}
                     {msg.documentData?.slides && (
-                      <NajePreviewRenderer slides={msg.documentData.slides} theme={msg.documentData.theme} />
+                      <div className="h-[68vh] min-h-[420px] flex">
+                        <DeckPreviewPane title={msg.documentData.title} slides={msg.documentData.slides} theme={msg.documentData.theme} />
+                      </div>
                     )}
                     {msg.documentData?.text && msg.documentData?.filename && (
                       <button

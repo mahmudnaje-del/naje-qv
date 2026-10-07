@@ -6525,7 +6525,7 @@ app.post("/api/generate", async (req, res) => {
       let { prompt, type, model, config, files, duration, docType: requestedDocType, docSize, paperSize, pagesCount, slidesCount, projectData, previousInteractionId, isEdit, jobId, maskData } = req.body;
       let rawDocType = String(requestedDocType || 'pdf_slides').toLowerCase().trim();
       let docTypeToUse = 'pdf_slides';
-      if (rawDocType === 'pptx' || rawDocType === 'powerpoint' || rawDocType === 'ppt') {
+      if (rawDocType === 'pptx' || rawDocType === 'powerpoint' || rawDocType === 'ppt' || rawDocType === 'deck' || rawDocType === 'pdf_slides' || rawDocType === 'slides') {
         docTypeToUse = 'pptx';
       } else if (rawDocType === 'docx' || rawDocType === 'word' || rawDocType === 'doc' || rawDocType === 'document') {
         docTypeToUse = 'docx';
@@ -6818,7 +6818,7 @@ app.post("/api/generate", async (req, res) => {
         // Token-metered after the stream using admin input/output rates.
         cost = 0;
       } else if (type === 'document' || (type === 'text' && requestedDocType && requestedDocType !== 'none')) {
-        if (requestedDocType === 'pptx' || docTypeToUse === 'pdf_slides') {
+        if (docTypeToUse === 'pptx') {
           const slides = parseInt(slidesCount) || 5;
           cost = slides * (pricing.document.pdf_per_slide || 0.20);
         } else {
@@ -7947,7 +7947,7 @@ ${speaker2Name}: لا والله، الجو مش صافي وفي تراب.`
 
       } else if (type === 'document') {
         let rawDocType = String(requestedDocType || 'pdf_slides').toLowerCase().trim();
-        if (rawDocType === 'pptx' || rawDocType === 'powerpoint' || rawDocType === 'ppt') {
+        if (rawDocType === 'pptx' || rawDocType === 'powerpoint' || rawDocType === 'ppt' || rawDocType === 'deck' || rawDocType === 'pdf_slides' || rawDocType === 'slides') {
           docTypeToUse = 'pptx';
         } else if (rawDocType === 'docx' || rawDocType === 'word' || rawDocType === 'doc' || rawDocType === 'document') {
           docTypeToUse = 'docx';
@@ -8135,6 +8135,15 @@ ${speaker2Name}: لا والله، الجو مش صافي وفي تراب.`
             }, token).catch(e => console.error("Firestore job update failed:", e));
           }
 
+          var deckMeta = {
+            title: documentTitle || generatedSlides?.[0]?.slideTitle || 'عرض ناجي',
+            theme: {
+              background: artDirection?.colors?.background || '#FFFFFF',
+              title: artDirection?.colors?.title || '#0F172A',
+              text: artDirection?.colors?.text || '#334155',
+              accent: artDirection?.colors?.accent || '#4F46E5',
+            },
+          };
           const base64Data = await naje.renderPPTX(generatedSlides, projectData?.brandProfile);
           if (!base64Data || !base64Data.startsWith('UEsD')) throw new Error("PPTX_CORRUPT");
           generationResult = base64Data;
@@ -9511,6 +9520,8 @@ Respond ONLY with JSON matching this structure:
           mimeType: mimeType || (docTypeToUse === 'docx' ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' : 'application/pdf'),
           extension: extension || (docTypeToUse === 'docx' ? 'docx' : 'pdf'),
           filename: `NajeAI_Document.${extension || (docTypeToUse === 'docx' ? 'docx' : 'pdf')}`,
+          title: typeof deckMeta !== 'undefined' && deckMeta ? deckMeta.title : undefined,
+          theme: typeof deckMeta !== 'undefined' && deckMeta ? deckMeta.theme : undefined,
           slides: typeof generatedSlides !== 'undefined' ? generatedSlides : undefined,
           groundingReport: typeof groundingReport !== 'undefined' ? groundingReport : undefined
         };
@@ -11574,8 +11585,8 @@ app.post("/api/create/stream", async (req, res) => {
       model: modelId,
       contents,
       config: {
-        systemInstruction: creationSystem(format),
-        maxOutputTokens: format === 'deck' || format === 'html' ? 8192 : 4096,
+        systemInstruction: creationSystem(format, Number(req.body?.slidesCount) || undefined),
+        maxOutputTokens: format === 'deck' ? 16384 : format === 'html' ? 8192 : 4096,
         tools: search ? [{ googleSearch: {} }] : undefined,
       },
     });
@@ -11602,7 +11613,7 @@ app.post("/api/create/stream", async (req, res) => {
         res.write(`data: ${JSON.stringify({ error: 'تعذر قراءة العرض. أعد الطلب بجملة أوضح.' })}\n\n`);
       } else {
         res.write(`data: ${JSON.stringify({
-          replaceContent: `${deck.title}\n${deck.slides.length} شرائح. المعاينة تحت النص، والتغذية البصرية مكتوبة على كل شريحة.`,
+          replaceContent: `${deck.title}\n${deck.slides.length} شرائح جاهزة. افتح المعاينة أو نزّل PDF و PPTX.`,
           deck,
         })}\n\n`);
       }
