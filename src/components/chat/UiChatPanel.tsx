@@ -60,7 +60,7 @@ interface UiChatPanelProps {
   setActiveHistoryDocId: (id: string | null) => void;
   setActiveHistoryContent: (content: string | null) => void;
   liveActivity?: string;
-  agentOffer?: string | null;
+  agentHandoff?: boolean;
   onAgentGo?: () => void;
   onAgentStay?: () => void;
   onAttachFiles?: (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -105,13 +105,27 @@ export default function UiChatPanel({
   setActiveHistoryDocId,
   setActiveHistoryContent,
   liveActivity = '',
-  agentOffer = null,
+  agentHandoff = false,
   onAgentGo,
   onAgentStay,
   onAttachFiles,
   onRemoveFile,
 }: UiChatPanelProps) {
   const { isRtl, t } = useI18n();
+  const handoffCard = agentHandoff ? (
+    <div className="w-full max-w-4xl mx-auto mb-2 rounded-2xl border border-stone-200 bg-[#f7f3ea] p-3 text-start dark:border-stone-700 dark:bg-stone-900">
+      <p className="text-sm font-black text-stone-900 dark:text-stone-100">{t('surface.ui.agentTitle')}</p>
+      <p className="mt-1 text-[12px] leading-relaxed text-stone-600 dark:text-stone-300">{t('surface.ui.agentBody')}</p>
+      <div className="mt-3 flex gap-2">
+        <button type="button" onClick={onAgentGo} className="flex-1 rounded-xl bg-stone-900 px-3 py-2 text-[12px] font-bold text-[#f7f3ea] dark:bg-stone-100 dark:text-stone-900">
+          {t('surface.ui.agentGo')}
+        </button>
+        <button type="button" onClick={onAgentStay} className="flex-1 rounded-xl border border-stone-300 px-3 py-2 text-[12px] font-bold text-stone-800 dark:border-stone-600 dark:text-stone-100">
+          {t('surface.ui.agentStay')}
+        </button>
+      </div>
+    </div>
+  ) : null;
   const dynamicPlaceholder = useLivePlaceholder(UI_CHAT_PHRASES);
   // Guard against infinite auto-repair loops (same runtime error re-firing forever).
   const autoRepairCountRef = React.useRef(0);
@@ -259,21 +273,7 @@ export default function UiChatPanel({
           chatType="ui"
           className="p-2 sm:p-3 bg-[#FAF9FC]/95 dark:bg-[#0d0f12]/95 border-t border-gray-200/80 dark:border-gray-800/80 w-full shrink-0 z-30 pb-safe backdrop-blur-xl shadow-[0_-4px_20px_rgba(0,0,0,0.06)] dark:shadow-[0_-4px_25px_rgba(0,0,0,0.5)]"
         >
-          {agentOffer && (
-            <div className="w-full max-w-4xl mx-auto mb-2 rounded-2xl border border-stone-200 bg-[#f7f3ea] p-3 text-start dark:border-stone-700 dark:bg-stone-900">
-              <p className="text-sm font-black text-stone-900 dark:text-stone-100">{t('surface.ui.agentTitle')}</p>
-              <p className="mt-1 text-[12px] leading-relaxed text-stone-600 dark:text-stone-300">{t('surface.ui.agentBody')}</p>
-              <p className="mt-2 line-clamp-2 text-[11px] text-stone-500">{agentOffer}</p>
-              <div className="mt-3 flex gap-2">
-                <button type="button" onClick={onAgentGo} className="flex-1 rounded-xl bg-stone-900 px-3 py-2 text-[12px] font-bold text-[#f7f3ea] dark:bg-stone-100 dark:text-stone-900">
-                  {t('surface.ui.agentGo')}
-                </button>
-                <button type="button" onClick={onAgentStay} className="flex-1 rounded-xl border border-stone-300 px-3 py-2 text-[12px] font-bold text-stone-800 dark:border-stone-600 dark:text-stone-100">
-                  {t('surface.ui.agentStay')}
-                </button>
-              </div>
-            </div>
-          )}
+          {handoffCard}
           <form onSubmit={handleSend} className="w-full max-w-4xl mx-auto p-2.5 sm:p-3 rounded-2xl border border-gray-200/80 dark:border-gray-800/80 shadow-lg bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl flex flex-col gap-2 relative transition-all duration-200">
             {/* Mode & Model Tier Toggle Bar */}
             <div className="flex flex-wrap items-center justify-between gap-2 pb-1 text-xs">
@@ -431,6 +431,7 @@ export default function UiChatPanel({
         "flex-1 h-full flex flex-col overflow-hidden bg-slate-100/70 dark:bg-slate-950/70 p-2 sm:p-4",
         activeUiTab === 'preview' ? "flex" : "hidden"
       )}>
+        {handoffCard}
         <NajeUiPreview
           rawHtml={latestUiHtml}
           isStreaming={loading}

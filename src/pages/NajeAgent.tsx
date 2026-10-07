@@ -172,15 +172,6 @@ export default function NajeAgent() {
   const [searchParams, setSearchParams] = useSearchParams();
   const chatId = searchParams.get('chatId');
 
-  useEffect(() => {
-    const brief = searchParams.get('brief');
-    if (!brief) return;
-    setInputText(brief);
-    const next = new URLSearchParams(searchParams);
-    next.delete('brief');
-    setSearchParams(next, { replace: true });
-  }, []);
-
   // Active top navigation tab: الدردشة / النتائج / المصادر
   const [tab, setTab] = useState<'chat' | 'results' | 'sources'>('chat');
 
@@ -562,9 +553,14 @@ export default function NajeAgent() {
         sources: sources.map(s => ({
           title: s.title,
           type: s.type,
-          snippet: s.content ? s.content.slice(0, 1000) : (s.url || t('tools.agent.mediaSnippet'))
+          snippet: s.content
+            ? s.content.slice(0, String(s.id || '').startsWith('src_ui_') ? 18000 : 1000)
+            : (s.url || t('tools.agent.mediaSnippet'))
         })),
         sourceCount: sources.length,
+        uiHandoff: sources.some(s => String(s.id || '').startsWith('src_ui_'))
+          ? 'المستخدم نقل ملف واجهة جاهز. ابدأ إنشاء الموقع منه مباشرة. لا تسأل إن كان يريد موقعًا، ولا تعِد تصميم الواجهة من الصفر.'
+          : undefined,
         orchestrationSystem: 'Multi-Agent Orchestra (Brand Identity Agent, Advertising & Campaign Agent, Video & Script Director, Graphic Designer, Fullstack Engineer)',
         missionFocus: 'بناء الهوية البصرية المتكاملة، صياغة الإعلانات التسويقية، وتوليد المشاريع بالاعتماد الوثيق على مصادر المشروع المرفوعة'
       };
@@ -637,6 +633,18 @@ export default function NajeAgent() {
       setIsSendingChat(false);
     }
   };
+
+  useEffect(() => {
+    if (searchParams.get('handoff') !== 'ui' || !chatId || !user) return;
+    if (!sources.some((s) => String(s.id || '').startsWith('src_ui_'))) return;
+    const sentKey = `naje.uiHandoffSent.${chatId}`;
+    if (sessionStorage.getItem(sentKey)) return;
+    sessionStorage.setItem(sentKey, '1');
+    const next = new URLSearchParams(searchParams);
+    next.delete('handoff');
+    setSearchParams(next, { replace: true });
+    handleSendMessage('ابدأ إنشاء الموقع اعتمادًا على ملف الواجهة المرفق. الواجهة جاهزة: حافظ على التخطيط والألوان والنصوص، ولا تعِد التصميم من الصفر.');
+  }, [chatId, user, sources, searchParams]);
 
   // User accepts proposal -> Create mission in Firestore
   const handleApproveProposal = async (proposal: AgentPlanProposal) => {

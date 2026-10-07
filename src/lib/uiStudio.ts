@@ -11,12 +11,10 @@ export const UI_FONT_PAIRINGS = [
   { id: 'document', display: 'Source Serif 4', text: 'IBM Plex Sans Arabic', href: 'https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,500;8..60,650&family=IBM+Plex+Sans+Arabic:wght@400;600&display=swap', note: 'مستند مؤسسي هادئ' },
 ] as const;
 
-export function isFullSiteRequest(prompt: string): boolean {
-  const text = String(prompt || '').trim();
-  if (text.length < 6) return false;
-  if (/شاشة واحدة|واجهة واحدة|شاشة تطبيق|app screen|mockup فقط|مكوّن واحد|تعديل بسيط/i.test(text)) return false;
-  if (/لوحة تحكم|dashboard|شاشة جوال|bottom nav|تبويب سفلي/i.test(text) && !/موقع|website|multi-?page|عدة صفحات/i.test(text)) return false;
-  return /موقع|website|landing|صفحة هبوط|متجر|منصة|عدة صفحات|multi-?page|homepage|الصفحة الرئيسية|موقع كامل|موقع ويب|web\s*app|موقع شخصي|بورتفوليو|portfolio site/i.test(text);
+/** Drop embedded images so the interface file can travel to Naje Agent without blowing the chat document. */
+export function compactUiForAgent(html: string): string {
+  const stripped = String(html || '').replace(/data:[^"'\s>]{60,}/g, '');
+  return stripped.length > 500000 ? stripped.slice(0, 500000) : stripped;
 }
 
 export function collectUserImageSlots(files: Array<{ data?: string; mimeType?: string }> | undefined | null): Record<string, string> {

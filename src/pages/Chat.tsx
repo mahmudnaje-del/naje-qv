@@ -40,7 +40,7 @@ import { VoiceSettingsPanel, parseDualScriptLines, buildVoiceChatPayload } from 
 import { calcVoicePointsCost, spokenTextFromVoiceScript } from '../lib/voicePricing';
 import { readNajeSse } from '../lib/sseRead';
 import { isOpenFormatId, isSlideRequest, resolveOpenFormat } from '../lib/creationEngine';
-import { isFullSiteRequest } from '../lib/uiStudio';
+import { compactUiForAgent } from '../lib/uiStudio';
 import { rememberMedia } from '../lib/offline';
 import { VideoSettingsPanel, buildVideoChatPayload } from "../components/chat/VideoChatPanel";
 import { ImageSettingsPanel, buildImageChatPayload } from "../components/chat/ImageChatPanel";
@@ -968,15 +968,7 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
     }
     const finalDocType = docTypeOverride || docType;
     if ((!finalPrompt.trim() && files.length === 0) || !chat || !user) return;
-
-    const uiAlreadyBuilt = chat.type === 'ui' && messages.some((m) => m.role === 'assistant' && isUiDocument(m.content));
-    if (chat.type === 'ui' && uiMode !== 'plan' && !uiAlreadyBuilt && isFullSiteRequest(finalPrompt)) {
-      if (!skipAgentOfferRef.current) {
-        setAgentOffer(finalPrompt);
-        return;
-      }
-      skipAgentOfferRef.current = false;
-    }
+    if (chat.type === 'ui') setAgentOffer(null);
 
     const openFormat = chat.type === 'text' ? resolveOpenFormat(finalDocType, finalPrompt) : null;
     // Heavy PDF/PPTX/Word stays on the document job. Open files stream instead.
@@ -1684,6 +1676,8 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
       setSimulateProgress(false);
       if (chat?.type === 'ui' && uiMode !== 'plan' && isUiDocument(assistantContent)) {
         setActiveUiTab('preview');
+        const built = parseUiMessage(assistantContent).html;
+        if (built) setAgentOffer(built);
       }
     }
   };
@@ -1830,7 +1824,6 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
   const [loading, setLoading] = useState(false);
   const [liveActivity, setLiveActivity] = useState('');
   const [agentOffer, setAgentOffer] = useState<string | null>(null);
-  const skipAgentOfferRef = useRef(false);
   
   // Real-time generation job tracking
   const [activeJobId, setActiveJobId] = useState<string | null>(null);
@@ -2323,20 +2316,36 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
             setActiveHistoryDocId={setActiveHistoryDocId}
             setActiveHistoryContent={setActiveHistoryContent}
             liveActivity={liveActivity}
-            agentOffer={agentOffer}
+            agentHandoff={!!agentOffer && !loading}
             onAgentGo={() => {
-              const brief = agentOffer || '';
+              const html = compactUiForAgent(agentOffer || '');
               setAgentOffer(null);
-              if (!brief) return;
-              navigate(`/naje-agent-core?brief=${encodeURIComponent(brief)}`);
+              if (!html || !user) return;
+              const titleMatch = html.match(/<title>([^<]{1,48})<\/title>/i);
+              const title = (titleMatch?.[1] || 'واجهة').replace(/\s+/g, ' ').trim();
+              const newRef = doc(collection(db, 'chats'));
+              const source = {
+                id: `src_ui_${Date.now()}`,
+                title: `${title}.html`,
+                type: 'file' as const,
+                content: html,
+                size: html.length,
+                addedAt: Date.now(),
+              };
+              setDoc(newRef, {
+                ownerId: user.uid,
+                type: 'agent',
+                title: `موقع: ${title}`,
+                createdAt: Date.now(),
+                sources: [source],
+              }).then(() => {
+                navigate(`/naje-agent-core?chatId=${newRef.id}&handoff=ui`);
+              }).catch((err) => {
+                console.error(err);
+                toast.error('ما قدرنا ننقل ملف الواجهة');
+              });
             }}
-            onAgentStay={() => {
-              const brief = agentOffer;
-              setAgentOffer(null);
-              if (!brief) return;
-              skipAgentOfferRef.current = true;
-              void executeSubmission(brief);
-            }}
+            onAgentStay={() => setAgentOffer(null)}
             onAttachFiles={handleFileChange}
             onRemoveFile={removeFile}
           />
