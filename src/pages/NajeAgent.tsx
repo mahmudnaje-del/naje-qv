@@ -172,6 +172,15 @@ export default function NajeAgent() {
   const [searchParams, setSearchParams] = useSearchParams();
   const chatId = searchParams.get('chatId');
 
+  useEffect(() => {
+    const brief = searchParams.get('brief');
+    if (!brief) return;
+    setInputText(brief);
+    const next = new URLSearchParams(searchParams);
+    next.delete('brief');
+    setSearchParams(next, { replace: true });
+  }, []);
+
   // Active top navigation tab: الدردشة / النتائج / المصادر
   const [tab, setTab] = useState<'chat' | 'results' | 'sources'>('chat');
 

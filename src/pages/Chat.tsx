@@ -40,6 +40,7 @@ import { VoiceSettingsPanel, parseDualScriptLines, buildVoiceChatPayload } from 
 import { calcVoicePointsCost, spokenTextFromVoiceScript } from '../lib/voicePricing';
 import { readNajeSse } from '../lib/sseRead';
 import { isOpenFormatId, isSlideRequest, resolveOpenFormat } from '../lib/creationEngine';
+import { isFullSiteRequest } from '../lib/uiStudio';
 import { rememberMedia } from '../lib/offline';
 import { VideoSettingsPanel, buildVideoChatPayload } from "../components/chat/VideoChatPanel";
 import { ImageSettingsPanel, buildImageChatPayload } from "../components/chat/ImageChatPanel";
@@ -967,6 +968,16 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
     }
     const finalDocType = docTypeOverride || docType;
     if ((!finalPrompt.trim() && files.length === 0) || !chat || !user) return;
+
+    const uiAlreadyBuilt = chat.type === 'ui' && messages.some((m) => m.role === 'assistant' && isUiDocument(m.content));
+    if (chat.type === 'ui' && uiMode !== 'plan' && !uiAlreadyBuilt && isFullSiteRequest(finalPrompt)) {
+      if (!skipAgentOfferRef.current) {
+        setAgentOffer(finalPrompt);
+        return;
+      }
+      skipAgentOfferRef.current = false;
+    }
+
     const openFormat = chat.type === 'text' ? resolveOpenFormat(finalDocType, finalPrompt) : null;
     // Heavy PDF/PPTX/Word stays on the document job. Open files stream instead.
     const isDocRequest = chat.type === 'text' && !!finalDocType && finalDocType !== 'none' && !openFormat;
@@ -1818,6 +1829,8 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
   const [files, setFiles] = useState<{name: string, data: string, mimeType: string}[]>([]);
   const [loading, setLoading] = useState(false);
   const [liveActivity, setLiveActivity] = useState('');
+  const [agentOffer, setAgentOffer] = useState<string | null>(null);
+  const skipAgentOfferRef = useRef(false);
   
   // Real-time generation job tracking
   const [activeJobId, setActiveJobId] = useState<string | null>(null);
@@ -1924,6 +1937,7 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
   useEffect(() => {
     setActiveUiTab('chat');
     setPreviewDeckMsgId(null);
+    setAgentOffer(null);
   }, [chatId]);
 
   useEffect(() => {
@@ -2108,7 +2122,7 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
 
   return (
     <div 
-      className="flex flex-col h-[100dvh] bg-naje-canvas relative overflow-hidden"
+      className="flex flex-col flex-1 h-full min-h-0 bg-naje-canvas relative overflow-hidden"
       dir={isRtl ? 'rtl' : 'ltr'}
       onDragEnter={handleDragEnter}
       onDragOver={handleDragOver}
@@ -2308,6 +2322,23 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
             chatId={chatId}
             setActiveHistoryDocId={setActiveHistoryDocId}
             setActiveHistoryContent={setActiveHistoryContent}
+            liveActivity={liveActivity}
+            agentOffer={agentOffer}
+            onAgentGo={() => {
+              const brief = agentOffer || '';
+              setAgentOffer(null);
+              if (!brief) return;
+              navigate(`/naje-agent-core?brief=${encodeURIComponent(brief)}`);
+            }}
+            onAgentStay={() => {
+              const brief = agentOffer;
+              setAgentOffer(null);
+              if (!brief) return;
+              skipAgentOfferRef.current = true;
+              void executeSubmission(brief);
+            }}
+            onAttachFiles={handleFileChange}
+            onRemoveFile={removeFile}
           />
         ) : (
           <TextChatPanel

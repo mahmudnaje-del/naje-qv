@@ -1,7 +1,7 @@
 import React from 'react';
 import { cn } from '../../lib/utils';
 import { 
-  Check, Eye, Code2, ChevronDown, ArrowUp, X, Sparkles, Layout, Zap, Lightbulb, Target
+  Check, Eye, Code2, ChevronDown, ArrowUp, X, Sparkles, Layout, Zap, Lightbulb, Target, ImagePlus
 } from 'lucide-react';
 import NajeErrorCard from '../NajeErrorCard';
 import NajeThinking from '../NajeThinking';
@@ -20,6 +20,7 @@ import { useI18n } from '../../i18n';
 import { fetchWithRetry } from '../../lib/fetchWithRetry';
 import SmokeChatWrapper from './SmokeChatWrapper';
 import { useLivePlaceholder, UI_CHAT_PHRASES } from '../../hooks/useLivePlaceholder';
+import { localizeActivity } from '../../lib/creationEngine';
 
 interface UiChatPanelProps {
   messages: Message[];
@@ -58,6 +59,12 @@ interface UiChatPanelProps {
   chatId: string | undefined;
   setActiveHistoryDocId: (id: string | null) => void;
   setActiveHistoryContent: (content: string | null) => void;
+  liveActivity?: string;
+  agentOffer?: string | null;
+  onAgentGo?: () => void;
+  onAgentStay?: () => void;
+  onAttachFiles?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onRemoveFile?: (index: number) => void;
 }
 
 export default function UiChatPanel({
@@ -97,6 +104,12 @@ export default function UiChatPanel({
   chatId,
   setActiveHistoryDocId,
   setActiveHistoryContent,
+  liveActivity = '',
+  agentOffer = null,
+  onAgentGo,
+  onAgentStay,
+  onAttachFiles,
+  onRemoveFile,
 }: UiChatPanelProps) {
   const { isRtl, t } = useI18n();
   const dynamicPlaceholder = useLivePlaceholder(UI_CHAT_PHRASES);
@@ -220,7 +233,13 @@ export default function UiChatPanel({
 
           {loading && (
             <div className="flex justify-start">
-              <div className="w-full">
+              <div className="w-full space-y-2">
+                {liveActivity && (
+                  <div className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-bold text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    <span>{localizeActivity(liveActivity, t)}</span>
+                  </div>
+                )}
                 {uiMode === 'plan' ? (
                   <NajePlanningIndicator hasStarted={!!latestUiHtml} />
                 ) : !latestUiHtml ? (
@@ -240,6 +259,21 @@ export default function UiChatPanel({
           chatType="ui"
           className="p-2 sm:p-3 bg-[#FAF9FC]/95 dark:bg-[#0d0f12]/95 border-t border-gray-200/80 dark:border-gray-800/80 w-full shrink-0 z-30 pb-safe backdrop-blur-xl shadow-[0_-4px_20px_rgba(0,0,0,0.06)] dark:shadow-[0_-4px_25px_rgba(0,0,0,0.5)]"
         >
+          {agentOffer && (
+            <div className="w-full max-w-4xl mx-auto mb-2 rounded-2xl border border-stone-200 bg-[#f7f3ea] p-3 text-start dark:border-stone-700 dark:bg-stone-900">
+              <p className="text-sm font-black text-stone-900 dark:text-stone-100">{t('surface.ui.agentTitle')}</p>
+              <p className="mt-1 text-[12px] leading-relaxed text-stone-600 dark:text-stone-300">{t('surface.ui.agentBody')}</p>
+              <p className="mt-2 line-clamp-2 text-[11px] text-stone-500">{agentOffer}</p>
+              <div className="mt-3 flex gap-2">
+                <button type="button" onClick={onAgentGo} className="flex-1 rounded-xl bg-stone-900 px-3 py-2 text-[12px] font-bold text-[#f7f3ea] dark:bg-stone-100 dark:text-stone-900">
+                  {t('surface.ui.agentGo')}
+                </button>
+                <button type="button" onClick={onAgentStay} className="flex-1 rounded-xl border border-stone-300 px-3 py-2 text-[12px] font-bold text-stone-800 dark:border-stone-600 dark:text-stone-100">
+                  {t('surface.ui.agentStay')}
+                </button>
+              </div>
+            </div>
+          )}
           <form onSubmit={handleSend} className="w-full max-w-4xl mx-auto p-2.5 sm:p-3 rounded-2xl border border-gray-200/80 dark:border-gray-800/80 shadow-lg bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl flex flex-col gap-2 relative transition-all duration-200">
             {/* Mode & Model Tier Toggle Bar */}
             <div className="flex flex-wrap items-center justify-between gap-2 pb-1 text-xs">
@@ -329,7 +363,28 @@ export default function UiChatPanel({
               </div>
             )}
 
+            {files.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {files.map((file, index) => (
+                  <div key={`${file.name}-${index}`} className="relative">
+                    {String(file.mimeType || '').startsWith('image/') ? (
+                      <img src={`data:${file.mimeType};base64,${file.data}`} alt="" className="h-12 w-12 rounded-lg object-cover border border-stone-200" />
+                    ) : (
+                      <span className="text-[10px]">{file.name}</span>
+                    )}
+                    <button type="button" onClick={() => onRemoveFile?.(index)} className="absolute -top-1 -left-1 rounded-full bg-stone-900 text-white p-0.5">
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
             <div className="flex items-center gap-2">
+              <label className="p-2.5 rounded-xl border border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer shrink-0" title="أضف صورة للواجهة">
+                <ImagePlus className="w-4 h-4" />
+                <input type="file" accept="image/*" multiple className="hidden" onChange={onAttachFiles} />
+              </label>
               <textarea
                 ref={textareaRef}
                 value={input}
@@ -379,6 +434,7 @@ export default function UiChatPanel({
         <NajeUiPreview
           rawHtml={latestUiHtml}
           isStreaming={loading}
+          activityText={liveActivity ? localizeActivity(liveActivity, t) : ''}
           onSelectElement={(el) => {
             setSelectedUiElement(el);
             setActiveUiTab('chat');

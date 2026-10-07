@@ -19,6 +19,11 @@
   }
 }
 
+/* Keyboard is already the bottom edge. Extra safe-area padding becomes a white gap. */
+html.keyboard-open .pb-safe {
+  padding-bottom: 6px !important;
+}
+
 /* ── Naje chroma: 8 palettes × light/dark ─────────────────────────── */
 :root {
   --naje-p: #7c5cfa;

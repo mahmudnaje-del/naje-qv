@@ -2,7 +2,7 @@ import NajeSelect from '../components/NajeSelect';
 import NajeLogo from '../components/NajeLogo';
 import NajeThinking from '../components/NajeThinking';
 import NajeSpinner from '../components/NajeSpinner';
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAppStore } from '../store';
 import TermsConsentModal from '../components/TermsConsentModal';
@@ -38,6 +38,7 @@ import BalanceTopDropdown from '../components/BalanceTopDropdown';
 import { useI18n, translate } from '../i18n';
 import { rememberMedia, useOnline } from '../lib/offline';
 import { OmniverseCommandBar } from '../components/OmniverseCommandBar';
+import { useVisualViewportShell } from '../hooks/useVisualViewportShell';
 import { getChatTypeConfig } from '../lib/chatTypeConfig';
 import { NajeAdIcon, NajeIdentIcon, NajeCvIcon, CreativeStudioIcon } from '../components/icons/SuiteIcons';
 
@@ -308,6 +309,8 @@ export default function Dashboard() {
   const location = useLocation();
   const { t, isRtl } = useI18n();
   const online = useOnline();
+  const shellRef = useRef<HTMLDivElement>(null);
+  useVisualViewportShell(shellRef);
 
   const [projects, setProjects] = useState<any[]>([]);
   const [chats, setChats] = useState<any[]>([]);
@@ -1129,7 +1132,7 @@ export default function Dashboard() {
   );
 
   return (
-    <div className="h-screen h-[100dvh] bg-naje-canvas text-naje-ink flex overflow-hidden">
+    <div ref={shellRef} className="h-screen h-[100dvh] bg-naje-canvas text-naje-ink flex overflow-hidden">
       <TermsConsentModal />
       <OmniverseCommandBar onCreateChat={handleCreateNewChat} />
       {/* 1. Sidebar - Desktop (Right-hand persistent in RTL) */}

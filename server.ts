@@ -28,6 +28,7 @@ import { getMessaging as getMessagingAdmin } from "firebase-admin/messaging";
 import dotenv from "dotenv";
 import { FALLBACK_DEFAULTS, SEED_ENDPOINTS, OUTPUT_TOKEN_LIMITS } from './src/lib/modelRegistry.ts';
 import { getNajeModel, resolveEngineModel } from './src/lib/modelEnvConfig.ts';
+import { UI_BUILD_DIRECTIVE, collectUserImageSlots, injectImageSlots } from './src/lib/uiStudio.ts';
 import { getAgentToolCost } from './src/lib/agentPricing.ts';
 import { buildPersonaInstruction, criticReviewRequest, getThinkingConfig } from './src/lib/councilOfMinds.ts';
 import os from 'os';
@@ -8595,7 +8596,7 @@ CRITICAL RULES:
 - Keep the same overall design language and color palette unless the edit explicitly changes them.
 - The CURRENT HTML DOCUMENT below is the one true source of truth to modify — do not regenerate from the earlier conversation description; edit the document as given.
 - The conversation history above shows the sequence of instructions. Previous interface versions are intentionally omitted from that history and replaced with a placeholder — this is deliberate.
-- Output the full document (<!DOCTYPE html> ... </html>), inline everything, same security rules as before: no external resources, no network.`;
+- Output the full document (<!DOCTYPE html> ... </html>). Keep fonts already loaded from fonts.googleapis.com and every data-naje-slot attribute. Do not paste base64. If the user attached a photo, reference it as <img data-naje-slot="user-1"> (then user-2, user-3) and omit src — the server inserts the bytes.`;
 
                 let editPromptText = "";
                 if (req.body.selectedElement && req.body.selectedElement.html) {
@@ -8617,77 +8618,7 @@ CRITICAL RULES:
                   console.log(`[UI Edit] historyTurns=${contents.length} totalInputChars=${totalChars} htmlLen=${previousHtml.length}`);
                 }
               } else {
-                finalSystemInstruction = `${finalSystemInstruction}\n\n---\n\nYou are Naje Studio, an elite UI engineer. You produce a SINGLE, COMPLETE, self-contained HTML document rendering a polished, modern, production-grade interface.
-
-OUTPUT
-- FIRST write ONE short friendly Arabic sentence (max ~18 words) telling the user what you built — this line is your chat reply to the user. Then a single newline.
-- THEN the HTML document: start <!DOCTYPE html>, end </html>. No markdown, no fences, and no commentary INSIDE or AFTER the HTML.
-- Everything inline: <style> for CSS, <script> for JS. No external files, no CDN, no <link>, no @import, no fetch. Assume zero network.
-- Imagery: inline SVG, CSS gradients, and CSS shapes only. No external image URLs.
-
-CAPABILITIES YOU HAVE (all inline, no network):
-- A micro-animation CSS kit: add class "naje-fade-in", "naje-slide-up", "naje-stagger", "naje-scale-in" to animate elements on load. Use them for a refined entrance.
-- An inline icon sprite: use <svg><use href="#icon-{name}"/></svg> with names like home, user, search, menu, chart, cart, star, arrow-right, check, settings, bell, calendar, trash, edit, filter, plus, heart.
-- An inline chart function najeChart(el, {type, data}) for bar/line/donut. Use it for dashboards and data UIs — real charts, not fake bars.
-
-RESPONSIVE DESIGN — MANDATORY, NOT OPTIONAL
-You are generating for TWO explicit viewport targets that will be tested separately: a 390px-wide phone and a 1280px-wide laptop. This is not "make it fluid" — you must author DISTINCT layout behavior for each range using real CSS breakpoints.
-
-Requirements:
-- Use \`@media (max-width: 640px)\` as the phone breakpoint. Inside it, you MUST change actual layout structure, not just font sizes:
-  - Multi-column grids collapse to a single column.
-  - Sidebars/navigation move to a bottom bar, a hamburger drawer, or stack above content — never remain side-by-side with the main content.
-  - Any table becomes a stacked card list or gains horizontal scroll.
-  - Reduce padding/margins appropriately for a small screen.
-- Use a mobile-first base with \`min-width\` media queries to progressively add multi-column layout for laptop, OR a desktop-first base with \`max-width\` queries to collapse for mobile — pick one strategy and apply it consistently.
-- Never rely on the browser viewport alone to "just reflow" — write explicit rules. A design with zero layout-changing media queries is a FAILED response for this product; visual polish does not compensate for a non-responsive structure.
-- Touch targets on the phone layout must be at least 44x44px.
-- Test yourself mentally: if the sidebar/nav is still beside the content at 390px width, you have failed this requirement — fix it before returning.
-
-CONCRETE EXAMPLE — follow this exact pattern for a sidebar layout:
-
-.app-layout { display: flex; gap: 24px; }
-.sidebar { width: 260px; flex-shrink: 0; }
-.main-content { flex: 1; }
-
-@media (max-width: 640px) {
-  .app-layout { flex-direction: column; }
-  .sidebar {
-    width: 100%;
-    display: flex;
-    overflow-x: auto;
-  }
-}
-
-This is the LEVEL of concreteness required. A media query that only shrinks font-size or padding, with no structural property (flex-direction, grid-template-columns, display, position) inside it, does not satisfy this requirement.
-
-DESIGN INTELLIGENCE & BAR:
-- Choose a layout archetype that fits the request: hero+features for a landing page, sidebar+cards for a dashboard, grid+filters for a store, split for auth.
-- DESIGN SYSTEM — USE THE NAJE KIT, DON'T REINVENT SPACING/RADIUS/SHADOW VALUES
-  A base stylesheet is already injected before your <style> block, providing:
-  --naje-radius-sm/md/lg, --naje-shadow-sm/md/lg, --naje-space-1 through 6, and
-  utility classes .naje-card, .naje-btn, .naje-btn-primary, .naje-input.
-  USE THESE for structural values (radius, shadow, spacing) so output is consistent and professional.
-- Use a refined type scale (a clear ratio, e.g. 1.25) with real hierarchy.
-- Add depth with layered shadows and subtle borders, never flat gray boxes.
-- Entrance animation on load using the animation kit — the page should feel like it arrives, not just appear.
-- Populate with realistic, specific content for the actual subject. Never lorem ipsum, never "Item 1 / Item 2".
-- Accessibility: semantic landmarks, labelled controls, visible focus states, sufficient contrast.
-
-INTERACTION & BACKEND SIMULATION (make it feel fully functional to try)
-- Working client-side interactivity: tabs switch, modals open/close, accordions expand, form fields show focus/validation states, mobile menus toggle.
-- When the request implies data/state (a todo list, a cart, a login flow, a dashboard with records), implement a complete in-memory JavaScript data layer:
-  * An array/object acting as the "database", pre-populated with a few realistic example records.
-  * Functions that perform create/read/update/delete against that in-memory store.
-  * Wire every UI action (add, edit, delete, submit, "log in") to actually call these functions and re-render — the app must be genuinely interactive and stateful within the session, not a static mockup.
-  * A simple login form may accept ANY input and simulate success.
-- All self-contained vanilla JS. No frameworks, no network.
-
-ARABIC / RTL
-- If the subject or content is Arabic, set dir="rtl", mirror the layout, and use a right-to-left visual flow. Latin-only tokens (brand names, code) stay LTR.
-
-Aim for output a senior product designer would approve. Restraint, hierarchy, and polish over decoration.
-تذكير: في وضع البناء، مخرجك هو مستند HTML فقط بلا أي مقدمات أو تعليقات.`;
+                finalSystemInstruction = `${finalSystemInstruction}\n\n---\n\n${UI_BUILD_DIRECTIVE}`;
 
                 if (styleHintText && contents.length > 0) {
                   contents[contents.length - 1].parts[0].text += styleHintText;
@@ -8753,32 +8684,42 @@ Aim for output a senior product designer would approve. Restraint, hierarchy, an
           const selectedModelId = resolveEngineModel(type === 'ui' ? uiModelId : (MODEL_MAP[requestedModelKey] || textCoreModel));
           console.log(`[UI Generation] type=${type}, requestedModel=${requestedModelKey}, selectedModelId=${selectedModelId}, mode=${req.body.mode || 'build'}`);
 
-          // QUANTUM LEAP: CALL 1 (Plan Pass) & Real AI Imagery Generation for new UI builds
+          // Design pass, then photos. Bytes stay out of the prompt — the model only sees slot ids.
           let generatedImageSlots: Record<string, string> = {};
+          if (type === 'ui' && !isPlanMode) {
+            res.write(`data: ${JSON.stringify({ activity: 'surface.activity.uiRead' })}\n\n`);
+            generatedImageSlots = collectUserImageSlots(files);
+            const userIds = Object.keys(generatedImageSlots);
+            if (userIds.length) {
+              finalSystemInstruction += `\n\nUSER PHOTOS are ready. Place each one with an img tag and omit src: ${userIds.map((id) => `<img data-naje-slot="${id}" alt="">`).join(' ')}. Never write a base64 src.`;
+            }
+          }
           if (type === 'ui' && !isPlanMode && !isUiEdit) {
             try {
+              res.write(`data: ${JSON.stringify({ activity: 'surface.activity.uiThesis' })}\n\n`);
               const planResp = await ai.models.generateContent({
                 model: resolveEngineModel(uiModelId),
                 contents: [
-                  { role: 'user', parts: [{ text: `Analyze this UI request: "${prompt}". Produce a concise JSON plan:
+                  { role: 'user', parts: [{ text: `Analyze this UI request: "${String(prompt).slice(0, 1500)}". Produce a concise JSON plan:
 {
-  "sections": [{ "id": string, "purpose": string, "layoutHint": string }],
-  "designSystem": { "paletteHint": string, "mood": string },
+  "grammar": "editorial-split|instrument|gallery|ledger|stage|index|app-shell",
+  "fontPairing": "editorial-ar|naskh|kufi|news|grotesk|soft-ar|poster|document",
+  "sections": [{ "id": string, "purpose": string }],
   "needsChart": boolean,
   "needsRealImagery": boolean,
-  "imagePrompts": [ array of 1-2 short photographic prompts in English if needsRealImagery is true ]
+  "imagePrompts": [ "1 or 2 short photographic prompts in English, only if a real photo is necessary" ]
 }
-Return ONLY raw JSON, no markdown code fences.` }] }
+Avoid the generic hero-plus-three-cards plan. Return ONLY raw JSON.` }] }
                 ],
                 config: { responseMimeType: "application/json", maxOutputTokens: OUTPUT_TOKEN_LIMITS.uiPlan }
               });
               
               if (planResp.text) {
                 const uiPlan = JSON.parse(planResp.text);
-                let planContext = `\n\n[STAGED UI BUILD PLAN]:\n- Architecture: ${JSON.stringify(uiPlan.sections)}\n- Design System: ${JSON.stringify(uiPlan.designSystem)}\n- Chart Needed: ${uiPlan.needsChart}`;
+                let planContext = `\n\n[DESIGN LOCK]\n- grammar: ${uiPlan.grammar || 'editorial-split'}\n- fontPairing: ${uiPlan.fontPairing || 'editorial-ar'}\n- sections: ${JSON.stringify(uiPlan.sections || [])}\n- chart: ${!!uiPlan.needsChart}\nFollow this lock. Do not fall back to a centered hero with three equal cards.`;
                 
-                // Real AI Imagery Generation
                 if (uiPlan.needsRealImagery && Array.isArray(uiPlan.imagePrompts) && uiPlan.imagePrompts.length > 0 && (pricing.ui?.enableGeneratedImagery ?? true)) {
+                  res.write(`data: ${JSON.stringify({ activity: 'surface.activity.uiImages' })}\n\n`);
                   const promptsToRun = uiPlan.imagePrompts.slice(0, 2);
                   const sharpModule = await import('sharp');
                   const sharp: any = sharpModule.default || sharpModule;
@@ -8789,14 +8730,14 @@ Return ONLY raw JSON, no markdown code fences.` }] }
                       if (USE_VERTEX_AI) {
                         const imgRes = await ai.models.generateImages({
                           model: 'imagen-3.0-generate-002',
-                          prompt: `Professional high quality photo of ${imgPrompt}. Clean, cinematic, modern, realistic lighting.`,
+                          prompt: `Editorial photograph, specific and quiet, no text, no watermark: ${imgPrompt}`,
                           config: { numberOfImages: 1, aspectRatio: '4:3', outputMimeType: 'image/png' }
                         });
                         rawBase64 = imgRes?.generatedImages?.[0]?.image?.imageBytes || "";
                       } else {
                         const imgInteraction = await ai.interactions.create({
                           model: 'gemini-3.1-flash-image',
-                          input: `Professional high quality photo of ${imgPrompt}. Clean, cinematic, modern, realistic lighting.`,
+                          input: `Editorial photograph, specific and quiet, no text, no watermark: ${imgPrompt}`,
                           response_modalities: ['image']
                         });
                         for (const step of imgInteraction.steps) {
@@ -8812,23 +8753,21 @@ Return ONLY raw JSON, no markdown code fences.` }] }
                       if (rawBase64) {
                         const rawBuf = Buffer.from(rawBase64, 'base64');
                         const compressedBuf = await sharp(rawBuf)
-                          .resize(800, 600, { fit: 'inside' })
-                          .jpeg({ quality: 78 })
+                          .resize(960, 720, { fit: 'inside' })
+                          .jpeg({ quality: 76 })
                           .toBuffer();
-                        const slotKey = `hero-photo-${idx + 1}`;
-                        generatedImageSlots[slotKey] = `data:image/jpeg;base64,${compressedBuf.toString('base64')}`;
+                        generatedImageSlots[`gen-${idx + 1}`] = `data:image/jpeg;base64,${compressedBuf.toString('base64')}`;
                       }
                     } catch (imgErr) {
                       console.warn(`[UI Staged Imagery] Generation failed for prompt "${imgPrompt}":`, imgErr);
                     }
                   }
-                  if (Object.keys(generatedImageSlots).length > 0) {
-                    const imgAddon = Object.keys(generatedImageSlots).length * (pricing.ui?.imagePerAsset || 0.5);
-                    cost += imgAddon;
-                    planContext += `\n- GENERATED REAL IMAGES TO EMBED DIRECTLY IN UI (use src attribute with data URI):`;
-                    for (const [slotKey, dataUri] of Object.entries(generatedImageSlots)) {
-                      planContext += `\n  * <img src="${dataUri}" alt="Photo" class="w-full object-cover rounded-xl" />`;
-                    }
+                  const genIds = Object.keys(generatedImageSlots).filter((id) => id.startsWith('gen-'));
+                  if (genIds.length > 0) {
+                    cost += genIds.length * (pricing.ui?.imagePerAsset || 0.5);
+                    planContext += `\n- PHOTO SLOTS the server will fill. Use these tags and OMIT src: ${genIds.map((id) => `<img data-naje-slot="${id}" alt="">`).join(' ')}`;
+                  } else {
+                    planContext += `\n- Photo generation failed. Draw with inline SVG. Do not use an external image URL.`;
                   }
                 }
                 finalSystemInstruction += planContext;
@@ -8886,8 +8825,12 @@ Return ONLY raw JSON, no markdown code fences.` }] }
           let planViolationDetected = false;
           let streamUsageMetadata: any = null;
           let announcedWrite = false;
+          let lastUiSection = '';
           const maxOutputBytes = ((pricing.ui?.maxOutputKb || 400) * 1024);
-          res.write(`data: ${JSON.stringify({ activity: enableSearchGrounding ? 'surface.activity.searchThenWrite' : 'surface.activity.readShort' })}\n\n`);
+          const openingActivity = type === 'ui'
+            ? (isPlanMode ? 'surface.activity.uiPlan' : 'surface.activity.uiWrite')
+            : (enableSearchGrounding ? 'surface.activity.searchThenWrite' : 'surface.activity.readShort');
+          res.write(`data: ${JSON.stringify({ activity: openingActivity })}\n\n`);
 
           try {
             for await (const chunk of stream) {
@@ -8916,7 +8859,16 @@ Return ONLY raw JSON, no markdown code fences.` }] }
                 fullText += chunkText;
                 if (!announcedWrite) {
                   announcedWrite = true;
-                  res.write(`data: ${JSON.stringify({ activity: 'surface.activity.writing' })}\n\n`);
+                  res.write(`data: ${JSON.stringify({ activity: type === 'ui' && !isPlanMode ? 'surface.activity.uiWrite' : 'surface.activity.writing' })}\n\n`);
+                }
+                if (type === 'ui' && !isPlanMode) {
+                  const marks = fullText.match(/<!--\s*naje:section\s+([^>]+?)\s*-->/gi);
+                  const lastMark = marks?.[marks.length - 1] || '';
+                  const name = lastMark.replace(/<!--\s*naje:section\s+/i, '').replace(/\s*-->/, '').trim();
+                  if (name && name !== lastUiSection) {
+                    lastUiSection = name;
+                    res.write(`data: ${JSON.stringify({ activity: `surface.activity.uiSection::${name}` })}\n\n`);
+                  }
                 }
 
                 // PART 1.1: Per-chunk Plan Mode Violation Check (stop immediately if HTML emitted)
@@ -9015,7 +8967,7 @@ Here is the HTML document:
 ${fullText}
 \`\`\`
 
-Return the complete updated HTML document with real layout-changing mobile media queries (@media (max-width: 640px)) added. Return ONLY raw HTML starting with <!DOCTYPE html> and ending with </html>, no markdown code fences.` }] }
+Return the complete updated HTML document with real layout-changing mobile media queries (@media (max-width: 640px)) added. Keep every data-naje-slot attribute, every fonts.googleapis.com link, and the design grammar. Do not restyle it into a purple card grid. Return ONLY raw HTML starting with <!DOCTYPE html> and ending with </html>, no markdown code fences.` }] }
                   ],
                   config: {
                     maxOutputTokens: OUTPUT_TOKEN_LIMITS.uiHtml
@@ -9033,6 +8985,15 @@ Return the complete updated HTML document with real layout-changing mobile media
               } catch (polishErr) {
                 console.warn(`[UI Polish Pass] Failed:`, polishErr);
               }
+            }
+          }
+
+          if (type === 'ui' && !isPlanMode && fullText && Object.keys(generatedImageSlots).length > 0) {
+            res.write(`data: ${JSON.stringify({ activity: 'surface.activity.uiPlace' })}\n\n`);
+            const withImages = injectImageSlots(fullText, generatedImageSlots);
+            if (withImages !== fullText) {
+              fullText = withImages;
+              res.write(`data: ${JSON.stringify({ replaceContent: fullText })}\n\n`);
             }
           }
 

@@ -14,10 +14,11 @@ interface NajeUiPreviewProps {
   onSaveToProject?: () => void;
   onOpenHistory?: () => void;
   onAutoRepair?: (errorMessage: string, line: number) => void;
+  activityText?: string;
 }
 
 function wrapSafe(html: string): string {
-  const CSP = `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src data:; font-src data:;">`;
+  const CSP = `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src data: blob: https:; media-src data: blob: https:; script-src 'unsafe-inline'; connect-src 'none';">`;
   
   const ERROR_SCRIPT = `<script>
 (function(){
@@ -45,7 +46,7 @@ function wrapSafe(html: string): string {
 .naje-card { border-radius: var(--naje-radius-md); box-shadow: var(--naje-shadow-md); }
 .naje-btn { border-radius: var(--naje-radius-sm); padding: 10px 20px; font-weight: 600; transition: transform .15s, box-shadow .15s; cursor: pointer; }
 .naje-btn:active { transform: scale(0.97); }
-.naje-btn-primary { background: var(--naje-primary, #8B5CF6); color: #fff; border: none; }
+.naje-btn-primary { background: var(--ink, #1c1917); color: var(--paper, #fff); border: none; }
 .naje-input { border-radius: var(--naje-radius-sm); border: 1px solid #e2e8f0; padding: 10px 14px; }
 
 @keyframes najeFadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
@@ -145,11 +146,6 @@ window.najeChart = function(target, options) {
     if(e.data==='naje:select-off'){ on=false; if(last) last.style.outline=''; }
     if(e.data==='naje:scroll-bottom'){ scrollToBottom(); }
   });
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', scrollToBottom);
-  } else {
-    scrollToBottom();
-  }
   document.addEventListener('mouseover', function(e){
     if(!on) return;
     if(last) last.style.outline='';
@@ -215,7 +211,8 @@ export default function NajeUiPreview({
   onSelectElement,
   onSaveToProject,
   onOpenHistory,
-  onAutoRepair
+  onAutoRepair,
+  activityText
 }: NajeUiPreviewProps) {
   const [renderedHtml, setRenderedHtml] = useState('');
   const [device, setDevice] = useState<'phone' | 'laptop'>(window.innerWidth < 768 ? 'phone' : 'laptop');
@@ -263,11 +260,15 @@ export default function NajeUiPreview({
   }, [isFullscreen]);
 
   useEffect(() => {
+    if (!rawHtml) return;
+    const complete = /<\/body>/i.test(rawHtml) || /<\/html>/i.test(rawHtml);
+    // Incomplete HTML paints as a black or white flash. Keep the last good frame.
+    if (isStreaming && !complete) return;
     const t = setTimeout(() => {
       setRenderedHtml(wrapSafe(rawHtml));
-    }, 250);
+    }, isStreaming ? 180 : 40);
     return () => clearTimeout(t);
-  }, [rawHtml]);
+  }, [rawHtml, isStreaming]);
 
   // Status badge transition
   useEffect(() => {
@@ -322,17 +323,6 @@ export default function NajeUiPreview({
       toast.info('انقر على أي عنصر داخل الواجهة لتحديده للتعديل');
     }
   };
-
-  useEffect(() => {
-    // Auto-scroll iframe if streaming via postMessage
-    if (isStreaming && iframeRef.current?.contentWindow) {
-      try {
-        iframeRef.current.contentWindow.postMessage('naje:scroll-bottom', '*');
-      } catch (e) {
-        // ignore cross-origin restrictions
-      }
-    }
-  }, [renderedHtml, isStreaming]);
 
   const handleDownload = () => {
     triggerSmartDownload({
@@ -394,8 +384,8 @@ export default function NajeUiPreview({
                 initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }}
                 className="flex items-center gap-2 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 px-3 py-1 rounded-full text-[11px] font-bold border border-indigo-200 dark:border-indigo-500/20"
               >
-                <div className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
-                <span>ناجي يبني واجهتك…</span>
+                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="truncate max-w-[46vw]">{activityText || 'ناجي يبني واجهتك…'}</span>
               </motion.div>
             )}
             {showDoneBadge && !isStreaming && (
@@ -481,8 +471,14 @@ export default function NajeUiPreview({
                 height: device === 'laptop' ? DEVICE_HEIGHT[device] - 32 : DEVICE_HEIGHT[device] - 24
               }}
               className="w-full border-0 bg-white flex-1"
-              loading="lazy"
             />
+            {isStreaming && !renderedHtml && (
+              <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-2 bg-[#f4f1ea] text-stone-700 px-6 text-center">
+                <div className="w-2 h-2 rounded-full bg-emerald-600 animate-pulse" />
+                <p className="text-sm font-bold">{activityText || 'ناجي يجهّز الواجهة قبل ما يعرضها'}</p>
+                <p className="text-[11px] text-stone-500">المعاينة تنتظر مستنداً مكتملاً حتى لا تومض فاضية</p>
+              </div>
+            )}
           </div>
         </div>
       </div>
