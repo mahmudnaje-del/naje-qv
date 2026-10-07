@@ -440,7 +440,7 @@ export const AdminStudiosControl: React.FC = () => {
           labelEn: 'Motion Engine Model ID',
           type: 'select',
           options: [
-            { value: 'omni-1.1', label: 'Naje Omni Motion 1.1 Pro (افتراضي سينمائي)' },
+            { value: 'omni-1.1', label: 'Naje Motion 1.1 Pro (افتراضي سينمائي)' },
             { value: 'veo-ident', label: 'Google Veo Cinematic Ident Engine' },
             { value: 'motion-fast', label: 'Naje Motion Flash (سريع واقتصادي)' }
           ],

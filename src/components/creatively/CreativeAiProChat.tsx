@@ -3,6 +3,7 @@ import { get, set } from 'idb-keyval';
 import { doc, getDoc, setDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { auth, db } from '../../firebase';
 import { recordGeneratedMedia } from '../../lib/studioMediaSync';
+import { pushAppNotification } from '../../lib/notifications';
 import { InteractiveLoadingPlaceholder } from "./InteractiveLoadingPlaceholder";
 import NajeSpinner from '../NajeSpinner';
 import NajeThinking from '../NajeThinking';
@@ -864,6 +865,14 @@ export function CreativeAiProChat({
             title: 'Creative AI Pro Image',
             studio: 'creative_pro'
           }).catch(console.warn);
+
+          pushAppNotification({
+            title: 'جاهز: تصميمك الإبداعي',
+            message: prompt ? `تم إنشاء التصميم بنجاح: "${prompt.slice(0, 50)}"` : 'تم إنشاء التصميم بنجاح وهو جاهز في المعرض.',
+            type: 'feature',
+            studio: 'creatively',
+            url: imageUrl
+          }).catch(() => null);
         }
         setSessions(prev => prev.map(s => {
           if (s.id === currentSessionId) {
@@ -983,6 +992,14 @@ export function CreativeAiProChat({
                                   title: 'Creative AI Pro Video',
                                   studio: 'creative_pro'
                                 }).catch(console.warn);
+
+                                pushAppNotification({
+                                  title: 'جاهز: الفيديو الإبداعي',
+                                  message: 'تم إنجاز الفيديو الإبداعي بنجاح وهو متاح للمشاهدة والتنزيل.',
+                                  type: 'feature',
+                                  studio: 'creatively',
+                                  url: finalVideoUrl
+                                }).catch(() => null);
                               }, 100);
                             }
                             return finalVideoUrl;

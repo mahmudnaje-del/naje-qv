@@ -42,14 +42,14 @@ html.keyboard-open .pb-safe {
 }
 
 .dark {
-  --naje-canvas: #09090b;
-  --naje-elevated: #18181b;
-  --naje-card: #18181b;
-  --naje-ink: #fafafa;
-  --naje-muted: #a1a1aa;
-  --naje-line: #27272a;
-  --naje-accent-soft: color-mix(in srgb, var(--naje-p) 14%, transparent);
-  --naje-glow: color-mix(in srgb, var(--naje-p) 16%, transparent);
+  --naje-canvas: #050608;
+  --naje-elevated: #0d0f15;
+  --naje-card: #0d0f15;
+  --naje-ink: #fcfcfd;
+  --naje-muted: #9496a1;
+  --naje-line: #181c26;
+  --naje-accent-soft: color-mix(in srgb, var(--naje-p) 16%, transparent);
+  --naje-glow: color-mix(in srgb, var(--naje-p) 20%, transparent);
 }
 
 html[data-naje-color="azure"] { --naje-p: #3b8ed8; --naje-s: #8ec9f2; --naje-on-accent: #ffffff; }

@@ -35,6 +35,7 @@ import { CodeBlock } from '../components/CodeBlock';
 import { saveDoc, getDoc as getLocalDoc } from '../lib/idb';
 import { uploadBase64ToStorage, uploadWithRetry } from '../lib/mediaStorage';
 import { recordGeneratedMedia, ensurePermanentMediaUrl } from '../lib/studioMediaSync';
+import { pushAppNotification } from '../lib/notifications';
 import { downloadBase64File } from '../utils/fileDownloader';
 import { VoiceSettingsPanel, parseDualScriptLines, buildVoiceChatPayload } from "../components/chat/VoiceChatPanel";
 import { calcVoicePointsCost, spokenTextFromVoiceScript } from '../lib/voicePricing';
@@ -1638,6 +1639,20 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
             chatId,
             studio: `chat_${chat.type}`
           }).catch(e => console.warn('Failed to record generated_media:', e));
+        }
+
+        // Push real-time notification to user notification center
+        if (user?.uid) {
+          const typeLabel = chat.type === 'image' ? 'الصورة' : chat.type === 'video' ? 'الفيديو' : chat.type === 'voice' ? 'المقطع الصوتي' : documentData ? 'المستند' : 'المحادثة';
+          pushAppNotification({
+            title: `تم إنجاز ${typeLabel} بنجاح`,
+            message: assistantContent || `اكتمل توليد ${typeLabel} وهو جاهز الآن في محادثتك ومعرضك.`,
+            type: 'feature',
+            studio: 'chat',
+            url: mediaUrl || documentData?.url || '',
+            ownerId: user.uid,
+            userId: user.uid
+          }).catch(e => console.warn('Chat notification error:', e));
         }
 
         // If server-side upload was not returned, perform background retry upload

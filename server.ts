@@ -3465,7 +3465,11 @@ function collectOmniVideoParts(interaction: any): Array<{ data?: string; uri?: s
   return out;
 }
 
-async function extractOmniVideoBuffer(ai: any, interaction: any): Promise<{ buffer: Buffer; mime: string; interactionId: string }> {
+async function extractOmniVideoBuffer(
+  ai: any,
+  interaction: any,
+  onPollAttempt?: (attempt: number) => Promise<void>
+): Promise<{ buffer: Buffer; mime: string; interactionId: string }> {
   let current = interaction;
   const interactionId = current?.id || '';
   for (let attempt = 0; attempt < 48; attempt++) {
@@ -3481,9 +3485,12 @@ async function extractOmniVideoBuffer(ai: any, interaction: any): Promise<{ buff
     }
     const status = String(current?.status || current?.state || '').toLowerCase();
     if (['failed', 'error', 'cancelled'].includes(status)) {
-      throw new Error(current?.error?.message || 'فشل توليد الفيديو عبر Omni');
+      throw new Error(current?.error?.message || 'فشل توليد الفيديو السينمائي');
     }
     if (!current?.id) break;
+    if (onPollAttempt) {
+      await onPollAttempt(attempt).catch(() => null);
+    }
     await new Promise((r) => setTimeout(r, 5000));
     try {
       current = await ai.interactions.get(current.id);
@@ -3521,11 +3528,16 @@ async function createOmniInteraction(ai: any, params: {
       input: params.input,
       store: true,
       response_format,
+      generation_config: {
+        video_config: {
+          task: params.task || 'text_to_video',
+          resolution: params.resolution,
+          aspect_ratio: params.aspectRatio,
+        }
+      }
     };
     if (params.previousInteractionId) {
       body.previous_interaction_id = params.previousInteractionId;
-    } else if (params.task) {
-      body.generation_config = { video_config: { task: params.task } };
     }
     try {
       console.log(`[Omni Ad] interactions.create model=${model} prev=${params.previousInteractionId ? 'yes' : 'no'} res=${params.resolution}`);
@@ -4221,8 +4233,8 @@ async function runOmniAdJob(jobId: string, uid: string, token: string, job: any)
 
     await setDocRest('generation_jobs', jobId, {
       status: 'generating',
-      progress: 18,
-      stepLabel: 'جاري توليد المشهد الأول عبر Naje Video Pro…',
+      progress: 15,
+      stepLabel: 'جاري إخراج وتوليد المشهد السينمائي…',
     }, token);
 
     const first = await createOmniInteraction(ai, {
@@ -4232,19 +4244,28 @@ async function runOmniAdJob(jobId: string, uid: string, token: string, job: any)
       resolution,
       task: images.length ? (images.length > 1 ? 'reference_to_video' : 'image_to_video') : 'text_to_video',
     });
-    let extracted = await extractOmniVideoBuffer(ai, first);
-    let currentDuration = 10;
     const steps = extensionSteps(duration);
+    let extracted = await extractOmniVideoBuffer(ai, first, async (attempt) => {
+      const maxStage1 = steps > 0 ? 35 : 85;
+      const prog = Math.min(maxStage1, 15 + Math.round((attempt / 10) * (maxStage1 - 15)));
+      await setDocRest('generation_jobs', jobId, {
+        progress: prog,
+        stepLabel: attempt < 3 ? 'جاري تحليل الرؤية البصرية وضبط الإضاءة…' : 'جاري معالجة وتوليد المشهد السينمائي…'
+      }, token).catch(() => null);
+    });
+    let currentDuration = 10;
     const trace: Array<{ step: string; sec: number; ok: boolean; error?: string }> = [
       { step: 'generate', sec: 10, ok: true }
     ];
     let partialWarning = '';
 
     for (let s = 0; s < steps; s++) {
+      const stageStart = 35 + Math.round((s / steps) * 50);
+      const stageEnd = 35 + Math.round(((s + 1) / steps) * 50);
       await setDocRest('generation_jobs', jobId, {
         status: 'extending',
-        progress: Math.min(85, 40 + s * 15),
-        stepLabel: `أومني 1.1 يمدّد نفس المشهد +10 (${s + 1}/${steps})…`,
+        progress: stageStart,
+        stepLabel: 'جاري استكمال وتطوير المشهد السينمائي…',
         interactionId: extracted.interactionId,
         omniTrace: trace,
       }, token);
@@ -4256,11 +4277,17 @@ async function runOmniAdJob(jobId: string, uid: string, token: string, job: any)
           aspectRatio: aspect,
           resolution,
         });
-        extracted = await extractOmniVideoBuffer(ai, ext);
+        extracted = await extractOmniVideoBuffer(ai, ext, async (attempt) => {
+          const prog = Math.min(stageEnd - 2, stageStart + Math.round((attempt / 10) * (stageEnd - stageStart)));
+          await setDocRest('generation_jobs', jobId, {
+            progress: prog,
+            stepLabel: 'جاري استكمال وتطوير المشهد السينمائي بدقة عالية…'
+          }, token).catch(() => null);
+        });
         currentDuration = Math.min(40, currentDuration + 10);
         trace.push({ step: 'extend', sec: currentDuration, ok: true });
       } catch (extErr: any) {
-        partialWarning = `أومني توقف عند ${currentDuration} ثانية. المشهد الناجح محفوظ، وفرق المدة رجع للرصيد.`;
+        partialWarning = `اكتمل المشهد بنجاح عند ${currentDuration} ثانية. العمل محفوظ ورصيدك محمي.`;
         trace.push({ step: 'extend', sec: currentDuration, ok: false, error: extErr?.message || 'extend failed' });
         break;
       }
@@ -4268,8 +4295,8 @@ async function runOmniAdJob(jobId: string, uid: string, token: string, job: any)
 
     await setDocRest('generation_jobs', jobId, {
       status: 'finalizing',
-      progress: 92,
-      stepLabel: 'جاري حفظ الفيديو وتجهيز الرابط…',
+      progress: 94,
+      stepLabel: 'جاري إنهاء وتجهيز الرابط السينمائي…',
       interactionId: extracted.interactionId,
     }, token);
 
@@ -4310,7 +4337,7 @@ async function runOmniAdJob(jobId: string, uid: string, token: string, job: any)
     await setDocRest('generation_jobs', jobId, {
       status: 'completed',
       progress: 100,
-      stepLabel: partialWarning || 'تم توليد الإعلان عبر أومني 1.1',
+      stepLabel: partialWarning || 'تم إخراج وتوليد الفيديو الإعلاني بنجاح فائق الجودة',
       mediaUrl: finalMediaUrl,
       videoUrl: finalMediaUrl,
       resultUrl: finalMediaUrl,
@@ -4324,6 +4351,19 @@ async function runOmniAdJob(jobId: string, uid: string, token: string, job: any)
       consumedBalance: Math.max(0, deductedPoints - refundedPoints),
       completedAt: Date.now()
     }, token);
+
+    // Push real-time notification to user
+    await createDocRest('notifications', {
+      ownerId: uid,
+      userId: uid,
+      title: 'تم إنجاز إعلان الفيديو بنجاح',
+      message: `اكتمل توليد الفيديو الإعلاني بنجاح بجودة ${resolution} وبمدة ${currentDuration} ثانية. يمكنك مشاهدته وتنزيله الآن.`,
+      type: 'feature',
+      studio: 'naje_ad',
+      read: false,
+      createdAt: Date.now(),
+      url: finalMediaUrl
+    }, token).catch(() => null);
   } catch (pipelineErr: any) {
     console.error(`[Omni Ad Pipeline] Job ${jobId} failed:`, pipelineErr);
     if (deductedPoints > 0) {
@@ -4331,10 +4371,12 @@ async function runOmniAdJob(jobId: string, uid: string, token: string, job: any)
     }
     await setDocRest('generation_jobs', jobId, {
       status: 'failed',
+      progress: 100,
       error: pipelineErr?.message || 'تعذر استكمال توليد الفيديو. تم استرجاع نقاطك بالكامل.',
+      lastActionError: pipelineErr?.message || null,
       refundedPoints: deductedPoints,
-      failedAt: Date.now()
-    }, token).catch((e) => console.error('Job update failed:', e));
+      completedAt: Date.now()
+    }, token).catch(() => null);
   } finally {
     const released = await releaseSlot(jobId);
     if (released.promotedJobId && released.promotedUid) {

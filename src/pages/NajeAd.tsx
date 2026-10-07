@@ -3,6 +3,7 @@ import { motion } from 'motion/react';
 import { AlertCircle, Clapperboard, Download, Film, Sparkles, Wand2 } from 'lucide-react';
 import { collection, doc, limit, onSnapshot, orderBy, query, where } from 'firebase/firestore';
 import { recordGeneratedMedia } from '../lib/studioMediaSync';
+import { pushAppNotification } from '../lib/notifications';
 import { useAppStore } from '../store';
 import { auth, db } from '../firebase';
 import { usePricingConfig } from '../hooks/usePricingConfig';
@@ -130,15 +131,34 @@ export default function NajeAd() {
           recordGeneratedMedia({
             type: 'video',
             mediaUrl: vUrl,
-            prompt: data.prompt || prompt || 'Omni Ad Video',
+            prompt: data.prompt || prompt || 'Naje Ad Video',
             title: 'Naje Ad Video',
             studio: 'naje_ad',
             metadata: { jobId: activeJobId }
           }).catch(e => console.warn('Failed to sync ad video to gallery:', e));
+
+          pushAppNotification({
+            title: 'تم إنجاز إعلان الفيديو بنجاح',
+            message: 'تم إخراج وتوليد الفيديو الإعلاني الخاص بك بدقة فائقة. جاهز للعرض والتحميل.',
+            type: 'feature',
+            studio: 'naje_ad',
+            url: vUrl,
+            ownerId: user?.uid,
+            userId: user?.uid,
+          }).catch(e => console.warn('Notification push failed:', e));
         }
       }
       if (data.status === 'failed') {
-        setErrorMessage(data.error || translate('adui.generateFailed', undefined, useAppStore.getState().language || 'ar'));
+        const errStr = data.error || translate('adui.generateFailed', undefined, useAppStore.getState().language || 'ar');
+        setErrorMessage(errStr);
+        pushAppNotification({
+          title: 'تنبيه بشأن توليد الإعلان',
+          message: errStr,
+          type: 'alert',
+          studio: 'naje_ad',
+          ownerId: user?.uid,
+          userId: user?.uid,
+        }).catch(e => console.warn('Notification push failed:', e));
       }
       if (['generating', 'editing', 'extending', 'queued', 'planning', 'finalizing'].includes(data.status)) {
         setIsSubmitting(true);
@@ -290,7 +310,7 @@ export default function NajeAd() {
     : activeJob?.stepLabel || (isSubmitting ? t('adui.preparing') : '');
 
   return (
-    <div className="naje-ad-studio relative h-full overflow-y-auto bg-[#0b0c10] px-2.5 pb-8 pt-2 text-[#f4efe6] sm:px-6 sm:py-5" dir={isRtl ? 'rtl' : 'ltr'}>
+    <div className="naje-ad-studio relative h-full overflow-y-auto bg-[#050608] px-2.5 pb-8 pt-2 text-[#f4efe6] sm:px-6 sm:py-5" dir={isRtl ? 'rtl' : 'ltr'}>
       <StudioBootSplash dark />
       <FeaturePaywallModal isOpen={showPaywall} onClose={() => setShowPaywall(false)} feature="najeAd" />
       <div className="mx-auto max-w-6xl space-y-3 sm:space-y-5">

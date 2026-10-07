@@ -1,6 +1,7 @@
 import { collection, addDoc, getDocs, query, where, orderBy } from 'firebase/firestore';
 import { db, auth } from '../firebase.ts';
 import { ensurePermanentMediaUrl } from './studioMediaSync.ts';
+import { pushAppNotification } from './notifications.ts';
 
 export interface CreativelyDesign {
   id?: string;
@@ -64,6 +65,17 @@ export async function saveDesign(designInput: any): Promise<string | null> {
         studio: 'creativelyAI',
         createdAt: Date.now()
       }).catch(e => console.warn('Failed to add design to generated_media:', e));
+
+      // Push real-time notification
+      pushAppNotification({
+        title: isVideo ? 'جاهز: الفيديو الإبداعي' : 'جاهز: التصميم الإبداعي',
+        message: `تم إنجاز ${isVideo ? 'الفيديو' : 'التصميم'} بنجاح وإضافته إلى معرض تصاميمك.`,
+        type: 'feature',
+        studio: 'creatively',
+        url: designObj.url,
+        ownerId: userId,
+        userId: userId
+      }).catch(() => null);
     }
 
     return docRef.id || null;

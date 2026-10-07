@@ -68,7 +68,7 @@ export function CircularCardCarousel<T>({
     return () => ro.disconnect();
   }, []);
 
-  const peekX = Math.max(64, Math.min(118, Math.round(frameW * 0.31)));
+  const peekX = Math.max(44, Math.min(96, Math.round(frameW * 0.24)));
 
   const wrapIndex = useCallback(
     (i: number) => {
@@ -143,7 +143,7 @@ export function CircularCardCarousel<T>({
     <div className="w-full">
       <div
         ref={frameRef}
-        className={`relative ${frameClassName} w-full flex items-center justify-center select-none overflow-visible`}
+        className={`relative ${frameClassName} w-full flex items-center justify-center select-none overflow-hidden rounded-2xl sm:rounded-3xl`}
         dir="ltr"
       >
         {peekOffsets.map((offset) => {

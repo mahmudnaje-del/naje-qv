@@ -522,7 +522,7 @@ export const AdminNajeAd: React.FC = () => {
                         {job.prompt || t('tools.admin.adSceneFallback')}
                       </td>
                       <td className="py-3 text-gray-600 dark:text-gray-300 font-mono">
-                        {job.totalDurationSec || 10}s · {job.omniModel || 'omni'}
+                        {job.totalDurationSec || 10}s · Naje Video Pro
                       </td>
                       <td className="py-3 font-black text-amber-500 font-mono">
                         {t('tools.admin.pointsN', { count: job.consumedBalance || 20 })}
