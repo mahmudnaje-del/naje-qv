@@ -4,6 +4,7 @@ import { unpackSiteZip } from '../src/lib/workspaceZip.ts';
 const zip = new JSZip();
 zip.file('index.html', '<!doctype html><title>ok</title>');
 zip.file('../evil.txt', 'pwned');
+zip.file('/etc/passwd', 'root:x:0:0:root:/root:/bin/sh');
 
 const buffer = await zip.generateAsync({ type: 'nodebuffer' });
 const { files } = await unpackSiteZip(buffer);
@@ -14,6 +15,9 @@ if (!paths.includes('index.html')) {
 }
 if (paths.some((path) => path === '../evil.txt' || path === 'evil.txt' || path.split('/').includes('..') || path.toLowerCase().includes('evil'))) {
   throw new Error(`traversal entry must be skipped, got: ${paths.join(', ')}`);
+}
+if (paths.some((path) => path === '/etc/passwd' || path === 'etc/passwd' || path.startsWith('/') || path.toLowerCase().includes('passwd'))) {
+  throw new Error(`absolute path entry must be skipped, got: ${paths.join(', ')}`);
 }
 if (paths.length !== 1) {
   throw new Error(`expected only index.html, got: ${paths.join(', ')}`);

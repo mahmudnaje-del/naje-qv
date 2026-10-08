@@ -1,4 +1,5 @@
 import { getNajeModel, type NajeModelRole } from './modelEnvConfig';
+import { getAgentCapability } from './agentCapabilities';
 
 /** Specialist the dispatcher can call. Mirrors how a lead agent pulls a helper. */
 export type SpecialistId =
@@ -22,19 +23,33 @@ export interface SpecialistSpec {
   role: NajeModelRole;
   tier: ModelTier;
   when: string;
+  /**
+   * Copied from the canonical registry (`AGENT_CAPABILITIES.executable`).
+   * Review-only tools such as critic_review stay false and are not generation steps.
+   */
+  executable: boolean;
+}
+
+/** Executability comes only from the registry, never from the fleet row itself. */
+function fleetMember(spec: Omit<SpecialistSpec, 'executable'>): SpecialistSpec {
+  const cap = getAgentCapability(spec.tool);
+  return {
+    ...spec,
+    executable: cap?.executable === true,
+  };
 }
 
 export const AGENT_FLEET: SpecialistSpec[] = [
-  { id: 'planner', titleAr: 'مخطط المهمة', tool: 'propose_mission', role: 'personas', tier: 'lite', when: 'يفهم الطلب ويوزع الوكلاء' },
-  { id: 'critic', titleAr: 'الناقد', tool: 'critic_review', role: 'personas', tier: 'lite', when: 'يفحص الطلب قبل التنفيذ' },
-  { id: 'image', titleAr: 'وكيل الصور', tool: 'image_studio', role: 'image_core', tier: 'core', when: 'شعار، صورة واجهة، أصل بصري' },
-  { id: 'video', titleAr: 'وكيل الفيديو', tool: 'video_director', role: 'video_core', tier: 'core', when: 'لقطة إعلان ضمن حد النموذج' },
-  { id: 'stitch', titleAr: 'دمج المقاطع', tool: 'video_stitch', role: 'lite', tier: 'lite', when: 'مدة أطول من لقطة واحدة' },
-  { id: 'ui', titleAr: 'وكيل الواجهات', tool: 'ui_director', role: 'core', tier: 'core', when: 'صفحة أو واجهة فيها صور وخطوط' },
-  { id: 'source', titleAr: 'وكيل المصادر', tool: 'web_grounding', role: 'lite', tier: 'lite', when: 'حقائق من مصادر المستخدم أو البحث' },
-  { id: 'voice', titleAr: 'وكيل الصوت', tool: 'voice_narration', role: 'voice', tier: 'core', when: 'تعليق صوتي' },
-  { id: 'document', titleAr: 'وكيل المستندات', tool: 'document_architect', role: 'core', tier: 'core', when: 'كتيب أو عرض' },
-  { id: 'fullstack', titleAr: 'وكيل التطوير', tool: 'fullstack_engineer', role: 'pro', tier: 'pro', when: 'موقع أو تطبيق متعدد الملفات' },
+  fleetMember({ id: 'planner', titleAr: 'مخطط المهمة', tool: 'propose_mission', role: 'personas', tier: 'lite', when: 'يفهم الطلب ويوزع الوكلاء' }),
+  fleetMember({ id: 'critic', titleAr: 'الناقد', tool: 'critic_review', role: 'personas', tier: 'lite', when: 'مراجعة فقط بعد التنفيذ، ليست خطوة توليد' }),
+  fleetMember({ id: 'image', titleAr: 'وكيل الصور', tool: 'image_studio', role: 'image_core', tier: 'core', when: 'شعار، صورة واجهة، أصل بصري' }),
+  fleetMember({ id: 'video', titleAr: 'وكيل الفيديو', tool: 'video_director', role: 'video_core', tier: 'core', when: 'لقطة إعلان ضمن حد النموذج' }),
+  fleetMember({ id: 'stitch', titleAr: 'دمج المقاطع', tool: 'video_stitch', role: 'lite', tier: 'lite', when: 'مدة أطول من لقطة واحدة' }),
+  fleetMember({ id: 'ui', titleAr: 'وكيل الواجهات', tool: 'ui_director', role: 'core', tier: 'core', when: 'صفحة أو واجهة فيها صور وخطوط' }),
+  fleetMember({ id: 'source', titleAr: 'وكيل المصادر', tool: 'web_grounding', role: 'lite', tier: 'lite', when: 'حقائق من مصادر المستخدم أو البحث' }),
+  fleetMember({ id: 'voice', titleAr: 'وكيل الصوت', tool: 'voice_narration', role: 'voice', tier: 'core', when: 'تعليق صوتي' }),
+  fleetMember({ id: 'document', titleAr: 'وكيل المستندات', tool: 'document_architect', role: 'core', tier: 'core', when: 'كتيب أو عرض' }),
+  fleetMember({ id: 'fullstack', titleAr: 'وكيل التطوير', tool: 'fullstack_engineer', role: 'pro', tier: 'pro', when: 'موقع أو تطبيق متعدد الملفات' }),
 ];
 
 /**
@@ -102,7 +117,13 @@ export function dispatchSpecialists(userText: string): DispatchDecision {
     }
   }
 
-  const specialists = AGENT_FLEET.filter((s) => ids.has(s.id));
+  const specialists = AGENT_FLEET.filter((s) => {
+    if (!ids.has(s.id)) return false;
+    const cap = getAgentCapability(s.tool);
+    // critic_review is kind 'review' and executable false. Do not present it as a runnable specialist.
+    if (!cap || cap.kind === 'review' || (cap.executable === false && cap.kind !== 'plan')) return false;
+    return true;
+  });
   return {
     specialists,
     tier,

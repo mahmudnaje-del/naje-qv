@@ -16,4 +16,12 @@ if (!flagged.html.includes('<script>const n = 1;</script>')) throw new Error('sc
 const scripted = inspectGeneratedUi('<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width"><script>document.documentElement.dataset.ok="1"</script></head></html>');
 if (scripted.issues.length) throw new Error('script page flagged: ' + scripted.issues.join(','));
 if (!scripted.html.includes('<script>document.documentElement.dataset.ok="1"</script>')) throw new Error('clean script stripped');
+const unclosedSrc = '<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width"><script>const n = 1;</script></head><body><p>open</p>';
+const unclosed = inspectGeneratedUi(unclosedSrc);
+if (!unclosed.issues.includes('unclosed-html')) throw new Error('unclosed html not flagged');
+if (unclosed.html !== unclosedSrc) throw new Error('unclosed html mutated');
+if (!unclosed.html.includes('<script>const n = 1;</script>')) throw new Error('script stripped on unclosed html');
+const closed = inspectGeneratedUi('<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width"></head><body><script>const n = 1;</script></body></html>');
+if (closed.issues.includes('unclosed-html')) throw new Error('closed html flagged unclosed');
+if (!closed.html.includes('<script>const n = 1;</script>')) throw new Error('closed script stripped');
 console.log('ui inspect ok');

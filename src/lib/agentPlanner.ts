@@ -235,14 +235,19 @@ ${plannerToolGuide()}
 
 /**
  * Deterministically attaches server-computed point costs to every tool in the proposal.
+ * Non-executable names (including critic_review) are dropped before the proposal is returned.
  */
+function dropNonExecutableToolCalls<T extends { name?: string }>(tools: T[] | undefined): T[] {
+  return (tools || []).filter((tool) => isExecutableAgentTool(String(tool?.name ?? '')));
+}
+
 function computeProposalPricing(
   proposal: AgentPlanProposal,
   pricingConfig: PricingConfig
 ): AgentPlanProposal {
   let totalCost = 0;
   const pricedSteps = (proposal.steps || []).map((step) => {
-    const pricedTools = (step.tools || []).map((tool) => {
+    const pricedTools = dropNonExecutableToolCalls(step.tools).map((tool) => {
       const toolCost = getAgentToolCost(tool.name, tool.inputParams || {}, pricingConfig);
       totalCost += toolCost;
       return {
@@ -255,7 +260,7 @@ function computeProposalPricing(
       ...step,
       tools: pricedTools
     };
-  });
+  }).filter((step) => step.tools.length > 0);
 
   return {
     ...proposal,

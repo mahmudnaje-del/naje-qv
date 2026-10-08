@@ -37,6 +37,7 @@ import { hasFeatureAccess } from '../lib/featureAccess';
 import SmokeChatWrapper from '../components/chat/SmokeChatWrapper';
 import { FleetStrip } from '../components/FleetStrip';
 import { dispatchSpecialists, type DispatchDecision } from '../lib/agentFleet';
+import { readyStepIndex } from '../lib/agentDag';
 import { readNajeSse } from '../lib/sseRead';
 import { resolveOpenFormat, localizeActivity } from '../lib/creationEngine';
 import DeckPreviewPane from '../components/deck/DeckPreviewPane';
@@ -759,7 +760,9 @@ export default function NajeAgent() {
       let missionArtifacts = [...(activeMission.artifacts || [])];
       let consumed = activeMission.consumedPoints || 0;
 
-      for (let sIdx = 0; sIdx < activeMission.steps.length; sIdx++) {
+      for (let scheduled = 0; scheduled <= activeMission.steps.length; scheduled++) {
+        const sIdx = readyStepIndex(activeMission.steps);
+        if (sIdx < 0) break;
         const step = activeMission.steps[sIdx];
         if (step.status === 'completed') continue;
         if (cancelMissionRef.current) {
@@ -977,6 +980,7 @@ export default function NajeAgent() {
                     ...art,
                     sourceTool: art.sourceTool || tc.name,
                     sourceMission: art.sourceMission || activeMission.id,
+                    parentArtifactId: art.parentArtifactId || [...missionArtifacts].reverse().find((prev) => prev.type === art.type)?.id,
                     auditStatus: 'accepted'
                   }).updatedVersions;
                 }
@@ -999,6 +1003,10 @@ export default function NajeAgent() {
           checkpoint: { index: sIdx + 1, title: step.title || 'step', at: Date.now() },
           updatedAt: Date.now()
         });
+      }
+
+      if (activeMission.steps.some((step) => step.status !== 'completed')) {
+        throw new Error(t('tools.agent.execStopped'));
       }
 
       await updateDoc(missionRef, {

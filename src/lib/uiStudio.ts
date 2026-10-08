@@ -65,6 +65,7 @@ export function inspectGeneratedUi(html: string): { html: string; issues: string
   if (/data:\s*text\/html/i.test(out)) issues.push('data-text-html');
   if (/(?:^|[\s<"'])on[a-z]+\s*=/i.test(out)) issues.push('inline-handler');
   if (out.length > 40 && !/name\s*=\s*["']viewport["']/i.test(out) && /<\/html>/i.test(out)) issues.push('viewport');
+  if (/<html\b/i.test(out) && !/<\/html>/i.test(out)) issues.push('unclosed-html');
   return { html: out, issues };
 }
 

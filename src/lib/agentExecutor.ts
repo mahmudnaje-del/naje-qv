@@ -335,7 +335,10 @@ export async function executeAgentTool(
         options?.onProgress
       );
 
-      const files: AgentCodeFile[] = fullstackResult.files || [];
+      const files: AgentCodeFile[] = Array.isArray(fullstackResult.files) ? fullstackResult.files : [];
+      if (files.length === 0) {
+        throw new Error('تعذر إنشاء المشروع البرمجي: المخرج فارغ ولا توجد ملفات للتسليم.');
+      }
       const artifact: AgentArtifact = {
         id: `artifact_code_${Date.now()}`,
         type: 'code_project',
@@ -635,6 +638,7 @@ export async function executeAgentTool(
       const output = {
         analysis: res.text || '',
         sources,
+        sourceKind: sources.length > 0 ? 'web' : 'model',
         timestamp: Date.now()
       };
 

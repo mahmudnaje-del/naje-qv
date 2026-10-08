@@ -12146,7 +12146,7 @@ app.post("/api/agent/execute-tool-stream", async (req, res) => {
       const u = new URL(raw);
       if (u.protocol !== 'http:' && u.protocol !== 'https:') return false;
       const host = u.hostname.toLowerCase();
-      if (host === 'localhost' || host.endsWith('.local') || host === '0.0.0.0') return false;
+      if (host === 'localhost' || host.endsWith('.local') || host === '0.0.0.0' || host.includes('metadata')) return false;
       if (/^(127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[0-1])\.|169\.254\.|::1)/.test(host)) return false;
       return true;
     } catch {
