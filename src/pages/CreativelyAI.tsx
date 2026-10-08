@@ -1969,22 +1969,24 @@ if (currentScreen === 'welcome') {
           </>
         )}
 
-        {/* Chat Designer ALWAYS mounted to prevent state loss during background design generation */}
-        <div style={{ display: mode === 'chat' ? 'flex' : 'none' }} className="w-full flex-1 flex-col">
-          <ChatDesigner 
-            activationCode="naje_authenticated" 
-            isCodeValid={true} 
-            hasBalance={balance > 0}
-            isCheckingCode={false}
-            codeStatus={codeStatus}
-            lang={lang} 
-            onGoHome={() => {
-              setMode(null);
-              handleSetScreen('welcome');
-            }}
-            onPaywallTrigger={() => setShowCreativelyPaywall(true)}
-          />
-        </div>
+        {/* Chat mounts only in chat mode. A saved session must not take down the logo and identity tools. */}
+        {mode === 'chat' ? (
+          <div className="w-full flex-1 flex flex-col min-h-0">
+            <ChatDesigner 
+              activationCode="naje_authenticated" 
+              isCodeValid={true} 
+              hasBalance={balance > 0}
+              isCheckingCode={false}
+              codeStatus={codeStatus}
+              lang={lang} 
+              onGoHome={() => {
+                setMode(null);
+                handleSetScreen('welcome');
+              }}
+              onPaywallTrigger={() => setShowCreativelyPaywall(true)}
+            />
+          </div>
+        ) : null}
 
         {/* Input Card */}
         {mode === 'chat' ? null : mode === 'brand_kit' && kitGenerationStatus !== 'idle' ? (
@@ -2405,7 +2407,8 @@ if (currentScreen === 'welcome') {
             <div className="flex flex-col gap-6 animate-fade-in-up">
               {FORM_CONFIGS[mode === 'logo' ? 'billboard' : (mode === 'brand_kit' ? 'brand_kit' : (mode === 'video_ad' ? 'video_ad' : identityFormat))].map((field) => {
                 if (field.id === 'videoDuration') {
-                   const isVideo = !df['resultType'] || df['resultType'].includes('Video') || df['resultType'].includes('فيديو');
+                   const resultType = typeof df['resultType'] === 'string' ? df['resultType'] : '';
+                   const isVideo = !resultType || resultType.includes('Video') || resultType.includes('فيديو');
                    if (!isVideo) return null;
                 }
                 const scope = mode === 'logo' ? 'billboard' : (mode === 'brand_kit' ? 'brand_kit' : (mode === 'video_ad' ? 'video_ad' : identityFormat));

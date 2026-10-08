@@ -23,7 +23,7 @@ import { auth, db } from '../firebase';
 import { downloadBase64File } from '../utils/fileDownloader';
 import { getDoc as getLocalDoc } from '../lib/idb';
 import { 
-  LogOut, User, Folder, Star, Info, Menu, PanelRight, X, Plus, Sparkles,
+  LogOut, User, Folder, Star, Info, Menu, PanelRight, PanelLeft, X, Plus, Sparkles,
   ChevronDown, ChevronRight, ChevronLeft, MessageSquare, Image as ImageIcon, Film, Layout, Mic2,
   FileText, Shield, Download, ExternalLink, Calendar, Compass, Layers, AlertCircle,
   Pencil, Trash2, Bot, Code2, BookOpen, Clapperboard, Palette, MoreVertical, Pin, PinOff
@@ -31,6 +31,7 @@ import {
 import { collection, query, where, orderBy, onSnapshot, addDoc, deleteDoc, doc, setDoc, getDocs, updateDoc } from 'firebase/firestore';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
+import ErrorBoundary from '../components/ErrorBoundary';
 import { toast } from '../toastStore';
 import NotificationDropdown from '../components/NotificationDropdown';
 import EmailVerificationBanner from '../components/EmailVerificationBanner';
@@ -664,7 +665,8 @@ export default function Dashboard() {
           className="p-1.5 rounded-xl text-gray-800 dark:text-purple-100 dark:hover:text-white hover:text-gray-900 hover:bg-white dark:hover:bg-gray-900 transition flex items-center justify-center cursor-pointer active:scale-95"
           title={t('nav.collapseSidebar')}
         >
-          <PanelRight className="w-4 h-4" />
+          <PanelLeft className="w-4 h-4 rtl:hidden" />
+          <PanelRight className="w-4 h-4 ltr:hidden" />
         </button>
       </div>
 
@@ -1135,7 +1137,7 @@ export default function Dashboard() {
   );
 
   return (
-    <div ref={shellRef} className="h-screen h-[100dvh] bg-naje-canvas text-naje-ink flex overflow-hidden">
+    <div ref={shellRef} dir={isRtl ? 'rtl' : 'ltr'} className="h-screen h-[100dvh] bg-naje-canvas text-naje-ink flex overflow-hidden">
       <TermsConsentModal />
       <OmniverseCommandBar onCreateChat={handleCreateNewChat} />
       {/* 1. Sidebar - Desktop (Right-hand persistent in RTL) */}
@@ -1143,18 +1145,17 @@ export default function Dashboard() {
         initial={false}
         animate={{ width: sidebarOpen ? 288 : 0, opacity: sidebarOpen ? 1 : 0 }}
         transition={{ type: 'spring', bounce: 0, duration: 0.3 }}
-        className="naje-glass-card-lg rounded-none border-t-0 border-b-0 border-r-0 border-l border-slate-300 dark:border-white/10 hidden md:flex flex-col flex-shrink-0 relative z-20 shadow-xl shadow-black/5 dark:shadow-black/20 overflow-hidden"
+        className="naje-glass-card-lg rounded-none border-y-0 border-s-0 border-e border-slate-300 dark:border-white/10 hidden md:flex flex-col flex-shrink-0 relative z-20 shadow-xl shadow-black/5 dark:shadow-black/20 overflow-hidden"
       >
         <div className="w-72 h-full flex flex-col flex-shrink-0">
           {sidebarContent}
         </div>
       </motion.aside>
 
-      {/* 2. Slideout Drawer Sidebar - Mobile (Right-hand slide-out in RTL) */}
+      {/* 2. Slideout Drawer Sidebar - Mobile. Physical edges: LTR from the left, RTL from the right. */}
       <AnimatePresence>
         {sidebarOpen && (
-          <div className="fixed inset-0 z-50 md:hidden flex justify-start">
-            {/* Dark Backdrop */}
+          <div className="fixed inset-0 z-50 md:hidden">
             <motion.div 
               initial={{ opacity: 0 }}
               animate={{ opacity: 0.5 }}
@@ -1162,13 +1163,12 @@ export default function Dashboard() {
               onClick={() => setSidebarOpen(false)}
               className="absolute inset-0 bg-white dark:bg-black"
             />
-            {/* Drawer Body */}
             <motion.div 
-              initial={{ x: '100%' }}
+              initial={{ x: isRtl ? '100%' : '-100%' }}
               animate={{ x: 0 }}
-              exit={{ x: '100%' }}
-              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="relative w-80 h-full naje-glass-card-lg rounded-none border-t-0 border-b-0 border-l-0 border-r border-slate-300 dark:border-slate-900 shadow-2xl flex flex-col z-10"
+              exit={{ x: isRtl ? '100%' : '-100%' }}
+              transition={{ type: 'spring', damping: 28, stiffness: 320 }}
+              className={`absolute top-0 bottom-0 w-80 max-w-[88vw] naje-glass-card-lg rounded-none border-y-0 border-s-0 border-e border-slate-300 dark:border-slate-900 shadow-2xl flex flex-col z-10 ${isRtl ? 'right-0' : 'left-0'}`}
             >
               {sidebarContent}
             </motion.div>
@@ -1369,7 +1369,8 @@ export default function Dashboard() {
                     className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl transition flex items-center justify-center cursor-pointer shrink-0 hover:text-white hover:bg-white/10 border ${studio.btnBorder}`}
                     title={sidebarOpen ? t('nav.collapseSidebar') : t('nav.expandSidebar')}
                   >
-                    <PanelRight className="w-4.5 h-4.5 sm:w-5 sm:h-5" />
+                    <PanelLeft className="w-4.5 h-4.5 sm:w-5 sm:h-5 rtl:hidden" />
+                    <PanelRight className="w-4.5 h-4.5 sm:w-5 sm:h-5 ltr:hidden" />
                   </button>
                   <div className="flex items-center gap-2">
                     {('imageMark' in studio && studio.imageMark) ? (
@@ -1393,7 +1394,8 @@ export default function Dashboard() {
                     className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl transition flex items-center justify-center cursor-pointer shrink-0 text-gray-800 dark:text-purple-100 dark:hover:text-white hover:text-gray-900 hover:bg-white dark:hover:bg-gray-900"
                     title={sidebarOpen ? t('nav.collapseSidebar') : t('nav.expandSidebar')}
                   >
-                    <PanelRight className="w-4.5 h-4.5 sm:w-5 sm:h-5" />
+                    <PanelLeft className="w-4.5 h-4.5 sm:w-5 sm:h-5 rtl:hidden" />
+                    <PanelRight className="w-4.5 h-4.5 sm:w-5 sm:h-5 ltr:hidden" />
                   </button>
                   <Link to="/" onClick={() => { setActiveProjectId(null); setUserGalleriesOpen('none'); }} className="flex items-center gap-1.5 sm:gap-2 group shrink-0">
                     <span className="sm:hidden shrink-0"><NajeLogo size="sm" className="group-hover:scale-105 transition-all" /></span>
@@ -1433,7 +1435,9 @@ export default function Dashboard() {
                 transition={{ duration: 0.08 }}
                 className="flex-1 flex flex-col min-h-0 w-full overflow-hidden"
               >
-                <Outlet />
+                <ErrorBoundary resetKey={location.pathname}>
+                  <Outlet />
+                </ErrorBoundary>
               </motion.div>
             </AnimatePresence>
           </Suspense>

@@ -431,11 +431,27 @@ export function ChatDesigner({
         }
         
         if (Array.isArray(loadedSessions) && loadedSessions.length > 0) {
+          loadedSessions = loadedSessions
+            .filter((s: any) => s && typeof s === 'object')
+            .map((s: any) => ({
+              ...s,
+              messages: (Array.isArray(s.messages) ? s.messages : [])
+                .filter((m: any) => m && typeof m === 'object')
+                .map((m: any) => ({
+                  ...m,
+                  content: typeof m.content === 'string' ? m.content : (m.content == null ? '' : String(m.content)),
+                })),
+            }));
+          if (loadedSessions.length > 0) {
           setSessions(loadedSessions);
-          if (loadedSessions[0].messages.length > 1) {
+          const firstMessages = loadedSessions[0].messages;
+          if (firstMessages.length > 1) {
             setTimeout(() => createNewSession(), 0);
           } else {
             setCurrentSessionId(loadedSessions[0].id);
+          }
+          } else {
+            createNewSession();
           }
         } else {
           createNewSession();
@@ -462,7 +478,7 @@ export function ChatDesigner({
           id: s.id,
           title: s.title,
           updatedAt: s.updatedAt || Date.now(),
-          messages: s.messages.slice(-50).map(m => ({
+          messages: (Array.isArray(s.messages) ? s.messages : []).slice(-50).map(m => ({
             role: m.role,
             content: m.content,
             imageUrl: m.imageUrl
@@ -532,11 +548,11 @@ export function ChatDesigner({
   };
 
   const currentSession = sessions.find(s => s.id === currentSessionId);
-  const messages = currentSession?.messages || [];
+  const messages = Array.isArray(currentSession?.messages) ? currentSession.messages : [];
 
   // Union of images generated inside the active chat + the browser persisted gallery
   const mergedImages = useMemo(() => {
-    const chatImages = sessions.flatMap(s => s.messages.filter(m => m.imageUrl).map(m => m.imageUrl as string));
+    const chatImages = sessions.flatMap(s => (Array.isArray(s?.messages) ? s.messages : []).filter(m => m?.imageUrl).map(m => m.imageUrl as string));
     
     // Map IndexedDB designs securely (either as blobs or strings)
     const dbImages = localDesigns.map(design => {
@@ -941,7 +957,7 @@ export function ChatDesigner({
                 {t('creative.m190')}
               </h3>
               <div className="flex flex-col gap-1">
-                {sessions.map((session, idx) => (
+                {sessions.filter((session) => session && typeof session === 'object').map((session, idx) => (
                   <button 
                     key={`${session.id}-${idx}`}
                     onClick={() => {
@@ -1345,7 +1361,13 @@ export function ChatDesigner({
                     
                     {/* Chat Scroll Container */}
                     <div className="flex-1 min-h-0 overflow-y-auto p-4 md:p-6 flex flex-col gap-6 custom-scrollbar">
-                      {messages.map((msg, idx) => (
+                      {messages.map((msg, idx) => {
+                        if (!msg || typeof msg !== 'object') return null;
+                        const rawContent = typeof msg.content === 'string' ? msg.content : (msg.content == null ? '' : String(msg.content));
+                        const shownContent = msg.attachedImagePreview
+                          ? rawContent.replace(/\n\n\[File Attached: .*?\]/, '')
+                          : rawContent;
+                        return (
                         <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in-up`} style={{ animationDelay: `${idx * 55}ms` }}>
                           <div className={`max-w-[90%] md:max-w-[80%] p-4 sm:p-5 ${
                             msg.role === 'user' 
@@ -1363,13 +1385,13 @@ export function ChatDesigner({
                                 <img src={msg.attachedImagePreview} alt="Attached" className="w-full h-auto max-h-48 object-cover" />
                               </div>
                             )}
-                            {msg.content?.startsWith('__NAJE_ERROR_JSON__:') ? (
+                            {rawContent.startsWith('__NAJE_ERROR_JSON__:') ? (
                               <div className="w-full mt-2">
-                                <NajeErrorCard jsonContent={msg.content} />
+                                <NajeErrorCard jsonContent={rawContent} />
                               </div>
                             ) : (
                               <div className="prose-custom max-w-none break-words leading-relaxed select-text overflow-hidden [word-break:break-word] whitespace-pre-wrap">
-                                <ReactMarkdown>{msg.attachedImagePreview ? msg.content.replace(/\n\n\[File Attached: .*?\]/, '') : msg.content}</ReactMarkdown>
+                                <ReactMarkdown>{shownContent}</ReactMarkdown>
                               </div>
                             )}
                             
@@ -1409,7 +1431,8 @@ export function ChatDesigner({
                             )}
                           </div>
                         </div>
-                      ))}
+                        );
+                      })}
                       {isLoading && (() => {
                         const lastUserMsg = [...messages].reverse().find(m => m.role === 'user')?.content || '';
                         const isDesign = isGeneratingMedia;

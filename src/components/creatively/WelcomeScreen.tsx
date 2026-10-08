@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { motion, useScroll, useTransform, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { 
   Sparkles, Bot, Palette, Film, Wand2, Layers, 
   LayoutTemplate, Image as ImageIcon, Video, 
@@ -19,7 +19,6 @@ interface WelcomeScreenProps {
 
 export function WelcomeScreen({ lang = 'ar', onNavigate, onSecretClick, userName }: WelcomeScreenProps) {
   const { t, isRtl } = useI18n();
-  const { scrollYProgress } = useScroll();
   const [loadingId, setLoadingId] = useState<string | null>(null);
 
   const handleCardClick = (id: string, screen: any, mode?: any, isChat?: boolean) => {
@@ -37,7 +36,7 @@ export function WelcomeScreen({ lang = 'ar', onNavigate, onSecretClick, userName
   ];
 
   return (
-    <div className="naje-creative-studio bg-[#030303] min-h-full text-white font-sans selection:bg-purple-500/30 overflow-x-hidden" dir={isRtl ? 'rtl' : 'ltr'}>
+    <div className="naje-creative-studio bg-[#030303] h-full min-h-0 overflow-y-auto overflow-x-hidden text-white font-sans selection:bg-purple-500/30" dir={isRtl ? 'rtl' : 'ltr'}>
       {/* Background Gradients */}
       <div className="fixed inset-0 pointer-events-none z-0">
         <div className="absolute top-[-10%] ltr:left-[-10%] rtl:right-[-10%] w-[40rem] h-[40rem] bg-purple-900/20 rounded-full blur-[120px] mix-blend-screen animate-pulse" style={{ animationDuration: '10s' }} />
