@@ -329,7 +329,7 @@ export default function NajeAd() {
           </div>
         )}
 
-        <section className="rounded-2xl border border-white/8 bg-[#0e1016] p-3 sm:rounded-[28px] sm:p-4">
+        <section className="overflow-hidden rounded-2xl border border-white/8 bg-[#0e1016] p-3 sm:rounded-[28px] sm:p-4">
           <CastingRoom
             selectedAvatarId={dna.selectedAvatarId}
             customPreview={customCharacter}
@@ -357,7 +357,7 @@ export default function NajeAd() {
           />
         </section>
 
-        <section className="rounded-2xl border border-white/8 bg-[#0e1016] p-3 sm:rounded-[28px] sm:p-4">
+        <section className="overflow-hidden rounded-2xl border border-white/8 bg-[#0e1016] p-3 sm:rounded-[28px] sm:p-4">
           <LocationScout
             selectedLocationId={dna.selectedLocationId}
             customPreview={customLocation}
@@ -385,14 +385,14 @@ export default function NajeAd() {
           />
         </section>
 
-        <section className="rounded-2xl border border-white/8 bg-[#0e1016] p-3 sm:rounded-[28px] sm:p-4">
+        <section className="overflow-hidden rounded-2xl border border-white/8 bg-[#0e1016] p-3 sm:rounded-[28px] sm:p-4">
           <StyleGallery
             selectedStyleId={dna.selectedStyleTemplateId}
             onSelectStyle={(id) => updateDna({ selectedStyleTemplateId: id, style: id })}
           />
         </section>
 
-        <section className="rounded-2xl border border-white/8 bg-[#0e1016] p-3 sm:rounded-[28px] sm:p-4">
+        <section className="overflow-hidden rounded-2xl border border-white/8 bg-[#0e1016] p-3 sm:rounded-[28px] sm:p-4">
           <CastBoard
             cards={sceneCards}
             onChange={setSceneCards}

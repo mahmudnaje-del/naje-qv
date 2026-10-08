@@ -1,7 +1,42 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ChevronRight, ChevronLeft, Download, Maximize } from 'lucide-react';
 import { cn } from '../lib/utils';
-import { NajeSlide } from '../lib/naje-engine';
+
+export interface NajeSlideCard {
+  title: string;
+  text: string;
+  iconKeyword?: string;
+}
+
+export interface NajeSlideContent {
+  text?: string;
+  bulletPoints?: string[];
+  aiImagePrompt?: string;
+  codeVisualType?: 'svg' | 'mermaid' | 'diagram';
+  codeVisualContent?: string;
+  visualSource?: 'stock' | 'ai' | 'code' | 'none';
+  cards?: NajeSlideCard[];
+  stats?: {
+    value?: string;
+    label?: string;
+  };
+  comparisons?: Array<{
+    label: string;
+    value: number;
+    max: number;
+  }>;
+  quote?: { text: string; author: string };
+}
+
+export interface NajeSlide {
+  layoutTemplate: string;
+  eyebrow?: string;
+  slideTitle: string;
+  slideSubtitle?: string;
+  speakerNotes?: string;
+  content: NajeSlideContent;
+  visualPrompt?: string;
+}
 
 interface Props {
   slides: NajeSlide[];

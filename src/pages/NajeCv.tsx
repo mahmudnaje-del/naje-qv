@@ -17,6 +17,7 @@ import {
   User,
 } from 'lucide-react';
 import { toast } from '../toastStore';
+import { pushAppNotification } from '../lib/notifications';
 import { useAppStore } from '../store';
 import { useSmartDownloadStore } from '../stores/smartDownloadStore';
 import StudioBootSplash from '../components/StudioBootSplash';
@@ -382,6 +383,17 @@ export default function NajeCv() {
           suggestedName: base,
           skipModal: true,
         });
+      }
+      const user = useAppStore.getState().user;
+      if (user?.uid) {
+        pushAppNotification({
+          title: 'تم تصدير السيرة الذاتية بنجاح',
+          message: `تم تجهيز ملف السيرة الذاتية بصيغة ${kind.toUpperCase()} بنجاح وهو متاح للتنزيل.`,
+          type: 'feature',
+          studio: 'naje_cv',
+          ownerId: user.uid,
+          userId: user.uid,
+        }).catch(() => null);
       }
     } catch (e: any) {
       toast.error(e?.message === 'preview' ? t('cv.toast.preview') : e?.message || t('cv.toast.exportFail'));

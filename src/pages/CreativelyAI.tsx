@@ -12,6 +12,7 @@ import { CreativeAiProChat } from "../components/creatively/CreativeAiProChat";
 import { EpisodesViewer } from "../components/creatively/EpisodesViewer";
 import { WelcomeScreen } from "../components/creatively/WelcomeScreen";
 import { saveDesign, getAllDesigns } from "../lib/creativelyDesigns";
+import { pushAppNotification } from "../lib/notifications";
 import { useAppStore } from "../store";
 import { toast } from "../toastStore";
 import { auth } from "../firebase";
@@ -1236,6 +1237,18 @@ const handleProUnlockSubmit = async () => {};
       }).then((docId) => {
         if (docId) setGeneratedDesignId(docId as any);
       }).catch(console.error);
+
+      if (auth.currentUser?.uid && data.imageUrl) {
+        pushAppNotification({
+          title: 'تم توليد التصميم بنجاح',
+          message: data.conceptTitle ? `${data.conceptTitle} — التصميم جاهز في معرضك.` : 'اكتمل توليد التصميم الإبداعي وهو جاهز للعرض.',
+          type: 'feature',
+          studio: 'creatively',
+          url: data.imageUrl,
+          ownerId: auth.currentUser.uid,
+          userId: auth.currentUser.uid,
+        }).catch(() => null);
+      }
       
       
 
@@ -1328,6 +1341,17 @@ const handleProUnlockSubmit = async () => {};
                 const blobUrl = URL.createObjectURL(blob);
                 setVideoDownloadUrl(blobUrl);
                 saveDesign(blob).catch(console.error);
+                if (auth.currentUser?.uid) {
+                  pushAppNotification({
+                    title: 'تم إنجاز فيديو الإعلان بنجاح',
+                    message: 'اكتمل توليد الفيديو الإعلاني وهو جاهز للعرض والتحميل.',
+                    type: 'feature',
+                    studio: 'creatively',
+                    url: blobUrl,
+                    ownerId: auth.currentUser.uid,
+                    userId: auth.currentUser.uid,
+                  }).catch(() => null);
+                }
               } else {
                 console.error("Failed to download video blob for local storage.");
                 setError(t('creative.videoFileFail'));

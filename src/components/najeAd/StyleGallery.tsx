@@ -67,7 +67,7 @@ export function StyleGallery({
           frameClassName="h-[292px] sm:h-[332px]"
           renderCard={(style) => (
             <div
-              className={`flex h-[260px] w-[40vw] max-w-[10.75rem] flex-col overflow-hidden rounded-2xl border sm:h-[292px] sm:max-w-[12.5rem] ${
+              className={`flex h-[260px] w-[38vw] max-w-[10rem] flex-col overflow-hidden rounded-2xl border sm:h-[292px] sm:max-w-[11.5rem] ${
                 style.id === selectedStyleId ? 'border-[var(--naje-accent)]' : 'border-white/10'
               }`}
             >

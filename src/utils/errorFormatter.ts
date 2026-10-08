@@ -5,10 +5,8 @@
  * Implements a collapsable technical detail log for developers/support.
  */
 
-import { GoogleGenAI } from '@google/genai';
 import { db } from '../firebase';
 import { doc, getDoc } from 'firebase/firestore';
-import { createGenAIClient } from '../lib/genaiClient';
 import { t } from '../i18n';
 import { useAppStore } from '../store';
 import type { SupportedLocale } from '../i18n';
@@ -193,53 +191,10 @@ async function getModelEndpointIdClient(endpointId: string, defaultFallback: str
 }
 
 async function generateSmartErrorExplanation(
-  rawError: string,
-  context?: { chatType?: string; actionAttempted?: string }
+  _rawError: string,
+  _context?: { chatType?: string; actionAttempted?: string }
 ): Promise<{ title: string; explanation: string } | null> {
-  try {
-    const ai = createGenAIClient();
-    const modelId = await getModelEndpointIdClient('text_lite', 'gemini-3.5-flash-lite');
-
-    const prompt = `أنت مساعد داخلي في ناجي AI مهمتك كتابة شرح قصير وصادق وودود
-باللهجة العربية الاحترافية (بدون رسمية جافة) لمستخدم واجه خطأ تقنياً، بناءً
-على رسالة الخطأ التقنية الخام التالية. لا تخترع سبباً غير مذكور بالخطأ، ولا
-تستخدم مصطلحات تقنية معقدة، ولا تُلقِ اللوم على المستخدم.
-
-نوع الطلب: ${context?.chatType || 'غير محدد'}
-ماذا كان يحاول المستخدم فعله: ${context?.actionAttempted || 'غير محدد'}
-رسالة الخطأ التقنية الخام:
-"""
-${rawError.slice(0, 2000)}
-"""
-
-أجب بصيغة JSON فقط بلا أي نص إضافي، بالشكل التالي:
-{"title": "عنوان قصير من 3-5 كلمات", "explanation": "شرح من جملتين إلى ثلاث جمل"}`;
-
-    const response = await Promise.race([
-      ai.models.generateContent({
-        model: modelId,
-        contents: prompt,
-        config: { maxOutputTokens: 600, temperature: 0.3, responseMimeType: "application/json" },
-      }),
-      new Promise<never>((_, reject) => setTimeout(() => reject(new Error('timeout')), 4000)),
-    ]);
-
-    const text = response.text || '';
-    const cleanedText = text.replace(/```json|```/g, '').trim();
-    const jsonMatch = cleanedText.match(/\{[\s\S]*\}/);
-    const targetJson = jsonMatch ? jsonMatch[0] : cleanedText;
-    const parsed = JSON.parse(targetJson);
-    if (parsed && typeof parsed.title === 'string' && typeof parsed.explanation === 'string') {
-      return {
-        title: parsed.title,
-        explanation: parsed.explanation,
-      };
-    }
-    return null;
-  } catch (e) {
-    console.warn('[Smart Error Explanation] Failed, falling back to static template:', e);
-    return null;
-  }
+  return null;
 }
 
 export async function parseAndCategorizeError(

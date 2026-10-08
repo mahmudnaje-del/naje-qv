@@ -145,7 +145,7 @@ export function LocationScout({
           handLabel={t('adui.swipePlaces')}
           frameClassName="h-[300px] sm:h-[340px]"
           renderCard={(c, isCenter) => {
-            const shell = `flex h-[268px] w-[40vw] max-w-[10.75rem] flex-col overflow-hidden rounded-2xl border p-1.5 sm:h-[300px] sm:max-w-[12.5rem]`;
+            const shell = `flex h-[268px] w-[38vw] max-w-[10rem] flex-col overflow-hidden rounded-2xl border p-1.5 sm:h-[300px] sm:max-w-[11.5rem]`;
             if (c.type === 'upload') {
               return (
                 <div className={`${shell} ${isCenter ? 'border-[var(--naje-accent)] bg-[#10201c]' : 'border-white/10 bg-[#12141c]'}`}>

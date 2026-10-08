@@ -6,7 +6,7 @@
         try {
           var mode = localStorage.getItem('naje_theme');
           var color = localStorage.getItem('naje_theme_color') || 'violet';
-          var dark = mode ? mode === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+          var dark = mode ? mode !== 'light' : true;
           if (dark) document.documentElement.classList.add('dark');
           else document.documentElement.classList.remove('dark');
           document.documentElement.setAttribute('data-naje-color', color);
@@ -127,7 +127,7 @@
     }
     </script>
   </head>
-  <body class="bg-gray-50 dark:bg-[#0f1115] text-gray-900 dark:text-gray-100 font-sans antialiased selection:bg-indigo-500/30">
+  <body class="bg-[#f5f5f6] dark:bg-[#06070a] text-gray-900 dark:text-gray-100 font-sans antialiased selection:bg-indigo-500/30">
     <div id="root"></div>
     <noscript>
       <main lang="ar" dir="rtl">

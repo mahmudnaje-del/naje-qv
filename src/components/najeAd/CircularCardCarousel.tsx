@@ -68,7 +68,8 @@ export function CircularCardCarousel<T>({
     return () => ro.disconnect();
   }, []);
 
-  const peekX = Math.max(44, Math.min(96, Math.round(frameW * 0.24)));
+  const maxSafePeek = Math.max(24, Math.floor((frameW * 0.5) - (frameW < 420 ? 68 : 88)));
+  const peekX = Math.max(28, Math.min(maxSafePeek, Math.round(frameW * 0.19)));
 
   const wrapIndex = useCallback(
     (i: number) => {
@@ -163,7 +164,7 @@ export function CircularCardCarousel<T>({
               dragDirectionLock
               dragElastic={0.16}
               dragMomentum={false}
-              dragConstraints={{ left: -220, right: 220 }}
+              dragConstraints={{ left: -140, right: 140 }}
               dragTransition={{ bounceStiffness: 520, bounceDamping: 38 }}
               onPointerDownCapture={isCenter ? handlePointerDown : undefined}
               onDragStart={isCenter ? handleDragStart : undefined}
@@ -182,11 +183,11 @@ export function CircularCardCarousel<T>({
               }}
               animate={{
                 x: isCenter ? 0 : offset * peekX,
-                y: isCenter ? 0 : 10,
-                scale: isCenter ? 1 : 0.78,
+                y: isCenter ? 0 : 8,
+                scale: isCenter ? 1 : 0.74,
                 opacity: isCenter ? 1 : 0.72,
                 zIndex: isCenter ? 30 : 8,
-                rotate: isCenter ? 0 : offset * 8,
+                rotate: isCenter ? 0 : offset * 4,
               }}
               transition={{ type: 'spring', stiffness: 440, damping: 36, mass: 0.6 }}
               className={`absolute ${isCenter ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'} rounded-2xl ${

@@ -1,4 +1,6 @@
-import type { DeckSlide, DeckThemeInput } from '../components/deck/DeckSlideStage';
+import { createElement } from 'react';
+import { createRoot } from 'react-dom/client';
+import DeckSlideStage, { type DeckSlide, type DeckThemeInput } from '../components/deck/DeckSlideStage';
 
 export type DeckFile = {
   title?: string;
@@ -15,9 +17,6 @@ async function captureSlides(deck: DeckFile): Promise<string[]> {
   const host = document.createElement('div');
   host.style.cssText = 'position:fixed;left:-14000px;top:0;width:1280px;height:720px;overflow:hidden;pointer-events:none;background:#fff;';
   document.body.appendChild(host);
-  const { createRoot } = await import('react-dom/client');
-  const { createElement } = await import('react');
-  const { default: DeckSlideStage } = await import('../components/deck/DeckSlideStage');
   const html2canvas = (await import('html2canvas')).default;
   const root = createRoot(host);
   const images: string[] = [];

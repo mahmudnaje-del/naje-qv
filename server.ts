@@ -125,8 +125,10 @@ process.on('unhandledRejection', (reason) => {
 });
 
 // Detect production environment robustly and set NODE_ENV
-const isProdBundle = (appFilename.includes("dist") || appFilename.endsWith(".cjs")) && !process.argv.some(arg => arg.includes("server.ts"));
-if (isProdBundle) {
+const hasDistIndex = fs.existsSync(path.join(process.cwd(), "dist", "index.html"));
+const isDevContainer = Boolean(process.env.K_SERVICE?.startsWith("ais-dev-"));
+const isExplicitProd = process.env.NODE_ENV === "production";
+if (isExplicitProd || (hasDistIndex && !isDevContainer)) {
   process.env.NODE_ENV = "production";
 }
 
@@ -3547,7 +3549,7 @@ async function createOmniInteraction(ai: any, params: {
       console.warn(`[Omni Ad] ${model} failed:`, err?.message || err);
     }
   }
-  throw lastErr || new Error('تعذر توليد الفيديو عبر Gemini Omni');
+  throw lastErr || new Error('تعذر توليد الفيديو عبر محرك الإخراج السينمائي');
 }
 
 async function uploadNajeAdMp4(uid: string, jobId: string, buffer: Buffer): Promise<string> {
@@ -3918,7 +3920,7 @@ app.post('/api/naje-ad/generate', async (req, res) => {
       ...jobPayload,
       status: 'generating',
       progress: 10,
-      stepLabel: 'جاري تجهيز المشهد عبر Gemini Omni...',
+      stepLabel: 'جاري إعداد وتحضير المشهد السينمائي…',
     }, token).catch((e) => console.error('Firestore job init failed:', e));
 
     res.json({
@@ -7582,6 +7584,17 @@ Return ONLY valid JSON matching this schema:
                 model: videoModelId,
                 input: interactionInput,
                 response_modalities: ['video', 'text'],
+                response_format: {
+                  type: 'video',
+                  aspect_ratio: selectedVideoAspect,
+                  resolution: requestedRes,
+                },
+                generation_config: {
+                  video_config: {
+                    resolution: requestedRes,
+                    aspect_ratio: selectedVideoAspect,
+                  }
+                },
                 store: true
               }, { timeout: 300000 });
 
@@ -11584,6 +11597,7 @@ app.post("/api/create/stream", async (req, res) => {
     let fullText = '';
     let seenSlides = 0;
     let usageMetadata: any = null;
+    const ai = createGenAIClient();
     const stream = await ai.models.generateContentStream({
       model: modelId,
       contents,
@@ -12677,7 +12691,7 @@ ${sourceBlock}`;
     path.join(appDirname, 'dist')
   ];
   const distPath = candidateDistPaths.find(p => fs.existsSync(path.join(p, 'index.html')));
-  const isProduction = process.env.NODE_ENV === 'production';
+  const isProduction = process.env.NODE_ENV === 'production' || (Boolean(distPath) && !process.env.K_SERVICE?.startsWith('ais-dev-'));
   console.log(`[Static Serving] Mode: ${isProduction ? 'production' : 'development'}, distPath: ${distPath || 'none'}`);
 
   // The service worker must revalidate, or an old shell keeps serving a dead bundle.

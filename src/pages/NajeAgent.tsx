@@ -29,7 +29,7 @@ import { toast } from '../toastStore';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import NajeCodePane from '../components/NajeCodePane';
-import { FullstackBuildProgress } from '../lib/fullstackBuilder';
+import type { FullstackBuildProgress } from '../lib/fullstackBuilder';
 import { formatProfessionalError } from '../utils/errorFormatter';
 import NajeErrorCard from '../components/NajeErrorCard';
 import FeaturePaywallModal from '../components/FeaturePaywallModal';

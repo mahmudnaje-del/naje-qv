@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AlertCircle, Clapperboard, Film, Layers, Palette, Sparkles, Wand2, Sliders, ShieldCheck, Zap, ArrowLeft, RefreshCw } from 'lucide-react';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { recordGeneratedMedia } from '../lib/studioMediaSync';
+import { pushAppNotification } from '../lib/notifications';
 import { useAppStore } from '../store';
 import { auth, db } from '../firebase';
 import { hasFeatureAccess } from '../lib/featureAccess';
@@ -131,7 +132,20 @@ export default function NajeIdent() {
       const data = snap.data();
       setJob(data);
       if (['completed', 'failed'].includes(data.status)) setBusy(false);
-      if (data.status === 'failed') setError(data.error || t('motion.error.failed'));
+      if (data.status === 'failed') {
+        const errMsg = data.error || t('motion.error.failed');
+        setError(errMsg);
+        if (auth.currentUser?.uid) {
+          pushAppNotification({
+            title: 'تنبيه استوديو الحركة',
+            message: errMsg,
+            type: 'alert',
+            studio: 'naje_ident',
+            ownerId: auth.currentUser.uid,
+            userId: auth.currentUser.uid,
+          }).catch(() => null);
+        }
+      }
       const url = data.videoUrl || data.mediaUrl;
       const doneSlot = generatingSlotRef.current;
       if (data.status === 'completed' && url && doneSlot) {
@@ -149,6 +163,17 @@ export default function NajeIdent() {
           studio: 'naje_ident',
           metadata: { slot: doneSlot, jobId }
         }).catch((e) => console.warn('Failed to record motion video to gallery:', e));
+        if (auth.currentUser?.uid) {
+          pushAppNotification({
+            title: 'تم إنجاز فيديو المقدمة/الخاتمة بنجاح',
+            message: `تم تجهيز مشهد الحركة (${doneSlot === 'intro' ? 'المقدمة' : 'الخاتمة'}) بدقة سينمائية وهو جاهز للعرض.`,
+            type: 'feature',
+            studio: 'naje_ident',
+            url,
+            ownerId: auth.currentUser.uid,
+            userId: auth.currentUser.uid,
+          }).catch(() => null);
+        }
         if (kindRef.current === 'both' && doneSlot === 'intro') {
           toast.success(t('motion.page.introNext'));
         }
