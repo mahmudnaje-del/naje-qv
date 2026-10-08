@@ -8,24 +8,77 @@ service firebase.storage {
         firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.isAdmin == true;
     }
 
-    match /generated_media/{uid}/{allPaths=**} {
-      allow read: if isOwner(uid) || isAdmin();
-      allow write: if isOwner(uid)
+    // A single object-name segment. "." and ".." are otherwise legal names, and
+    // {allPaths=**} would let the owner of uid write users/{uid}/../../users/{other}/...
+    function segOk(name) {
+      return name != '.' && name != '..' && !name.matches('.*\\.\\..*');
+    }
+
+    function mediaRead(uid) { return (isOwner(uid) || isAdmin()) && segOk(uid); }
+    function mediaWrite(uid) {
+      return isOwner(uid) && segOk(uid)
         && request.resource.size < 50 * 1024 * 1024
         && request.resource.contentType.matches('image/.*|video/.*|audio/.*');
     }
-
-    match /uploads/{uid}/{allPaths=**} {
-      allow read: if isOwner(uid) || isAdmin();
-      allow write: if isOwner(uid)
-        && request.resource.size < 50 * 1024 * 1024
-        && request.resource.contentType.matches('image/.*|video/.*|audio/.*');
-    }
-
-    match /users/{uid}/{allPaths=**} {
-      allow read: if isOwner(uid) || isAdmin();
-      allow write: if isOwner(uid)
+    function userRead(uid) { return (isOwner(uid) || isAdmin()) && segOk(uid); }
+    function userWrite(uid) {
+      return isOwner(uid) && segOk(uid)
         && request.resource.size < 50 * 1024 * 1024;
+    }
+    function uploadWrite(uid) {
+      return isOwner(uid) && segOk(uid)
+        && request.resource.size < 50 * 1024 * 1024;
+    }
+
+    match /generated_media/{uid}/{a} {
+      allow read: if mediaRead(uid) && segOk(a);
+      allow write: if mediaWrite(uid) && segOk(a);
+    }
+    match /generated_media/{uid}/{a}/{b} {
+      allow read: if mediaRead(uid) && segOk(a) && segOk(b);
+      allow write: if mediaWrite(uid) && segOk(a) && segOk(b);
+    }
+    match /generated_media/{uid}/{a}/{b}/{c} {
+      allow read: if mediaRead(uid) && segOk(a) && segOk(b) && segOk(c);
+      allow write: if mediaWrite(uid) && segOk(a) && segOk(b) && segOk(c);
+    }
+    match /generated_media/{uid}/{a}/{b}/{c}/{d} {
+      allow read: if mediaRead(uid) && segOk(a) && segOk(b) && segOk(c) && segOk(d);
+      allow write: if mediaWrite(uid) && segOk(a) && segOk(b) && segOk(c) && segOk(d);
+    }
+
+    match /uploads/{uid}/{a} {
+      allow read: if mediaRead(uid) && segOk(a);
+      allow write: if uploadWrite(uid) && segOk(a);
+    }
+    match /uploads/{uid}/{a}/{b} {
+      allow read: if mediaRead(uid) && segOk(a) && segOk(b);
+      allow write: if uploadWrite(uid) && segOk(a) && segOk(b);
+    }
+    match /uploads/{uid}/{a}/{b}/{c} {
+      allow read: if mediaRead(uid) && segOk(a) && segOk(b) && segOk(c);
+      allow write: if uploadWrite(uid) && segOk(a) && segOk(b) && segOk(c);
+    }
+    match /uploads/{uid}/{a}/{b}/{c}/{d} {
+      allow read: if mediaRead(uid) && segOk(a) && segOk(b) && segOk(c) && segOk(d);
+      allow write: if uploadWrite(uid) && segOk(a) && segOk(b) && segOk(c) && segOk(d);
+    }
+
+    match /users/{uid}/{a} {
+      allow read: if userRead(uid) && segOk(a);
+      allow write: if userWrite(uid) && segOk(a);
+    }
+    match /users/{uid}/{a}/{b} {
+      allow read: if userRead(uid) && segOk(a) && segOk(b);
+      allow write: if userWrite(uid) && segOk(a) && segOk(b);
+    }
+    match /users/{uid}/{a}/{b}/{c} {
+      allow read: if userRead(uid) && segOk(a) && segOk(b) && segOk(c);
+      allow write: if userWrite(uid) && segOk(a) && segOk(b) && segOk(c);
+    }
+    match /users/{uid}/{a}/{b}/{c}/{d} {
+      allow read: if userRead(uid) && segOk(a) && segOk(b) && segOk(c) && segOk(d);
+      allow write: if userWrite(uid) && segOk(a) && segOk(b) && segOk(c) && segOk(d);
     }
 
     match /{allPaths=**} {
