@@ -95,6 +95,10 @@ export interface AgentArtifact {
   downloadFilename?: string;
   isFavorite?: boolean;
   pinned?: boolean;
+  sourceTool?: string;
+  sourceMission?: string;
+  parentArtifactId?: string;
+  auditStatus?: 'pending' | 'accepted' | 'failed';
 }
 
 export interface AgentAuditEntry {

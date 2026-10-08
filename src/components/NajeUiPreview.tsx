@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
 import { toast } from '../toastStore';
 import { triggerSmartDownload } from '../stores/smartDownloadStore';
+import { inspectGeneratedUi } from '../lib/uiStudio';
 
 interface NajeUiPreviewProps {
   rawHtml: string;
@@ -215,6 +216,7 @@ export default function NajeUiPreview({
   activityText
 }: NajeUiPreviewProps) {
   const [renderedHtml, setRenderedHtml] = useState('');
+  const [uiIssues, setUiIssues] = useState<string[]>([]);
   const [device, setDevice] = useState<'phone' | 'laptop'>(window.innerWidth < 768 ? 'phone' : 'laptop');
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -265,7 +267,9 @@ export default function NajeUiPreview({
     // Incomplete HTML paints as a black or white flash. Keep the last good frame.
     if (isStreaming && !complete) return;
     const t = setTimeout(() => {
-      setRenderedHtml(wrapSafe(rawHtml));
+      const inspected = inspectGeneratedUi(rawHtml);
+      setUiIssues(inspected.issues);
+      setRenderedHtml(wrapSafe(inspected.html));
     }, isStreaming ? 180 : 40);
     return () => clearTimeout(t);
   }, [rawHtml, isStreaming]);
@@ -468,6 +472,9 @@ export default function NajeUiPreview({
                 <div className="w-2.5 h-2.5 rounded-full bg-amber-400"></div>
                 <div className="w-2.5 h-2.5 rounded-full bg-green-400"></div>
               </div>
+            )}
+            {uiIssues.includes('secret') && (
+              <p className="shrink-0 bg-amber-100 text-amber-950 text-[11px] px-3 py-1">أُزيل مفتاح من الواجهة قبل العرض.</p>
             )}
             <iframe
               ref={iframeRef}

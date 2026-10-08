@@ -50,6 +50,22 @@ export function injectImageSlots(html: string, slots: Record<string, string>): s
   return out;
 }
 
+const SECRET_IN_UI = /AIza[0-9A-Za-z\-_]{20,}|sk-[A-Za-z0-9]{20,}|-----BEGIN [A-Z ]+PRIVATE KEY-----/g;
+
+/** Strip secrets and flag unsafe URLs before a generated page is previewed. */
+export function inspectGeneratedUi(html: string): { html: string; issues: string[] } {
+  const issues: string[] = [];
+  let out = String(html || '');
+  if (SECRET_IN_UI.test(out)) {
+    issues.push('secret');
+    SECRET_IN_UI.lastIndex = 0;
+    out = out.replace(SECRET_IN_UI, '[redacted]');
+  }
+  if (/javascript\s*:/i.test(out)) issues.push('javascript-url');
+  if (out.length > 40 && !/name\s*=\s*["']viewport["']/i.test(out) && /<\/html>/i.test(out)) issues.push('viewport');
+  return { html: out, issues };
+}
+
 export const UI_BUILD_DIRECTIVE = `You are Naje Studio. You design one complete, self-contained HTML interface that a senior art director would ship. You are not a template engine.
 
 OUTPUT SHAPE

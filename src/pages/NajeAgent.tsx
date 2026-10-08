@@ -67,6 +67,32 @@ function sanitizeHtmlContent(html: string): string {
     .replace(/action\s*=\s*["']?\s*javascript:[^"'>]*/gi, '');
 }
 
+function postAgentTool(url: string, token: string, body: unknown, attempts = 2): Promise<Response> {
+  const run = async (): Promise<Response> => {
+    let last: Response | null = null;
+    for (let i = 0; i <= attempts; i++) {
+      try {
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify(body)
+        });
+        last = res;
+        if (res.ok || (res.status !== 429 && res.status < 500)) return res;
+      } catch (err) {
+        if (i === attempts) throw err;
+      }
+      if (i < attempts) await new Promise((r) => setTimeout(r, 700 * (i + 1)));
+    }
+    if (last) return last;
+    throw new Error('network');
+  };
+  return run();
+}
+
 const INITIAL_GREETING: AgentChatMessage = {
   id: 'msg_welcome',
   role: 'model',
@@ -784,20 +810,13 @@ export default function NajeAgent() {
             // Streaming handler for code projects
             if (tc.name === 'fullstack_engineer') {
               setExecutingStatusMessage(t('tools.agent.weaving'));
-              const streamRes = await fetch('/api/agent/execute-tool-stream', {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                  toolName: tc.name,
-                  inputParams: { ...tc.input, brandContext: accumulatedBrand, sources },
-                  brandContext: accumulatedBrand,
-                  missionContext: missionContextPayload,
-                  stepTitle: tc.title || step.title || tc.name,
-                  idempotencyKey
-                })
+              const streamRes = await postAgentTool('/api/agent/execute-tool-stream', token, {
+                toolName: tc.name,
+                inputParams: { ...tc.input, brandContext: accumulatedBrand, sources },
+                brandContext: accumulatedBrand,
+                missionContext: missionContextPayload,
+                stepTitle: tc.title || step.title || tc.name,
+                idempotencyKey
               });
 
               if (!streamRes.ok) {
@@ -840,7 +859,12 @@ export default function NajeAgent() {
 
                           if (event.artifacts && Array.isArray(event.artifacts)) {
                             for (const art of event.artifacts) {
-                              missionArtifacts = applyVersionCap(missionArtifacts, art).updatedVersions;
+                              missionArtifacts = applyVersionCap(missionArtifacts, {
+                                ...art,
+                                sourceTool: art.sourceTool || tc.name,
+                                sourceMission: art.sourceMission || activeMission.id,
+                                auditStatus: art.auditStatus || 'accepted'
+                              }).updatedVersions;
                             }
                           }
                           setLiveProgress(null);
@@ -868,20 +892,13 @@ export default function NajeAgent() {
               }
             } else {
               setExecutingStatusMessage(t('tools.agent.executingTool', { title: tc.title }));
-              const execRes = await fetch('/api/agent/execute-tool', {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                  toolName: tc.name,
-                  inputParams: { ...tc.input, brandContext: accumulatedBrand, sources },
-                  brandContext: accumulatedBrand,
-                  missionContext: missionContextPayload,
-                  stepTitle: tc.title || step.title || tc.name,
-                  idempotencyKey
-                })
+              const execRes = await postAgentTool('/api/agent/execute-tool', token, {
+                toolName: tc.name,
+                inputParams: { ...tc.input, brandContext: accumulatedBrand, sources },
+                brandContext: accumulatedBrand,
+                missionContext: missionContextPayload,
+                stepTitle: tc.title || step.title || tc.name,
+                idempotencyKey
               });
 
               if (!execRes.ok) {
@@ -906,7 +923,12 @@ export default function NajeAgent() {
 
               if (execData.artifacts && Array.isArray(execData.artifacts)) {
                 for (const art of execData.artifacts) {
-                  missionArtifacts = applyVersionCap(missionArtifacts, art).updatedVersions;
+                  missionArtifacts = applyVersionCap(missionArtifacts, {
+                    ...art,
+                    sourceTool: art.sourceTool || tc.name,
+                    sourceMission: art.sourceMission || activeMission.id,
+                    auditStatus: art.auditStatus || 'accepted'
+                  }).updatedVersions;
                 }
               }
             }
