@@ -225,6 +225,7 @@ export default function NajeAgent() {
 
   // Execution state
   const [isExecuting, setIsExecuting] = useState(false);
+  const cancelMissionRef = useRef(false);
   const [currentStepIndex, setCurrentStepIndex] = useState<number>(-1);
   const [executingStatusMessage, setExecutingStatusMessage] = useState<string>('');
   const [liveProgress, setLiveProgress] = useState<FullstackBuildProgress | null>(null);
@@ -745,6 +746,7 @@ export default function NajeAgent() {
     }
 
     setIsExecuting(true);
+    cancelMissionRef.current = false;
     const missionRef = doc(db, 'autonoma_missions', activeMission.id);
     await updateDoc(missionRef, { status: 'executing', updatedAt: Date.now() });
 
@@ -759,6 +761,11 @@ export default function NajeAgent() {
       for (let sIdx = 0; sIdx < activeMission.steps.length; sIdx++) {
         const step = activeMission.steps[sIdx];
         if (step.status === 'completed') continue;
+        if (cancelMissionRef.current) {
+          await updateDoc(missionRef, { status: 'waiting_approval', steps: activeMission.steps, updatedAt: Date.now() });
+          toast.info(t('tools.agent.missionCancelled'));
+          return;
+        }
 
         setCurrentStepIndex(sIdx);
 
@@ -769,6 +776,19 @@ export default function NajeAgent() {
           for (let index = 0; index < step.toolCalls.length; index++) {
             const tc = step.toolCalls[index];
             if (tc.status === 'completed') continue;
+            if (cancelMissionRef.current) {
+              const anyDone = step.toolCalls.some((call) => call.status === 'completed');
+              if (!anyDone) step.status = 'pending';
+              await updateDoc(missionRef, {
+                status: 'waiting_approval',
+                steps: activeMission.steps,
+                artifacts: missionArtifacts,
+                consumedPoints: consumed,
+                updatedAt: Date.now()
+              });
+              toast.info(t('tools.agent.missionCancelled'));
+              return;
+            }
 
             tc.status = 'running';
             await updateDoc(missionRef, { steps: activeMission.steps, updatedAt: Date.now() });
@@ -909,25 +929,54 @@ export default function NajeAgent() {
               const execData = await execRes.json();
               consumed += execData.duplicate === true ? 0 : (Number(execData.pointsDeducted) || 0);
 
-              if (execData.audit && execData.audit.passed === false) {
+              let finalData = execData;
+              if (execData.audit && execData.audit.passed === false && idempotencyKey.endsWith(':1')) {
+                const feedback = String(execData.audit.feedback ?? '');
+                if (!Array.isArray(activeMission.auditHistory)) activeMission.auditHistory = [];
+                activeMission.auditHistory.push({
+                  stepTitle: step.title || tc.title || tc.name,
+                  feedback,
+                  passed: false,
+                  timestamp: Date.now()
+                });
+                setExecutingStatusMessage(t('tools.agent.repairOnce'));
+                const repairRes = await postAgentTool('/api/agent/execute-tool', token, {
+                  toolName: tc.name,
+                  inputParams: { ...tc.input, brandContext: accumulatedBrand, sources, repairNote: feedback },
+                  brandContext: accumulatedBrand,
+                  missionContext: { ...missionContextPayload, auditHistory: activeMission.auditHistory },
+                  stepTitle: tc.title || step.title || tc.name,
+                  idempotencyKey: idempotencyKey.replace(/:1$/, ':2')
+                });
+                if (!repairRes.ok) {
+                  const errData = await repairRes.json().catch(() => ({}));
+                  throw new Error(errData.error || t('tools.agent.toolFailed', { title: tc.title }));
+                }
+                finalData = await repairRes.json();
+                consumed += finalData.duplicate === true ? 0 : (Number(finalData.pointsDeducted) || 0);
+                if (finalData.audit && finalData.audit.passed === false) {
+                  await stopForFailedAudit(String(finalData.audit.feedback ?? feedback));
+                  return;
+                }
+              } else if (execData.audit && execData.audit.passed === false) {
                 await stopForFailedAudit(String(execData.audit.feedback ?? ''));
                 return;
               }
 
               tc.status = 'completed';
-              tc.output = execData.output;
+              tc.output = finalData.output;
 
-              if (tc.name === 'brand_identity' && execData.output?.palette) {
-                accumulatedBrand = { ...accumulatedBrand, ...execData.output };
+              if (tc.name === 'brand_identity' && finalData.output?.palette) {
+                accumulatedBrand = { ...accumulatedBrand, ...finalData.output };
               }
 
-              if (execData.artifacts && Array.isArray(execData.artifacts)) {
-                for (const art of execData.artifacts) {
+              if (finalData.artifacts && Array.isArray(finalData.artifacts)) {
+                for (const art of finalData.artifacts) {
                   missionArtifacts = applyVersionCap(missionArtifacts, {
                     ...art,
                     sourceTool: art.sourceTool || tc.name,
                     sourceMission: art.sourceMission || activeMission.id,
-                    auditStatus: art.auditStatus || 'accepted'
+                    auditStatus: 'accepted'
                   }).updatedVersions;
                 }
               }
@@ -1342,9 +1391,18 @@ export default function NajeAgent() {
                   </div>
 
                   {isExecuting && (
-                    <div className="p-3 bg-purple-50 dark:bg-purple-950/40 rounded-xl border border-purple-200 dark:border-purple-800 text-xs font-semibold text-purple-700 dark:text-purple-300 flex items-center gap-2">
-                      <NajeSpinner className="w-4 h-4" />
-                      <span>{executingStatusMessage || t('tools.agent.agentsFallback')}</span>
+                    <div className="p-3 bg-purple-50 dark:bg-purple-950/40 rounded-xl border border-purple-200 dark:border-purple-800 text-xs font-semibold text-purple-700 dark:text-purple-300 flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <NajeSpinner className="w-4 h-4 shrink-0" />
+                        <span className="truncate">{executingStatusMessage || t('tools.agent.agentsFallback')}</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => { cancelMissionRef.current = true; }}
+                        className="shrink-0 px-2.5 py-1 rounded-lg bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-200 border border-purple-200 dark:border-purple-800"
+                      >
+                        {t('common.cancel')}
+                      </button>
                     </div>
                   )}
                 </div>
