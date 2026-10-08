@@ -1,4 +1,3 @@
-import "./src/lib/loadEnv.ts";
 import fs from "fs";
 import dns from "dns";
 import http from "http";
@@ -20,8 +19,7 @@ const getAppFilename = () => {
 const appDirname = getAppDirname();
 const appFilename = getAppFilename();
 
-import { GenerateVideosOperation } from "@google/genai";
-import { createGenAIClient, resolveGeminiApiKey, shouldUseVertex } from "./src/lib/genaiClient.ts";
+import { GoogleGenAI, GenerateVideosOperation } from "@google/genai";
 import { getApps, initializeApp, cert, type ServiceAccount } from "firebase-admin/app";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import { getAuth } from "firebase-admin/auth";
@@ -162,12 +160,20 @@ const DATABASE_ID = configDatabaseId;
 const STORAGE_BUCKET = configStorageBucket;
 const BASE_URL = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/${DATABASE_ID}/documents`;
 
-// A real Gemini API key (GEMINI_API_KEY or the AI Studio secret api_gimine) wins over Vertex.
-const resolvedGeminiKey = resolveGeminiApiKey();
-if (resolvedGeminiKey) process.env.GEMINI_API_KEY = resolvedGeminiKey;
-const USE_VERTEX_AI = shouldUseVertex();
+// Vertex AI / Gemini API Central Client Creation
+const USE_VERTEX_AI = process.env.NAJE_USE_VERTEX_AI === 'true';
 const VERTEX_LOCATION = process.env.VERTEX_AI_LOCATION || 'global';
-console.log(`[naje] gemini transport=${USE_VERTEX_AI ? 'vertex' : 'api'} key=${resolvedGeminiKey ? 'yes' : 'no'}`);
+
+function createGenAIClient(): GoogleGenAI {
+  if (USE_VERTEX_AI) {
+    return new GoogleGenAI({
+      vertexai: true,
+      project: PROJECT_ID,
+      location: VERTEX_LOCATION,
+    });
+  }
+  return new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+}
 
 // ===== NAJE AI Model Registry & Caching Layer =====
 interface CachedEndpointConfig {
