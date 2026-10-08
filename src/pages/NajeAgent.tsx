@@ -37,7 +37,8 @@ import { hasFeatureAccess } from '../lib/featureAccess';
 import SmokeChatWrapper from '../components/chat/SmokeChatWrapper';
 import { FleetStrip } from '../components/FleetStrip';
 import { dispatchSpecialists, type DispatchDecision } from '../lib/agentFleet';
-import { readyStepIndex } from '../lib/agentDag';
+import { readyStepIndex, normalizeStepDependsOn } from '../lib/agentDag';
+import { compactProjectSources } from '../lib/agentContext';
 import { readNajeSse } from '../lib/sseRead';
 import { resolveOpenFormat, localizeActivity } from '../lib/creationEngine';
 import DeckPreviewPane from '../components/deck/DeckPreviewPane';
@@ -578,13 +579,7 @@ export default function NajeAgent() {
 
       // Pack project sources and multi-agent context
       const projectContext = {
-        sources: sources.map(s => ({
-          title: s.title,
-          type: s.type,
-          snippet: s.content
-            ? s.content.slice(0, String(s.id || '').startsWith('src_ui_') ? 18000 : 1000)
-            : (s.url || t('tools.agent.mediaSnippet'))
-        })),
+        sources: compactProjectSources(sources, t('tools.agent.mediaSnippet')),
         sourceCount: sources.length,
         uiHandoff: sources.some(s => String(s.id || '').startsWith('src_ui_'))
           ? 'المستخدم نقل ملف واجهة جاهز. ابدأ إنشاء الموقع منه مباشرة. لا تسأل إن كان يريد موقعًا، ولا تعِد تصميم الواجهة من الصفر.'
@@ -687,11 +682,13 @@ export default function NajeAgent() {
     }
 
     try {
+      const dependencyIds = normalizeStepDependsOn(proposal.steps);
       const steps: AgentStep[] = proposal.steps.map((st, idx) => ({
         id: `step_${idx + 1}`,
         title: st.title,
         description: st.description,
         status: 'pending',
+        dependsOn: dependencyIds[idx],
         toolCalls: st.tools.map((t, tIdx) => ({
           id: `tool_${idx + 1}_${tIdx + 1}`,
           name: t.name,
@@ -714,6 +711,11 @@ export default function NajeAgent() {
         artifacts: [],
         auditHistory: [],
         brandContext: proposal.brandContext,
+        decisions: [{
+          at: Date.now(),
+          choice: 'accept_plan',
+          reason: (proposal.planSummary || '').slice(0, 280)
+        }],
         checkpoint: { index: 0, title: 'accepted', at: Date.now() },
         createdAt: Date.now(),
         updatedAt: Date.now()
@@ -759,6 +761,7 @@ export default function NajeAgent() {
       let accumulatedBrand = activeMission.brandContext || {};
       let missionArtifacts = [...(activeMission.artifacts || [])];
       let consumed = activeMission.consumedPoints || 0;
+      const packedSources = compactProjectSources(sources, t('tools.agent.mediaSnippet'));
 
       for (let scheduled = 0; scheduled <= activeMission.steps.length; scheduled++) {
         const sIdx = readyStepIndex(activeMission.steps);
@@ -836,7 +839,7 @@ export default function NajeAgent() {
               setExecutingStatusMessage(t('tools.agent.weaving'));
               const streamRes = await postAgentTool('/api/agent/execute-tool-stream', token, {
                 toolName: tc.name,
-                inputParams: { ...tc.input, brandContext: accumulatedBrand, sources },
+                inputParams: { ...tc.input, brandContext: accumulatedBrand, sources: packedSources },
                 brandContext: accumulatedBrand,
                 missionContext: missionContextPayload,
                 stepTitle: tc.title || step.title || tc.name,
@@ -918,7 +921,7 @@ export default function NajeAgent() {
               setExecutingStatusMessage(t('tools.agent.executingTool', { title: tc.title }));
               const execRes = await postAgentTool('/api/agent/execute-tool', token, {
                 toolName: tc.name,
-                inputParams: { ...tc.input, brandContext: accumulatedBrand, sources },
+                inputParams: { ...tc.input, brandContext: accumulatedBrand, sources: packedSources },
                 brandContext: accumulatedBrand,
                 missionContext: missionContextPayload,
                 stepTitle: tc.title || step.title || tc.name,
@@ -946,7 +949,7 @@ export default function NajeAgent() {
                 setExecutingStatusMessage(t('tools.agent.repairOnce'));
                 const repairRes = await postAgentTool('/api/agent/execute-tool', token, {
                   toolName: tc.name,
-                  inputParams: { ...tc.input, brandContext: accumulatedBrand, sources, repairNote: feedback },
+                  inputParams: { ...tc.input, brandContext: accumulatedBrand, sources: packedSources, repairNote: feedback },
                   brandContext: accumulatedBrand,
                   missionContext: { ...missionContextPayload, auditHistory: activeMission.auditHistory },
                   stepTitle: tc.title || step.title || tc.name,
@@ -1329,6 +1332,9 @@ export default function NajeAgent() {
                             <div key={sIdx} className="p-3 bg-white/80 dark:bg-gray-900/80 rounded-xl border border-gray-200/60 dark:border-gray-800/60 text-xs">
                               <div className="font-bold text-gray-800 dark:text-gray-200">{st.title}</div>
                               <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">{st.description}</p>
+                              {st.tools.length > 0 && (
+                                <p className="text-[10px] text-purple-700 dark:text-purple-300 mt-1">{st.tools.map((tool) => tool.title).join(' · ')}</p>
+                              )}
                             </div>
                           ))}
                         </div>

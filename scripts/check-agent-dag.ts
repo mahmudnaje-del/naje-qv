@@ -1,4 +1,4 @@
-import { readyStepIndex, type DagStep } from '../src/lib/agentDag';
+import { readyStepIndex, normalizeStepDependsOn, type DagStep } from '../src/lib/agentDag';
 
 function assert(cond: boolean, message: string) {
   if (!cond) throw new Error(message);
@@ -30,5 +30,12 @@ const graph: DagStep[] = [
 assert(readyStepIndex(graph) === 1, 'copy is ready after brand');
 graph[1].status = 'failed';
 assert(readyStepIndex(graph) === -1, 'site does not run after copy failed');
+
+const linked = normalizeStepDependsOn([
+  { title: 'Brand' },
+  { title: 'Site', dependsOn: ['Brand', 'step_9', 'step_2'] },
+]);
+assert(linked[0] === undefined, 'a step with no dependsOn stays sequential');
+assert(linked[1]?.join(',') === 'step_1', 'only the earlier real step is kept');
 
 console.log('agent dag ok');

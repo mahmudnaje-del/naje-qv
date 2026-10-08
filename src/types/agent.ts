@@ -102,6 +102,12 @@ export interface AgentArtifact {
   auditStatus?: 'pending' | 'accepted' | 'failed';
 }
 
+export interface AgentDecision {
+  at: number;
+  choice: string;
+  reason: string;
+}
+
 export interface AgentAuditEntry {
   stepTitle: string;
   feedback: string;
@@ -122,6 +128,7 @@ export interface AgentMission {
   steps: AgentStep[];
   artifacts: AgentArtifact[];
   auditHistory?: AgentAuditEntry[];
+  decisions?: AgentDecision[];
   brandContext?: {
     brandName?: string;
     industry?: string;
@@ -149,6 +156,7 @@ export interface AgentPlanProposal {
   steps: Array<{
     title: string;
     description: string;
+    dependsOn?: string[];
     tools: Array<{
       name: ExecutableToolName;
       title: string;

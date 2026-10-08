@@ -87,6 +87,11 @@ const agentFunctionDeclarations = [
             properties: {
               title: { type: 'STRING' },
               description: { type: 'STRING' },
+              dependsOn: {
+                type: 'ARRAY',
+                items: { type: 'STRING' },
+                description: 'Optional earlier step titles or step_1 ids that must finish first. Omit to keep sequential order.'
+              },
               tools: {
                 type: 'ARRAY',
                 items: {

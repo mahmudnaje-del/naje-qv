@@ -24,3 +24,26 @@ export function readyStepIndex(steps: DagStep[]): number {
     );
   });
 }
+
+/** Turn planner dependsOn values into step ids. Unknown, self, and later steps are dropped. No list means the old sequential chain. */
+export function normalizeStepDependsOn(
+  steps: { title?: string; dependsOn?: string[] }[]
+): (string[] | undefined)[] {
+  return steps.map((step, index) => {
+    if (!Array.isArray(step.dependsOn) || step.dependsOn.length === 0) return undefined;
+    const ids: string[] = [];
+    for (const raw of step.dependsOn) {
+      const text = String(raw ?? '').trim();
+      const numbered = /^step_(\d+)$/i.exec(text);
+      if (numbered) {
+        const earlier = Number(numbered[1]) - 1;
+        if (earlier >= 0 && earlier < index) ids.push(`step_${earlier + 1}`);
+        continue;
+      }
+      const byTitle = steps.findIndex((candidate, candidateIndex) => candidateIndex < index && candidate.title === text);
+      if (byTitle >= 0) ids.push(`step_${byTitle + 1}`);
+    }
+    const unique = [...new Set(ids)];
+    return unique.length > 0 ? unique : undefined;
+  });
+}
