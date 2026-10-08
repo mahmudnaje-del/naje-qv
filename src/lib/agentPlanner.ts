@@ -6,6 +6,7 @@ import { getThinkingConfig } from './councilOfMinds.ts';
 import { createGenAIClient } from './genaiClient.ts';
 import { dispatchBrief } from './agentFleet.ts';
 import { getNajeModel, resolveEngineModel } from './modelEnvConfig.ts';
+import { plannerToolGuide, plannerToolNames, isExecutableAgentTool } from './agentCapabilities.ts';
 
 const ai = createGenAIClient();
 let lastAgentUsage: any = null;
@@ -93,18 +94,7 @@ const agentFunctionDeclarations = [
                   properties: {
                     name: {
                       type: 'STRING',
-                      enum: [
-                        'brand_identity',
-                        'image_studio',
-                        'video_director',
-                        'video_stitch',
-                        'ui_director',
-                        'voice_narration',
-                        'fullstack_engineer',
-                        'document_architect',
-                        'compose_artifact',
-                        'web_grounding'
-                      ]
+                      enum: plannerToolNames()
                     },
                     title: { type: 'STRING' },
                     inputParams: { type: 'OBJECT' }
@@ -147,16 +137,7 @@ ${fleetNote}
 
 3. إذا كان طلب المستخدم واضحاً ومكتمل الأركان لبدء مهمة مستقلة محددة:
    - اختر وظيفة "propose_mission" وقم بهندسة خطة عمل متكاملة ومنظمة إلى مراحل وخطوات تستدعي الأدوات المناسبة:
-     - 'brand_identity': تأسيس الهوية، الألوان، النبرة، وسيكولوجية البراند.
-     - 'image_studio': تصميم وتوليد الشعارات والصور الإعلانية والتصاميم البصرية.
-     - 'video_director': تأليف لقطة فيو 4 أو 6 أو 8 ثوانٍ. لا تطلب 20 ثانية في توليد واحد.
-     - 'video_stitch': خطة دمج اللقطات عندما تتجاوز المدة لقطة واحدة. فيو لا يرجع 20 ثانية من طلب 10+10.
-     - 'ui_director': واجهة موقع تستدعي وكيل الصور للخلفيات والأصول، مع خطوط عربية.
-     - 'voice_narration': توليد فويس أوفر وتعليق صوتي سينمائي فخم.
-     - 'fullstack_engineer': برمجة أنظمة ومواقع وتطبيقات ويب متكاملة مع المعاينة وتحميل ZIP.
-     - 'document_architect': تأليف كتيبات PDF استراتيجية أو عروض تقديمية متعددة الصفحات/الشرائح.
-     - 'compose_artifact': أنشئ الملف حتى لو لم يكن في القائمة القديمة: markdown أو csv أو json أو html أو txt أو deck. ضع format داخل inputParams، والطلب داخل prompt. لا ترفض صيغة ناقصة.
-     - 'web_grounding': البحث الحي لجمع حقائق الصناعة والمنافسين.
+${plannerToolGuide()}
 
 تنبيه حاسم: لا تضع أسعار أو تقديرات نقاط داخل الخطوات؛ المنظومة تحسب النقاط ذاتياً وبدقة قطعية.`;
 
@@ -424,7 +405,7 @@ export async function auditAgentStepResult(
   brandContext: any,
   options?: { userOriginalRequest?: string; toolName?: string; stepTitle?: string }
 ): Promise<{ passed: boolean; feedback: string; refinedOutput?: any }> {
-  const effectiveToolName = options?.toolName || (['brand_identity', 'image_studio', 'video_director', 'voice_narration', 'fullstack_engineer', 'document_architect', 'web_grounding'].includes(stepTitle) ? stepTitle : 'agent_tool');
+  const effectiveToolName = options?.toolName || (isExecutableAgentTool(stepTitle) ? stepTitle : 'agent_tool');
   const effectiveStepTitle = options?.stepTitle || (stepTitle !== effectiveToolName ? stepTitle : (brandContext?.missionTitle || effectiveToolName));
   const userRequest = options?.userOriginalRequest || brandContext?.userPrompt || brandContext?.slogan || effectiveStepTitle;
   const summary = buildOutputSummary(effectiveToolName, toolOutput);

@@ -30,6 +30,7 @@ import { FALLBACK_DEFAULTS, SEED_ENDPOINTS, OUTPUT_TOKEN_LIMITS } from './src/li
 import { getNajeModel, resolveEngineModel } from './src/lib/modelEnvConfig.ts';
 import { UI_BUILD_DIRECTIVE, collectUserImageSlots, injectImageSlots } from './src/lib/uiStudio.ts';
 import { getAgentToolCost } from './src/lib/agentPricing.ts';
+import { isExecutableAgentTool } from './src/lib/agentCapabilities.ts';
 import { buildPersonaInstruction, criticReviewRequest, getThinkingConfig } from './src/lib/councilOfMinds.ts';
 import os from 'os';
 import {
@@ -11787,6 +11788,9 @@ app.post("/api/agent/execute-tool", async (req, res) => {
     if (!toolName) {
       return res.status(400).json({ error: "toolName is required" });
     }
+    if (!isExecutableAgentTool(String(toolName))) {
+      return res.status(400).json({ error: "هذه الأداة غير متاحة للتنفيذ." });
+    }
     const missionContext = req.body.missionContext || {
       missionId: req.body.missionId || `mission_${Date.now()}`,
       ownerId: uid,
@@ -11914,6 +11918,9 @@ app.post("/api/agent/execute-tool-stream", async (req, res) => {
     const { toolName, inputParams } = req.body;
     if (!toolName) {
       return res.status(400).json({ error: "toolName is required" });
+    }
+    if (!isExecutableAgentTool(String(toolName))) {
+      return res.status(400).json({ error: "هذه الأداة غير متاحة للتنفيذ." });
     }
     const missionContext = req.body.missionContext || {
       missionId: req.body.missionId || `mission_${Date.now()}`,

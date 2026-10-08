@@ -15,6 +15,7 @@ import { generateInfographicSpec, renderInfographic } from './infographicEngine.
 import { OUTPUT_TOKEN_LIMITS } from './modelRegistry.ts';
 import { createGenAIClient } from './genaiClient.ts';
 import { getNajeModel, resolveEngineModel } from './modelEnvConfig.ts';
+import { isExecutableAgentTool } from './agentCapabilities.ts';
 
 const ai = createGenAIClient();
 
@@ -40,6 +41,9 @@ export async function executeAgentTool(
   pricingConfig?: any,
   options?: { onProgress?: (progress: any) => void }
 ): Promise<{ output: any; artifact?: AgentArtifact; pointsDeducted: number }> {
+  if (!isExecutableAgentTool(toolName)) {
+    throw new Error('هذه الأداة غير متاحة للتنفيذ.');
+  }
   const { brandContext, userPrompt, auditHistory } = missionContext;
 
   // 1. Silent Critic Pre-Review (الناقد)
@@ -602,8 +606,7 @@ export async function executeAgentTool(
       return { output: deck || file || { text }, artifact, pointsDeducted: calculatedPoints };
     }
 
-    case 'web_grounding':
-    default: {
+    case 'web_grounding': {
       // Real Google Search Grounding with sources extraction
       const res = await ai.models.generateContent({
         model: LITE_MODEL(),
@@ -636,5 +639,8 @@ export async function executeAgentTool(
 
       return { output, artifact, pointsDeducted: calculatedPoints };
     }
+
+    default:
+      throw new Error('هذه الأداة غير متاحة للتنفيذ.');
   }
 }

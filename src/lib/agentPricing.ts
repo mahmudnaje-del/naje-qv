@@ -178,7 +178,8 @@ export function getAgentToolCost(
     }
 
     default:
-      return 5;
+      // Unknown tools are rejected before execution. Never bill a phantom tool.
+      return 0;
   }
 }
 
