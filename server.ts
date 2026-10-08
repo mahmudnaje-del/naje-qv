@@ -11783,10 +11783,17 @@ app.post("/api/agent/execute-tool", async (req, res) => {
     const _userDocSnapForGate = await dbAdmin.collection('users').doc(uid).get();
     if (!checkFeatureAccess(res, _userDocSnapForGate.data(), 'najeAgent')) return;
 
-    const { toolName, inputParams, missionContext } = req.body;
-    if (!toolName || !missionContext) {
-      return res.status(400).json({ error: "toolName and missionContext are required" });
+    const { toolName, inputParams } = req.body;
+    if (!toolName) {
+      return res.status(400).json({ error: "toolName is required" });
     }
+    const missionContext = req.body.missionContext || {
+      missionId: req.body.missionId || `mission_${Date.now()}`,
+      ownerId: uid,
+      brandContext: req.body.brandContext || {},
+      userPrompt: req.body.userPrompt || inputParams?.prompt || 'Mission Execution',
+      auditHistory: []
+    };
 
     const userSnap = await dbAdmin.collection('users').doc(uid).get();
     const userData = userSnap.data();
@@ -11904,10 +11911,17 @@ app.post("/api/agent/execute-tool-stream", async (req, res) => {
     const _userDocSnapForGate = await dbAdmin.collection('users').doc(uid).get();
     if (!checkFeatureAccess(res, _userDocSnapForGate.data(), 'najeAgent')) return;
 
-    const { toolName, inputParams, missionContext } = req.body;
-    if (!toolName || !missionContext) {
-      return res.status(400).json({ error: "toolName and missionContext are required" });
+    const { toolName, inputParams } = req.body;
+    if (!toolName) {
+      return res.status(400).json({ error: "toolName is required" });
     }
+    const missionContext = req.body.missionContext || {
+      missionId: req.body.missionId || `mission_${Date.now()}`,
+      ownerId: uid,
+      brandContext: req.body.brandContext || {},
+      userPrompt: req.body.userPrompt || inputParams?.prompt || 'Mission Execution',
+      auditHistory: []
+    };
 
     const userSnap = await dbAdmin.collection('users').doc(uid).get();
     const userData = userSnap.data();

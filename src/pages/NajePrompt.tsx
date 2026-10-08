@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { MessageSquareText, Plus, Settings2 } from 'lucide-react';
-import { collection, query, where, getDocs, doc, setDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, getDoc, doc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { toast } from '../toastStore';
 import { useAppStore } from '../store';
@@ -84,6 +84,8 @@ function isOpenClarification(item: ChatItem): item is ClarifyItem {
 
 export default function NajePrompt() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const chatId = searchParams.get('chatId');
   const { isRtl, t, formatNumber } = useI18n();
   const showError = useCallback((message: string) => {
     const key = engineMessageKey(message);
@@ -164,7 +166,27 @@ export default function NajePrompt() {
   useEffect(() => {
     setHistory(loadHistory());
     if (!user?.uid) return;
-    const q = query(collection(db, 'chats'), where('ownerId', '==', user.uid), where('type', '==', 'prompt'));
+
+    if (chatId) {
+      getDoc(doc(db, 'chats', chatId)).then((snap) => {
+        if (snap.exists()) {
+          const data = snap.data();
+          if (data.promptState) {
+            const ps = data.promptState;
+            if (ps.messages && Array.isArray(ps.messages) && ps.messages.length > 0) {
+              setMessages(ps.messages);
+              if (ps.originalIdea) setOriginalIdea(ps.originalIdea);
+              if (ps.lastReady) setLastReady(ps.lastReady);
+              if (ps.readyStack) setReadyStack(ps.readyStack);
+              if (ps.qa) setQa(ps.qa);
+            }
+          }
+        }
+      }).catch(err => console.warn('Prompt chats load notice:', err));
+      return;
+    }
+
+    const q = query(collection(db, 'chats'), where('ownerId', '==', user.uid), where('type', 'in', ['prompt', 'najePrompt']));
     getDocs(q).then((snap) => {
       if (!snap.empty) {
         const sorted = snap.docs.sort((a, b) => (b.data().createdAt || 0) - (a.data().createdAt || 0));
@@ -192,7 +214,7 @@ export default function NajePrompt() {
         }
       }
     }).catch(err => console.warn('Prompt chats load notice:', err));
-  }, [user?.uid]);
+  }, [user?.uid, chatId]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });

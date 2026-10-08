@@ -1966,6 +1966,14 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
       console.warn('onSnapshot chat error:', error);
     });
 
+    const fallbackTimer = setTimeout(() => {
+      getDoc(doc(db, 'chats', chatId)).then((snap) => {
+        if (snap.exists()) {
+          setChat({ id: snap.id, ...snap.data() } as ChatSession);
+        }
+      }).catch(() => {});
+    }, 1200);
+
     let unsubOwner: (() => void) | null = null;
     let unsubUser: (() => void) | null = null;
     let ownerMsgs: ChatMessage[] = [];
@@ -2012,6 +2020,7 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
     });
 
     return () => {
+      clearTimeout(fallbackTimer);
       unsubChat();
       if (unsubOwner) unsubOwner();
       if (unsubUser) unsubUser();
@@ -2159,6 +2168,9 @@ NEGATIVE DIRECTIVES: avoid low quality, blurry, deformed, extra limbs, bad anato
         const chatTypeMeta = localizeChatType(chat.type, t);
         return (
           <StudioHeader
+            showTitle={false}
+            showBalance={false}
+            showNotifications={false}
             title={chat.title}
             subtitle={chatTypeMeta.emptySubtitle}
             badge={chatTypeMeta.nameAr}

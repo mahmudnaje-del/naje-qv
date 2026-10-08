@@ -20,6 +20,7 @@ export interface StudioHeaderProps {
   actions?: React.ReactNode;
   showBalance?: boolean;
   showNotifications?: boolean;
+  showTitle?: boolean;
   className?: string;
 }
 
@@ -37,6 +38,7 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
   actions,
   showBalance = true,
   showNotifications = true,
+  showTitle = true,
   className,
 }) => {
   const { sidebarOpen, setSidebarOpen } = useAppStore();
@@ -92,13 +94,16 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
 
         <div className="min-w-0 max-w-[140px] xs:max-w-[200px] sm:max-w-none">
           <div className="flex items-center gap-1.5 min-w-0">
-            <h1 className="text-xs sm:text-sm font-black truncate leading-tight">
-              {title}
-            </h1>
+            {showTitle && title && (
+              <h1 className="text-xs sm:text-sm font-black truncate leading-tight">
+                {title}
+              </h1>
+            )}
             {badge && (
               <span
                 className={cn(
-                  'hidden sm:inline-flex text-[9px] font-black px-1.5 py-0.5 rounded-full border whitespace-nowrap shrink-0',
+                  'text-[10px] sm:text-xs font-black px-2 py-0.5 rounded-full border whitespace-nowrap shrink-0',
+                  !showTitle ? 'inline-flex' : 'hidden sm:inline-flex',
                   !badgeStyle && badgeClass
                 )}
                 style={badgeStyle}
@@ -107,7 +112,7 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
               </span>
             )}
           </div>
-          {subtitle && (
+          {showTitle && subtitle && (
             <p
               className={cn(
                 'text-[10px] truncate hidden md:block mt-0.5 font-medium',

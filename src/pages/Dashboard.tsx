@@ -898,11 +898,14 @@ export default function Dashboard() {
                   ? `/naje-source?chatId=${c.id}`
                   : c.type === 'agent'
                   ? `/naje-agent-core?chatId=${c.id}`
+                  : (c.type === 'najePrompt' || c.type === 'prompt')
+                  ? `/naje-prompt?chatId=${c.id}`
                   : `/chat/${c.id}`;
                 const isActive = location.pathname === `/chat/${c.id}` ||
                   (c.type === 'najeDeveloper' && location.pathname.includes('naje-developer') && location.search.includes(c.id)) ||
                   (c.type === 'najeSource' && location.pathname.includes('naje-source') && location.search.includes(c.id)) ||
-                  (c.type === 'agent' && (location.pathname.includes('naje-agent') || location.pathname.includes('agent')) && location.search.includes(c.id));
+                  (c.type === 'agent' && (location.pathname.includes('naje-agent') || location.pathname.includes('agent')) && location.search.includes(c.id)) ||
+                  ((c.type === 'najePrompt' || c.type === 'prompt') && location.pathname.includes('naje-prompt') && location.search.includes(c.id));
                 return (
                   <div 
                     key={c.id} 
@@ -1401,16 +1404,18 @@ export default function Dashboard() {
               )}
 
               <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
-                <NotificationDropdown />
-                <BalanceTopDropdown isCreativeMode={studio ? studio.isCreative : false} />
+                {!studio && <NotificationDropdown />}
+                {!studio && <BalanceTopDropdown isCreativeMode={false} />}
 
-                <button 
-                  onClick={() => setNewChatModalOpen(true)}
-                  className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl transition cursor-pointer flex items-center justify-center shadow-md active:scale-[0.96] shrink-0 ${studio ? studio.actionClass : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-500/15'}`}
-                  title={t('nav.newChatSpace')}
-                >
-                  <Plus className="w-4 h-4" />
-                </button>
+                {!studio && (
+                  <button 
+                    onClick={() => setNewChatModalOpen(true)}
+                    className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl transition cursor-pointer flex items-center justify-center shadow-md active:scale-[0.96] shrink-0 bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-500/15"
+                    title={t('nav.newChatSpace')}
+                  >
+                    <Plus className="w-4 h-4" />
+                  </button>
+                )}
               </div>
             </header>
           );

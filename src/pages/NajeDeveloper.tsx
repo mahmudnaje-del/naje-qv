@@ -513,6 +513,8 @@ export default function NajeDeveloper() {
       <FeaturePaywallModal isOpen={showPaywall} onClose={() => setShowPaywall(false)} feature="najeDeveloper" />
 
       <StudioHeader
+        showNotifications={false}
+        showBalance={false}
         title={chatSessionTitle || 'Naje Developer'}
         badge={t('studio.codeSpace')}
         subtitle={tree.length > 0 ? t('tools.developer.subtitleArchive', { name: fileName, count: tree.length }) : t('tools.developer.subtitleEmpty')}

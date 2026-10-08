@@ -495,6 +495,8 @@ export default function NajeSource() {
       <FeaturePaywallModal isOpen={showPaywall} onClose={() => setShowPaywall(false)} feature="najeSource" />
 
       <StudioHeader
+        showNotifications={false}
+        showBalance={false}
         title={chatSessionTitle || 'Naje Source'}
         badge={t('studio.verifiedSources')}
         subtitle={items.length > 0 ? t('tools.source.subtitleActive', { count: items.length }) : t('tools.source.subtitleEmpty')}

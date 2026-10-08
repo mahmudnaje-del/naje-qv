@@ -23,7 +23,7 @@ export default defineConfig(() => {
               if (id.includes('lucide-react')) return 'vendor-icons';
               if (id.includes('recharts') || id.includes('d3')) return 'vendor-charts';
               if (id.includes('highlight.js')) return 'vendor-highlight';
-              if (id.includes('react-router-dom')) return 'vendor-router';
+              if (id.includes('react-router') || id.includes('@remix-run/router')) return 'vendor-router';
               if (id.includes('motion')) return 'vendor-motion';
               if (id.includes('react-markdown') || id.includes('remark-gfm')) return 'vendor-markdown';
               if (id.includes('react') || id.includes('react-dom') || id.includes('scheduler')) return 'vendor-react';

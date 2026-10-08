@@ -19,6 +19,7 @@ function openFirestore() {
   const databaseId = firebaseConfig.firestoreDatabaseId;
   try {
     return initializeFirestore(app, {
+      experimentalAutoDetectLongPolling: true,
       localCache: persistentLocalCache({
         tabManager: persistentMultipleTabManager(),
         cacheSizeBytes: 80 * 1024 * 1024,

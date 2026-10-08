@@ -161,6 +161,7 @@ export default function Projects() {
 
       const chatData = {
         ownerId: user.uid,
+        userId: user.uid,
         projectId: activeProjectId || '',
         type,
         title: type === 'ui' ? t('shell.chatTitleUiSites')
@@ -176,12 +177,13 @@ export default function Projects() {
         createdAt: Date.now()
       };
 
-      // Write in background
-      setDoc(newChatRef, chatData).catch(err => {
-        console.error("Error creating chat:", err);
-      });
+      // 1. Await creating the chat document so it's guaranteed to exist in Firestore & cache before navigating
+      await setDoc(newChatRef, chatData);
 
-      // Navigate directly based on type without opening any menu
+      // 2. Close any gallery overlays
+      setUserGalleriesOpen('none');
+
+      // 3. Navigate directly based on type
       if (type === 'najeDeveloper') {
         navigate(`/naje-developer?chatId=${chatId}${activeProjectId ? `&projectId=${activeProjectId}` : ''}`);
       } else if (type === 'najeSource') {
@@ -196,8 +198,7 @@ export default function Projects() {
     } catch (err) {
       console.error('Error creating chat directly:', err);
       toast.error(t('shell.projects.openChatError'));
-    } finally {
-      setTimeout(() => setDirectCreatingType(null), 300);
+      setDirectCreatingType(null);
     }
   };
 
@@ -532,15 +533,18 @@ export default function Projects() {
                     title={item.tooltip}
                   >
                     <div 
-                      className="w-9 h-9 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform relative border shadow-2xs"
+                      className={cn(
+                        "w-9 h-9 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform relative border shadow-2xs",
+                        isCreating && "scale-105 ring-2 ring-indigo-500/60 shadow-md"
+                      )}
                       style={{
                         backgroundColor: meta.bgTint,
                         color: meta.color,
-                        borderColor: meta.borderTint
+                        borderColor: isCreating ? meta.color : meta.borderTint
                       }}
                     >
                       {isCreating ? (
-                        <NajeSpinner className="w-4 h-4" />
+                        <NajeSpinner className="w-4.5 h-4.5 animate-spin" />
                       ) : (
                         <>
                           <IconComponent className="w-4 h-4" style={{ color: meta.color }} />
@@ -1026,6 +1030,18 @@ export default function Projects() {
                     {directCreatingType === 'agent' ? <NajeSpinner className="w-3.5 h-3.5" /> : <Bot className="w-3.5 h-3.5" />}
                   </div>
                   <span className="text-[11px] font-bold text-slate-900 dark:text-white">{t('shell.projects.agentName')}</span>
+                </button>
+
+                <button
+                  onClick={() => handleDirectCreateChat('najePrompt')}
+                  disabled={directCreatingType !== null}
+                  className="p-2.5 bg-white/90 dark:bg-[#11141c] hover:bg-purple-50/50 dark:hover:bg-[#1c142b] border border-purple-500/30 dark:border-purple-500/20 rounded-xl flex flex-col items-center text-center gap-1.5 transition cursor-pointer group shadow-xs hover:border-purple-400 active:scale-95 disabled:opacity-60"
+                  title={t('shell.projects.openPrompt')}
+                >
+                  <div className="w-7 h-7 rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    {directCreatingType === 'najePrompt' ? <NajeSpinner className="w-3.5 h-3.5" /> : <MessageSquareText className="w-3.5 h-3.5" />}
+                  </div>
+                  <span className="text-[11px] font-bold text-slate-900 dark:text-white">{t('nav.najePrompt')}</span>
                 </button>
               </div>
             </div>

@@ -742,6 +742,14 @@ export default function NajeAgent() {
             tc.status = 'running';
             await updateDoc(missionRef, { steps: activeMission.steps, updatedAt: Date.now() });
 
+            const missionContextPayload = {
+              missionId: activeMission.id,
+              ownerId: user?.uid || '',
+              brandContext: accumulatedBrand,
+              userPrompt: activeMission.userPrompt || activeMission.title || '',
+              auditHistory: activeMission.auditHistory || []
+            };
+
             // Streaming handler for code projects
             if (tc.name === 'fullstack_engineer') {
               setExecutingStatusMessage(t('tools.agent.weaving'));
@@ -754,7 +762,9 @@ export default function NajeAgent() {
                 body: JSON.stringify({
                   toolName: tc.name,
                   inputParams: { ...tc.input, brandContext: accumulatedBrand, sources },
-                  brandContext: accumulatedBrand
+                  brandContext: accumulatedBrand,
+                  missionContext: missionContextPayload,
+                  stepTitle: tc.title || step.title || tc.name
                 })
               });
 
@@ -815,7 +825,9 @@ export default function NajeAgent() {
                 body: JSON.stringify({
                   toolName: tc.name,
                   inputParams: { ...tc.input, brandContext: accumulatedBrand, sources },
-                  brandContext: accumulatedBrand
+                  brandContext: accumulatedBrand,
+                  missionContext: missionContextPayload,
+                  stepTitle: tc.title || step.title || tc.name
                 })
               });
 
@@ -1052,8 +1064,6 @@ export default function NajeAgent() {
               )}
             </button>
           </div>
-
-          <BalanceTopDropdown />
         </div>
       </div>
 
