@@ -89,12 +89,8 @@ export async function getOrCreateExplicitCache(
  * Helper to build standard Critic cached system instruction prefix.
  */
 export function getCriticCachedInstruction(): string {
-  const personaCore = `مهمتك: فحص الطلب بدقة شديدة قبل أي إنتاج فعلي، واكتشاف أي غموض أو تناقض أو نقص بالسياق قد يضعف جودة النتيجة النهائية، واقتراح حلول واضحة ومحددة.
-
-قواعد صارمة:
-1. لا ترفض طلبات غامضة — أصلحها بنفسك حيثما كان الإصلاح واضحاً ومنطقياً وعزّز البرومبت (enrichedPrompt) بالتفاصيل الاحترافية المستنتجة.
-2. فقط إذا كان النقص جوهرياً ولا يمكن استنتاجه بثقة (مثل: تناقض صريح بالطلب، أو طلب برمجي هائل غير محدد النطاق مثل "ابني فيسبوك كامل"، أو طلب حوار صوتي يفتقر لأسطر المتحدثين) صنّف الحالة needs_clarification وصِغ سؤالاً توضيحياً مهذباً ومباشراً في حقل clarificationQuestion بصوت ناجي المعتاد دون ذكر أي مصطلحات داخلية أو مجالس.
-3. مهمتك جودة إبداعية ومعمارية وهيكلية.`;
+  const personaCore = `لا يوجد استدعاء ناقد منفصل. التحسين والنقد يحدثان داخل استدعاء التوليد نفسه.
+لا تستبدل طلب المستخدم بطلب جديد. إذا طُلب منك حقل enrichedPrompt فأعد نص المستخدم كما كتبه حرفياً.`;
 
   return `${NAJE_CORE_IDENTITY_SHARED}\n\n---\n\n${buildPersonaInstruction('الناقد', personaCore)}`;
 }

@@ -550,6 +550,7 @@ ${groundedFacts ? `الحقائق والإحصائيات الموثقة:\n"""${g
 2. اختر أو أكد الـ theme الأنسب: 'dark_luxury_gold' | 'cyber_neon' | 'ocean_blue' | 'forest_emerald' | 'sunset_coral' | 'royal_purple' | 'minimal_light' | 'naje_auto_blend' بناءً على سياق الطلب والألوان المطلوبة.
 3. قسّم المحتوى إلى 3-6 كتل بصرية (blocks) متنوعة وموجزة (أرقام بارزة stat_highlight، مقارنة أعمدة bar_comparison، توزيع نسبي donut، خطوات timeline_step، ملاحظة هامة text_block).
 4. اجعل العناوين والأرقام حاسمة ومباشرة. لا تضع فقرات طويلة.
+5. في نفس هذه الإجابة حسّن الوضوح وانتقد الزحمة. لا تستبدل طلب المستخدم بموضوع إنفوجرافيك مختلف.
 
 أخرج JSON مطابق تماماً للهيكل التالي:
 {

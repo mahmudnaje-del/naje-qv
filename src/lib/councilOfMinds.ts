@@ -1,6 +1,5 @@
 import { GoogleGenAI } from '@google/genai';
 import { OUTPUT_TOKEN_LIMITS } from './modelRegistry.ts';
-import { getOrCreateExplicitCache, getCriticCachedInstruction } from './geminiCaching.ts';
 import { getNajeModel, resolveEngineModel } from './modelEnvConfig.ts';
 
 const PERSONAS_MODEL = () => resolveEngineModel(getNajeModel('personas'));
@@ -52,83 +51,19 @@ export interface CriticReviewResult {
  * Catches ambiguities, contradictions, and missing context, repairing them where obvious.
  */
 export async function criticReviewRequest(
-  ai: any,
+  _ai: any,
   rawPrompt: string,
-  generationType: 'image' | 'video' | 'document' | 'code' | 'voice',
-  brandContext?: any
+  _generationType: 'image' | 'video' | 'document' | 'code' | 'voice',
+  _brandContext?: any
 ): Promise<CriticReviewResult> {
-  const personaCore = `مهمتك: فحص الطلب بدقة شديدة قبل أي إنتاج فعلي، واكتشاف أي غموض أو تناقض أو نقص بالسياق قد يضعف جودة النتيجة النهائية، واقتراح حلول واضحة ومحددة.
-
-قواعد صارمة:
-1. لا ترفض طلبات غامضة — أصلحها بنفسك حيثما كان الإصلاح واضحاً ومنطقياً وعزّز البرومبت (enrichedPrompt) بالتفاصيل الاحترافية المستنتجة.
-2. فقط إذا كان النقص جوهرياً ولا يمكن استنتاجه بثقة (مثل: تناقض صريح بالطلب، أو طلب برمجي هائل غير محدد النطاق مثل "ابني فيسبوك كامل"، أو طلب حوار صوتي يفتقر لأسطر المتحدثين) صنّف الحالة needs_clarification وصِغ سؤالاً توضيحياً مهذباً ومباشراً في حقل clarificationQuestion بصوت ناجي المعتاد دون ذكر أي مصطلحات داخلية أو مجالس.
-3. مهمتك جودة إبداعية ومعمارية وهيكلية.`;
-
-  const systemInstruction = buildPersonaInstruction('الناقد', personaCore);
-
-  const reviewPrompt = `فحص طلب توليد (${generationType}):
-نص الطلب: "${rawPrompt}"
-سياق البراند (إن وجد): ${JSON.stringify(brandContext || {})}
-
-أخرج JSON مطابق تماماً للهيكل التالي:
-{
-  "verdict": "proceed" | "proceed_with_notes" | "needs_clarification",
-  "issues": ["وصف المشكلة الأولى إن وجدت"],
-  "suggestedFixes": ["الحل المقترح المحدد"],
-  "enrichedPrompt": "البرومبت المحسن والمُصلح والمُعزز بالتفاصيل الدقيقة ليمر للمرحلة التالية",
-  "clarificationQuestion": "سؤال توضيحي لطيف ومباشر للمستخدم فقط إذا كان verdict هو needs_clarification"
-}`;
-
-  try {
-    const personasModel = PERSONAS_MODEL();
-    const cachedCriticContent = await getOrCreateExplicitCache(
-      ai,
-      'critic_persona',
-      personasModel,
-      getCriticCachedInstruction(),
-      7200
-    );
-
-    const configPayload: any = { 
-      maxOutputTokens: OUTPUT_TOKEN_LIMITS.criticReview,
-      responseMimeType: "application/json",
-      temperature: 0.2,
-      ...getThinkingConfig(personasModel)
-    };
-
-    if (cachedCriticContent) {
-      configPayload.cachedContent = cachedCriticContent;
-    }
-
-    const res = await ai.models.generateContent({
-      model: personasModel,
-      contents: [
-        { role: 'user', parts: [{ text: `${systemInstruction}\n\n${reviewPrompt}` }] }
-      ],
-      config: configPayload
-    });
-
-    if (res.usageMetadata?.cachedContentTokenCount) {
-      console.log(`[Critic Cache Hit] Explicit/Implicit cache saved ${res.usageMetadata.cachedContentTokenCount} prompt tokens`);
-    }
-
-    const parsed = JSON.parse(res.text || '{}');
-    return {
-      verdict: parsed.verdict || 'proceed',
-      issues: Array.isArray(parsed.issues) ? parsed.issues : [],
-      suggestedFixes: Array.isArray(parsed.suggestedFixes) ? parsed.suggestedFixes : [],
-      enrichedPrompt: (parsed.enrichedPrompt && parsed.enrichedPrompt.trim()) ? parsed.enrichedPrompt.trim() : rawPrompt,
-      clarificationQuestion: parsed.clarificationQuestion
-    };
-  } catch (err) {
-    console.warn('[Critic] Fast review fallback:', err);
-    return {
-      verdict: 'proceed',
-      issues: [],
-      suggestedFixes: [],
-      enrichedPrompt: rawPrompt
-    };
-  }
+  // Naje Lite / Core / Pro already improve and critique inside the generation call.
+  // A separate critic used to replace the user's request with a new one. Do not do that.
+  return {
+    verdict: 'proceed',
+    issues: [],
+    suggestedFixes: [],
+    enrichedPrompt: rawPrompt
+  };
 }
 
 /**
@@ -167,7 +102,7 @@ export async function commanderRoute(
 
   return {
     persona,
-    needsCritic: true,
+    needsCritic: false,
     needsWebSearch
   };
 }
@@ -272,7 +207,7 @@ export async function detectAndParseDialogue(
 ): Promise<{ isDialogue: boolean; speakers: string[]; turns: DialogueTurn[] }> {
   const personaCore = `مهمتك: فحص ما إذا كان النص يمثل حواراً بين شخصيتين.
 
-قيد صارم يجب مراعاته دائماً: منصة التوليد الصوتي تدعم صوتين مختلفين فقط بالحوار الواحد — هذا حد تقني ثابت من مزوّد الخدمة، ليس قيداً مؤقتاً. إذا وصف طلب المستخدم حواراً بين أكثر من شخصين، لا تحاول توليد أكثر من صوتين؛ اختر الشخصيتين الأكثر مركزية بالحوار ومثّل البقية سردياً، أو أرسل الطلب لمسار التوضيح (الناقد) لطلب تبسيط الحوار لشخصين إذا كان الفرق جوهرياً لسياق الطلب.
+قيد صارم يجب مراعاته دائماً: منصة التوليد الصوتي تدعم صوتين مختلفين فقط بالحوار الواحد — هذا حد تقني ثابت من مزوّد الخدمة، ليس قيداً مؤقتاً. إذا وصف طلب المستخدم حواراً بين أكثر من شخصين، لا تحاول توليد أكثر من صوتين؛ اختر الشخصيتين الأكثر مركزية بالحوار ومثّل البقية سردياً. لا تغيّر كلمات المتحدثين.
 
 إذا كان حواراً:
 1. استخرج أدوار المتحدثين بدقة (بحد أقصى شخصيتين مركزيتين).

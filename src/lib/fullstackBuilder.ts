@@ -8,7 +8,7 @@ import {
   LinkerDiagnostic 
 } from '../types/agent.ts';
 import { PricingConfig, getAgentToolCost } from './agentPricing.ts';
-import { buildPersonaInstruction, criticReviewRequest, getThinkingConfig } from './councilOfMinds.ts';
+import { buildPersonaInstruction, getThinkingConfig } from './councilOfMinds.ts';
 import { OUTPUT_TOKEN_LIMITS } from './modelRegistry.ts';
 import { createGenAIClient } from './genaiClient.ts';
 import { getNajeModel, resolveEngineModel } from './modelEnvConfig.ts';
@@ -88,6 +88,7 @@ export async function planFullstackProject(
 
   const systemInstruction = buildPersonaInstruction('المبرمج', `${PROGRAMMER_CORE}
 مهامتك الآن: التخطيط المعماري الشامل لبناء موقع أو تطبيق ويب حقيقي متكامل ومتعدد الملفات (Real Multi-File Production Architecture).
+في نفس هذه الإجابة حسّن الغموض وانتقد النقص، ثم اكتب الخطة. لا تستبدل طلب المستخدم بمشروع مختلف.
 
 قواعد التخطيط المعماري:
 1. صمّم هيكلية برمجية حقيقية تتضمن عادة ما بين 15 إلى 35 ملفاً، موزعة باحترافية:
@@ -722,31 +723,6 @@ export async function executeFullstackEngineerMission(
   pricingConfig: PricingConfig = {},
   onProgress?: (progress: FullstackBuildProgress) => void
 ): Promise<FullstackBuildResult> {
-  // Silent Critic Pre-Review (الناقد)
-  const criticVerdict = await criticReviewRequest(ai, userPrompt, 'code', brandContext);
-  if (criticVerdict.verdict === 'needs_clarification') {
-    return {
-      projectName: 'مشروع مقترح',
-      projectDescription: criticVerdict.clarificationQuestion || 'يرجى توضيح نطاق المشروع المطلوب وتفاصيله لبدء البناء المعماري بدقة.',
-      techStack: { frontend: 'React', backend: 'Node.js', styling: 'Tailwind CSS' },
-      plan: {
-        projectName: 'مشروع مقترح',
-        projectDescription: criticVerdict.clarificationQuestion || '',
-        techStack: { frontend: 'React', backend: 'Node.js', styling: 'Tailwind CSS' },
-        files: [],
-        buildOrder: []
-      },
-      files: [],
-      previewHtml: `<div class="p-8 text-center"><p class="text-amber-500 font-medium">${criticVerdict.clarificationQuestion || 'يرجى توضيح المتطلبات'}</p></div>`,
-      pointsDeducted: 0,
-      auditFeedback: criticVerdict.clarificationQuestion,
-      auditPassed: false
-    };
-  }
-
-  const enrichedUserPrompt = criticVerdict.enrichedPrompt || userPrompt;
-
-  // Phase 1: Intent Parsing & Architectural Planning
   onProgress?.({
     phase: 'planning',
     statusMessage: 'Naje Agent Core يحلل المتطلبات ويخطط المعمارية الهندسية الشاملة...',
@@ -754,7 +730,7 @@ export async function executeFullstackEngineerMission(
     completedFiles: 0
   });
 
-  const plan = await planFullstackProject(enrichedUserPrompt, brandContext, inputParams);
+  const plan = await planFullstackProject(userPrompt, brandContext, inputParams);
   const totalFiles = plan.files.length;
 
   // Phase 2: Contract Synthesis (IR Layer)

@@ -5,7 +5,6 @@ import { getAgentToolCost } from './agentPricing.ts';
 import { executeFullstackEngineerMission } from './fullstackBuilder.ts';
 import { 
   buildPersonaInstruction, 
-  criticReviewRequest, 
   extractVoiceFingerprint, 
   reasonBestVoice, 
   detectAndParseDialogue,
@@ -45,24 +44,7 @@ export async function executeAgentTool(
     throw new Error('هذه الأداة غير متاحة للتنفيذ.');
   }
   const { brandContext, userPrompt, auditHistory } = missionContext;
-
-  // 1. Silent Critic Pre-Review (الناقد)
-  let enrichedPrompt = userPrompt;
-  try {
-    const criticType = toolName === 'image_studio' || toolName === 'brand_identity' ? 'image'
-      : toolName === 'video_director' ? 'video'
-      : toolName === 'document_architect' ? 'document'
-      : toolName === 'fullstack_engineer' ? 'code'
-      : toolName === 'infographic_designer' ? 'document'
-      : 'voice';
-    
-    const criticRes = await criticReviewRequest(ai, userPrompt, criticType, brandContext);
-    if (criticRes.enrichedPrompt) {
-      enrichedPrompt = criticRes.enrichedPrompt;
-    }
-  } catch (cErr) {
-    console.warn('[Critic] Pre-pass review bypass:', cErr);
-  }
+  const enrichedPrompt = userPrompt;
 
   // Build audit feedback context from previous steps if available
   const recentAuditFeedback = (auditHistory && auditHistory.length > 0)
@@ -82,6 +64,7 @@ export async function executeAgentTool(
       const res = await ai.models.generateContent({
         model: PERSONAS_MODEL(),
         contents: `الطلب: ${enrichedPrompt}\nالمدخلات: ${JSON.stringify(inputParams)}${recentAuditFeedback}
+في نفس هذه الإجابة حسّن الصياغة وانتقد النقص. لا تستبدل طلب المستخدم بهوية لعلامة أخرى.
 أخرج JSON فقط:
 {
   "brandName": "الاسم المعتمد",
@@ -131,13 +114,13 @@ export async function executeAgentTool(
 البراند: ${brandContext?.brandName || 'Luxury Brand'}
 المجال: ${brandContext?.industry || 'General'}
 الألوان: ${JSON.stringify(brandContext?.colors || ['#111', '#c5a880'])}
-تفاصيل الطلب: ${inputParams.prompt || enrichedPrompt}${recentAuditFeedback}
-المطلوب: English generation prompt, photorealistic, 8k, highly detailed, masterwork luxury aesthetic. أخرج النص الإنجليزي فقط.`,
+تفاصيل الطلب كما كتبه المستخدم، لا تستبدله بموضوع آخر: ${inputParams.prompt || enrichedPrompt}${recentAuditFeedback}
+في نفس هذه الإجابة حسّن الإضاءة والخامة وانتقد الوصف الضعيف، ثم أخرج النص الإنجليزي فقط.`,
         config: {
           maxOutputTokens: OUTPUT_TOKEN_LIMITS.imageCompiler
         }
       });
-      const generatedImagePrompt = promptGen.text?.trim() || 'Luxury product render, cinematic lighting, 8k photorealistic';
+      const generatedImagePrompt = promptGen.text?.trim() || String(inputParams.prompt || enrichedPrompt || '').trim();
 
       // 2. Generate Image via Native Image Generation
       let imageUrl = '';
@@ -180,19 +163,7 @@ export async function executeAgentTool(
     }
 
     case 'voice_narration': {
-      // Pre-generation check for voice / dialogue clarity (الناقد)
-      const voiceCritic = await criticReviewRequest(ai, userPrompt, 'voice', brandContext);
-      if (voiceCritic.verdict === 'needs_clarification') {
-        return {
-          output: {
-            needsClarification: true,
-            message: voiceCritic.clarificationQuestion || 'يرجى توضيح نص السرد الصوتي أو أسطر المتحدثين بدقة لتوليد التسجيل الصوتي.',
-            text: voiceCritic.clarificationQuestion || 'يرجى توضيح نص السرد الصوتي أو أسطر المتحدثين بدقة لتوليد التسجيل الصوتي.'
-          },
-          pointsDeducted: 0
-        };
-      }
-      const activePrompt = voiceCritic.enrichedPrompt || enrichedPrompt;
+      const activePrompt = enrichedPrompt;
 
       // 1. Detect if request is a multi-speaker dialogue or single voiceover
       const dialogueInfo = await detectAndParseDialogue(ai, activePrompt, brandContext);
@@ -252,12 +223,12 @@ export async function executeAgentTool(
       } else {
         // Single Voiceover Narration
         const personaCore = `كاتب نصوص إعلانية صوتية ومخرج أداء صوتي محترف.
-اكتب نصاً صوتياً شاعرياً فخماً وجذاباً ومتقناً لـ:
+حسّن الإلقاء في هذه الإجابة نفسها، وانتقد الحشو، ولا تستبدل كلام المستخدم بنص إعلاني مختلف.
 البراند: ${brandContext?.brandName || 'العلامة'}
 المجال: ${brandContext?.industry || 'العطور والمنتجات الفاخرة'}
 النبرة: ${brandContext?.tone || 'فخامة وهيبة'}
-الطلب: ${enrichedPrompt}${recentAuditFeedback}
-أخرج النص العربي الصافي فقط بدون مقدمات.`;
+الطلب كما كتبه المستخدم: ${enrichedPrompt}${recentAuditFeedback}
+أخرج النص الصافي فقط بدون مقدمات.`;
         const systemInstruction = buildPersonaInstruction('مهندس الصوت', personaCore);
 
         const scriptRes = await ai.models.generateContent({
@@ -268,7 +239,7 @@ export async function executeAgentTool(
           }
         });
 
-        narrationText = scriptRes.text?.trim() || `حضورٌ يبقى ولا يزول.`;
+        narrationText = scriptRes.text?.trim() || enrichedPrompt;
 
         // Select best voice matching the script & brand tone
         usedVoice = inputParams.voice || await reasonBestVoice(ai, narrationText, brandContext);
@@ -388,6 +359,7 @@ export async function executeAgentTool(
         model: LITE_MODEL(),
         contents: `${systemInstruction}
 الطلب: ${enrichedPrompt}
+في نفس هذه الإجابة حسّن الترتيب وانتقد الازدحام. لا تستبدل طلب المستخدم بصفحة مختلفة.
 المدخلات: ${JSON.stringify(inputParams)}
 أخرج JSON:
 {
@@ -449,6 +421,7 @@ export async function executeAgentTool(
 اكتب سيناريو إعلان سينمائي فخم لمقطع فيديو مدته ${durationSec} ثوانٍ لـ ${brandContext?.brandName || 'العلامة'}.
 المجال: ${brandContext?.industry || 'المجال العام'}
 الطلب: ${enrichedPrompt}${recentAuditFeedback}
+في نفس هذه الإجابة حسّن اللقطات وانتقد التناقض. لا تستبدل موضوع المستخدم بإعلان آخر.
 
 المطلوب إخراج JSON:
 {
@@ -494,6 +467,7 @@ export async function executeAgentTool(
 اكتب ${isSlides ? 'عرضاً تقديمياً' : 'كتيباً متكاملاً'} من ${pagesCount} ${isSlides ? 'شرائح' : 'فصول'} لـ ${brandContext?.brandName || 'العلامة'}.
 السياق: ${JSON.stringify(brandContext || {})}
 الطلب: ${enrichedPrompt}${recentAuditFeedback}
+في نفس هذه الإجابة حسّن البناء وانتقد الحشو. لا تستبدل موضوع المستخدم بكتاب مختلف.
 
 أخرج JSON فقط:
 {

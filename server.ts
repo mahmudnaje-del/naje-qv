@@ -32,7 +32,7 @@ import { UI_BUILD_DIRECTIVE, collectUserImageSlots, injectImageSlots } from './s
 import { getAgentToolCost } from './src/lib/agentPricing.ts';
 import { isExecutableAgentTool } from './src/lib/agentCapabilities.ts';
 import { agentExecutionDocId, compactExecutionResult, normalizeIdempotencyKey } from './src/lib/agentIdempotency.ts';
-import { buildPersonaInstruction, criticReviewRequest, getThinkingConfig } from './src/lib/councilOfMinds.ts';
+import { buildPersonaInstruction } from './src/lib/councilOfMinds.ts';
 import os from 'os';
 import {
   OMNI_11_ID,
@@ -1457,6 +1457,7 @@ STRICT RULES:
 - Each section must describe: the exact visual action/subject state at that second, camera framing/movement, lighting continuity, and any on-screen motion — concrete and specific, never vague ("something happens" is forbidden).
 - Maintain STRICT visual and subject consistency across all seconds — the subject, setting, and style established in Second 1 must persist unless the user's request explicitly implies a change (e.g. a transition or scene change they asked for). Do not invent new subjects, objects, or settings not implied by the user's request.
 - Do not add any narrative or content beyond what is reasonably implied by the user's request — you are structuring their idea into a shot list, not inventing a new one.
+- In this same answer, remove empty clichés and keep the subject, wardrobe, and place consistent across seconds. Do not send the list to a second critic call.
 - CRITICAL LANGUAGE RULE FOR IN-VIDEO CONTENT (non-negotiable): if any second of this shot list includes a character speaking, dialogue, narration, or any on-screen/rendered text, that spoken or written content MUST be in the exact same language AND dialect as the user's original request below — never a different language, and never generic Modern Standard Arabic if the user wrote in a specific dialect (e.g. preserve Levantine, Gulf, Egyptian, or Maghrebi phrasing exactly as the user would naturally speak it, or English if that's what the user used). This rule applies only to in-scene spoken/written content — it does not change the language of these instructions to you, which remain in English.
 - After the per-second breakdown, add one final "STYLE LOCK" line summarizing the consistent visual style/mood/lighting that must hold across the entire ${numberOfSections} seconds.
 - Output ONLY the shot list in this exact structure, no preamble, no explanation, no markdown code fences.
@@ -1481,51 +1482,6 @@ User's original request, for language/dialect reference (match this exactly for 
   }
 }
 
-async function auditVideoPrompt(ai: any, compiledShotList: string, durationSec: number, aspectRatio: string = "16:9", rawPrompt: string = ""): Promise<string> {
-  if (process.env.ENABLE_ANTI_SLOP_CRITIC === 'false') {
-    return compiledShotList;
-  }
-  try {
-    const critiquePrompt = `You are an Anti-AI-Slop Master Video Director. Review and refine the following second-by-second video shot list for a ${durationSec}s video (aspect ratio: ${aspectRatio}).
-
-CRITICAL VIDEO CRITIQUE DIRECTIVES:
-1. REMOVE ALL AI CLICHÉS: Strip out buzzwords like "cinematic masterpiece", "hyper-realistic", "unreal engine render". Remove pointless floating neon grids, melting artifacts, or random lens flares.
-2. ENFORCE REAL CINEMATOGRAPHY & LIGHTING:
-   - Specific camera language (e.g. "slow steady tracking shot at waist height", "subtle 24fps push-in").
-   - Explicit lighting setup & color temperature (e.g. "warm golden hour key light from stage-left, deep contrast shadows").
-3. CROSS-SECOND CONSISTENCY & STYLE LOCK:
-   - Ensure the subject, environment, materials, and wardrobe described in Second 1 remain strictly consistent across all seconds unless an explicit scene transition was requested.
-   - Verify the "STYLE LOCK" line matches and anchors the visual identity across the entire duration without drift.
-4. IN-VIDEO LANGUAGE CONSISTENCY: verify any spoken dialogue or on-screen text within the shot list matches the user's original request's language and dialect exactly (provided below) — flag and correct any second where in-scene language drifted to a different language or a more generic/formal register than the user actually used.
-5. ASPECT RATIO & FRAMING: Ensure framing specifically fits ${aspectRatio}.
-
-${rawPrompt ? `User's original request, for language/dialect reference:\n"${rawPrompt}"\n\n` : ''}Original Shot List:
-${compiledShotList}
-
-Return ONLY the refined, perfected shot list text in English without markdown code fences or conversational preamble.`;
-
-    const result = await generateContentWithFallback(ai, {
-      model: 'gemini-3.5-flash-lite', // Auditor tier
-      endpointId: 'tier_core',
-      contents: critiquePrompt,
-      config: {
-        ...getThinkingConfig('gemini-3.5-flash-lite'),
-        maxOutputTokens: OUTPUT_TOKEN_LIMITS.chatResponse
-      }
-    });
-
-    if (result.text && result.text.trim()) {
-      const refined = result.text.trim();
-      console.log(`[auditVideoPrompt] Video prompt audited and refined:\n${refined}`);
-      return refined;
-    }
-    return compiledShotList;
-  } catch (err) {
-    console.error("[auditVideoPrompt] Error during video prompt audit:", err);
-    return compiledShotList;
-  }
-}
-
 const GRAND_TYPOGRAPHY = `
 Professional Typography Guide for Text & Logos:
 When rendering or specifying text, logos, or typography in image generation prompts, adhere to professional font selections:
@@ -1533,54 +1489,6 @@ When rendering or specifying text, logos, or typography in image generation prom
 - Recommended Arabic fonts: Kufam, Cairo, Tajawal, Almarai, Changa, Aref Ruqaa, Reem Kufi, Thuluth, Diwani, Naskh, Mada, El Messiri, Lalezar, Readex Pro, IBM Plex Sans Arabic, Somar, Alexandria.
 Rules: Enforce zero spelling errors, authentic RTL connectivity for Arabic scripts, properly joined letterforms, and high contrast against the background.
 `;
-
-async function applyCreativeLayers(ai: any, rawPrompt: string, mode: string = "design", aspectRatio: string = "1:1", safeZoneConstraint?: string): Promise<string> {
-  if (process.env.ENABLE_ANTI_SLOP_CRITIC === 'false') {
-    return rawPrompt;
-  }
-  try {
-    const critiquePrompt = `You are an Anti-AI-Slop Master Art Director. Review and rewrite the following image generation prompt to ensure top agency quality.
-
-CRITICAL ANTI-AI-SLOP DIRECTIVES:
-1. REMOVE ALL AI CLICHÉS: Strip out terms like "award-winning", "masterpiece", "8k", "stunning", "hyper-detailed", "unreal engine", "trending on artstation". Strip out meaningless glowing neon wireframes, floating/melting random shapes, or abstract light grids.
-2. ENFORCE REAL DESIGN RULES:
-   - Composition: Define explicit focal points and enforce at least 30% negative space.
-   - Color Balance: Define specific color palettes and ratios (e.g. 60-30-10 dominance rule) rather than generic color words.
-   - Lighting: Specify an exact directional light source and color temperature (e.g., "single soft Key Light from 45-degree upper-left, 3200K warm tint").
-3. BREAK VISUAL REPETITION: Avoid obvious visual clichés for the topic (e.g., no coffee beans floating around a mug, no generic brain outlines for AI). Use a fresh, sophisticated, agency-level visual concept.
-4. TYPOGRAPHY & TEXT PRESERVATION:
-   - Any exact text requested in quotes (e.g. "نَجِيّ") MUST BE PRESERVED EXACTLY as requested without altering spelling or language.
-   - Match the request with appropriate typography standards from this font guide:
-   ${GRAND_TYPOGRAPHY}
-5. ASPECT RATIO ADAPTATION: Adapt layout composition for aspect ratio ${aspectRatio}.
-${safeZoneConstraint ? `6. PLATFORM SAFE ZONE COMPLIANCE (STRICT): ${safeZoneConstraint}. Under no circumstances allow essential typography, faces, or focal branding to collide with platform UI overlay boundaries or crop margins.` : ''}
-
-Original User Request (Mode: ${mode}, Aspect Ratio: ${aspectRatio}):
-${rawPrompt}
-
-Return ONLY the rewritten, refined prompt string in English without markdown or preamble.`;
-
-    const result = await generateContentWithFallback(ai, {
-      model: 'gemini-3.5-flash-lite',
-      endpointId: 'tier_core',
-      contents: critiquePrompt,
-      config: {
-        ...getThinkingConfig('gemini-3.5-flash-lite'),
-        maxOutputTokens: OUTPUT_TOKEN_LIMITS.imageCompiler
-      }
-    });
-
-    if (result.text && result.text.trim()) {
-      const refined = result.text.trim();
-      console.log(`[AntiSlopCritic] Prompt refined:\nOriginal: "${rawPrompt}"\nRefined: "${refined}"`);
-      return refined;
-    }
-    return rawPrompt;
-  } catch (err) {
-    console.error("[AntiSlopCritic] Error during prompt refinement:", err);
-    return rawPrompt;
-  }
-}
 
 async function compileImagePrompt(
   rawPrompt: string, 
@@ -1608,6 +1516,8 @@ ${isPhotographicStyleModel
   ? `- This model responds best to layered natural-language photographic description, in this order: subject → environment/background → lighting → camera/lens language → material & texture → art/style reference → mood. Use real photographic vocabulary where appropriate (e.g. lens type, lighting setup) even though this is a generated image, since this vocabulary steers the model toward higher-quality output.`
   : `- This model responds better to explicit, instruction-style structuring, including direct spatial layout language (e.g. "centered composition, subject occupies upper third, negative space below") and explicit text-placement instructions if text rendering is relevant.`}
 - Do not invent subject matter, objects, or details beyond what is reasonably implied by the user's request — you are elevating their idea into a professional prompt, not replacing it with a new one.
+- In this same answer, drop empty clichés (masterpiece, 8k, award-winning, hyper-realistic) and name a real light, material, and composition. Do not call another model to critique this prompt afterwards.
+- Any exact text the user asked to render stays verbatim, in its original language.
 ${safeZoneConstraint ? `- FORMAT PRESET SAFE ZONE REQUIREMENT: ${safeZoneConstraint}. Place all essential text, logos, and critical focal elements strictly inside this platform safe zone to avoid UI overlay clashing.` : ''}
 - ARABIC & ENGLISH TEXT IN IMAGES (SMART TEXT GATE): If the user's request contains or implies any text, words, brand names, slogans, or titles to be written inside the image (especially in Arabic):
   1. Extract the EXACT text string to be rendered.
@@ -1638,89 +1548,7 @@ User's request: "${rawPrompt}"`;
     structuredPrompt = rawPrompt;
   }
 
-  // Phase 2: Final Stage-5 Self-Critique / Anti-AI-Slop Audit (Auditor tier: gemini-3.5-flash-lite)
-  const auditedPrompt = await applyCreativeLayers(ai, structuredPrompt, "design", aspectRatio, safeZoneConstraint || undefined);
-  return auditedPrompt;
-}
-
-// Document & Slide Quality Auditor functions
-async function auditDocChunk(ai: any, sectionTitle: string, sectionHtml: string, contextSummary: string, auditorModel: string = 'gemini-3.5-flash-lite'): Promise<{ ok: boolean; refinedHtml?: string; reason?: string }> {
-  try {
-    const auditPrompt = `You are Naje AI's Senior Document Editor & Quality Auditor.
-Audit this generated HTML section for quality, tone consistency, and structural completeness.
-
-SECTION TITLE: "${sectionTitle}"
-CONTEXT / PRIOR SUMMARY: "${contextSummary || 'First section'}"
-
-HTML TO AUDIT:
-${sectionHtml}
-
-RULES:
-1. Ensure the HTML is well-formed, complete, not truncated mid-tag, and contains proper semantic tags (<p>, <strong>, <ul>, <li>, <h2>).
-2. Ensure professional, authentic Arabic tone matching the context without AI buzzwords or fluff.
-3. If it is already clean and high quality, return it as is or slightly refined.
-4. If it is completely broken, malformed, or empty, return {"ok": false, "reason": "malformed_or_empty"}.
-
-Return ONLY a JSON object:
-{
-  "ok": true,
-  "refinedHtml": "clean html markup...",
-  "reason": "approved"
-}`;
-
-    const res = await ai.models.generateContent({
-      model: resolveEngineModel(auditorModel),
-      contents: auditPrompt,
-      config: { responseMimeType: "application/json", maxOutputTokens: OUTPUT_TOKEN_LIMITS.documentSection }
-    });
-
-    const parsed = JSON.parse(res.text || "{}");
-    if (parsed.ok && parsed.refinedHtml) {
-      return { ok: true, refinedHtml: parsed.refinedHtml };
-    }
-    return { ok: parsed.ok !== false, refinedHtml: parsed.refinedHtml || sectionHtml };
-  } catch (err) {
-    console.warn("[auditDocChunk] Warning: audit check failed, using original sectionHtml:", err);
-    return { ok: true, refinedHtml: sectionHtml };
-  }
-}
-
-async function auditSlideChunk(ai: any, slideData: any, auditorModel: string = 'gemini-3.5-flash-lite'): Promise<{ ok: boolean; refinedSlide?: any; reason?: string }> {
-  try {
-    const auditPrompt = `You are Naje AI's Presentation Quality Auditor.
-Audit this slide JSON object for structural validity, conciseness, visual appeal, and proper visual element assignment (aiImagePrompt, stats, cards, bulletPoints).
-
-SLIDE DATA:
-${JSON.stringify(slideData)}
-
-RULES:
-1. Ensure slideTitle is concise and statement-driven.
-2. Ensure content.text is at most 1 single sentence. If longer, bulletPoints must be used.
-3. Ensure content.aiImagePrompt is a concrete, photographic English search term (no Arabic, no abstract buzzwords).
-4. Return the slide with any necessary polish applied.
-
-Return ONLY a JSON object matching:
-{
-  "ok": true,
-  "refinedSlide": { "layoutTemplate": "...", "slideTitle": "...", "speakerNotes": "...", "content": { ... } },
-  "reason": "approved"
-}`;
-
-    const res = await ai.models.generateContent({
-      model: resolveEngineModel(auditorModel),
-      contents: auditPrompt,
-      config: { responseMimeType: "application/json", maxOutputTokens: OUTPUT_TOKEN_LIMITS.slideJson }
-    });
-
-    const parsed = JSON.parse(res.text || "{}");
-    if (parsed.ok && parsed.refinedSlide) {
-      return { ok: true, refinedSlide: parsed.refinedSlide };
-    }
-    return { ok: true, refinedSlide: slideData };
-  } catch (err) {
-    console.warn("[auditSlideChunk] Warning: slide audit check failed, using original slide:", err);
-    return { ok: true, refinedSlide: slideData };
-  }
+  return structuredPrompt;
 }
 
 function parseFirestoreFields(fields: any): any {
@@ -5440,7 +5268,7 @@ app.post("/api/creative-concepts", async (req, res) => {
     }
 
     const ai = createGenAIClient();
-    const concepts = await generateMaximumCreativity(ai, combinedInput, mode, aspectRatio, applyCreativeLayers);
+    const concepts = await generateMaximumCreativity(ai, combinedInput, mode, aspectRatio);
 
     return res.json({
       success: true,
@@ -5610,7 +5438,7 @@ app.post(["/api/designs/rate", "/api/creatively/designs/rate"], async (req, res)
 //
 //  INSERT this whole block immediately BEFORE  app.post("/api/chat-designer", ...)
 //  Depends only on names already in server.ts: GoogleGenAI,
-//  GenerateVideosOperation, applyCreativeLayers.
+//  GenerateVideosOperation. One writer call structures the shot list; no second critic.
 // =============================================================================
 app.post(["/api/creatively/generate"], async (req, res) => {
   try {
@@ -5748,15 +5576,11 @@ app.post(["/api/creatively/generate"], async (req, res) => {
     // =========================================================================
     if (mode === "video_ad" && resultType === "video") {
       const durSec = Math.max(4, Math.min(10, parseInt(String(videoDuration || "5").replace(/\D/g, ""), 10) || 5));
-      let videoPrompt = selectedConceptPrompt || prompt || "Cinematic brand video";
+      const videoSource = String(selectedConceptPrompt || prompt || "");
+      let videoPrompt = videoSource;
       try {
-        videoPrompt = await applyCreativeLayers(
-          ai,
-          `${prompt}${preferencesRules}${refContextNote}\nPRESERVE any requested on-screen text EXACTLY in its original language (never translate).`,
-          "design",
-          targetAspectRatio
-        );
-      } catch (_e) { /* fall back to raw prompt */ }
+        videoPrompt = await compileVideoPrompt(videoSource, durSec, targetAspectRatio, "veo");
+      } catch (_e) { /* keep the user's prompt */ }
 
       const videoOp = await ai.models.generateVideos({
         model: "veo-3.1-lite-generate-preview",
@@ -5808,6 +5632,7 @@ app.post(["/api/creatively/generate"], async (req, res) => {
       const strategySystem =
         `${modeRole}${preferencesRules}${editDirectives}${refContextNote}${grandTypography}\n\n` +
         `TEXT FIDELITY: If any brand name / slogan / number is provided, ALL of them must appear in the image prompt, each with explicit placement/hierarchy; never drop, merge, translate, or invent text. Arabic text must be rendered as flawless, correctly-connected calligraphy.\n\n` +
+        `SAME-ANSWER CRITIQUE: In this one answer, improve weak wording and drop empty clichés. Do not replace the user's subject, names, or exact text with a different assignment.\n\n` +
         `STRICT OUTPUT: Return ONLY a raw JSON object (no markdown, no backticks) with keys: "imagePrompt" (an elite English text-to-image prompt; keep any user-requested literal text EXACTLY, in its ORIGINAL language, in quotes), "conceptTitle", "conceptExplanation" (in the user's language)${brandKitKeys}. The imagePrompt MUST strictly match aspect ratio ${targetAspectRatio}.`;
 
       const strategyContents: any[] = [
@@ -5862,10 +5687,11 @@ app.post(["/api/creatively/generate"], async (req, res) => {
     // =========================================================================
     //  STAGE B — image generation (same pattern as /api/chat-designer)
     // =========================================================================
-    // One creative concept — run it through Naje's full creative layers (anti-slop + N-CORE) before generating.
     const creativelyPresetId = req.body?.preset || req.body?.formatPreset || req.body?.formatPresetId;
     const creativelySafeZone = getSafeZoneForPreset(creativelyPresetId);
-    try { finalImagePrompt = await applyCreativeLayers(ai, finalImagePrompt, "design", targetAspectRatio, creativelySafeZone || undefined); } catch (_e) { /* keep the strategy prompt on failure */ }
+    if (creativelySafeZone) {
+      finalImagePrompt += `\n\nSAFE ZONE: ${creativelySafeZone}. Keep essential text and the focal subject inside this zone.`;
+    }
     const imgRes = await ai.models.generateContent({
       model: _imageModelId,
       contents: { parts: [{ text: finalImagePrompt }, ...refParts] },
@@ -6143,7 +5969,7 @@ app.post("/api/chat-designer", async (req, res) => {
 //   - Reads JSON body (Naje convention: base64 data-URLs in JSON, no multer).
 //   - Restores all 6 personas — REBRANDED to the Naje / "يزن" identity.
 //   - Restores generate_image / generate_video tools + googleSearch (search mode).
-//   - Restores the 5-concept flow via generateMaximumCreativity + applyCreativeLayers
+//   - Restores the concept flow via generateMaximumCreativity (one call; the user's request stays the assignment)
 //     (both ALREADY exist in server.ts — no new imports needed).
 //   - Adds the grandTypography font-encyclopedia to image-oriented personas.
 //   - NO hardcoded pricing in prompts (Naje pricing is dynamic in Firestore;
@@ -6152,7 +5978,7 @@ app.post("/api/chat-designer", async (req, res) => {
 //        { text, functionCall, conceptOptions, thought }
 //
 //  DEPENDS ON (already present in server.ts — verify names before pasting):
-//     GoogleGenAI, generateMaximumCreativity, applyCreativeLayers
+//     GoogleGenAI, generateMaximumCreativity
 //  MODELS (Naje tiers):  Core = "gemini-3.7-flash"   Max = "gemini-3.7-flash"
 // =============================================================================
 
@@ -6365,8 +6191,7 @@ app.post("/api/creative-pro-chat", async (req, res) => {
             ai,
             String(callArgs.prompt),
             "design",
-            String(callArgs.aspectRatio || "1:1"),
-            applyCreativeLayers
+            String(callArgs.aspectRatio || "1:1")
           );
           textResponse =
             "جهّزتلك 5 مفاهيم إبداعية حسب طلبك. اختر المفهوم يلي بعجبك لنبلّش التوليد الفعلي:";
@@ -6782,39 +6607,6 @@ app.post("/api/generate", async (req, res) => {
         // action === 'generate' -> fall through to the normal pipeline below.
       }
 
-      // 1.8 SILENT PRE-GENERATION CRITIC REVIEW (الناقد)
-      if (type === 'image' || type === 'video' || type === 'document') {
-        const aiCritic = createGenAIClient();
-        const criticVerdict = await criticReviewRequest(
-          aiCritic,
-          prompt || '',
-          type as 'image' | 'video' | 'document',
-          projectData?.brandProfile ? { ...projectData.brandProfile, entityType: projectData.entityType } : undefined
-        );
-
-        if (criticVerdict.verdict === 'needs_clarification') {
-          activeUserTasks.delete(uid);
-          if (jobId) {
-            await setDocRest("generation_jobs", jobId, {
-              status: 'completed',
-              progress: 100,
-              stepLabel: 'بانتظار توضيح متطلبات الطلب',
-              type,
-              createdAt: Date.now()
-            }, token).catch(() => {});
-          }
-          return res.status(200).json({
-            needsClarification: true,
-            message: criticVerdict.clarificationQuestion || 'يرجى توضيح متطلبات طلبك بمزيد من التفصيل لنتمكن من تنفيذه بأعلى دقة.',
-          });
-        }
-
-        // verdict is 'proceed' or 'proceed_with_notes' — continue using the enriched prompt
-        if (criticVerdict.enrichedPrompt && criticVerdict.enrichedPrompt.trim()) {
-          prompt = criticVerdict.enrichedPrompt;
-        }
-      }
-
       // 2. Cost Calculation
       const pricing = await getPricing(token);
 
@@ -7022,58 +6814,6 @@ app.post("/api/generate", async (req, res) => {
 إذا طلب منك المستخدم توليد مستند (عرض تقديمي PowerPoint، مستند Word، أو ملف PDF)، فاستخدم الأداة (Function Call) المتاحة لك generate_document بدلاً من الرد بنص عادي لتفعيل محرك المستندات تلقائياً.${systemInstructionContext}`;
 
       // (Old progress 50 removed, real milestones handled later)
-
-      // Pre-generation Critic Review (مجلس عقول ناجي — الناقد)
-      if (prompt && typeof prompt === 'string' && prompt.trim() && ['image', 'video', 'document', 'code', 'voice'].includes(type)) {
-        try {
-          const criticResult = await criticReviewRequest(
-            ai,
-            prompt,
-            type as any,
-            projectData?.brandProfile ? { ...projectData.brandProfile, entityType: projectData.entityType } : undefined
-          );
-          if (criticResult.verdict === 'needs_clarification' && criticResult.clarificationQuestion && type === 'text') {
-            activeUserTasks.delete(uid);
-            if (isAsyncJob) {
-              if (jobId) {
-                await setDocRest("generation_jobs", jobId, {
-                  id: jobId,
-                  ownerId: uid,
-                  status: 'needs_clarification',
-                  result: criticResult.clarificationQuestion,
-                  needsClarification: true,
-                  stepLabel: 'يرجى توضيح بعض التفاصيل للمتابعة...',
-                  completedAt: Date.now()
-                }, token).catch(e => console.error("Failed to update job with clarification:", e));
-              }
-              if (req.body.chatId) {
-                await createDocRest("messages", {
-                  ownerId: uid,
-                  chatId: req.body.chatId,
-                  role: 'assistant',
-                  content: criticResult.clarificationQuestion,
-                  createdAt: Date.now(),
-                  jobId: jobId || undefined,
-                  needsClarification: true
-                }, token).catch(e => console.error("Failed to write clarification message:", e));
-              }
-              return;
-            }
-            return res.json({
-              success: true,
-              type: 'text',
-              result: criticResult.clarificationQuestion,
-              needsClarification: true
-            });
-          }
-          if (criticResult.enrichedPrompt && criticResult.enrichedPrompt !== prompt) {
-            console.log(`[Critic] Enriched prompt for ${type}: "${prompt.slice(0, 50)}..." -> "${criticResult.enrichedPrompt.slice(0, 50)}..."`);
-            prompt = criticResult.enrichedPrompt;
-          }
-        } catch (criticErr) {
-          console.warn('[Critic] Pre-generation review error, continuing with original prompt:', criticErr);
-        }
-      }
 
       // Add sharp for text overlay
       const sharpModule = await import('sharp');
@@ -7521,7 +7261,7 @@ Return ONLY valid JSON matching this schema:
           isProTier ? 'omni' : 'veo',
           projectData?.brandProfile ? { ...projectData.brandProfile, entityType: projectData.entityType } : undefined
         );
-        const auditedVideoPrompt = await auditVideoPrompt(ai, compiledVideoPrompt, durSec, selectedVideoAspect, rawVideoPrompt);
+        const auditedVideoPrompt = compiledVideoPrompt;
 
         if (jobId) {
           await setDocRest("generation_jobs", jobId, {
@@ -7845,10 +7585,10 @@ YOUR TASK:
    - Informal or colloquial narrative text (e.g., "احمد بيقول السماء صافيه ترد ساره لا الجو مش صافي")
    - Narrative story sentences (e.g., "قال أحمد كذا ثم أجابت سارة كذا")
    - A general topic idea or rough notes (e.g., "حوار بين أحمد وسارة عن فوائد الذكاء الاصطناعي")
-2. Extract or draft the exact spoken dialogue lines for each speaker (${speaker1Name} and ${speaker2Name}).
+2. Extract the spoken lines the user already wrote. Do not replace them with a new conversation. Only write new lines when the user gave a topic and no actual dialogue.
 3. Map any speaker references (like "أحمد", "احمد", "سارة", "ساره", "بيقول", "ردت", "قالت") strictly to the exact names "${speaker1Name}" and "${speaker2Name}".
 4. Clean out narrative carrier verbs ("بيقول", "ترد", "قالت", "أجاب", "علق") from the spoken text, so ONLY the spoken statement remains.
-5. Keep the exact dialect, colloquial tone, and natural phrasing (Egyptian, Gulf, Levantine, Standard Arabic, or English) intended by the user.
+5. Keep the exact dialect, colloquial tone, and natural phrasing (Egyptian, Gulf, Levantine, Standard Arabic, or English) the user used. Do not translate and do not upgrade their words into a different script.
 6. Format EVERY single line strictly as:
 ${speaker1Name}: [spoken text]
 ${speaker2Name}: [spoken text]
@@ -8122,7 +7862,6 @@ ${speaker2Name}: لا والله، الجو مش صافي وفي تراب.`
           // 'completed' status moved to after point deduction
         } else if (docTypeToUse === 'pptx') {
           const slideWriterModel = await getModelEndpointId('slide_writer', getNajeModel('personas'), token);
-          const slideAuditorModel = await getModelEndpointId('document_engine', getNajeModel('personas'), token);
 
           const NajeEngine = await getNajeEngineCtor();
           const naje = new NajeEngine(process.env.GEMINI_API_KEY!);
@@ -8130,20 +7869,10 @@ ${speaker2Name}: لا والله، الجو مش صافي وفي تراب.`
           
           var generatedSlides: any[] = [];
           let completedCount = 0;
-          const slidePromises = sections.map(async (section: any, idx: number) => {
+          const slidePromises = sections.map(async (section: any) => {
             let slideData: any;
             try {
-              // Writer tier: author slide JSON
               slideData = await naje.generateSlideJSON(section.title, section.description, artDirection, 0, slideWriterModel);
-              
-              // Auditor tier: review slide JSON for structure, brevity, and visual assignments
-              const auditRes = await auditSlideChunk(ai, slideData, slideAuditorModel);
-              if (auditRes.ok && auditRes.refinedSlide) {
-                slideData = auditRes.refinedSlide;
-              } else if (!auditRes.ok) {
-                console.warn(`[PPTX Gen] Slide ${idx+1} failed audit, retrying authoring once with writer tier:`, auditRes.reason);
-                slideData = await naje.generateSlideJSON(section.title, section.description, artDirection, 0, slideWriterModel);
-              }
 
               // Hard-lock: never trust the model's own theme/colors, always use the deck-wide locked values
               slideData.theme = artDirection.theme;
@@ -8209,7 +7938,6 @@ ${speaker2Name}: لا والله، الجو مش صافي وفي تراب.`
           extension = 'pptx';
         } else {
           const docWriterModel = await getModelEndpointId('document_writer', getNajeModel('personas'), token);
-          const docAuditorModel = await getModelEndpointId('document_engine', getNajeModel('personas'), token);
 
           const brandBgHex = artDirection?.colors?.background || '0B0F19';
           const bgHex = brandBgHex.startsWith('#') ? brandBgHex : `#${brandBgHex}`;
@@ -8242,6 +7970,7 @@ ${skillsBlock}
 اكتب محتوى هذا القسم: "${section.title}" — ${section.description}
 
 اكتب بالشكل الطبيعي للمحتوى: إن كان العمل سردياً/إبداعياً فاكتب نثراً روائياً متدفّقاً وحواراً ووصفاً (بدون قوائم نقطية ولا عناوين فرعية تقنية)، وإن كان معلوماتياً فاكتب نثراً منظّماً غنياً ومفصلاً. نفّذ طلب المستخدم حرفياً وابنِ عليه بأفضل جودة.
+في نفس هذه الإجابة: حسّن الصياغة، احذف الحشو، وتأكد أن وسوم HTML مكتملة. لا تستبدل موضوع هذا القسم بموضوع آخر.
 
 أعد فقط JSON بهذا الشكل بالضبط وبدون أي نص إضافي:
 {"finalHtml":"وسوم HTML نظيفة مثل <p> و <ul> و <strong> بدون <html> أو <body> أو علامات markdown"}`
@@ -8252,18 +7981,7 @@ ${skillsBlock}
               };
 
               try {
-                // Writer tier pass
                 cleanHtml = await fetchSectionHtml(docWriterModel);
-
-                // Chunk-level Audit pass (Auditor tier: gemini-3.5-flash-lite)
-                const priorContextSummary = sections.slice(0, index).map((s: any) => s.title).join(' -> ');
-                const auditRes = await auditDocChunk(ai, section.title, cleanHtml, priorContextSummary, docAuditorModel);
-                if (auditRes.ok && auditRes.refinedHtml) {
-                  cleanHtml = auditRes.refinedHtml;
-                } else if (!auditRes.ok) {
-                  console.warn(`[Doc Gen] Section ${index+1} failed audit, retrying authoring once with writer tier...`);
-                  cleanHtml = await fetchSectionHtml(docWriterModel);
-                }
               } catch (e) {
                 console.error("Doc section generation error:", e);
                 cleanHtml = cleanHtml || "<p>عذراً، حدث خطأ أثناء توليد هذا القسم.</p>";

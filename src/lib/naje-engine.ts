@@ -421,7 +421,9 @@ Design rules: Extreme brevity, highly visual.
 
 CRITICAL TEXT RULE: 'content.text' MUST be at most one single, grammatically complete sentence. If there are multiple distinct ideas, you MUST use 'content.bulletPoints' instead and leave 'content.text' empty.
 
-CRITICAL IMAGE RULE: 'content.aiImagePrompt' is REQUIRED. It MUST be a concrete, literal, transliterated English noun phrase describing a real photographable scene relevant to this specific slide's topic (e.g. "business meeting in modern office", "abstract blue network lines", "laptop on desk"). NO Arabic. NO abstract concepts or AI buzzwords.`;
+CRITICAL IMAGE RULE: 'content.aiImagePrompt' is REQUIRED. It MUST be a concrete, literal, transliterated English noun phrase describing a real photographable scene relevant to this specific slide's topic (e.g. "business meeting in modern office", "abstract blue network lines", "laptop on desk"). NO Arabic. NO abstract concepts or AI buzzwords.
+
+In this same answer, tighten weak wording and drop empty clichés. Do not replace this slide's assigned topic with a different one.`;
 
       const response = await this.ai.models.generateContent({
         model: resolveEngineModel(model),

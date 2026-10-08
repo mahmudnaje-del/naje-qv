@@ -239,49 +239,49 @@ export async function generateMaximumCreativity(
   rawPrompt: string, 
   mode: string = "design", 
   aspectRatio: string = "1:1", 
-  applyCreativeLayers?: any, 
+  _applyCreativeLayers?: any, 
   writerModel: string = 'gemini-3.5-flash-lite'
 ): Promise<ConceptOption[]> {
   try {
-    // Stage 1
-    const brandProfile = await analyzeBrandPsychology(ai, rawPrompt, mode, writerModel);
-    
-    // Stage 2, 3, 4 run in parallel
-    const [blocklist, synthesisOptions, artMovements] = await Promise.all([
-      generateBlocklist(ai, rawPrompt, mode, writerModel),
-      crossDomainSynthesis(ai, rawPrompt, brandProfile, writerModel),
-      matchArtMovement(ai, brandProfile, writerModel)
-    ]);
-    
-    // Stage 5
-    let concepts = await generateDivergentConcepts(ai, rawPrompt, brandProfile, blocklist, synthesisOptions, artMovements, mode, aspectRatio, writerModel);
-    
-    if (!concepts || concepts.length === 0) {
-      concepts = [{
-        conceptId: "c_fallback",
-        philosophyName: "التصميم المباشر",
-        artMovementUsed: "Modern Minimalist",
-        synthesisPrincipleUsed: "Direct Representation",
-        visualMetaphor: "Direct brand identity presentation",
-        colorPalette: ["#111827", "#D97706", "#F3F4F6"],
-        imagePromptDraft: rawPrompt,
-        whyItWorks: "تصميم أنيق ومباشر يعتمد على طلبك الأصلي."
-      }];
-    }
-    
-    return concepts;
-  } catch(e) {
-    console.error("Master Orchestrator Error:", e);
-    const fallbackPrompt = applyCreativeLayers ? await applyCreativeLayers(ai, rawPrompt, mode, aspectRatio) : rawPrompt;
-    return [{
-        conceptId: "c_error_fallback",
-        philosophyName: "الاتجاه الرئيسي",
-        artMovementUsed: "Modern",
-        synthesisPrincipleUsed: "Direct",
-        visualMetaphor: "Core identity focus",
-        colorPalette: ["#0F172A", "#3B82F6", "#E2E8F0"],
-        imagePromptDraft: fallbackPrompt,
-        whyItWorks: "تصميم يعكس متطلباتك الأساسية بأفضل جودة ممكنة."
-    }];
+    const personaInstruction = buildPersonaInstruction('المصوّر', PHOTOGRAPHER_CORE);
+    const res = await ai.models.generateContent({
+      model: writerModel,
+      contents: [{ role: 'user', parts: [{ text: `${personaInstruction}
+
+في هذه الإجابة الواحدة: افهم طلب المستخدم كما كتبه، حسّن الوصف الضعيف، وانتقد الكليشيه، ثم اكتب الاتجاهات. لا تستبدل طلبه بطلب جديد.
+
+Original request: "${rawPrompt}"
+Mode: ${mode}
+Aspect ratio: ${aspectRatio}
+
+Return ONLY a JSON array of 4 objects. imagePromptDraft stays faithful to the user's subject and any exact text they asked to render.
+[
+  {
+    "conceptId": "c1",
+    "philosophyName": "اسم عربي قصير",
+    "artMovementUsed": "Movement name",
+    "synthesisPrincipleUsed": "Principle",
+    "visualMetaphor": "Metaphor",
+    "colorPalette": ["#111111", "#C5A880", "#F5F0E8"],
+    "imagePromptDraft": "Detailed prompt in the language the image model needs, without changing the assignment",
+    "whyItWorks": "شرح عربي قصير لماذا يخدم هذا الاتجاه طلب المستخدم"
   }
+]` }] }],
+      config: { responseMimeType: 'application/json', maxOutputTokens: 16384 }
+    });
+    const concepts = JSON.parse(res.text || '[]');
+    if (Array.isArray(concepts) && concepts.length > 0) return concepts;
+  } catch (e) {
+    console.error('Master Orchestrator Error:', e);
+  }
+  return [{
+    conceptId: 'c_fallback',
+    philosophyName: 'التصميم المباشر',
+    artMovementUsed: 'Modern Minimalist',
+    synthesisPrincipleUsed: 'Direct Representation',
+    visualMetaphor: 'Direct presentation of the user request',
+    colorPalette: ['#111827', '#D97706', '#F3F4F6'],
+    imagePromptDraft: rawPrompt,
+    whyItWorks: 'تصميم يعتمد على طلبك الأصلي بدون إعادة كتابته.'
+  }];
 }

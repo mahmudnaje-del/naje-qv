@@ -11,8 +11,8 @@ export const OUTPUT_TOKEN_LIMITS = {
   criticReview: 4096,                 // الناقد's structured JSON verdict — short by design
   classification: 4096,               // Intent classification and safety guardrails
   memorySummary: 4096,                // Project memory item concise summarization
-  imageCompiler: 4096,                // compileImagePrompt / applyCreativeLayers — prompt text compilation
-  videoCompiler: 8192,                // compileVideoPrompt / auditVideoPrompt — shot lists and script directions
+  imageCompiler: 4096,                // compileImagePrompt — one prompt-writing call
+  videoCompiler: 8192,                // compileVideoPrompt — one shot-list call
   documentChunk: 32000,               // document_writer/slide_writer — comprehensive chapters / slide batch
   documentSection: 16000,             // individual section audit & refinement
   slideJson: 8192,                    // presentation slide JSON structure

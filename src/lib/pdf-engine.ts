@@ -276,6 +276,7 @@ export async function generatePdfSlides(
   const planPrompt = `[SYSTEM] You are an expert presentation planner and facts extractor.
 Mode: ${mode.toUpperCase()}
 Goal: Create a presentation plan based on user request: "${promptStr}".
+Do not replace that request with a different topic. Improve and tighten the plan in this same answer.
 
 Instructions:
 1. Extract ALL distinct, verifiable facts from source material. Assign each an id (f01, f02, ...). Do NOT group multiple distinct features or statements into a single fact. Extract each feature, capability, metric, rule, or setting as an individual, standalone fact.
