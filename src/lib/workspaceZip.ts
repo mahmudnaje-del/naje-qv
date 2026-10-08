@@ -66,7 +66,7 @@ export async function unpackSiteZip(buffer: Buffer | ArrayBuffer | Uint8Array): 
   for (const name of entries) {
     const entry = zip.files[name];
     if (!entry) continue;
-    const path = safeRelativePath(name);
+    const path = safeRelativePath(entry.unsafeOriginalName ?? name);
     if (path == null) {
       skipped += 1;
       continue;

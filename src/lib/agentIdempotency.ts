@@ -5,11 +5,15 @@ export function agentExecutionDocId(uid: string, key: string): string {
   return createHash('sha256').update(`${uid}\n${key}`).digest('hex').slice(0, 48);
 }
 
-/** Accept only short keys the client builds from mission, step, and tool ids. */
+/** Accept only short keys the client builds from mission, step, and tool ids.
+ *  A trailing numeric attempt may be :1 or :2. :3 and higher are rejected so a
+ *  client cannot mint unlimited repair executions. */
 export function normalizeIdempotencyKey(raw: unknown): string {
   const s = String(raw ?? '').trim();
   if (!s || s.length > 300) return '';
   if (!/^[\w:.-]+$/.test(s)) return '';
+  const attempt = s.match(/:(\d+)$/);
+  if (attempt && Number(attempt[1]) > 2) return '';
   return s;
 }
 

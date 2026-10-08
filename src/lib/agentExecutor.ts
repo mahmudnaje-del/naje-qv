@@ -526,6 +526,16 @@ export async function executeAgentTool(
       });
 
       const output = JSON.parse(docRes.text || '{}');
+      const chapters = Array.isArray(output?.chapters) ? output.chapters : [];
+      const hasDocumentText = chapters.some((chapter: any) => {
+        const rawHtml = chapter?.contentHtml ?? chapter?.content ?? '';
+        if (typeof rawHtml !== 'string') return false;
+        const text = rawHtml.replace(/<[^>]*>/g, ' ').replace(/&nbsp;/gi, ' ').trim();
+        return text.length > 0;
+      });
+      if (!hasDocumentText) {
+        throw new Error('تعذر إنشاء المستند: المخرج فارغ ولا يوجد محتوى أو ملف للتسليم.');
+      }
 
       // Extract Voice Fingerprint from Chapter 1 for persistent authorial memory
       if (output.chapters?.[0]?.contentHtml) {

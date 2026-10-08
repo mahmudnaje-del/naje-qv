@@ -52,7 +52,7 @@ export function injectImageSlots(html: string, slots: Record<string, string>): s
 
 const SECRET_IN_UI = /AIza[0-9A-Za-z\-_]{20,}|sk-[A-Za-z0-9]{20,}|-----BEGIN [A-Z ]+PRIVATE KEY-----/g;
 
-/** Strip secrets and flag unsafe URLs before a generated page is previewed. */
+/** Strip secrets and flag unsafe URLs or inline handlers before a generated page is previewed. */
 export function inspectGeneratedUi(html: string): { html: string; issues: string[] } {
   const issues: string[] = [];
   let out = String(html || '');
@@ -62,6 +62,8 @@ export function inspectGeneratedUi(html: string): { html: string; issues: string
     out = out.replace(SECRET_IN_UI, '[redacted]');
   }
   if (/javascript\s*:/i.test(out)) issues.push('javascript-url');
+  if (/data:\s*text\/html/i.test(out)) issues.push('data-text-html');
+  if (/(?:^|[\s<"'])on[a-z]+\s*=/i.test(out)) issues.push('inline-handler');
   if (out.length > 40 && !/name\s*=\s*["']viewport["']/i.test(out) && /<\/html>/i.test(out)) issues.push('viewport');
   return { html: out, issues };
 }

@@ -138,6 +138,7 @@ ${fleetNote}
 3. إذا كان طلب المستخدم واضحاً ومكتمل الأركان لبدء مهمة مستقلة محددة:
    - اختر وظيفة "propose_mission" وقم بهندسة خطة عمل متكاملة ومنظمة إلى مراحل وخطوات تستدعي الأدوات المناسبة:
 ${plannerToolGuide()}
+   - لكل خطوة حقل اختياري dependsOn (optional string array): ids of earlier steps that must finish first. لا تدرجه في required.
 
 تنبيه حاسم: لا تضع أسعار أو تقديرات نقاط داخل الخطوات؛ المنظومة تحسب النقاط ذاتياً وبدقة قطعية.`;
 
@@ -284,7 +285,7 @@ export async function generateAgentProposal(
   // If conversation turn returned reply/clarification, re-prompt for structured plan
   const forcedProposalRes = await ai.models.generateContent({
     model: resolveEngineModel(getNajeModel('personas')),
-    contents: `المطلوب: توليد خطة عمل متكاملة ومحددة بصيغة وظيفة propose_mission للطلب: "${userPrompt}"`,
+    contents: `المطلوب: توليد خطة عمل متكاملة ومحددة بصيغة وظيفة propose_mission للطلب: "${userPrompt}". Each step may include an optional string array field dependsOn: ids of earlier steps that must finish first.`,
     config: {
       maxOutputTokens: OUTPUT_TOKEN_LIMITS.agentPlan,
       tools: [{ functionDeclarations: agentFunctionDeclarations as any }],

@@ -39,19 +39,8 @@ export function applyVersionCap<T extends { isFavorite?: boolean; pinned?: boole
     };
   }
 
-  // Count favorited versions
-  const favoritedCount = combined.filter(v => v.isFavorite || v.pinned).length;
-  
-  // If all are favorited and we exceed cap
-  if (favoritedCount >= cap && (newVersion.isFavorite || newVersion.pinned)) {
-    return {
-      updatedVersions: combined.slice(-cap),
-      archivedCount: combined.length - cap,
-      allFavoritesCapHit: true
-    };
-  }
-
-  // We need to prune (combined.length - cap) non-favorited versions, starting from the oldest
+  // Prune only unfavorited versions. Favorites and pins are never dropped.
+  // If they alone still exceed the cap, warn and keep them.
   const excess = combined.length - cap;
   let prunedCount = 0;
   
@@ -76,7 +65,7 @@ export function applyVersionCap<T extends { isFavorite?: boolean; pinned?: boole
   return {
     updatedVersions: finalVersions,
     archivedCount: prunedCount,
-    allFavoritesCapHit: false
+    allFavoritesCapHit: finalVersions.length > cap
   };
 }
 

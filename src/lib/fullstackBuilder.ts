@@ -704,7 +704,7 @@ ${filesSummary}
  * Keep model-supplied paths relative. Reject traversal, drive prefixes, and NUL.
  * Returns the cleaned path, or null when the path must not be written.
  */
-function safeRelativePath(input: string): string | null {
+export function safeRelativePath(input: string): string | null {
   if (typeof input !== 'string' || input.includes('\0')) return null;
   const path = input.replace(/\\/g, '/').replace(/^\/+/, '');
   if (!path || /^[A-Za-z]:/.test(path) || path.split('/').includes('..')) return null;

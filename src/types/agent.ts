@@ -64,6 +64,7 @@ export interface AgentStep {
   status: 'pending' | 'in_progress' | 'completed' | 'failed';
   toolCalls?: AgentToolCall[];
   thoughtSummary?: string;
+  dependsOn?: string[];
 }
 
 export interface AgentCodeFile {
@@ -131,6 +132,7 @@ export interface AgentMission {
   };
   createdAt: number;
   updatedAt: number;
+  checkpoint?: { index: number; title: string; at: number };
 }
 
 export interface AgentPlanProposal {

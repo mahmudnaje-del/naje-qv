@@ -713,6 +713,7 @@ export default function NajeAgent() {
         artifacts: [],
         auditHistory: [],
         brandContext: proposal.brandContext,
+        checkpoint: { index: 0, title: 'accepted', at: Date.now() },
         createdAt: Date.now(),
         updatedAt: Date.now()
       };
@@ -993,12 +994,17 @@ export default function NajeAgent() {
         }
 
         step.status = 'completed';
-        await updateDoc(missionRef, { steps: activeMission.steps, updatedAt: Date.now() });
+        await updateDoc(missionRef, {
+          steps: activeMission.steps,
+          checkpoint: { index: sIdx + 1, title: step.title || 'step', at: Date.now() },
+          updatedAt: Date.now()
+        });
       }
 
       await updateDoc(missionRef, {
         status: 'completed',
         consumedPoints: consumed,
+        checkpoint: { index: activeMission.steps.length, title: 'delivery', at: Date.now() },
         updatedAt: Date.now()
       });
 

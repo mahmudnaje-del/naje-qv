@@ -63,6 +63,10 @@ export interface PricingConfig {
   };
 }
 
+function clampBillable(cost: number): number {
+  return Math.max(0, cost);
+}
+
 export function getAgentToolCost(
   toolName: string,
   inputParams: Record<string, any> = {},
@@ -85,7 +89,7 @@ export function getAgentToolCost(
       const baseCost = Number(imagePricing.base ?? imagePricing.spectra ?? 1);
       const addon = Number(imagePricing.imageAddon ?? 0.1) * refCount;
       const costPerImage = baseCost + addon;
-      return parseFloat((costPerImage * count).toFixed(2));
+      return parseFloat(clampBillable(costPerImage * count).toFixed(2));
     }
 
     case 'video_director': {
@@ -113,14 +117,14 @@ export function getAgentToolCost(
         const b1Cost = Number(docPricing.pptx_bracket1_cost ?? 3);
         const b2Cost = Number(docPricing.pptx_bracket2_cost ?? 6);
         const baseDocCost = slides <= b1Max ? b1Cost : b2Cost;
-        return parseFloat((baseDocCost + aiImagesCount * 1.0).toFixed(2));
+        return parseFloat(clampBillable(baseDocCost + aiImagesCount * 1.0).toFixed(2));
       } else {
         const pages = Number(inputParams?.pagesCount || inputParams?.pages || inputParams?.chaptersCount) || 4;
         const w1Max = Number(docPricing.word_bracket1_max ?? 5);
         const w1Cost = Number(docPricing.word_bracket1_cost ?? 2);
         const w2Cost = Number(docPricing.word_bracket2_cost ?? 4);
         const baseDocCost = pages <= w1Max ? w1Cost : (pages <= 15 ? w2Cost : 6);
-        return parseFloat((baseDocCost + aiImagesCount * 1.0).toFixed(2));
+        return parseFloat(clampBillable(baseDocCost + aiImagesCount * 1.0).toFixed(2));
       }
     }
 
@@ -169,7 +173,7 @@ export function getAgentToolCost(
       const images = Number(inputParams?.imagesCount || 1);
       const uiFee = Number(p.ui?.perGeneration ?? 1.5);
       const imageBase = Number(p.image?.base ?? 1);
-      return parseFloat((uiFee + images * imageBase).toFixed(2));
+      return parseFloat(clampBillable(uiFee + images * imageBase).toFixed(2));
     }
 
     case 'infographic_designer': {
