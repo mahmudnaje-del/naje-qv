@@ -39,6 +39,13 @@ function filePriority(path: string): number {
   return 6;
 }
 
+function safeRelativePath(input: string): string | null {
+  if (typeof input !== 'string' || input.includes('\0')) return null;
+  const path = input.replace(/\\/g, '/').replace(/^\/+/, '');
+  if (!path || /^[A-Za-z]:/.test(path) || path.split('/').includes('..')) return null;
+  return path;
+}
+
 export async function unpackSiteZip(buffer: Buffer | ArrayBuffer | Uint8Array): Promise<{
   files: WorkspaceFile[];
   skipped: number;
@@ -58,9 +65,14 @@ export async function unpackSiteZip(buffer: Buffer | ArrayBuffer | Uint8Array): 
 
   for (const name of entries) {
     const entry = zip.files[name];
-    if (!entry || entry.dir) continue;
-    const path = name.replace(/^\/+/, '').replace(/\\/g, '/');
-    if (!path || SKIP_DIR.test(path) || SKIP_FILE.test(path) || !TEXT_EXT.test(path)) {
+    if (!entry) continue;
+    const path = safeRelativePath(name);
+    if (path == null) {
+      skipped += 1;
+      continue;
+    }
+    if (entry.dir) continue;
+    if (SKIP_DIR.test(path) || SKIP_FILE.test(path) || !TEXT_EXT.test(path)) {
       skipped += 1;
       continue;
     }

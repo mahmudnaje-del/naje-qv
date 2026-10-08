@@ -31,6 +31,7 @@ import { getNajeModel, resolveEngineModel } from './src/lib/modelEnvConfig.ts';
 import { UI_BUILD_DIRECTIVE, collectUserImageSlots, injectImageSlots } from './src/lib/uiStudio.ts';
 import { getAgentToolCost } from './src/lib/agentPricing.ts';
 import { isExecutableAgentTool } from './src/lib/agentCapabilities.ts';
+import { agentExecutionDocId, compactExecutionResult, normalizeIdempotencyKey } from './src/lib/agentIdempotency.ts';
 import { buildPersonaInstruction, criticReviewRequest, getThinkingConfig } from './src/lib/councilOfMinds.ts';
 import os from 'os';
 import {
@@ -11766,7 +11767,41 @@ app.post("/api/agent/propose-plan", async (req, res) => {
   }
 });
 
+async function claimAgentExecution(uid: string, key: string, toolName: string): Promise<
+  { kind: 'free' } | { kind: 'claimed'; id: string } | { kind: 'duplicate'; result: any } | { kind: 'busy' }
+> {
+  if (!key) return { kind: 'free' };
+  const id = agentExecutionDocId(uid, key);
+  const ref = dbAdmin.collection('agent_executions').doc(id);
+  try {
+    await ref.create({ uid, toolName, status: 'running', createdAt: Date.now() });
+    return { kind: 'claimed', id };
+  } catch (err: any) {
+    const exists = err?.code === 6 || err?.code === 'already-exists' || /already exists/i.test(String(err?.message || ''));
+    if (!exists) throw err;
+    const data = (await ref.get()).data();
+    if (data?.uid === uid && data?.status === 'completed' && data?.result) {
+      return { kind: 'duplicate', result: data.result };
+    }
+    return { kind: 'busy' };
+  }
+}
+
+async function finishAgentExecution(id: string, result: Record<string, unknown>) {
+  await dbAdmin.collection('agent_executions').doc(id).set({
+    status: 'completed',
+    result: compactExecutionResult(result),
+    completedAt: Date.now(),
+  }, { merge: true });
+}
+
+async function releaseAgentExecution(id: string) {
+  if (!id) return;
+  await dbAdmin.collection('agent_executions').doc(id).delete().catch(() => {});
+}
+
 app.post("/api/agent/execute-tool", async (req, res) => {
+  let heldExecutionId = '';
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -11832,10 +11867,19 @@ app.post("/api/agent/execute-tool", async (req, res) => {
     const pricing = await getPricing(token);
     const estimatedCost = getAgentToolCost(toolName, inputParams || {}, pricing);
 
+    const claim = await claimAgentExecution(uid, normalizeIdempotencyKey(req.body?.idempotencyKey), String(toolName));
+    if (claim.kind === 'duplicate') return res.json(claim.result);
+    if (claim.kind === 'busy') {
+      return res.status(409).json({ error: 'هذا التنفيذ يعمل الآن. لا تعِد الطلب.' });
+    }
+    if (claim.kind === 'claimed') heldExecutionId = claim.id;
+
     // Reserve points atomically BEFORE running tool (if not admin)
     if (!isAdmin && estimatedCost > 0) {
       const reserve = await mutateBalanceAtomic(uid, -estimatedCost, { requireSufficient: true });
       if (!reserve.ok) {
+        await releaseAgentExecution(heldExecutionId);
+        heldExecutionId = '';
         if (reserve.reason === 'INSUFFICIENT') {
           return res.status(403).json({
             error: `رصيدك غير كافٍ لتشغيل هذا الإجراء. تحتاج إلى ${estimatedCost} نقاط.`
@@ -11859,6 +11903,8 @@ app.post("/api/agent/execute-tool", async (req, res) => {
       if (!isAdmin && estimatedCost > 0) {
         await mutateBalanceAtomic(uid, estimatedCost, {});
       }
+      await releaseAgentExecution(heldExecutionId);
+      heldExecutionId = '';
       throw execErr;
     }
 
@@ -11875,14 +11921,20 @@ app.post("/api/agent/execute-tool", async (req, res) => {
       userOriginalRequest
     });
 
-    return res.json({
+    const body = {
       success: true,
       output: result.output,
       artifact: result.artifact,
       pointsDeducted: isAdmin ? 0 : result.pointsDeducted,
       audit
-    });
+    };
+    if (heldExecutionId) {
+      await finishAgentExecution(heldExecutionId, body);
+      heldExecutionId = '';
+    }
+    return res.json(body);
   } catch (err: any) {
+    await releaseAgentExecution(heldExecutionId);
     if (err?.code?.startsWith?.('auth/')) {
       return res.status(401).json({ error: "جلسة الدخول غير صالحة، يرجى تسجيل الدخول مجدداً." });
     }
@@ -11897,6 +11949,8 @@ app.post("/api/agent/execute-tool-stream", async (req, res) => {
   let uid = '';
   let isAdmin = false;
   let estimatedCost = 0;
+  let heldExecutionId = '';
+  let charged = false;
 
   try {
     const authHeader = req.headers.authorization;
@@ -11963,10 +12017,25 @@ app.post("/api/agent/execute-tool-stream", async (req, res) => {
     const pricing = await getPricing(token);
     estimatedCost = getAgentToolCost(toolName, inputParams || {}, pricing);
 
+    const claim = await claimAgentExecution(uid, normalizeIdempotencyKey(req.body?.idempotencyKey), String(toolName));
+    if (claim.kind === 'duplicate') {
+      res.setHeader('Content-Type', 'text/event-stream');
+      res.setHeader('Cache-Control', 'no-cache');
+      res.flushHeaders();
+      res.write(`event: done\ndata: ${JSON.stringify({ type: 'complete', ...claim.result })}\n\n`);
+      return;
+    }
+    if (claim.kind === 'busy') {
+      return res.status(409).json({ error: 'هذا التنفيذ يعمل الآن. لا تعِد الطلب.' });
+    }
+    if (claim.kind === 'claimed') heldExecutionId = claim.id;
+
     // Reserve points atomically BEFORE starting SSE stream
     if (!isAdmin && estimatedCost > 0) {
       const reserve = await mutateBalanceAtomic(uid, -estimatedCost, { requireSufficient: true });
       if (!reserve.ok) {
+        await releaseAgentExecution(heldExecutionId);
+        heldExecutionId = '';
         if (reserve.reason === 'INSUFFICIENT') {
           return res.status(403).json({
             error: `رصيدك غير كافٍ لتشغيل هذا الإجراء. تحتاج إلى ${estimatedCost} نقاط.`
@@ -11974,6 +12043,7 @@ app.post("/api/agent/execute-tool-stream", async (req, res) => {
         }
         return res.status(500).json({ error: "تعذر التحقق من الرصيد، حاول مجدداً." });
       }
+      charged = true;
     }
 
     // Set up SSE headers
@@ -11984,7 +12054,10 @@ app.post("/api/agent/execute-tool-stream", async (req, res) => {
     res.flushHeaders();
 
     const sendEvent = (event: string, data: any) => {
-      res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
+      const payload = data && typeof data === 'object'
+        ? { type: event === 'done' ? 'complete' : event, ...data }
+        : { type: event === 'done' ? 'complete' : event };
+      res.write(`event: ${event}\ndata: ${JSON.stringify(payload)}\n\n`);
     };
 
     heartbeat = setInterval(() => {
@@ -12004,7 +12077,7 @@ app.post("/api/agent/execute-tool-stream", async (req, res) => {
         pricing,
         {
           onProgress: (progress) => {
-            sendEvent('progress', progress);
+            sendEvent('progress', { progress, statusMessage: progress?.statusMessage });
           }
         }
       );
@@ -12012,8 +12085,11 @@ app.post("/api/agent/execute-tool-stream", async (req, res) => {
       // Tool failed — refund atomic points reservation
       if (!isAdmin && estimatedCost > 0) {
         await mutateBalanceAtomic(uid, estimatedCost, {});
+        charged = false;
       }
       sendEvent('error', { error: execErr?.message || 'Execution failed' });
+      await releaseAgentExecution(heldExecutionId);
+      heldExecutionId = '';
       return;
     }
 
@@ -12030,15 +12106,21 @@ app.post("/api/agent/execute-tool-stream", async (req, res) => {
       userOriginalRequest
     });
 
-    sendEvent('done', {
+    const doneBody = {
       success: true,
       output: result.output,
       artifact: result.artifact,
       pointsDeducted: isAdmin ? 0 : result.pointsDeducted,
       audit
-    });
+    };
+    if (heldExecutionId) {
+      await finishAgentExecution(heldExecutionId, doneBody);
+      heldExecutionId = '';
+    }
+    sendEvent('done', doneBody);
   } catch (err: any) {
-    if (!isAdmin && estimatedCost > 0 && uid) {
+    await releaseAgentExecution(heldExecutionId);
+    if (charged && !isAdmin && estimatedCost > 0 && uid) {
       await mutateBalanceAtomic(uid, estimatedCost, {}).catch(() => {});
     }
     console.error("[Agent Tool Stream Error]", err);

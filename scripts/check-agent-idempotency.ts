@@ -1,0 +1,16 @@
+import { agentExecutionDocId, compactExecutionResult, normalizeIdempotencyKey } from '../src/lib/agentIdempotency.ts';
+
+const a = agentExecutionDocId('user-1', 'm1:s1:t1:1');
+const b = agentExecutionDocId('user-1', 'm1:s1:t1:1');
+const c = agentExecutionDocId('user-2', 'm1:s1:t1:1');
+if (a !== b) throw new Error('same key must hash the same');
+if (a === c) throw new Error('uid must change the id');
+if (a.length !== 48) throw new Error('id length');
+if (normalizeIdempotencyKey('m1:s1:t1:1') !== 'm1:s1:t1:1') throw new Error('key accepted');
+if (normalizeIdempotencyKey('../etc/passwd') !== '') throw new Error('path key rejected');
+if (normalizeIdempotencyKey('') !== '') throw new Error('empty key');
+const small = compactExecutionResult({ success: true, pointsDeducted: 4, output: { ok: 1 } });
+if (small.duplicate !== true || small.pointsDeducted !== 0) throw new Error('replay must not bill again');
+const big = compactExecutionResult({ success: true, pointsDeducted: 9, output: { blob: 'x'.repeat(450_000) }, audit: { passed: false, feedback: 'bad' } });
+if (!big.overflow || big.pointsDeducted !== 0) throw new Error('overflow replay');
+console.log('idempotency ok');

@@ -701,6 +701,17 @@ ${filesSummary}
 }
 
 /**
+ * Keep model-supplied paths relative. Reject traversal, drive prefixes, and NUL.
+ * Returns the cleaned path, or null when the path must not be written.
+ */
+function safeRelativePath(input: string): string | null {
+  if (typeof input !== 'string' || input.includes('\0')) return null;
+  const path = input.replace(/\\/g, '/').replace(/^\/+/, '');
+  if (!path || /^[A-Za-z]:/.test(path) || path.split('/').includes('..')) return null;
+  return path;
+}
+
+/**
  * The Master Weaver Pipeline Orchestrator (Naje Agent Core Compiler)
  * Executes all 6 phases: Intent Parsing -> Contract Synthesis -> Contract-Constrained Generation -> Deterministic Linking -> Self-Healing -> Semantic Audit.
  */
@@ -762,13 +773,19 @@ export async function executeFullstackEngineerMission(
 
   // Phase 3: Contract-Constrained Generation Loop
   for (let i = 0; i < plan.buildOrder.length; i++) {
-    const filePath = plan.buildOrder[i];
-    const filePlan = plan.files.find(f => f.path === filePath) || {
-      path: filePath,
-      purpose: `ملف تشغيلي: ${filePath}`,
+    const orderedPath = plan.buildOrder[i];
+    if (!safeRelativePath(orderedPath)) continue;
+
+    const matchedFile = plan.files.find(f => f.path === orderedPath);
+    const filePlanDraft = matchedFile || {
+      path: orderedPath,
+      purpose: `ملف تشغيلي: ${orderedPath}`,
       dependsOn: [],
       estimatedComplexity: 'moderate' as const
     };
+    const filePath = safeRelativePath(filePlanDraft.path);
+    if (!filePath) continue;
+    const filePlan = { ...filePlanDraft, path: filePath };
 
     onProgress?.({
       phase: 'generating',
@@ -826,8 +843,10 @@ export async function executeFullstackEngineerMission(
   while (!linkerResult.passed && healingPass < maxHealingPasses) {
     healingPass++;
     for (const brokenPath of linkerResult.brokenFiles) {
-      const filePlan = plan.files.find(f => f.path === brokenPath);
-      if (filePlan) {
+      const matchedPlan = plan.files.find(f => f.path === brokenPath || safeRelativePath(f.path) === brokenPath);
+      const healedPath = matchedPlan ? safeRelativePath(matchedPlan.path) : null;
+      if (matchedPlan && healedPath) {
+        const filePlan = { ...matchedPlan, path: healedPath };
         const fileDiagnostics = linkerResult.diagnostics
           .filter(d => d.filePath === brokenPath)
           .map(d => `- ${d.message}`)
@@ -854,8 +873,8 @@ export async function executeFullstackEngineerMission(
           fileDiagnostics
         );
 
-        generatedFilesMap.set(brokenPath, healedContent);
-        const idx = generatedFilesList.findIndex(f => f.path === brokenPath);
+        generatedFilesMap.set(healedPath, healedContent);
+        const idx = generatedFilesList.findIndex(f => f.path === healedPath);
         if (idx !== -1) {
           generatedFilesList[idx].content = healedContent;
         }

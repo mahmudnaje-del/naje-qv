@@ -284,15 +284,23 @@ export default function NajeUiPreview({
   useEffect(() => {
     if (readOnly) return;
     const handleMessage = (e: MessageEvent) => {
-      if (e.data && e.data.type === 'naje:selected') {
+      const frameWindow = iframeRef.current?.contentWindow;
+      if (!frameWindow || e.source !== frameWindow) return;
+      if (typeof e.data !== 'object' || e.data === null) return;
+
+      if (e.data.type === 'naje:selected') {
+        if (typeof e.data.desc !== 'string' || typeof e.data.html !== 'string') return;
+        const desc = e.data.desc.slice(0, 4000);
+        const html = e.data.html.slice(0, 4000);
         setIsSelectMode(false);
-        const { desc, html } = e.data;
         if (onSelectElement && desc) {
           onSelectElement({ desc, html });
           toast.success(`تم تحديد العنصر: ${desc}`);
         }
-      } else if (e.data && e.data.type === 'naje:runtime-error') {
-        const { message, line } = e.data;
+      } else if (e.data.type === 'naje:runtime-error') {
+        if (typeof e.data.message !== 'string' || !Number.isFinite(e.data.line)) return;
+        const message = e.data.message.slice(0, 2000);
+        const line = e.data.line;
         console.warn('[Naje UI Runtime Error]:', message, 'line:', line);
         if (onAutoRepair && !isStreaming) {
           if (autoRepairCount < 2) {
@@ -300,7 +308,7 @@ export default function NajeUiPreview({
             if (autoRepairTimerRef.current) clearTimeout(autoRepairTimerRef.current);
             autoRepairTimerRef.current = setTimeout(() => {
               setAutoRepairCount(c => c + 1);
-              onAutoRepair(message, line || 0);
+              onAutoRepair(message, line);
               setTimeout(() => setAutoRepairNotice(null), 4000);
             }, 600);
           } else {

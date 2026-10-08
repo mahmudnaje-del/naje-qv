@@ -731,16 +731,25 @@ export default function NajeAgent() {
       let consumed = activeMission.consumedPoints || 0;
 
       for (let sIdx = 0; sIdx < activeMission.steps.length; sIdx++) {
-        setCurrentStepIndex(sIdx);
         const step = activeMission.steps[sIdx];
+        if (step.status === 'completed') continue;
+
+        setCurrentStepIndex(sIdx);
 
         step.status = 'in_progress';
         await updateDoc(missionRef, { steps: activeMission.steps, updatedAt: Date.now() });
 
         if (step.toolCalls) {
-          for (const tc of step.toolCalls) {
+          for (let index = 0; index < step.toolCalls.length; index++) {
+            const tc = step.toolCalls[index];
+            if (tc.status === 'completed') continue;
+
             tc.status = 'running';
             await updateDoc(missionRef, { steps: activeMission.steps, updatedAt: Date.now() });
+
+            const idempotencyKey = step.id && tc.id
+              ? `${activeMission.id}:${step.id}:${tc.id}:1`
+              : `${activeMission.id}:s${sIdx}:t${index}:1`;
 
             const missionContextPayload = {
               missionId: activeMission.id,
@@ -748,6 +757,28 @@ export default function NajeAgent() {
               brandContext: accumulatedBrand,
               userPrompt: activeMission.userPrompt || activeMission.title || '',
               auditHistory: activeMission.auditHistory || []
+            };
+
+            const stopForFailedAudit = async (feedback: string) => {
+              tc.status = 'failed';
+              step.status = 'failed';
+              if (!Array.isArray(activeMission.auditHistory)) activeMission.auditHistory = [];
+              activeMission.auditHistory.push({
+                stepTitle: step.title || tc.title || tc.name,
+                feedback,
+                passed: false,
+                timestamp: Date.now()
+              });
+              await updateDoc(missionRef, {
+                steps: activeMission.steps,
+                artifacts: missionArtifacts,
+                consumedPoints: consumed,
+                brandContext: accumulatedBrand,
+                auditHistory: activeMission.auditHistory,
+                status: 'failed',
+                updatedAt: Date.now()
+              });
+              toast.error(feedback || t('tools.agent.execStopped'));
             };
 
             // Streaming handler for code projects
@@ -764,7 +795,8 @@ export default function NajeAgent() {
                   inputParams: { ...tc.input, brandContext: accumulatedBrand, sources },
                   brandContext: accumulatedBrand,
                   missionContext: missionContextPayload,
-                  stepTitle: tc.title || step.title || tc.name
+                  stepTitle: tc.title || step.title || tc.name,
+                  idempotencyKey
                 })
               });
 
@@ -776,9 +808,10 @@ export default function NajeAgent() {
               const reader = streamRes.body?.getReader();
               const decoder = new TextDecoder();
               let streamBuffer = '';
+              let auditFailureFeedback: string | null = null;
 
               if (reader) {
-                while (true) {
+                readLoop: while (true) {
                   const { done, value } = await reader.read();
                   if (done) break;
 
@@ -787,16 +820,23 @@ export default function NajeAgent() {
                   streamBuffer = lines.pop() || '';
 
                   for (const line of lines) {
-                    if (line.startsWith('data: ')) {
+                    const dataLine = line.startsWith('data: ')
+                      ? line
+                      : (line.split('\n').find(l => l.startsWith('data: ')) || '');
+                    if (dataLine.startsWith('data: ')) {
                       try {
-                        const event = JSON.parse(line.slice(6));
+                        const event = JSON.parse(dataLine.slice(6));
                         if (event.type === 'progress') {
                           setLiveProgress(event.progress);
                           if (event.statusMessage) setExecutingStatusMessage(event.statusMessage);
                         } else if (event.type === 'complete') {
+                          consumed += event.duplicate === true ? 0 : (Number(event.pointsDeducted) || 0);
+                          if (event.audit && event.audit.passed === false) {
+                            auditFailureFeedback = String(event.audit.feedback ?? '');
+                            break readLoop;
+                          }
                           tc.status = 'completed';
                           tc.output = event.output;
-                          consumed += tc.pointsCost;
 
                           if (event.artifacts && Array.isArray(event.artifacts)) {
                             for (const art of event.artifacts) {
@@ -808,11 +848,23 @@ export default function NajeAgent() {
                           throw new Error(event.error || t('tools.agent.weaveError'));
                         }
                       } catch (parseErr) {
-                        console.warn('SSE Parse error:', parseErr);
+                        if (parseErr instanceof SyntaxError) {
+                          console.warn('SSE Parse error:', parseErr);
+                        } else {
+                          throw parseErr;
+                        }
                       }
                     }
                   }
                 }
+              }
+
+              if (auditFailureFeedback !== null) {
+                await stopForFailedAudit(auditFailureFeedback);
+                return;
+              }
+              if (tc.status !== 'completed') {
+                throw new Error(t('tools.agent.engineerFail'));
               }
             } else {
               setExecutingStatusMessage(t('tools.agent.executingTool', { title: tc.title }));
@@ -827,7 +879,8 @@ export default function NajeAgent() {
                   inputParams: { ...tc.input, brandContext: accumulatedBrand, sources },
                   brandContext: accumulatedBrand,
                   missionContext: missionContextPayload,
-                  stepTitle: tc.title || step.title || tc.name
+                  stepTitle: tc.title || step.title || tc.name,
+                  idempotencyKey
                 })
               });
 
@@ -837,9 +890,15 @@ export default function NajeAgent() {
               }
 
               const execData = await execRes.json();
+              consumed += execData.duplicate === true ? 0 : (Number(execData.pointsDeducted) || 0);
+
+              if (execData.audit && execData.audit.passed === false) {
+                await stopForFailedAudit(String(execData.audit.feedback ?? ''));
+                return;
+              }
+
               tc.status = 'completed';
               tc.output = execData.output;
-              consumed += tc.pointsCost;
 
               if (tc.name === 'brand_identity' && execData.output?.palette) {
                 accumulatedBrand = { ...accumulatedBrand, ...execData.output };
