@@ -313,6 +313,16 @@ export default function Dashboard() {
   const online = useOnline();
   const shellRef = useRef<HTMLDivElement>(null);
   useVisualViewportShell(shellRef);
+  const [isDesktopShell, setIsDesktopShell] = useState(() =>
+    typeof window !== 'undefined' && window.matchMedia('(min-width: 768px)').matches
+  );
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 768px)');
+    const onChange = () => setIsDesktopShell(mq.matches);
+    onChange();
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
 
   const [projects, setProjects] = useState<any[]>([]);
   const [chats, setChats] = useState<any[]>([]);
@@ -697,7 +707,7 @@ export default function Dashboard() {
                   <span>•</span>
                   <span className="text-purple-600 dark:text-purple-400 font-extrabold font-sans bg-purple-50 dark:bg-purple-950/60 px-1.5 py-0.5 rounded border border-purple-100 dark:border-purple-900/40 leading-none inline-flex items-center gap-1">
                     <img src={najeWalletCoins} alt="credit" className="w-3 h-3 object-contain shrink-0" />
-                    <span>{Number((user?.balance || 0).toFixed(2))} {t('common.pointsShort')}</span>
+                    <span>{(Number(user?.balance) || 0).toFixed(2)} {t('common.pointsShort')}</span>
                   </span>
                 </span>
               </div>
@@ -1142,6 +1152,7 @@ export default function Dashboard() {
       <TermsConsentModal />
       <OmniverseCommandBar onCreateChat={handleCreateNewChat} />
       {/* 1. Sidebar - Desktop (Right-hand persistent in RTL) */}
+      {isDesktopShell && (
       <motion.aside 
         initial={false}
         animate={{ width: sidebarOpen ? 288 : 0, opacity: sidebarOpen ? 1 : 0 }}
@@ -1152,6 +1163,7 @@ export default function Dashboard() {
           {sidebarContent}
         </div>
       </motion.aside>
+      )}
 
       {/* 2. Slideout Drawer Sidebar - Mobile. Physical edges: LTR from the left, RTL from the right. */}
       <AnimatePresence>

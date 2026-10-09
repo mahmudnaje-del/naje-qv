@@ -1,68 +1,19 @@
-import React, { useId } from 'react';
 import { useI18n } from '../i18n';
 
-// مؤشر تفكير Naje AI — يستعرض تفكير حرف الـ N النابض لـ Naje
-export function NajeThinking({ size = 40, className = '' }: { size?: number; className?: string }) {
-  const uid = useId().replace(/[^a-zA-Z0-9_-]/g, '');
+// Static mark. CSS transforms on the SVG pieces fly apart on Android Chrome.
+export function NajeThinking({ size = 112, className = '' }: { size?: number; className?: string }) {
   const { t } = useI18n();
-  const violetGradId = `najeThinkingV_${uid}`;
-  const goldGradId = `najeThinkingG_${uid}`;
-
   return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 512 512"
+    <img
+      src="/logo-boot.png"
+      alt={t('shared.thinking')}
       width={size}
       height={size}
-      role="img"
-      aria-label={t('shared.thinking')}
+      draggable={false}
       className={className}
-      style={{ display: 'block' }}
-    >
-      <defs>
-        <linearGradient id={violetGradId} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#A78BFA" />
-          <stop offset="100%" stopColor="#8B5CF6" />
-        </linearGradient>
-        <linearGradient id={goldGradId} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#EBC85A" />
-          <stop offset="100%" stopColor="#D4AF37" />
-        </linearGradient>
-        <style>{`
-          .naje-n-block { transform-box: fill-box; transform-origin: center; animation: najePopAnim 1.9s cubic-bezier(.34,1.4,.5,1) infinite; }
-          .naje-n-v { filter: drop-shadow(0 0 3px rgba(139,92,246,.55)); }
-          .naje-n-d { filter: drop-shadow(0 0 3.5px rgba(212,175,55,.6)); }
-          @keyframes najePopAnim {
-            0%,100% { opacity:0; transform:scale(.25); }
-            11%     { opacity:1; transform:scale(1.12); }
-            20%     { transform:scale(1); }
-            20%,52% { opacity:1; }
-            70%     { opacity:0; transform:scale(.25); }
-          }
-          @media (prefers-reduced-motion: reduce) { .naje-n-block { animation:none; opacity:1; transform:none; } }
-        `}</style>
-      </defs>
-      <rect className="naje-n-block naje-n-v" x="106.0" y="146.0" width="61.1" height="61.1" rx="13.4" fill={`url(#${violetGradId})`} style={{ animationDelay: '0.00s' }} />
-      <rect className="naje-n-block naje-n-v" x="106.0" y="220.8" width="61.1" height="61.1" rx="13.4" fill={`url(#${violetGradId})`} style={{ animationDelay: '0.09s' }} />
-      <rect className="naje-n-block naje-n-v" x="106.0" y="295.6" width="61.1" height="61.1" rx="13.4" fill={`url(#${violetGradId})`} style={{ animationDelay: '0.18s' }} />
-      <g className="naje-n-block naje-n-d" style={{ animationDelay: '0.27s' }}>
-        <g transform="translate(219.35,240.75) scale(0.09701) translate(-445,-377)" fill="none" stroke={`url(#${goldGradId})`} strokeWidth="62" strokeLinecap="round" strokeLinejoin="round">
-          <rect x="153" y="214" width="584" height="462" rx="110"/>
-          <path d="M344 384V506M546 384V506M74 445H153M737 445H816M322 78H444V214"/>
-        </g>
-      </g>
-      <g className="naje-n-block naje-n-d" style={{ animationDelay: '0.36s' }}>
-        <g transform="translate(292.65,274.35) scale(0.09701) translate(-445,-377)" fill="none" stroke={`url(#${goldGradId})`} strokeWidth="62" strokeLinecap="round" strokeLinejoin="round">
-          <rect x="153" y="214" width="584" height="462" rx="110"/>
-          <path d="M344 384V506M546 384V506M74 445H153M737 445H816M322 78H444V214"/>
-        </g>
-      </g>
-      <rect className="naje-n-block naje-n-v" x="344.9" y="146.0" width="61.1" height="61.1" rx="13.4" fill={`url(#${violetGradId})`} style={{ animationDelay: '0.45s' }} />
-      <rect className="naje-n-block naje-n-v" x="344.9" y="220.8" width="61.1" height="61.1" rx="13.4" fill={`url(#${violetGradId})`} style={{ animationDelay: '0.54s' }} />
-      <rect className="naje-n-block naje-n-v" x="344.9" y="295.6" width="61.1" height="61.1" rx="13.4" fill={`url(#${violetGradId})`} style={{ animationDelay: '0.63s' }} />
-    </svg>
+      style={{ width: size, height: size, objectFit: 'contain', display: 'block' }}
+    />
   );
 }
 
 export default NajeThinking;
-

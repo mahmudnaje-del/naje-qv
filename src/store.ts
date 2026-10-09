@@ -135,7 +135,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   setMaintenanceDismissed: (maintenanceDismissed) => set({ maintenanceDismissed }),
   initializeAuth: () => {
     // Safety timeout: Never leave user stuck on the full-screen loading spinner
-    const authWait = typeof navigator !== 'undefined' && navigator.onLine === false ? 2000 : 15000;
+    const authWait = typeof navigator !== 'undefined' && navigator.onLine === false ? 2000 : 6000;
     const authTimeout = setTimeout(() => {
       if (get().loadingAuth) {
         console.warn("[Auth] Auth resolution reached 15s timeout - releasing loading lock");
@@ -150,6 +150,7 @@ export const useAppStore = create<AppState>((set, get) => ({
               isAdmin: false,
               emailVerified: Boolean(fbUser.emailVerified),
               hasAcceptedTerms: true,
+              hasCompletedOnboarding: true,
             } as unknown as UserData),
             loadingAuth: false,
           }));

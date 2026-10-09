@@ -60,7 +60,7 @@ export default function EmailVerificationBanner() {
   }
 
   // Only show for password-provider accounts (Google accounts are automatically verified)
-  const isPasswordUser = user.providerData.some(p => p.providerId === 'password');
+  const isPasswordUser = Boolean(user.providerData?.some(p => p.providerId === 'password'));
   if (!isPasswordUser) {
     return null;
   }

@@ -57,6 +57,11 @@ export default function App() {
   }, [initializeAuth]);
 
   useEffect(() => {
+    if (loadingAuth) return;
+    document.getElementById('naje-boot')?.remove();
+  }, [loadingAuth]);
+
+  useEffect(() => {
     if (!user) return;
     scheduleOfflineWarm();
   }, [user]);
@@ -64,7 +69,7 @@ export default function App() {
   if (loadingAuth) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-naje-canvas" dir={isRtl ? 'rtl' : 'ltr'}>
-        <NajeThinking size={64} />
+        <NajeThinking size={140} />
       </div>
     );
   }

@@ -1,4 +1,4 @@
-const SHELL = 'naje-shell-v9';
+const SHELL = 'naje-shell-v10';
 const MEDIA = 'naje-media-v1';
 const MEDIA_CAP = 150;
 
@@ -54,6 +54,10 @@ self.addEventListener('fetch', (event) => {
       event.respondWith(networkFirstDocument(request));
       return;
     }
+    if (/\.(js|mjs|css)$/i.test(url.pathname)) {
+      event.respondWith(networkFirstAsset(request));
+      return;
+    }
     event.respondWith(cacheFirst(request, SHELL, 0));
     return;
   }
@@ -84,6 +88,25 @@ async function networkFirstDocument(request) {
     return response;
   } catch {
     return (await cache.match(request)) || (await cache.match('/index.html')) || (await cache.match('/')) || Response.error();
+  }
+}
+
+async function networkFirstAsset(request) {
+  const cache = await caches.open(SHELL);
+  try {
+    const response = await fetch(request);
+    const type = (response.headers.get('content-type') || '').toLowerCase();
+    const path = new URL(request.url).pathname;
+    const js = /\.(js|mjs)$/i.test(path);
+    const okType = js ? type.includes('javascript') || type.includes('ecmascript') : type.includes('css') || type.includes('text/');
+    if (response.ok && okType && !type.includes('text/html')) {
+      try { await cache.put(request, response.clone()); } catch { /* quota */ }
+    }
+    return response;
+  } catch {
+    const cached = await cache.match(request);
+    if (cached) return cached;
+    return Response.error();
   }
 }
 

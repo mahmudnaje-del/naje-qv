@@ -44,6 +44,9 @@ export default function OnboardingWizard() {
   }, [currentStep, stepKey]);
 
   if (!user || user.hasCompletedOnboarding) return null;
+  try {
+    if (localStorage.getItem('naje_onboarding_done_' + user.uid) === 'true') return null;
+  } catch {}
 
   const handleComplete = async () => {
     if (loading || !user) return;
