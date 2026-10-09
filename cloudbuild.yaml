@@ -1,0 +1,38 @@
+steps:
+  - name: gcr.io/google.com/cloudsdktool/cloud-sdk
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        gcloud artifacts repositories describe naje --location=europe-west1 >/dev/null 2>&1 || \
+        gcloud artifacts repositories create naje --repository-format=docker --location=europe-west1 --description="Naje images"
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - -t
+      - europe-west1-docker.pkg.dev/$PROJECT_ID/naje/naje-ai:$SHORT_SHA
+      - -t
+      - europe-west1-docker.pkg.dev/$PROJECT_ID/naje/naje-ai:live
+      - .
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - push
+      - --all-tags
+      - europe-west1-docker.pkg.dev/$PROJECT_ID/naje/naje-ai
+  - name: gcr.io/google.com/cloudsdktool/cloud-sdk
+    entrypoint: gcloud
+    args:
+      - run
+      - deploy
+      - naje-ai
+      - --image=europe-west1-docker.pkg.dev/$PROJECT_ID/naje/naje-ai:$SHORT_SHA
+      - --region=europe-west1
+      - --port=8080
+      - --memory=2Gi
+      - --cpu=1
+      - --timeout=300
+      - --allow-unauthenticated
+      - --clear-base-image
+      - --quiet
+options:
+  logging: CLOUD_LOGGING_ONLY
