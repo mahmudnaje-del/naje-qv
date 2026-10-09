@@ -1,4 +1,4 @@
-const SHELL = 'naje-shell-v10';
+const SHELL = 'naje-shell-v11';
 const MEDIA = 'naje-media-v1';
 const MEDIA_CAP = 150;
 

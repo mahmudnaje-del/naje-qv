@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 
-export const SHELL_CACHE = 'naje-shell-v10';
+export const SHELL_CACHE = 'naje-shell-v11';
 export const MEDIA_CACHE = 'naje-media-v1';
 
 export function useOnline() {
