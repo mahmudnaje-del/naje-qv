@@ -209,9 +209,19 @@ export const useAppStore = create<AppState>((set, get) => ({
             }
             applyThemeToDocument(resolvedColor, get().themeMode);
 
-            const savedLanguage = userData.preferredLanguage;
-            if (savedLanguage && SUPPORTED_LOCALES.includes(savedLanguage) && savedLanguage !== get().language) {
+            const localSaved = (typeof localStorage !== 'undefined' ? localStorage.getItem('naje_language') : null) as SupportedLocale | null;
+            const savedLanguage = userData.preferredLanguage as SupportedLocale | undefined;
+            if (localSaved && SUPPORTED_LOCALES.includes(localSaved)) {
+              if (savedLanguage !== localSaved && firebaseUser?.uid) {
+                setDoc(userRef, { preferredLanguage: localSaved }, { merge: true }).catch(() => null);
+              }
+              if (get().language !== localSaved) {
+                get().setLanguage(localSaved);
+              }
+            } else if (savedLanguage && SUPPORTED_LOCALES.includes(savedLanguage) && savedLanguage !== get().language) {
               get().setLanguage(savedLanguage);
+            } else if (!savedLanguage && get().language !== 'ar') {
+              get().setLanguage('ar');
             }
 
             if (typeof userData.balance !== 'number') {

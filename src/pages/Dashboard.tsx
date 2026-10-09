@@ -26,7 +26,8 @@ import {
   LogOut, User, Folder, Star, Info, Menu, PanelRight, PanelLeft, X, Plus, Sparkles,
   ChevronDown, ChevronRight, ChevronLeft, MessageSquare, Image as ImageIcon, Film, Layout, Mic2,
   FileText, Shield, Download, ExternalLink, Calendar, Compass, Layers, AlertCircle,
-  Pencil, Trash2, Bot, Code2, BookOpen, Clapperboard, Palette, MoreVertical, Pin, PinOff
+  Pencil, Trash2, Bot, Code2, BookOpen, Clapperboard, Palette, MoreVertical, Pin, PinOff,
+  MessageSquareText
 } from 'lucide-react';
 import { collection, query, where, orderBy, onSnapshot, addDoc, deleteDoc, doc, setDoc, getDocs, updateDoc } from 'firebase/firestore';
 import { cn } from '../lib/utils';
@@ -817,7 +818,7 @@ export default function Dashboard() {
             )}
           >
             <div className="flex items-center gap-2.5">
-              <ImageIcon className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
+              <ImageIcon className="w-3.5 h-3.5 text-pink-500 dark:text-pink-400" />
               <span>{t('nav.images')}</span>
             </div>
             {imagesList.length > 0 && (
@@ -835,7 +836,7 @@ export default function Dashboard() {
             )}
           >
             <div className="flex items-center gap-2.5">
-              <Film className="w-3.5 h-3.5 text-pink-600 dark:text-pink-400" />
+              <Film className="w-3.5 h-3.5 text-sky-500 dark:text-sky-400" />
               <span>{t('nav.videos')}</span>
             </div>
             {videosList.length > 0 && (
@@ -1637,14 +1638,14 @@ export default function Dashboard() {
                 <button
                   type="button"
                   onClick={() => { setNewChatModalOpen(false); navigate('/naje-prompt'); }}
-                  className="w-full sm:h-[140px] min-h-[72px] h-auto px-4 py-3 sm:p-5 bg-gray-50 dark:bg-gray-900 border border-violet-500/20 hover:border-violet-500/40 rounded-xl flex flex-row sm:flex-col items-center justify-between sm:justify-center sm:text-center gap-3 sm:gap-4 transition cursor-pointer group"
+                  className="w-full sm:h-[140px] min-h-[72px] h-auto px-4 py-3 sm:p-5 bg-gray-50 dark:bg-gray-900 border border-fuchsia-500/20 hover:border-fuchsia-500/40 rounded-xl flex flex-row sm:flex-col items-center justify-between sm:justify-center sm:text-center gap-3 sm:gap-4 transition cursor-pointer group"
                 >
                   <div className="flex flex-row sm:flex-col items-center gap-3 sm:gap-2 min-w-0 sm:w-full">
-                    <div className="w-10 h-10 rounded-full bg-violet-500/10 text-violet-500 flex items-center justify-center flex-shrink-0">
-                      <MessageSquare className="w-5 h-5" />
+                    <div className="w-10 h-10 rounded-full bg-fuchsia-500/10 text-fuchsia-600 dark:text-fuchsia-400 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
+                      <MessageSquareText className="w-5 h-5" />
                     </div>
                     <div className="flex flex-col text-start sm:text-center">
-                      <span className="text-xs font-bold text-gray-900 dark:text-white">{t('nav.najePrompt')}</span>
+                      <span className="text-xs font-bold text-gray-900 dark:text-white group-hover:text-fuchsia-600 dark:group-hover:text-fuchsia-400 transition-colors">{t('nav.najePrompt')}</span>
                       <span className="text-[10px] text-gray-800 dark:text-gray-400 mt-0.5">{t('shell.promptDesc')}</span>
                     </div>
                   </div>

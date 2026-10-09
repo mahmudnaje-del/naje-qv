@@ -56,13 +56,6 @@ export function detectInitialLocale(): SupportedLocale {
     if (saved && SUPPORTED_LOCALES.includes(saved as SupportedLocale)) {
       return saved as SupportedLocale;
     }
-
-    if (typeof navigator !== 'undefined' && navigator.language) {
-      const code = navigator.language.split('-')[0].toLowerCase();
-      if (SUPPORTED_LOCALES.includes(code as SupportedLocale)) {
-        return code as SupportedLocale;
-      }
-    }
   } catch {
     // Ignore storage errors in restrictive environments
   }

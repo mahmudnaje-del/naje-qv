@@ -534,7 +534,11 @@ export const CHAT_TYPES_CONFIG: Record<string, ChatTypeMeta> = {
  */
 export function getChatTypeConfig(type?: string | ChatType): ChatTypeMeta {
   if (!type) return CHAT_TYPES_CONFIG.text;
-  return CHAT_TYPES_CONFIG[type] || CHAT_TYPES_CONFIG.text;
+  const key = String(type).trim();
+  if (key === 'prompt' || key === 'najePrompt') return CHAT_TYPES_CONFIG.najePrompt;
+  if (key === 'design') return CHAT_TYPES_CONFIG.ui;
+  if (key === 'najeAgent' || key === 'agent') return CHAT_TYPES_CONFIG.agent;
+  return CHAT_TYPES_CONFIG[key] || CHAT_TYPES_CONFIG.text;
 }
 
 type Translator = (key: string) => string;

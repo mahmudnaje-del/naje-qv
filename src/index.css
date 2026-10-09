@@ -61,57 +61,10 @@ html[data-naje-color="teal"] { --naje-p: #2ba4c6; --naje-s: #7fe0d6; --naje-on-a
 html[data-naje-color="rose"] { --naje-p: #c4456a; --naje-s: #f4a78c; --naje-on-accent: #ffffff; }
 html[data-naje-color="slate"] { --naje-p: #6b7280; --naje-s: #b0b6be; --naje-on-accent: #ffffff; }
 
-/* Remap ONLY solid accent buttons — never wash 50–400 surfaces */
-html {
-  --color-indigo-500: var(--naje-p);
-  --color-indigo-600: color-mix(in srgb, var(--naje-p) 88%, black);
-  --color-indigo-700: color-mix(in srgb, var(--naje-p) 72%, black);
-  --color-purple-500: var(--naje-p);
-  --color-purple-600: var(--naje-p);
-  --color-purple-700: color-mix(in srgb, var(--naje-p) 72%, black);
-  --color-violet-500: var(--naje-p);
-  --color-violet-600: var(--naje-p);
-  --color-violet-700: color-mix(in srgb, var(--naje-p) 72%, black);
-  --color-fuchsia-600: var(--naje-p);
-  --color-fuchsia-700: color-mix(in srgb, var(--naje-p) 72%, black);
-  --color-emerald-500: var(--naje-p);
-  --color-emerald-600: color-mix(in srgb, var(--naje-p) 88%, black);
-  --color-emerald-700: color-mix(in srgb, var(--naje-p) 72%, black);
-  --color-teal-500: var(--naje-p);
-  --color-teal-600: color-mix(in srgb, var(--naje-p) 88%, black);
-  --color-sky-500: var(--naje-p);
-  --color-sky-600: color-mix(in srgb, var(--naje-p) 88%, black);
-  --color-blue-500: var(--naje-p);
-  --color-blue-600: color-mix(in srgb, var(--naje-p) 88%, black);
-  --color-cyan-500: var(--naje-p);
-  --color-cyan-600: color-mix(in srgb, var(--naje-p) 88%, black);
-  --color-pink-500: var(--naje-p);
-  --color-pink-600: color-mix(in srgb, var(--naje-p) 88%, black);
-  --color-rose-500: var(--naje-p);
-  --color-rose-600: color-mix(in srgb, var(--naje-p) 88%, black);
-  --color-rose-700: color-mix(in srgb, var(--naje-p) 72%, black);
-}
-
-/* Studios keep their own accent, not the app theme, including buttons. */
-.naje-ad-studio,
-.naje-cv-studio,
-.naje-motion-studio,
-.naje-creative-studio {
-  --color-indigo-500: var(--naje-p);
-  --color-indigo-600: color-mix(in srgb, var(--naje-p) 88%, black);
-  --color-indigo-700: color-mix(in srgb, var(--naje-p) 72%, black);
-  --color-purple-500: var(--naje-p);
-  --color-purple-600: var(--naje-p);
-  --color-purple-700: color-mix(in srgb, var(--naje-p) 72%, black);
-  --color-violet-500: var(--naje-p);
-  --color-violet-600: var(--naje-p);
-  --color-emerald-500: var(--naje-p);
-  --color-emerald-600: color-mix(in srgb, var(--naje-p) 88%, black);
-  --color-sky-500: var(--naje-p);
-  --color-blue-500: var(--naje-p);
-  --color-pink-500: var(--naje-p);
-  --color-rose-500: var(--naje-p);
-  --color-fuchsia-600: var(--naje-p);
+/* Theme-aware button accents */
+.naje-theme-accent {
+  background-color: var(--naje-p);
+  color: var(--naje-on-accent);
 }
 
 button.naje-btn,
