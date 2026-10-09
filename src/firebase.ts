@@ -14,41 +14,56 @@ import firebaseConfig from '../firebase-applet-config.json';
 export const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 
-/** Disk cache so chats, messages, and the user profile reopen with no network.
- *  A full localStorage makes Firestore throw QuotaExceeded and crash the app,
- *  so fall back to a memory cache instead of dying on the splash. */
-function storageCanWrite(): boolean {
+/** A full localStorage makes Firestore throw QuotaExceeded and then crash
+ *  the whole app with internal assertion b815. One spare byte is not enough:
+ *  the client-state write is larger, so require real room and never let a
+ *  Firestore storage write take the UI down. */
+function hardenLocalStorage() {
+  if (typeof window === 'undefined' || typeof Storage === 'undefined') return;
+  const proto = Storage.prototype as Storage & { __najeHardened?: boolean };
+  if (proto.__najeHardened) return;
+  const raw = proto.setItem;
+  proto.setItem = function (this: Storage, key: string, value: string) {
+    try {
+      raw.call(this, key, value);
+    } catch (err) {
+      const name = (err as { name?: string })?.name || '';
+      if (name !== 'QuotaExceededError' && name !== 'NS_ERROR_DOM_QUOTA_REACHED') throw err;
+      const keep = (k: string) =>
+        k.startsWith('firebase:') ||
+        k.startsWith('naje_theme') ||
+        k.startsWith('naje_language') ||
+        k.startsWith('naje_locale') ||
+        k.startsWith('naje_onboarding') ||
+        k.startsWith('naje_terms');
+      const keys: string[] = [];
+      for (let i = 0; i < this.length; i++) {
+        const k = this.key(i);
+        if (k && !keep(k)) keys.push(k);
+      }
+      keys.sort((a, b) => (this.getItem(b)?.length || 0) - (this.getItem(a)?.length || 0));
+      for (const k of keys) {
+        try { this.removeItem(k); } catch { /* already gone */ }
+        try {
+          raw.call(this, key, value);
+          return;
+        } catch { /* keep freeing */ }
+      }
+      if (String(key).includes('firestore')) return;
+      throw err;
+    }
+  };
+  proto.__najeHardened = true;
+}
+
+function storageHasRoom(): boolean {
   try {
-    localStorage.setItem('__naje_probe__', '1');
+    localStorage.setItem('__naje_probe__', 'x'.repeat(8192));
     localStorage.removeItem('__naje_probe__');
     return true;
   } catch {
     return false;
   }
-}
-
-function freeStorageForFirestore(): boolean {
-  if (typeof localStorage === 'undefined') return false;
-  if (storageCanWrite()) return true;
-  const keep = (key: string) =>
-    key.startsWith('firebase:') ||
-    key.startsWith('naje_theme') ||
-    key.startsWith('naje_language') ||
-    key.startsWith('naje_locale') ||
-    key.startsWith('naje_onboarding') ||
-    key.startsWith('naje_terms');
-  const keys: { key: string; size: number }[] = [];
-  for (let i = 0; i < localStorage.length; i++) {
-    const key = localStorage.key(i);
-    if (!key || keep(key)) continue;
-    keys.push({ key, size: (localStorage.getItem(key) || '').length });
-  }
-  keys.sort((a, b) => b.size - a.size);
-  for (const entry of keys) {
-    try { localStorage.removeItem(entry.key); } catch { /* already gone */ }
-    if (storageCanWrite()) return true;
-  }
-  return storageCanWrite();
 }
 
 function openFirestore() {
@@ -57,7 +72,8 @@ function openFirestore() {
     experimentalAutoDetectLongPolling: true,
     localCache: memoryLocalCache(),
   }, databaseId);
-  if (!freeStorageForFirestore()) {
+  hardenLocalStorage();
+  if (!storageHasRoom()) {
     try { return memory(); } catch { return getFirestore(app, databaseId); }
   }
   try {
@@ -69,11 +85,7 @@ function openFirestore() {
       }),
     }, databaseId);
   } catch {
-    try {
-      return memory();
-    } catch {
-      return getFirestore(app, databaseId);
-    }
+    try { return memory(); } catch { return getFirestore(app, databaseId); }
   }
 }
 
