@@ -38,6 +38,7 @@ import SmokeChatWrapper from '../components/chat/SmokeChatWrapper';
 import { FleetStrip } from '../components/FleetStrip';
 import { dispatchSpecialists, type DispatchDecision } from '../lib/agentFleet';
 import { readyStepIndex, normalizeStepDependsOn } from '../lib/agentDag';
+import { cleanFirestoreData } from '../utils/firestoreSanitizer';
 import { compactProjectSources } from '../lib/agentContext';
 import { readNajeSse } from '../lib/sseRead';
 import { resolveOpenFormat, localizeActivity } from '../lib/creationEngine';
@@ -629,17 +630,17 @@ export default function NajeAgent() {
 
         // Save bot turn message to Firestore
         if (chatId && user?.uid) {
-          addDoc(collection(db, 'messages'), {
+          addDoc(collection(db, 'messages'), cleanFirestoreData({
             chatId,
             ownerId: user.uid,
             role: 'model',
             type: turn.type,
-            content: turn.type === 'reply' ? turn.message : '',
-            question: turn.type === 'clarification' ? turn.question : null,
+            content: turn.type === 'reply' ? (turn.message || '') : '',
+            question: turn.type === 'clarification' ? (turn.question || '') : null,
             suggestedQuickReplies: turn.type === 'clarification' ? (turn.suggestedQuickReplies || null) : null,
             proposal: turn.type === 'proposal' ? (turn.proposal || null) : null,
             createdAt: Date.now()
-          }).catch(e => console.warn('Failed to save bot agent msg:', e));
+          })).catch(e => console.warn('Failed to save bot agent msg:', e));
         }
       }
     } catch (err: any) {
@@ -682,35 +683,62 @@ export default function NajeAgent() {
     }
 
     try {
-      const dependencyIds = normalizeStepDependsOn(proposal.steps);
-      const steps: AgentStep[] = proposal.steps.map((st, idx) => ({
-        id: `step_${idx + 1}`,
-        title: st.title,
-        description: st.description,
-        status: 'pending',
-        dependsOn: dependencyIds[idx],
-        toolCalls: st.tools.map((t, tIdx) => ({
-          id: `tool_${idx + 1}_${tIdx + 1}`,
-          name: t.name,
-          title: t.title,
-          status: 'pending',
-          input: t.inputParams || {},
-          pointsCost: t.estimatedPoints
-        }))
-      }));
+      const rawSteps = Array.isArray(proposal.steps) ? proposal.steps : [];
+      const dependencyIds = normalizeStepDependsOn(rawSteps);
+      const steps: AgentStep[] = rawSteps.map((st, idx) => {
+        const dep = dependencyIds[idx];
+        const rawTools = Array.isArray(st.tools) ? st.tools : (Array.isArray((st as any).toolCalls) ? (st as any).toolCalls : []);
+        const stepTools = rawTools.map((t: any, tIdx: number) => {
+          const rawName = t.name || t.tool || t.toolName || 'creative_writer';
+          return {
+            id: t.id || `tool_${idx + 1}_${tIdx + 1}`,
+            name: rawName,
+            title: t.title || t.name || 'أداة',
+            status: 'pending' as const,
+            input: cleanFirestoreData(t.inputParams || t.input || {}),
+            pointsCost: Number(t.estimatedPoints || t.pointsCost || 0)
+          };
+        });
 
-      const newMissionData: Omit<AgentMission, 'id'> = {
+        const stepObj: AgentStep = {
+          id: `step_${idx + 1}`,
+          title: st.title || `المرحلة ${idx + 1}`,
+          description: st.description || '',
+          status: 'pending',
+          toolCalls: stepTools
+        };
+        if (Array.isArray(dep) && dep.length > 0) {
+          stepObj.dependsOn = dep;
+        }
+        return stepObj;
+      });
+
+      const cleanBrandContext = proposal.brandContext ? {
+        brandName: proposal.brandContext.brandName || '',
+        industry: proposal.brandContext.industry || '',
+        tone: proposal.brandContext.tone || '',
+        colors: Array.isArray(proposal.brandContext.colors) ? proposal.brandContext.colors : [],
+        slogan: proposal.brandContext.slogan || '',
+        targetAudience: proposal.brandContext.targetAudience || ''
+      } : {
+        brandName: '',
+        industry: '',
+        tone: '',
+        colors: []
+      };
+
+      const newMissionData: Omit<AgentMission, 'id'> = cleanFirestoreData({
         ownerId: user.uid,
-        title: proposal.missionTitle,
-        userPrompt: messages.filter(m => m.role === 'user').map(m => m.content).join(' | '),
+        title: proposal.missionTitle || 'مهمة وكيل ناجي',
+        userPrompt: messages.filter(m => m.role === 'user').map(m => m.content).join(' | ') || proposal.missionTitle || 'مهمة ناجي',
         status: 'waiting_approval',
-        estimatedPoints: proposal.totalEstimatedPoints,
+        estimatedPoints: Number(proposal.totalEstimatedPoints || 0),
         consumedPoints: 0,
-        planSummary: proposal.planSummary,
+        planSummary: proposal.planSummary || '',
         steps,
         artifacts: [],
         auditHistory: [],
-        brandContext: proposal.brandContext,
+        brandContext: cleanBrandContext,
         decisions: [{
           at: Date.now(),
           choice: 'accept_plan',
@@ -719,18 +747,18 @@ export default function NajeAgent() {
         checkpoint: { index: 0, title: 'accepted', at: Date.now() },
         createdAt: Date.now(),
         updatedAt: Date.now()
-      };
+      });
 
       const docRef = await addDoc(collection(db, 'autonoma_missions'), newMissionData);
       const fullMission: AgentMission = { id: docRef.id, ...newMissionData };
       setActiveMission(fullMission);
 
       if (chatId) {
-        await updateDoc(doc(db, 'chats', chatId), {
+        await updateDoc(doc(db, 'chats', chatId), cleanFirestoreData({
           missionId: docRef.id,
-          title: proposal.missionTitle,
+          title: proposal.missionTitle || 'مهمة وكيل ناجي',
           updatedAt: Date.now()
-        });
+        }));
       }
 
       toast.success(t('tools.agent.planSaved'));
@@ -752,7 +780,7 @@ export default function NajeAgent() {
     setIsExecuting(true);
     cancelMissionRef.current = false;
     const missionRef = doc(db, 'autonoma_missions', activeMission.id);
-    await updateDoc(missionRef, { status: 'executing', updatedAt: Date.now() });
+    await updateDoc(missionRef, cleanFirestoreData({ status: 'executing', updatedAt: Date.now() }));
 
     try {
       const token = await auth.currentUser?.getIdToken();
@@ -763,13 +791,33 @@ export default function NajeAgent() {
       let consumed = activeMission.consumedPoints || 0;
       const packedSources = compactProjectSources(sources, t('tools.agent.mediaSnippet'));
 
+      // Ensure all steps have populated toolCalls even if loaded from legacy format
+      if (Array.isArray(activeMission.steps)) {
+        for (let sIdx = 0; sIdx < activeMission.steps.length; sIdx++) {
+          const s = activeMission.steps[sIdx];
+          if (!s.toolCalls || s.toolCalls.length === 0) {
+            const legacyTools = (s as any).tools;
+            if (Array.isArray(legacyTools) && legacyTools.length > 0) {
+              s.toolCalls = legacyTools.map((t: any, tIdx: number) => ({
+                id: t.id || `tool_${sIdx + 1}_${tIdx + 1}`,
+                name: t.name || t.tool || t.toolName || 'creative_writer',
+                title: t.title || t.name || 'أداة',
+                status: t.status || 'pending',
+                input: t.inputParams || t.input || {},
+                pointsCost: Number(t.pointsCost || t.estimatedPoints || 0)
+              }));
+            }
+          }
+        }
+      }
+
       for (let scheduled = 0; scheduled <= activeMission.steps.length; scheduled++) {
         const sIdx = readyStepIndex(activeMission.steps);
         if (sIdx < 0) break;
         const step = activeMission.steps[sIdx];
         if (step.status === 'completed') continue;
         if (cancelMissionRef.current) {
-          await updateDoc(missionRef, { status: 'waiting_approval', steps: activeMission.steps, updatedAt: Date.now() });
+          await updateDoc(missionRef, cleanFirestoreData({ status: 'waiting_approval', steps: activeMission.steps, updatedAt: Date.now() }));
           toast.info(t('tools.agent.missionCancelled'));
           return;
         }
@@ -777,39 +825,48 @@ export default function NajeAgent() {
         setCurrentStepIndex(sIdx);
 
         step.status = 'in_progress';
-        await updateDoc(missionRef, { steps: activeMission.steps, updatedAt: Date.now() });
+        await updateDoc(missionRef, cleanFirestoreData({ steps: activeMission.steps, updatedAt: Date.now() }));
 
-        if (step.toolCalls) {
-          for (let index = 0; index < step.toolCalls.length; index++) {
-            const tc = step.toolCalls[index];
+        const toolCallsList = step.toolCalls || [];
+        if (toolCallsList.length > 0) {
+          for (let index = 0; index < toolCallsList.length; index++) {
+            const tc = toolCallsList[index];
             if (tc.status === 'completed') continue;
             if (cancelMissionRef.current) {
-              const anyDone = step.toolCalls.some((call) => call.status === 'completed');
+              const anyDone = toolCallsList.some((call) => call.status === 'completed');
               if (!anyDone) step.status = 'pending';
-              await updateDoc(missionRef, {
+              await updateDoc(missionRef, cleanFirestoreData({
                 status: 'waiting_approval',
                 steps: activeMission.steps,
                 artifacts: missionArtifacts,
                 consumedPoints: consumed,
                 updatedAt: Date.now()
-              });
+              }));
               toast.info(t('tools.agent.missionCancelled'));
               return;
             }
 
+            const resolvedToolName = tc.name || (tc as any).tool || (tc as any).toolName;
+            if (!resolvedToolName) {
+              console.warn('Skipping unresolvable toolCall:', tc);
+              tc.status = 'completed';
+              continue;
+            }
+            tc.name = resolvedToolName;
+
             tc.status = 'running';
-            await updateDoc(missionRef, { steps: activeMission.steps, updatedAt: Date.now() });
+            await updateDoc(missionRef, cleanFirestoreData({ steps: activeMission.steps, updatedAt: Date.now() }));
 
             const idempotencyKey = step.id && tc.id
               ? `${activeMission.id}:${step.id}:${tc.id}:1`
               : `${activeMission.id}:s${sIdx}:t${index}:1`;
 
             const missionContextPayload = {
-              missionId: activeMission.id,
-              ownerId: user?.uid || '',
-              brandContext: accumulatedBrand,
-              userPrompt: activeMission.userPrompt || activeMission.title || '',
-              auditHistory: activeMission.auditHistory || []
+              missionId: activeMission.id || 'mission',
+              ownerId: user?.uid || activeMission.ownerId || '',
+              brandContext: accumulatedBrand || {},
+              userPrompt: activeMission.userPrompt || activeMission.title || 'مهمة وكيل ناجي',
+              auditHistory: Array.isArray(activeMission.auditHistory) ? activeMission.auditHistory : []
             };
 
             const stopForFailedAudit = async (feedback: string) => {
@@ -822,7 +879,7 @@ export default function NajeAgent() {
                 passed: false,
                 timestamp: Date.now()
               });
-              await updateDoc(missionRef, {
+              await updateDoc(missionRef, cleanFirestoreData({
                 steps: activeMission.steps,
                 artifacts: missionArtifacts,
                 consumedPoints: consumed,
@@ -830,21 +887,21 @@ export default function NajeAgent() {
                 auditHistory: activeMission.auditHistory,
                 status: 'failed',
                 updatedAt: Date.now()
-              });
+              }));
               toast.error(feedback || t('tools.agent.execStopped'));
             };
 
             // Streaming handler for code projects
             if (tc.name === 'fullstack_engineer') {
               setExecutingStatusMessage(t('tools.agent.weaving'));
-              const streamRes = await postAgentTool('/api/agent/execute-tool-stream', token, {
+              const streamRes = await postAgentTool('/api/agent/execute-tool-stream', token, cleanFirestoreData({
                 toolName: tc.name,
-                inputParams: { ...tc.input, brandContext: accumulatedBrand, sources: packedSources },
+                inputParams: { ...(tc.input || {}), brandContext: accumulatedBrand, sources: packedSources },
                 brandContext: accumulatedBrand,
                 missionContext: missionContextPayload,
                 stepTitle: tc.title || step.title || tc.name,
                 idempotencyKey
-              });
+              }));
 
               if (!streamRes.ok) {
                 const errData = await streamRes.json().catch(() => ({}));
@@ -919,14 +976,14 @@ export default function NajeAgent() {
               }
             } else {
               setExecutingStatusMessage(t('tools.agent.executingTool', { title: tc.title }));
-              const execRes = await postAgentTool('/api/agent/execute-tool', token, {
+              const execRes = await postAgentTool('/api/agent/execute-tool', token, cleanFirestoreData({
                 toolName: tc.name,
-                inputParams: { ...tc.input, brandContext: accumulatedBrand, sources: packedSources },
+                inputParams: { ...(tc.input || {}), brandContext: accumulatedBrand, sources: packedSources },
                 brandContext: accumulatedBrand,
                 missionContext: missionContextPayload,
                 stepTitle: tc.title || step.title || tc.name,
                 idempotencyKey
-              });
+              }));
 
               if (!execRes.ok) {
                 const errData = await execRes.json().catch(() => ({}));
@@ -947,14 +1004,14 @@ export default function NajeAgent() {
                   timestamp: Date.now()
                 });
                 setExecutingStatusMessage(t('tools.agent.repairOnce'));
-                const repairRes = await postAgentTool('/api/agent/execute-tool', token, {
+                const repairRes = await postAgentTool('/api/agent/execute-tool', token, cleanFirestoreData({
                   toolName: tc.name,
-                  inputParams: { ...tc.input, brandContext: accumulatedBrand, sources: packedSources, repairNote: feedback },
+                  inputParams: { ...(tc.input || {}), brandContext: accumulatedBrand, sources: packedSources, repairNote: feedback },
                   brandContext: accumulatedBrand,
                   missionContext: { ...missionContextPayload, auditHistory: activeMission.auditHistory },
                   stepTitle: tc.title || step.title || tc.name,
                   idempotencyKey: idempotencyKey.replace(/:1$/, ':2')
-                });
+                }));
                 if (!repairRes.ok) {
                   const errData = await repairRes.json().catch(() => ({}));
                   throw new Error(errData.error || t('tools.agent.toolFailed', { title: tc.title }));
@@ -990,41 +1047,41 @@ export default function NajeAgent() {
               }
             }
 
-            await updateDoc(missionRef, {
+            await updateDoc(missionRef, cleanFirestoreData({
               steps: activeMission.steps,
               artifacts: missionArtifacts,
               consumedPoints: consumed,
               brandContext: accumulatedBrand,
               updatedAt: Date.now()
-            });
+            }));
           }
         }
 
         step.status = 'completed';
-        await updateDoc(missionRef, {
+        await updateDoc(missionRef, cleanFirestoreData({
           steps: activeMission.steps,
           checkpoint: { index: sIdx + 1, title: step.title || 'step', at: Date.now() },
           updatedAt: Date.now()
-        });
+        }));
       }
 
       if (activeMission.steps.some((step) => step.status !== 'completed')) {
         throw new Error(t('tools.agent.execStopped'));
       }
 
-      await updateDoc(missionRef, {
+      await updateDoc(missionRef, cleanFirestoreData({
         status: 'completed',
         consumedPoints: consumed,
         checkpoint: { index: activeMission.steps.length, title: 'delivery', at: Date.now() },
         updatedAt: Date.now()
-      });
+      }));
 
       toast.success(t('tools.agent.missionDone'));
       setTab('results');
     } catch (err: any) {
       console.error('Execution error:', err);
       toast.error(err.message || t('tools.agent.execStopped'));
-      await updateDoc(missionRef, { status: 'failed', updatedAt: Date.now() });
+      await updateDoc(missionRef, cleanFirestoreData({ status: 'failed', updatedAt: Date.now() }));
     } finally {
       setIsExecuting(false);
       setExecutingStatusMessage('');
@@ -1619,10 +1676,10 @@ export default function NajeAgent() {
                               if (!activeMission) return;
                               const updated = toggleFavoriteVersion(activeMission.artifacts, art.id);
                               activeMission.artifacts = updated;
-                              await updateDoc(doc(db, 'autonoma_missions', activeMission.id), {
+                              await updateDoc(doc(db, 'autonoma_missions', activeMission.id), cleanFirestoreData({
                                 artifacts: updated,
                                 updatedAt: Date.now()
-                              });
+                              }));
                               toast.success((art as any).isFavorite ? t('tools.agent.unpinned') : t('tools.agent.pinned'));
                             }}
                             className={`p-1 rounded-lg transition cursor-pointer ${

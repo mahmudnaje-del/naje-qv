@@ -30,21 +30,32 @@ const VOICE_MODEL = () => resolveEngineModel(getNajeModel('voice_core'));
 export async function executeAgentTool(
   toolName: AgentToolCall['name'],
   inputParams: Record<string, any>,
-  missionContext: {
-    missionId: string;
-    ownerId: string;
+  missionContext?: {
+    missionId?: string;
+    ownerId?: string;
     brandContext?: any;
-    userPrompt: string;
+    userPrompt?: string;
     auditHistory?: AgentAuditEntry[];
   },
   pricingConfig?: any,
   options?: { onProgress?: (progress: any) => void }
 ): Promise<{ output: any; artifact?: AgentArtifact; pointsDeducted: number }> {
+  if (!toolName) {
+    throw new Error('toolName is required');
+  }
   if (!isExecutableAgentTool(toolName)) {
     throw new Error('هذه الأداة غير متاحة للتنفيذ.');
   }
-  const { brandContext, userPrompt, auditHistory } = missionContext;
-  const enrichedPrompt = userPrompt;
+  const safeContext = {
+    missionId: missionContext?.missionId || 'mission',
+    ownerId: missionContext?.ownerId || '',
+    brandContext: missionContext?.brandContext || {},
+    userPrompt: missionContext?.userPrompt || '',
+    auditHistory: missionContext?.auditHistory || []
+  };
+  const { brandContext, auditHistory } = safeContext;
+  const userPrompt: string = safeContext.userPrompt;
+  const enrichedPrompt: string = userPrompt;
 
   // Build audit feedback context from previous steps if available
   const recentAuditFeedback = (auditHistory && auditHistory.length > 0)

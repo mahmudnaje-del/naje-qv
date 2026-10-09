@@ -11537,7 +11537,8 @@ app.post("/api/agent/execute-tool", async (req, res) => {
     const _userDocSnapForGate = await dbAdmin.collection('users').doc(uid).get();
     if (!checkFeatureAccess(res, _userDocSnapForGate.data(), 'najeAgent')) return;
 
-    const { toolName, inputParams } = req.body;
+    const toolName = req.body.toolName || req.body.name || req.body.tool;
+    const inputParams = req.body.inputParams || req.body.input || {};
     if (!toolName) {
       return res.status(400).json({ error: "toolName is required" });
     }
@@ -11687,7 +11688,8 @@ app.post("/api/agent/execute-tool-stream", async (req, res) => {
     const _userDocSnapForGate = await dbAdmin.collection('users').doc(uid).get();
     if (!checkFeatureAccess(res, _userDocSnapForGate.data(), 'najeAgent')) return;
 
-    const { toolName, inputParams } = req.body;
+    const toolName = req.body.toolName || req.body.name || req.body.tool;
+    const inputParams = req.body.inputParams || req.body.input || {};
     if (!toolName) {
       return res.status(400).json({ error: "toolName is required" });
     }
